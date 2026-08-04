@@ -33,6 +33,12 @@ export default function Nav({ email }: { email: string }) {
         <Link href="/styles/new" className="btn sm">
           + New Style
         </Link>
+        {/* Setup is not a feature, so it does not get a tab — but it needs to be
+            reachable without remembering a URL, because the things on it are the
+            things standing between this and the team using it. */}
+        <Link href="/setup" className="nav-link" title="Go-live checklist">
+          Setup
+        </Link>
         {/* Personal settings hang off your own name rather than taking a tab. */}
         <Link href="/notifications" className="who" title="Notification settings">
           {email}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, DEV_BYPASS, DEV_BYPASS_REFUSED } from "@/lib/access";
 import Nav from "./Nav";
@@ -13,7 +14,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="wrap" style={{ paddingTop: 12 }}>
           <div className="notice">
             Preview mode (NEXT_PUBLIC_DEV_BYPASS_AUTH=true): login is bypassed. Set it to
-            &quot;false&quot; and configure Google sign-in for real access control.
+            &quot;false&quot; and configure Google sign-in for real access control.{" "}
+            <Link href="/setup" style={{ color: "var(--ink)", textDecoration: "underline" }}>
+              What&rsquo;s left to do
+            </Link>
           </div>
         </div>
       )}
@@ -24,7 +28,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="wrap" style={{ paddingTop: 12 }}>
           <div className="notice">
             NEXT_PUBLIC_DEV_BYPASS_AUTH is set to &quot;true&quot; on a production deployment and has
-            been ignored. Real sign-in is in force. Set it to &quot;false&quot; to clear this notice.
+            been ignored. Real sign-in is in force. Set it to &quot;false&quot; to clear this notice.{" "}
+            <Link href="/setup" style={{ color: "var(--ink)", textDecoration: "underline" }}>
+              What&rsquo;s left to do
+            </Link>
           </div>
         </div>
       )}
