@@ -1,0 +1,90 @@
+import Link from "next/link";
+import { createStyle } from "@/app/actions/styles";
+import { STYLE_STATUSES } from "@/lib/types";
+
+export default function NewStylePage() {
+  return (
+    <div className="page">
+      <div className="page-head">
+        <h1 className="page-title serif">New Style</h1>
+        <div className="spacer" />
+        <Link href="/development" className="btn ghost sm">
+          Cancel
+        </Link>
+      </div>
+
+      <form action={createStyle} style={{ maxWidth: 720 }}>
+        <div className="field">
+          <label>Style name *</label>
+          <input className="input" name="name" required placeholder="e.g. Cropped Rib Tank" />
+        </div>
+
+        <div className="row">
+          <div className="field">
+            <label>Style number</label>
+            <input className="input" name="style_no" placeholder="SS-1042" />
+          </div>
+          <div className="field">
+            <label>Status</label>
+            <select className="select" name="status" defaultValue="inspo">
+              {STYLE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="row3">
+          <div className="field">
+            <label>Category</label>
+            <input className="input" name="category" />
+          </div>
+          <div className="field">
+            <label>Garment</label>
+            <input className="input" name="garment" />
+          </div>
+          <div className="field">
+            <label>Season</label>
+            <input className="input" name="season" placeholder="SS27" />
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="field">
+            <label>Designer</label>
+            <input className="input" name="designer" />
+          </div>
+          <div className="field">
+            <label>Factory</label>
+            <input className="input" name="factory" />
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Cover image URL</label>
+          <input className="input" name="cover_image" placeholder="https://…" />
+        </div>
+
+        <div className="field">
+          <label>Tech pack link</label>
+          <input className="input" name="tech_pack_url" placeholder="https://… (Drive, Dropbox, etc.)" />
+        </div>
+
+        <div className="field">
+          <label>Notes</label>
+          <textarea className="textarea" name="notes" />
+        </div>
+
+        <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20 }}>
+          <input type="checkbox" name="evergreen" /> <span>Evergreen style</span>
+        </label>
+
+        <button className="btn" type="submit">
+          Create style
+        </button>
+      </form>
+    </div>
+  );
+}

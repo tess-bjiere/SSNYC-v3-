@@ -1,0 +1,29 @@
+{
+  "name": "ssync",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test:moodboard": "node --experimental-strip-types --test lib/moodboard.test.mts",
+    "test:storage": "node --experimental-strip-types --test lib/storage.test.mts",
+    "test:thumbnail": "node --experimental-strip-types --test lib/thumbnail.test.mts",
+    "test": "node --experimental-strip-types --test lib/*.test.mts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "15.5.21",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "html-to-image": "^1.11.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}
