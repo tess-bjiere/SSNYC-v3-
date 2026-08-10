@@ -577,7 +577,13 @@ body.tiles-lg{--tw:240px;--th:320px}
    .select.sm, .sortbar .select, .lib-filters .select — lands on it unchanged.
    What is new is the open panel, which the operating system used to draw. */
 .sel{position:relative;display:block;min-width:0}
-.sel-trigger{text-align:left;display:block;min-width:0;line-height:1.35}
+/* line-height 1.2, not 1.35, so the trigger is the same height as a text input
+   beside it — a native <input> lays its text out at `normal` (~1.2 for this
+   font), and at 1.35 the dropdown stood ~2px taller than every field around it
+   (Tess, 2026-08-09: "make this field a little less tall… I want all dropdowns
+   to be consistent heights"). Unitless so it tracks whatever font-size the
+   control is given, the way `normal` does. */
+.sel-trigger{text-align:left;display:block;min-width:0;line-height:1.2}
 .sel-trigger .sel-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sel-trigger .sel-label.is-placeholder{color:var(--faint)}
 .sel-trigger[aria-expanded="true"]{border-color:var(--ink)}
