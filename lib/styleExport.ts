@@ -124,7 +124,17 @@ export type ExportInput = {
 export type DocRow = { label: string; value: string };
 /** A labelled paragraph — prose that would not fit on a row. */
 export type DocNote = { label: string; text: string };
-export type DocEntry = { heading: string; sub: string | null; rows: DocRow[]; notes: DocNote[] };
+export type DocEntry = {
+  heading: string;
+  sub: string | null;
+  rows: DocRow[];
+  notes: DocNote[];
+  // Pictures belonging to this entry, shown as thumbnails by the export page
+  // rather than as a list of URLs (Tess, 2026-08-10: "the photos for each sample
+  // should be included in history export as a visual -- not long links"). Only
+  // sample rounds carry them; versions and comments leave this empty.
+  photos?: ExportPhoto[];
+};
 export type DocSection = {
   title: string;
   /** A single paragraph, for sections that are prose rather than a list. */
@@ -240,7 +250,6 @@ function byNewestFirst<T extends { created_at?: string | null }>(
 }
 
 function sampleEntry(s: ExportSample): DocEntry {
-  const photos = s.photos ?? [];
   return {
     heading: t(s.round) ?? "round",
     sub: dots([s.factory, s.status]) || null,
@@ -258,19 +267,16 @@ function sampleEntry(s: ExportSample): DocEntry {
       ["Received back", s.received_date],
       ["Fitting date", s.fitting_date],
       ["Notes sent", s.notes_sent_date],
-      // The round's shots, each as a row whose value is the URL — the export
-      // page renders a URL value as a link (Tess, 2026-08-10: "any links should
-      // be hyperlinked"; "include photos w fit notes"). A caption becomes the
-      // label; an uncaptioned shot is numbered so two of them do not collide.
-      ...photos.map(
-        (p, i) => [t(p.label) ?? `Photo ${i + 1}`, p.url] as [string, unknown]
-      ),
     ]),
     notes: notes([
       ["Fit", s.fit_notes],
       ["Material notes", s.material_notes],
       ["Notes", s.comments],
     ]),
+    // Shown as thumbnails, not a wall of URLs (Tess, 2026-08-10: "the photos for
+    // each sample should be included in history export as a visual -- not long
+    // links"). Only the ones with a URL — a caption with no image is not a photo.
+    photos: (s.photos ?? []).filter((p) => t(p.url)),
   };
 }
 
@@ -401,6 +407,9 @@ export function renderDocText(doc: StyleDoc): string {
         out.push(n.label ? `    ${n.label}: ${n.text.split("\n")[0]}` : lines[0]);
         for (const extra of lines.slice(1)) out.push(extra);
       }
+      // The page shows thumbnails; plain text can only carry the link, so a text
+      // export still names each photo and where it is.
+      for (const p of e.photos ?? []) out.push(`    ${t(p.label) ?? "Photo"}: ${t(p.url) ?? ""}`);
     }
   }
 

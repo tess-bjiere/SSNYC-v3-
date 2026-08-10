@@ -290,6 +290,23 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
                         <Linked text={n.text} />
                       </p>
                     ))}
+                    {e.photos && e.photos.length > 0 && (
+                      <div className="paper-shots">
+                        {e.photos.map((p, pi) => (
+                          <figure key={p.url ?? pi}>
+                            <span className="paper-shot-frame">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.url ?? ""} alt={p.label} />
+                            </span>
+                            {p.label && (
+                              <figcaption>
+                                <strong>{p.label}</strong>
+                              </figcaption>
+                            )}
+                          </figure>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </>

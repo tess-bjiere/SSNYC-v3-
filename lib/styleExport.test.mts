@@ -173,11 +173,12 @@ test("a round carries its rating, location, shots and its own notes", () => {
   const e = doc.sections[3].entries[0];
   assert.equal(e.rows.find((r) => r.label === "Rating")?.value, "Workable");
   assert.equal(e.rows.find((r) => r.label === "Current location")?.value, "With designer");
-  // A captioned shot keeps its caption as the label; an uncaptioned one is
-  // numbered so two of them never collide. The URL is the value, so the export
-  // page renders it as a link.
-  assert.equal(e.rows.find((r) => r.label === "Front")?.value, "https://cdn/f.jpg");
-  assert.equal(e.rows.find((r) => r.label === "Photo 2")?.value, "https://cdn/b.jpg");
+  // Photos are their own list on the entry — the export page renders them as
+  // thumbnails, not rows of URLs. Only the ones with a URL survive.
+  assert.deepEqual(e.photos, [
+    { label: "Front", url: "https://cdn/f.jpg" },
+    { label: "", url: "https://cdn/b.jpg" },
+  ]);
   assert.deepEqual(e.notes, [
     { label: "Fit", text: "Sleeve pitch off." },
     { label: "Material notes", text: "Interlining swapped." },
