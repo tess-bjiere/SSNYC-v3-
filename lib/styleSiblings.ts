@@ -179,7 +179,7 @@ export function siblingsOf(
 }
 
 /**
- * "Also in development with Bella" / "… Bella and Toni" / "… Bella, Toni and
+ * "Also sampled with Bella" / "… Bella and Toni" / "… Bella, Toni and
  * Kavi". Tess, 2026-08-05: "also made at should be 'also in development
  * with'" — "made at" claims the garment is in production somewhere, and none
  * of these are; they are two factories sampling the same style.
@@ -187,9 +187,9 @@ export function siblingsOf(
 export function siblingLabel(siblings: readonly StyleSibling[]): string {
   const names = siblings.map((s) => s.factory).filter(Boolean);
   if (names.length === 0) return "";
-  if (names.length === 1) return `Also in development with ${names[0]}`;
-  if (names.length === 2) return `Also in development with ${names[0]} and ${names[1]}`;
-  return `Also in development with ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  if (names.length === 1) return `Also sampled with ${names[0]}`;
+  if (names.length === 2) return `Also sampled with ${names[0]} and ${names[1]}`;
+  return `Also sampled with ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 /**

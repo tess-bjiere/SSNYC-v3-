@@ -387,7 +387,7 @@ export default function DevTabs({
                       the difference between a 3rd proto because the first two
                       were poor and a 3rd proto because the studio kept adding
                       colourways. The same three colours, and the same dot, as
-                      the "Also in development with" pills — one mark meaning
+                      the "Also sampled with" pills — one mark meaning
                       one thing everywhere it appears, so it needs no key.
 
                       Unrated draws nothing. Not a grey dot: any mark on a card

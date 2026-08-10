@@ -81,10 +81,10 @@ test("a style the studio has stopped reading is not linked to", () => {
 
 test("the label reads as a sentence at one, two and three factories", () => {
   assert.equal(siblingLabel([]), "");
-  assert.equal(siblingLabel(siblingsOf(A, [A, B])), "Also in development with Toni");
-  assert.equal(siblingLabel(siblingsOf(A, [A, B, C])), "Also in development with Kavi and Toni");
+  assert.equal(siblingLabel(siblingsOf(A, [A, B])), "Also sampled with Toni");
+  assert.equal(siblingLabel(siblingsOf(A, [A, B, C])), "Also sampled with Kavi and Toni");
   const D = { id: "d", name: "Anorak Jacket", style_no: "SS-100", season: "SS27", factory: "Ada" };
-  assert.equal(siblingLabel(siblingsOf(A, [A, B, C, D])), "Also in development with Ada, Kavi and Toni");
+  assert.equal(siblingLabel(siblingsOf(A, [A, B, C, D])), "Also sampled with Ada, Kavi and Toni");
 });
 
 // The round each sibling is on, which is what the pill beside the factory name

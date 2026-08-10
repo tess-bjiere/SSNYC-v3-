@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { StyleSibling } from "@/lib/styleSiblings";
 import { SAMPLE_ROUND_LABELS, sampleRatingLabel, type SampleRound } from "@/lib/types";
 
-// "Also in development with …" — the link between two profiles of the same
+// "Also sampled with …" — the link between two profiles of the same
 // garment.
 //
 // Tess, 2026-08-05: "if a style is developed by multiple factories, they should
@@ -63,7 +63,7 @@ export default function SiblingStrip({ siblings }: { siblings: StyleSibling[] })
        produced; these two profiles are both still being sampled, and which
        factory ends up making it is exactly what has not been decided. */
     <section className="section siblings-section">
-      <h3>Also in development with</h3>
+      <h3>Also sampled with</h3>
       <div className="siblings">
         {siblings.map((s) => (
           <Link className="sibling" href={`/styles/${s.id}`} key={s.id}>
