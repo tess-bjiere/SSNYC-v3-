@@ -16,8 +16,11 @@
 //     screen can hide what isn't there; a document that quietly omits a heading
 //     reads as "nothing to report" when it means "nothing was recorded", and
 //     these get sent to factories.
-//   * Versions and comments read oldest-first. The profile shows newest-first,
-//     because on screen you want the latest news; a history is read forward.
+//   * The history reads newest-first — the most recent sample round, version and
+//     comment at the top, oldest at the bottom (Tess, 2026-08-10: "history
+//     should be most recent at the top to the oldest"). This was oldest-first
+//     until then, on the reasoning that a history is read forward; Tess reads it
+//     the way the profile shows it, latest news first, and the two now agree.
 //
 // Nothing here reaches for the clock: `generatedOn` is passed in, decided once
 // on the server in the studio's timezone, the same way the sample rounds do it.
@@ -37,6 +40,9 @@ export type ExportStyle = {
   status?: string | null;
   evergreen?: boolean | null;
   tech_pack_url?: string | null;
+  // The live work-in-progress folder, exported as a link beside the tech pack
+  // (Tess, 2026-08-10: the report "should include WIP link").
+  wip_url?: string | null;
   notes?: string | null;
   fit_notes?: string | null;
   created_by?: string | null;
@@ -55,15 +61,28 @@ export type ExportSample = {
   round: string;
   factory?: string | null;
   status?: string | null;
+  // How this round came back, already turned into words by the caller (Good /
+  // Workable / Poor). A label rather than the raw key, because this module is
+  // dependency-free and does not import the ratings map; the page that has it
+  // hands the finished word over (Tess, 2026-08-10: "include sample rating").
+  rating?: string | null;
   material_supplier?: string | null;
   material_ordered_date?: string | null;
   material_eta_date?: string | null;
   material_received_date?: string | null;
+  // The round's own material notes, kept apart from the fit story and the
+  // factory comments (Tess, 2026-08-10: "include… sample specific notes").
+  material_notes?: string | null;
   submitted_date?: string | null;
   received_date?: string | null;
   location?: string | null;
   fit_notes?: string | null;
   comments?: string | null;
+  // The shots filed against this round, so the photographs travel with the fit
+  // notes they belong to rather than only in the style-level slot list (Tess,
+  // 2026-08-10: "include photos w fit notes and sample specific notes"). The
+  // caller reads them off the round's photo map — see lib/imageList.ts.
+  photos?: ExportPhoto[];
 };
 
 export type ExportVersion = {
@@ -200,22 +219,51 @@ function byOldestFirst<T extends { created_at?: string | null }>(
   });
 }
 
+/**
+ * Newest-first (Tess, 2026-08-10: "history should be most recent at the top").
+ *
+ * Sort forward, then flip. Ordering oldest-first keeps the tiebreaks simple —
+ * a version number ascends, comments hold the order they were handed over —
+ * and a single reverse turns the whole list newest-first without special-casing
+ * ties: v1,v2,v3 become v3,v2,v1, and two comments from the same minute end up
+ * latest-typed on top.
+ */
+function byNewestFirst<T extends { created_at?: string | null }>(
+  list: T[],
+  tiebreak?: (a: T, b: T) => number
+): T[] {
+  return byOldestFirst(list, tiebreak).reverse();
+}
+
 function sampleEntry(s: ExportSample): DocEntry {
+  const photos = s.photos ?? [];
   return {
     heading: t(s.round) ?? "round",
     sub: dots([s.factory, s.status]) || null,
     rows: rows([
+      // Rating and location lead — how it came back and where it is now are the
+      // two questions asked about a round before any of the dates (Tess,
+      // 2026-08-10: "include sample rating and location").
+      ["Rating", s.rating],
+      ["Current location", s.location],
       ["Material supplier", s.material_supplier],
       ["Material ordered", s.material_ordered_date],
       ["Material ETA", s.material_eta_date],
       ["Material received", s.material_received_date],
       ["Sample requested", s.submitted_date],
       ["Received back", s.received_date],
-      ["Current location", s.location],
+      // The round's shots, each as a row whose value is the URL — the export
+      // page renders a URL value as a link (Tess, 2026-08-10: "any links should
+      // be hyperlinked"; "include photos w fit notes"). A caption becomes the
+      // label; an uncaptioned shot is numbered so two of them do not collide.
+      ...photos.map(
+        (p, i) => [t(p.label) ?? `Photo ${i + 1}`, p.url] as [string, unknown]
+      ),
     ]),
     notes: notes([
       ["Fit", s.fit_notes],
-      ["Comments", s.comments],
+      ["Material notes", s.material_notes],
+      ["Notes", s.comments],
     ]),
   };
 }
@@ -223,13 +271,17 @@ function sampleEntry(s: ExportSample): DocEntry {
 export function buildStyleDoc(input: ExportInput): StyleDoc {
   const st = input.style;
   const refs = input.references ?? [];
-  const samples = input.samples ?? [];
+  // The caller hands samples over in cycle order (proto1 → bulk); the history
+  // shows the most recent round first, so the latest stage leads (Tess,
+  // 2026-08-10: "history should be most recent at the top to the oldest").
+  const samples = [...(input.samples ?? [])].reverse();
   const photos = input.photos ?? [];
-  // v1 before v2, whatever the clock says. A comment has no such number, so a
-  // tie there keeps the order the caller handed over — which is why the page
-  // asks the database for them oldest-first rather than trusting row order.
-  const versions = byOldestFirst(input.versions ?? [], (a, b) => a.version_no - b.version_no);
-  const comments = byOldestFirst(input.comments ?? []);
+  // Newest-first. The version number still settles a tie inside one timestamp —
+  // ascending in the sort, so the reverse leaves v3 above v2 above v1 — and a
+  // comment with no number keeps the reverse of the order it was handed over,
+  // which is why the page still asks the database for them oldest-first.
+  const versions = byNewestFirst(input.versions ?? [], (a, b) => a.version_no - b.version_no);
+  const comments = byNewestFirst(input.comments ?? []);
 
   const details = section("Details", "No details recorded.", {
     rows: rows([
@@ -247,9 +299,14 @@ export function buildStyleDoc(input: ExportInput): StyleDoc {
       ["Status", st.status],
       ["Evergreen", st.evergreen ? "Yes" : null],
       ["Tech pack", st.tech_pack_url],
+      ["WIP", st.wip_url],
       ["Created by", st.created_by],
       ["Created", t(st.created_at)?.slice(0, 10)],
     ]),
+    // The style's general notes ride under the details table (Tess, 2026-08-10:
+    // "include general notes on the style"). Distinct from the Fit section,
+    // which is the running fit story; this is everything else said about the
+    // style as a whole.
     body: st.notes,
   });
 

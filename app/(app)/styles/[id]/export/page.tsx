@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   SAMPLE_ROUNDS,
+  sampleRatingLabel,
   type Style,
   type StyleVersion,
   type StyleSample,
@@ -11,13 +12,37 @@ import {
 import { sortSamples, latestSample } from "@/lib/sampleCycle";
 import { normalizePhotos, PHOTO_SLOTS } from "@/lib/photoSlots";
 import { withRoundPhotos } from "@/lib/styleCover";
+import { readImages, SHOTS_KEY } from "@/lib/imageList";
+import { linkify } from "@/lib/linkify";
 import {
   buildStyleDoc,
   isEmptySection,
   renderDocText,
   type ExportInput,
+  type ExportSample,
 } from "@/lib/styleExport";
 import ExportActions from "./ExportActions";
+
+// A run of text with any URL, email or www. address in it turned into a real
+// link (Tess, 2026-08-10: "any links should be hyperlinked"). Used for every
+// cell value, note and the general-notes paragraph, so a tech pack, a WIP
+// folder or a link pasted into a comment is clickable in the exported page and
+// survives the paste into Google Docs. See lib/linkify.ts.
+function Linked({ text }: { text: string }) {
+  return (
+    <>
+      {linkify(text).map((seg, i) =>
+        seg.kind === "link" ? (
+          <a key={i} href={seg.href} target="_blank" rel="noreferrer">
+            {seg.text}
+          </a>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -103,10 +128,46 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
   );
   const generatedOn = studioToday();
 
+  // Each round carried into the export with its rating turned into a word and
+  // its shots pulled off the round's photo map, so the photographs travel with
+  // the fit notes rather than only in the style-level slot list (Tess,
+  // 2026-08-10). buildStyleDoc reverses this to newest-round-first.
+  const exportSamples: ExportSample[] = rounds.map((s) => {
+    // A round's photographs live under the standard slot keys (model_front,
+    // flat_back, …) with any extra model shots in a separate list. Both belong
+    // in the round's entry — the slot shots labelled by what they are, the extra
+    // shots by their caption — so the pictures sit with the fit notes for the
+    // round they came from (Tess, 2026-08-10).
+    const slots = normalizePhotos(s.photos);
+    return {
+      round: s.round,
+      factory: s.factory,
+      status: s.status,
+      rating: sampleRatingLabel(s.rating) || null,
+      location: s.location,
+      material_supplier: s.material_supplier,
+      material_ordered_date: s.material_ordered_date,
+      material_eta_date: s.material_eta_date,
+      material_received_date: s.material_received_date,
+      material_notes: s.material_notes,
+      submitted_date: s.submitted_date,
+      received_date: s.received_date,
+      fit_notes: s.fit_notes,
+      comments: s.comments,
+      photos: [
+        ...PHOTO_SLOTS.filter((slot) => slots[slot.id]).map((slot) => ({
+          label: slot.label,
+          url: slots[slot.id],
+        })),
+        ...readImages(s.photos, SHOTS_KEY).map((im) => ({ label: im.caption || "Shot", url: im.url })),
+      ],
+    };
+  });
+
   const doc = buildStyleDoc({
     style: st,
     references: refs,
-    samples: rounds,
+    samples: exportSamples,
     // An optional slot only appears in the export if it was actually shot.
     // The export prints "Shot" or "Not shot yet" against every line, and
     // printing "Detail 2 — Not shot yet" on a garment that needs one detail
@@ -150,14 +211,14 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
                       {s.rows.map((r) => (
                         <tr key={r.label}>
                           <th>{r.label}</th>
-                          <td>{r.value}</td>
+                          <td><Linked text={r.value} /></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 )}
 
-                {s.body && <p className="paper-body">{s.body}</p>}
+                {s.body && <p className="paper-body"><Linked text={s.body} /></p>}
 
                 {s.entries.map((e, i) => (
                   <div className="paper-entry" key={`${e.heading}-${i}`}>
@@ -171,7 +232,7 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
                           {e.rows.map((r) => (
                             <tr key={r.label}>
                               <th>{r.label}</th>
-                              <td>{r.value}</td>
+                              <td><Linked text={r.value} /></td>
                             </tr>
                           ))}
                         </tbody>
@@ -180,7 +241,7 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
                     {e.notes.map((n, ni) => (
                       <p className="paper-body" key={ni}>
                         {n.label && <strong>{n.label}: </strong>}
-                        {n.text}
+                        <Linked text={n.text} />
                       </p>
                     ))}
                   </div>

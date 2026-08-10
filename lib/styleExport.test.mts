@@ -126,15 +126,19 @@ test("a trashed reference is still in the record, and says so", () => {
   assert.equal(referenceLabel({ year: "Unknown" }), "Untitled reference");
 });
 
-test("sample rounds keep the order they were handed over in", () => {
+test("sample rounds read newest-first — the latest round leads", () => {
+  // Handed over in cycle order (proto1, proto2); the history flips it so the
+  // most recent round is at the top (Tess, 2026-08-10).
   const cycle = buildStyleDoc(FULL).sections[3];
-  assert.deepEqual(cycle.entries.map((e) => e.heading), ["proto1", "proto2"]);
+  assert.deepEqual(cycle.entries.map((e) => e.heading), ["proto2", "proto1"]);
 });
 
 test("a round prints both legs of the wait and what was said about it", () => {
-  const [proto1] = buildStyleDoc(FULL).sections[3].entries;
+  const proto1 = buildStyleDoc(FULL).sections[3].entries.find((e) => e.heading === "proto1")!;
   assert.equal(proto1.sub, "Sunrise Mills · received");
   const labels = proto1.rows.map((r) => r.label);
+  // Rating and location are absent on this round, so those rows are left out
+  // rather than printed blank.
   assert.deepEqual(labels, [
     "Material supplier",
     "Material ordered",
@@ -143,7 +147,41 @@ test("a round prints both legs of the wait and what was said about it", () => {
   ]);
   assert.deepEqual(proto1.notes, [
     { label: "Fit", text: "Armhole tight." },
-    { label: "Comments", text: "Asked for 1cm at the side seam." },
+    { label: "Notes", text: "Asked for 1cm at the side seam." },
+  ]);
+});
+
+test("a round carries its rating, location, shots and its own notes", () => {
+  const doc = buildStyleDoc({
+    style: { name: "x" },
+    samples: [
+      {
+        round: "proto1",
+        rating: "Workable",
+        location: "With designer",
+        material_notes: "Interlining swapped.",
+        fit_notes: "Sleeve pitch off.",
+        comments: "Sent corrections.",
+        photos: [
+          { label: "Front", url: "https://cdn/f.jpg" },
+          { label: "", url: "https://cdn/b.jpg" },
+        ],
+      },
+    ],
+    generatedOn: "2026-08-04",
+  });
+  const e = doc.sections[3].entries[0];
+  assert.equal(e.rows.find((r) => r.label === "Rating")?.value, "Workable");
+  assert.equal(e.rows.find((r) => r.label === "Current location")?.value, "With designer");
+  // A captioned shot keeps its caption as the label; an uncaptioned one is
+  // numbered so two of them never collide. The URL is the value, so the export
+  // page renders it as a link.
+  assert.equal(e.rows.find((r) => r.label === "Front")?.value, "https://cdn/f.jpg");
+  assert.equal(e.rows.find((r) => r.label === "Photo 2")?.value, "https://cdn/b.jpg");
+  assert.deepEqual(e.notes, [
+    { label: "Fit", text: "Sleeve pitch off." },
+    { label: "Material notes", text: "Interlining swapped." },
+    { label: "Notes", text: "Sent corrections." },
   ]);
 });
 
@@ -155,17 +193,17 @@ test("an unshot photography slot is spelled out rather than left blank", () => {
   ]);
 });
 
-test("versions and comments read oldest-first — a history is read forward", () => {
+test("versions and comments read newest-first — latest news on top", () => {
   const doc = buildStyleDoc(FULL);
-  assert.deepEqual(doc.sections[5].entries.map((e) => e.heading), ["v1", "v2"]);
-  assert.deepEqual(doc.sections[6].entries.map((e) => e.heading), ["gabby@", "kara@"]);
+  assert.deepEqual(doc.sections[5].entries.map((e) => e.heading), ["v2", "v1"]);
+  assert.deepEqual(doc.sections[6].entries.map((e) => e.heading), ["kara@", "gabby@"]);
 });
 
-test("versions written in the same breath still read v1 then v2", () => {
-  // Found live: a seed wrote both versions in one transaction, so they shared a
+test("versions written in the same breath still read v3, v2, v1", () => {
+  // Found live: a seed wrote versions in one transaction, so they shared a
   // `created_at` to the microsecond and the timestamp sort left them in
-  // whatever order the database returned — v2 above v1, a history read
-  // backwards. A version number is the order; it settles the tie.
+  // whatever order the database returned. A version number is the order; it
+  // settles the tie, and newest-first puts the highest number on top.
   const same = "2026-08-04T12:00:00Z";
   const doc = buildStyleDoc({
     style: { name: "x" },
@@ -176,12 +214,13 @@ test("versions written in the same breath still read v1 then v2", () => {
     ],
     generatedOn: "2026-08-04",
   });
-  assert.deepEqual(doc.sections[5].entries.map((e) => e.heading), ["v1", "v2", "v3"]);
+  assert.deepEqual(doc.sections[5].entries.map((e) => e.heading), ["v3", "v2", "v1"]);
 });
 
 test("a real date still outranks the version number", () => {
   // The tiebreak is a tiebreak, not a reordering: if the clock actually
-  // distinguishes two versions, the clock is the history.
+  // distinguishes two versions, the clock is the history. v1 was saved in June,
+  // v2 in January, so newest-first reads v1 above v2.
   const doc = buildStyleDoc({
     style: { name: "x" },
     versions: [
@@ -190,12 +229,13 @@ test("a real date still outranks the version number", () => {
     ],
     generatedOn: "2026-08-04",
   });
-  assert.deepEqual(doc.sections[5].entries.map((e) => e.heading), ["v2", "v1"]);
+  assert.deepEqual(doc.sections[5].entries.map((e) => e.heading), ["v1", "v2"]);
 });
 
-test("comments sharing a timestamp keep the order they were handed over in", () => {
+test("comments sharing a timestamp read newest-handed first", () => {
   // No number decides a comment, so the caller's order is the answer — the
-  // export page asks the database for them oldest-first for exactly this.
+  // export page asks the database for them oldest-first, and newest-first flips
+  // that, so the last one typed in the same minute is on top.
   const same = "2026-08-04T12:00:00Z";
   const doc = buildStyleDoc({
     style: { name: "x" },
@@ -205,7 +245,19 @@ test("comments sharing a timestamp keep the order they were handed over in", () 
     ],
     generatedOn: "2026-08-04",
   });
-  assert.deepEqual(doc.sections[6].entries.map((e) => e.heading), ["gabby@", "kara@"]);
+  assert.deepEqual(doc.sections[6].entries.map((e) => e.heading), ["kara@", "gabby@"]);
+});
+
+test("the WIP folder and general notes are in the record", () => {
+  const doc = buildStyleDoc({
+    style: { name: "x", tech_pack_url: "https://tp", wip_url: "https://wip", notes: "Runs with the SS26 block." },
+    generatedOn: "2026-08-04",
+  });
+  const details = doc.sections[0];
+  assert.equal(details.rows.find((r) => r.label === "Tech pack")?.value, "https://tp");
+  assert.equal(details.rows.find((r) => r.label === "WIP")?.value, "https://wip");
+  // General style notes ride under the details table, distinct from Fit.
+  assert.equal(details.body, "Runs with the SS26 block.");
 });
 
 test("a comment with no author is attributed to nobody rather than dropped", () => {
