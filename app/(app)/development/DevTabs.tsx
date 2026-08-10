@@ -213,7 +213,15 @@ export default function DevTabs({
           // "Any" rather than a blank line: an unset filter is no opinion, and
           // it should read as one.
           { value: "", label: `${label}: any` },
-          ...options.map((o) => ({ value: o.value, label: `${format(o.value)} (${o.count})` })),
+          // No count beside the value. The facet is drawn from every style, not
+          // the current tab, so a rating can exist in Archived while the tab
+          // showing the menu is Sampling — and "Poor (1)" then read as "one poor
+          // sample here" when there were none (Tess, 2026-08-09: "it's saying
+          // there's 1 poor in sampling but that is actually in archived… remove
+          // the numbers next to the filter options"). The cross-tab count line
+          // and the "N more in the other tabs" note still say where things are;
+          // the per-option number only ever misled inside a tab.
+          ...options.map((o) => ({ value: o.value, label: format(o.value) })),
         ]}
       />
     );
