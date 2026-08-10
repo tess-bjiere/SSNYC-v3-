@@ -292,7 +292,7 @@ export const SAMPLE_STATUS_SHORT: Record<SampleStatus, string> = {
   "needs to fit": "Needs fitting",
   "fitting scheduled": "Fitting scheduled",
   "with designer": "With designer",
-  "notes sent to factory": "Notes sent",
+  "notes sent to factory": "Notes sent to factory",
   "approved minor notes": "Approved (notes)",
   approved: "Approved",
   "on hold": "On hold",
