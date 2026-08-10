@@ -499,6 +499,10 @@ export type StyleSample = {
   // Nullable: most rounds never have one, and a status of "fitting scheduled"
   // with no date yet is a legitimate half-answer.
   fitting_date: string | null;
+  // The day corrections were sent back to the factory (Tess, 2026-08-10: "date
+  // notes sent", set by hand). Companion to fitting_date; nullable, and every
+  // round that predates it reads null. See db/p4-notes-sent-date.sql.
+  notes_sent_date: string | null;
   // What was said to or heard from the factory about this submission.
   comments: string | null;
   // How this round actually fitted — kept apart from `comments` so fit history

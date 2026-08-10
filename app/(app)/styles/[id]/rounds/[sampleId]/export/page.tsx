@@ -15,7 +15,6 @@ import { readImages, SHOTS_KEY } from "@/lib/imageList";
 import { readNotes } from "@/lib/imageNotes";
 import {
   buildRoundDoc,
-  renderRoundText,
   missingLine,
   type RoundExportImage,
   type RoundExportInput,
@@ -129,7 +128,6 @@ export default async function RoundExport({
   };
 
   const doc = buildRoundDoc(input);
-  const text = renderRoundText(doc);
 
   return (
     <div className="page">
@@ -139,10 +137,7 @@ export default async function RoundExport({
         </Link>
       </div>
 
-      <RoundExportActions
-        targetId="round-doc"
-        text={text}
-      />
+      <RoundExportActions />
 
       {/* Said out loud, because it is the thing somebody will assume wrongly:
           pressing a button here does not send anything. One clause now that the

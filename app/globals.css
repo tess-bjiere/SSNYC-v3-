@@ -1202,6 +1202,26 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 }
 .paper h1{font-size:22px;line-height:1.12;margin:0 0 3px;font-weight:500;letter-spacing:.01em}
 .paper .paper-sub{margin:0 0 5px;color:#555;font-size:var(--t-sm)}
+/* The sketch + info band at the top of the exported record (Tess, 2026-08-10:
+   "include sketch of style at top with style info and color swatches"). The
+   drawing sits to the left of the title, small — it identifies the style at a
+   glance without eating the first page. It wraps to stack on a narrow window
+   and when printed. */
+.paper-head{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;margin-bottom:6px}
+.paper-sketch{display:flex;gap:8px;flex:0 0 auto}
+.paper-sketch img{height:150px;width:auto;border:1px solid #ddd;background:#f4f4f4;display:block}
+.paper-head-info{flex:1 1 240px;min-width:0}
+.paper-head-info h1{margin-top:0}
+/* One chip per colourway. The dot is the colour where the browser knows the
+   name; the word is always there, so "bone" reads even when it paints nothing. */
+.paper-swatches{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
+.paper-swatch{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-sm);color:#333}
+.paper-swatch-dot{width:13px;height:13px;border:1px solid #bbb;border-radius:2px;background:#fff;flex:0 0 auto}
+/* Tech pack / WIP: a short underlined link with an arrow rather than a raw URL. */
+.paper-arrow{white-space:nowrap}
+@media print{
+  .paper-sketch img{height:130px}
+}
 .paper section{margin-top:22px}
 .paper h2{
   font-size:var(--t-cap);letter-spacing:.16em;text-transform:uppercase;color:#666;

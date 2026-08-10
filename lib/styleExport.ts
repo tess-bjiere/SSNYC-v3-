@@ -75,6 +75,10 @@ export type ExportSample = {
   material_notes?: string | null;
   submitted_date?: string | null;
   received_date?: string | null;
+  // When the fitting is booked, and when corrections went back to the factory
+  // (Tess, 2026-08-10: "add 'fitting date' and 'date notes sent'… on report").
+  fitting_date?: string | null;
+  notes_sent_date?: string | null;
   location?: string | null;
   fit_notes?: string | null;
   comments?: string | null;
@@ -252,6 +256,8 @@ function sampleEntry(s: ExportSample): DocEntry {
       ["Material received", s.material_received_date],
       ["Sample requested", s.submitted_date],
       ["Received back", s.received_date],
+      ["Fitting date", s.fitting_date],
+      ["Notes sent", s.notes_sent_date],
       // The round's shots, each as a row whose value is the URL — the export
       // page renders a URL value as a link (Tess, 2026-08-10: "any links should
       // be hyperlinked"; "include photos w fit notes"). A caption becomes the

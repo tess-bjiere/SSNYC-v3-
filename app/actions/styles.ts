@@ -732,6 +732,9 @@ function sampleFields(form: FormData) {
     // somebody moved the status on, which is exactly when you still want to
     // know when it was fitted.
     fitting_date: s(form, "fitting_date"),
+    // The day corrections were sent back to the factory (Tess, 2026-08-10). Read
+    // the same way as the fitting date, and for the same reason.
+    notes_sent_date: s(form, "notes_sent_date"),
     // Where the physical garment is right now (Tess, 2026-08-05: "add 'current
     // sample location' into sample rounds"). Free text on the way in as well as
     // in the column: the form offers the five places the studio actually sends

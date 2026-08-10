@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 // How one round leaves the app and reaches a factory.
 //
 // Tess, 2026-08-05: "User should have the ability to export notes / images from
@@ -27,64 +26,15 @@ import { useState } from "react";
 // What is left is the pair that actually get used: the rich copy, which carries
 // the headings, rules and images into a mail in one paste, and the print, which
 // is also the way to a PDF.
-export default function RoundExportActions({
-  targetId,
-  text,
-}: {
-  targetId: string;
-  text: string;
-}) {
-  const [said, setSaid] = useState<string | null>(null);
-
-  function flash(msg: string) {
-    setSaid(msg);
-    window.setTimeout(() => setSaid(null), 3200);
-  }
-
-  async function copyRich() {
-    const node = document.getElementById(targetId);
-    if (!node) return flash("Nothing to copy.");
-    const html = node.outerHTML;
-
-    try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([text], { type: "text/plain" }),
-          }),
-        ]);
-        return flash("Copied — paste it into a mail or a Doc.");
-      }
-    } catch {
-      // fall through to the selection copy
-    }
-
-    try {
-      const sel = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(node);
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-      const ok = document.execCommand("copy");
-      sel?.removeAllRanges();
-      return flash(ok ? "Copied — paste it into a mail or a Doc." : "Couldn't copy — select the page and press ⌘C.");
-    } catch {
-      return flash("Couldn't copy — select the page and press ⌘C.");
-    }
-  }
-
+export default function RoundExportActions() {
   return (
     <div className="export-actions no-print">
-      {/* Promoted from a text link to the solid button now that it is the
-          first thing on the row. It was always the one to press. */}
-      <button className="btn sm" type="button" onClick={copyRich}>
-        Copy everything
+      {/* "Copy everything" removed (Tess, 2026-08-10: "remove the 'copy' option
+          on history and notes exports -- only allow pdf or csv"). Save-as-PDF is
+          what leaves this page now. */}
+      <button className="btn sm" type="button" onClick={() => window.print()}>
+        Save as PDF
       </button>
-      <button className="btn link" type="button" onClick={() => window.print()}>
-        Print / Save as PDF
-      </button>
-      {said && <span className="export-said">{said}</span>}
     </div>
   );
 }

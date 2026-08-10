@@ -408,7 +408,16 @@ export default function DevTabs({
                   )}
 
                   <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <StatusBadge s={s.status} />
+                    {/* The status badge only when the tab does not already say it
+                        (Tess, 2026-08-10: "remove in development bc that's
+                        already implied if it's in the sampling folder"). Inside
+                        the Sampling / Production / Archived tabs every card
+                        carries that status, so the badge is noise; on Evergreen,
+                        the Style Library and the cross-cutting views status
+                        varies, so it stays. A style filed under a tab whose key
+                        it does not match — a stray status shown under Sampling —
+                        still shows its real badge, because there it is news. */}
+                    {s.status !== tab && <StatusBadge s={s.status} />}
                     {s.evergreen && <span className="badge ever">Evergreen</span>}
                     {tab === "evergreen" && s.season && <span className="badge">{s.season}</span>}
                     {sum?.readyForFitting && <span className="badge fit">Ready for fitting</span>}

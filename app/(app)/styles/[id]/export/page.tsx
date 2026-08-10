@@ -11,13 +11,12 @@ import {
 } from "@/lib/types";
 import { sortSamples, latestSample } from "@/lib/sampleCycle";
 import { normalizePhotos, PHOTO_SLOTS } from "@/lib/photoSlots";
-import { withRoundPhotos } from "@/lib/styleCover";
+import { withRoundPhotos, styleFaces } from "@/lib/styleCover";
 import { readImages, SHOTS_KEY } from "@/lib/imageList";
 import { linkify } from "@/lib/linkify";
 import {
   buildStyleDoc,
   isEmptySection,
-  renderDocText,
   type ExportInput,
   type ExportSample,
 } from "@/lib/styleExport";
@@ -42,6 +41,25 @@ function Linked({ text }: { text: string }) {
       )}
     </>
   );
+}
+
+// Rows whose value is a folder link the studio opens rather than reads (Tess,
+// 2026-08-10: "instead of including full url for links -- just include techpack
+// and wip underlined with arrows"). A whole Google Sheets URL on the page is
+// noise no one reads; the label already says which link it is, so the value is a
+// short "Open ↗" instead. Every other value still linkifies in full — a photo
+// URL is worth seeing.
+const LINK_ROWS = new Set(["Tech pack", "WIP"]);
+
+function RowValue({ row }: { row: { label: string; value: string } }) {
+  if (LINK_ROWS.has(row.label)) {
+    return (
+      <a className="paper-arrow" href={row.value} target="_blank" rel="noreferrer">
+        Open ↗
+      </a>
+    );
+  }
+  return <Linked text={row.value} />;
 }
 
 export const dynamic = "force-dynamic";
@@ -123,9 +141,17 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
   // PPS, and this is the page that gets sent to people who were not in the
   // room. Anything shot before the move is still in the merged map and still
   // prints. See lib/styleCover.ts.
-  const photos = normalizePhotos(
-    withRoundPhotos(st, latestSample(rounds, SAMPLE_ROUNDS)?.photos).photos
-  );
+  const coverStyle = withRoundPhotos(st, latestSample(rounds, SAMPLE_ROUNDS)?.photos);
+  const photos = normalizePhotos(coverStyle.photos);
+  // The sketch at the top of the record (Tess, 2026-08-10: "include sketch of
+  // style at top with style info"). styleFaces resolves the same face the grid
+  // shows — the drawing first, front and back where both exist.
+  const faces = styleFaces(coverStyle);
+  // A swatch per colourway the style is being made in (Tess, 2026-08-10). The
+  // field is the free text the studio quotes — "black / bone / olive" — so it is
+  // split on those separators; each name doubles as the swatch colour where the
+  // browser knows it, and always shows as a label so an unknown name still reads.
+  const swatches = (st.colors ?? "").split(/[\/,;·|]+/).map((c) => c.trim()).filter(Boolean);
   const generatedOn = studioToday();
 
   // Each round carried into the export with its rating turned into a word and
@@ -152,6 +178,8 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
       material_notes: s.material_notes,
       submitted_date: s.submitted_date,
       received_date: s.received_date,
+      fitting_date: s.fitting_date,
+      notes_sent_date: s.notes_sent_date,
       fit_notes: s.fit_notes,
       comments: s.comments,
       photos: [
@@ -181,8 +209,6 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
     generatedOn,
   });
 
-  const text = renderDocText(doc);
-
   return (
     <div className="page">
       <div className="page-head no-print">
@@ -191,11 +217,31 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
         </Link>
       </div>
 
-      <ExportActions targetId="style-doc" text={text} />
+      <ExportActions />
 
       <article id="style-doc" className="paper">
-        <h1>{doc.title}</h1>
-        {doc.subtitle && <p className="paper-sub">{doc.subtitle}</p>}
+        <header className="paper-head">
+          {(faces.front || faces.back) && (
+            <div className="paper-sketch">
+              {faces.front && <img src={faces.front.url} alt={`${doc.title} — ${faces.front.label}`} />}
+              {faces.back && <img src={faces.back.url} alt={`${doc.title} — ${faces.back.label}`} />}
+            </div>
+          )}
+          <div className="paper-head-info">
+            <h1>{doc.title}</h1>
+            {doc.subtitle && <p className="paper-sub">{doc.subtitle}</p>}
+            {swatches.length > 0 && (
+              <div className="paper-swatches">
+                {swatches.map((c, i) => (
+                  <span className="paper-swatch" key={`${c}-${i}`}>
+                    <span className="paper-swatch-dot" style={{ background: c }} />
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </header>
 
         {doc.sections.map((s) => (
           <section key={s.title}>
@@ -211,7 +257,7 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
                       {s.rows.map((r) => (
                         <tr key={r.label}>
                           <th>{r.label}</th>
-                          <td><Linked text={r.value} /></td>
+                          <td><RowValue row={r} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -232,7 +278,7 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
                           {e.rows.map((r) => (
                             <tr key={r.label}>
                               <th>{r.label}</th>
-                              <td><Linked text={r.value} /></td>
+                              <td><RowValue row={r} /></td>
                             </tr>
                           ))}
                         </tbody>

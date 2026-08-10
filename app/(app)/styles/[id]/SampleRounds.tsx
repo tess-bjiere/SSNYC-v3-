@@ -168,7 +168,15 @@ function Field({
 // in the standard list, so it is added as an extra option at the bottom and
 // reads back verbatim. Nobody's round quietly changes status because the field
 // grew a dropdown. Same pattern as the Round select above.
-function StatusField({ value, fittingDate }: { value?: string | null; fittingDate?: string | null }) {
+function StatusField({
+  value,
+  fittingDate,
+  notesSentDate,
+}: {
+  value?: string | null;
+  fittingDate?: string | null;
+  notesSentDate?: string | null;
+}) {
   const cur = (value ?? "").trim();
   const known = SAMPLE_STATUSES.includes(cur as SampleStatus);
   return (
@@ -211,6 +219,18 @@ function StatusField({ value, fittingDate }: { value?: string | null; fittingDat
           type="date"
           name="fitting_date"
           defaultValue={(fittingDate ?? "").slice(0, 10)}
+        />
+      </label>
+      {/* The day corrections went back to the factory (Tess, 2026-08-10, a new
+          manual field). Always rendered for the same reason as the fitting date:
+          a field that unmounts blanks its column on the next save. */}
+      <label className="field-sub" htmlFor={undefined}>
+        <span>Date notes sent</span>
+        <input
+          className="input sm"
+          type="date"
+          name="notes_sent_date"
+          defaultValue={(notesSentDate ?? "").slice(0, 10)}
         />
       </label>
     </div>
@@ -623,7 +643,7 @@ function RoundForm({
           />
         </div>
         <Field label="Factory" name="factory" defaultValue={s.factory ?? ""} />
-        <StatusField value={s.status} fittingDate={s.fitting_date} />
+        <StatusField value={s.status} fittingDate={s.fitting_date} notesSentDate={s.notes_sent_date} />
       </div>
       <div className="row3">
         <LocationField value={s.location} />
