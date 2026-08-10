@@ -1525,6 +1525,22 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    spotting across the grid (Tess, 2026-08-10). Same green as the "Ready for
    fitting" badge so one colour keeps meaning one thing. */
 .card-status-ok{color:#8fbf9f}
+
+/* Multi-select for the fitting deck (Tess, 2026-08-10). A card becomes a
+   checkbox while picking; the mark sits top-right so it never lands on the
+   ETA/late badge, which is top-left. */
+.card.picking{position:relative;cursor:pointer}
+.card-check{position:absolute;top:8px;right:8px;z-index:3;width:22px;height:22px;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1}
+.card-check.on{background:var(--accent);border-color:var(--accent);color:var(--btnfg)}
+.card.picked{outline:2px solid var(--accent);outline-offset:-1px}
+/* The floating bar that carries the chosen styles to the deck. Centred at the
+   foot of the window so it is reachable without scrolling back up. */
+.pickbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;
+  display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+  box-shadow:var(--shadow);padding:10px 16px}
+.pickbar-count{font-size:var(--t-sm);color:var(--ink)}
 /* Who is making it (Tess, 2026-08-05: "factory should be listed small on
    thumbnial"). Its own line, below the style number and garment, because it
    answers a different question than they do — and small, because the style is
@@ -1859,6 +1875,31 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    page can carry a picture and a mail body cannot. Two up at document width,
    with the URL printed under each one so the version that is pasted, printed
    or forwarded still says where the full-size image lives. */
+/* The fitting deck (Tess, 2026-08-10). Black on white like the other exports,
+   but roomier — one style to a page, its three model shots big. It reuses
+   .paper-shot-frame / .paper-pin so a mark-up lands where it was placed. */
+.deck{background:#fff;color:#111;font-family:"Barlow Semi Condensed",Arial,sans-serif;
+  max-width:1080px;margin:0 auto 60px;border-radius:2px;box-shadow:var(--shadow)}
+.deck-cover{padding:60px 56px;border-bottom:1px solid #e6e6e6}
+.deck-cover h1{font-size:34px;font-weight:500;letter-spacing:.01em;margin:0 0 6px}
+.deck .deck-sub{color:#666;font-size:var(--t-body);margin:0}
+.deck-slide{padding:40px 56px 48px}
+.deck-slide + .deck-slide{border-top:1px solid #eee}
+.deck-slide-head{margin:0 0 22px}
+.deck-slide-head h2{font-size:24px;font-weight:500;letter-spacing:.01em;margin:0 0 3px}
+.deck-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px}
+.deck-shots figure{margin:0;break-inside:avoid}
+.deck-shots img{width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}
+.deck-shots figcaption{margin-top:6px;font-size:var(--t-meta);line-height:1.4;color:#333}
+.deck-detail{display:grid;grid-template-columns:1fr 1fr;gap:16px 44px}
+.deck-note h3{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:#888;margin:0 0 4px}
+.deck-note p{margin:0;white-space:pre-wrap;font-size:var(--t-sm);line-height:1.45}
+.deck-empty{color:#888;font-style:italic;font-size:var(--t-sm)}
+@media print{
+  .deck{box-shadow:none;margin:0;max-width:none;border-radius:0}
+  .deck-cover{break-after:page}
+  .deck-slide{break-before:page;break-inside:avoid;border-top:none}
+}
 .paper-shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
 .paper-shots figure{margin:0;break-inside:avoid}
 

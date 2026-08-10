@@ -137,6 +137,26 @@ export default function DevTabs({
   const [sort, setSort] = useState<string>(DEFAULT_DEV_SORT);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<StyleFilters>(NO_FILTERS);
+  // Multi-select for the fitting deck (Tess, 2026-08-10: "select multiple
+  // products to include into a recent beautiful fitting deck"). Off by default,
+  // so the grid stays a grid of links; turning it on makes a card a checkbox
+  // instead of a link, and a floating bar carries the chosen ids to the deck.
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+
+  function togglePick(id: string) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function stopPicking() {
+    setPicking(false);
+    setPicked(new Set());
+  }
 
   // Each style carried alongside its current-round rating, so the grid can
   // filter by the same traffic light the card shows (Tess, 2026-08-09). The
@@ -294,6 +314,16 @@ export default function DevTabs({
             </button>
           )}
 
+          {/* Turn the grid into a picker to build a fitting deck. Off shows
+              "Select"; on shows "Done" beside the count in the floating bar. */}
+          <button
+            type="button"
+            className={"btn link" + (picking ? " on" : "")}
+            onClick={() => (picking ? stopPicking() : setPicking(true))}
+          >
+            {picking ? "Done" : "Select"}
+          </button>
+
           {/* Both numbers, always, so nothing is hidden quietly. */}
           <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
         </div>
@@ -361,8 +391,22 @@ export default function DevTabs({
             const statusShort = sum && sum.etaState === "landed" ? sampleStatusShort(sum.status) : "";
             const approved = sum?.etaState === "landed" && isApprovedStatus(sum.status);
             const thumb = styleCoverUrl(s);
+            const isPicked = picked.has(s.id);
             return (
-              <Link className="card" key={s.id} href={`/styles/${s.id}`}>
+              <Link
+                className={"card" + (picking ? " picking" : "") + (isPicked ? " picked" : "")}
+                key={s.id}
+                href={`/styles/${s.id}`}
+                // In pick mode a card is a checkbox, not a link: swallow the
+                // navigation and toggle instead, so choosing styles for the deck
+                // never opens one by accident.
+                onClick={picking ? (e) => { e.preventDefault(); togglePick(s.id); } : undefined}
+              >
+                {picking && (
+                  <span className={"card-check" + (isPicked ? " on" : "")} aria-hidden="true">
+                    {isPicked ? "✓" : ""}
+                  </span>
+                )}
                 <div className="imgwrap">
                   {/* The style's own face — sketch, then lay flat, then model
                       shot, then the inherited cover image. Two styles developed
@@ -452,6 +496,26 @@ export default function DevTabs({
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* The floating picker bar — only while choosing and only once something is
+          chosen, so it is never an empty toolbar. It carries the picked ids to
+          the deck in the order they sit in the grid. */}
+      {picking && picked.size > 0 && (
+        <div className="pickbar no-print">
+          <span className="pickbar-count">
+            {picked.size} selected
+          </span>
+          <Link
+            className="btn sm"
+            href={`/fitting-deck?ids=${shown.filter((s) => picked.has(s.id)).map((s) => s.id).join(",")}`}
+          >
+            Fitting deck
+          </Link>
+          <button type="button" className="btn link" onClick={stopPicking}>
+            Cancel
+          </button>
         </div>
       )}
     </>
