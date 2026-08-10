@@ -134,53 +134,25 @@ export const PHOTO_SLOTS: readonly PhotoSlot[] = [
     hint: "Quarter turn from the front, same distance and height as the other two. Arms down, hands still.",
     group: "model",
   },
-  // The lay flats are retired (Tess, 2026-08-10: "remove layflat options for
-  // sample images, it should be 3 model shots (front, back, side) and 3 detail
-  // shots"). Retired, not deleted, and for the reason the whole file runs on: a
-  // style already shot with a lay flat on it still shows it, still reads it,
-  // still exports it — the slot is simply never offered as an empty card again,
-  // and it no longer counts against the shoot. Nothing was migrated. The `flat`
-  // family in lib/styleCover.ts is left alone so an old style whose only picture
-  // is a lay flat still has a face.
-  {
-    id: "flat_front",
-    label: "Lay flat — front",
-    hint: "Garment flat on white, shot from directly above, sleeves and hem squared.",
-    group: "flat",
-    unit: "flat1",
-    optional: true,
-    retired: true,
-  },
-  {
-    id: "flat_back",
-    label: "Lay flat — back",
-    hint: "Same framing as the flat front so the pair can be shown side by side.",
-    group: "flat",
-    unit: "flat1",
-    optional: true,
-    retired: true,
-  },
-  {
-    id: "flat2_front",
-    label: "Second lay flat — front",
-    hint: "The other way this garment lies — open, styled, or the second colourway. Same height and framing as the first flat.",
-    group: "flat",
-    unit: "flat2",
-    optional: true,
-    // Retired, not removed — it stays here so a round that already has one
-    // keeps showing it. It sits in its original position in the order so that
-    // where it does appear, it appears next to the flat it belongs with.
-    retired: true,
-  },
-  {
-    id: "flat2_back",
-    label: "Second lay flat — back",
-    hint: "The back of the second flat, framed exactly like its front.",
-    group: "flat",
-    unit: "flat2",
-    optional: true,
-    retired: true,
-  },
+  // The lay flats are gone (Tess, 2026-08-10: "remove layflat options for sample
+  // images, it should be 3 model shots (front, back, side) and 3 detail shots",
+  // and then, on seeing them still appear where they had been shot: "still too
+  // many image thumbnails for sample uploads … no layflats").
+  //
+  // Removed from the list entirely rather than marked `retired`. Retired keeps a
+  // slot showing wherever it already holds a picture, which is exactly what was
+  // still putting two lay-flat cards on this round — and that is the thing Tess
+  // is asking to stop. Taking the slot out of the list stops it being shown at
+  // all, filled or empty.
+  //
+  // This is the one place the module header's "hides it but does not destroy the
+  // stored URL" is used on purpose. normalizePhotos drops the flat_front /
+  // flat_back / flat2_* keys on read so nothing renders them, but writePhotos
+  // still copies every key it does not recognise, so the URLs stay in the jsonb
+  // untouched: no round was edited, nothing was migrated, and re-adding these
+  // slots later would bring every stored lay flat straight back. The `flat`
+  // family in lib/styleCover.ts is left alone, so a style whose only picture is a
+  // lay flat still has a grid face.
   {
     id: "detail",
     label: "Detail",

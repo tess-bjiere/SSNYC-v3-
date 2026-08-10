@@ -15,11 +15,14 @@ import {
   visibleSlots,
 } from "./photoSlots.ts";
 
-test("the standard defines the front, back and lay-flat shots the plan calls for", () => {
+test("the standard is the three model shots and the details, no lay flats", () => {
   const ids = PHOTO_SLOTS.map((s) => s.id);
   assert.ok(ids.includes("model_front"));
   assert.ok(ids.includes("model_back"));
-  assert.ok(ids.includes("flat_front"));
+  assert.ok(ids.includes("model_side"));
+  // The lay flats were removed from the list entirely (Tess, 2026-08-10).
+  assert.ok(!ids.includes("flat_front"));
+  assert.ok(!ids.includes("flat_back"));
   // Every slot carries a shooting note — a slot without one is not a standard.
   for (const s of PHOTO_SLOTS) {
     assert.ok(s.label.length > 0, `${s.id} has no label`);
@@ -214,13 +217,17 @@ test("writePhotos keeps every key it did not come for", () => {
   // galleries every time somebody replaced a single photograph.
   const raw = {
     model_front: "https://shot/front.jpg",
+    // A lay flat shot before the slot was removed: writePhotos must leave it
+    // exactly where it is, so removing the slot hides it without destroying it.
+    flat_front: "https://shot/oldflat.jpg",
     gallery: [{ id: "g1", url: "https://a/1.jpg" }],
     shots: [{ id: "s1", url: "https://a/2.jpg" }],
     something_a_later_version_added: { keep: true },
   };
-  const next = writePhotos(raw, "flat_front", "https://shot/flat.jpg");
-  assert.equal(next.flat_front, "https://shot/flat.jpg");
+  const next = writePhotos(raw, "detail", "https://shot/d.jpg");
+  assert.equal(next.detail, "https://shot/d.jpg");
   assert.equal(next.model_front, "https://shot/front.jpg");
+  assert.equal(next.flat_front, "https://shot/oldflat.jpg"); // preserved, not deleted
   assert.deepEqual(next.gallery, raw.gallery);
   assert.deepEqual(next.shots, raw.shots);
   assert.deepEqual(next.something_a_later_version_added, { keep: true });
@@ -273,13 +280,16 @@ test("the offered places are three model shots and three details; flats are reti
     "detail_2",
     "detail_3",
   ]);
-  // The lay flats and details 4-8 are still DEFINED — retired, not deleted — so
-  // a round that already holds one of them is unaffected.
+  // Details 4-8 are still DEFINED — retired, not deleted — so a round that
+  // already holds one is unaffected. The lay flats, by contrast, are gone from
+  // the list entirely.
   const ids = PHOTO_SLOTS.map((s) => s.id);
-  for (const id of ["flat_front", "flat_back", "detail_4", "detail_8"]) {
+  for (const id of ["detail_4", "detail_8"]) {
     assert.ok(ids.includes(id), id);
     assert.equal(PHOTO_SLOTS.find((s) => s.id === id)?.retired, true, id);
   }
+  for (const id of ["flat_front", "flat_back", "flat2_front", "flat2_back"])
+    assert.ok(!ids.includes(id), id);
 });
 
 test("the required standard is three model shots and one detail", () => {
@@ -330,30 +340,42 @@ test("details stop at three, and a retired slot with a photo still shows", () =>
   assert.ok(
     visibleSlots(PHOTO_SLOTS, { detail_5: "https://x/d5.jpg" }).map((s) => s.id).includes("detail_5")
   );
-  // And a lay flat shot before the retirement still shows on its round.
+  // A lay flat, by contrast, is removed from the list, so its key never shows —
+  // not even when a round already holds one (Tess, 2026-08-10: "no layflats").
   assert.ok(
-    visibleSlots(PHOTO_SLOTS, { flat_front: "https://x/f.jpg" }).map((s) => s.id).includes("flat_front")
+    !visibleSlots(PHOTO_SLOTS, { flat_front: "https://x/f.jpg" }).map((s) => s.id).includes("flat_front")
   );
 });
 
-test("a second lay flat already shot still shows, and is never offered again", () => {
-  // Tess, 2026-08-05: "second layflat options should just be detial shots".
-  // Nothing is deleted here, only stopped being offered — a round photographed
-  // yesterday keeps every picture on it.
+test("a lay flat key is never shown — the slot is gone, not retired", () => {
+  // Tess, 2026-08-10: "no layflats". Removed from the list, not retired, so
+  // unlike a retired detail a filed lay flat does not reappear on its round.
   const empty = visibleSlots(PHOTO_SLOTS, {}).map((s) => s.id);
-  assert.ok(!empty.includes("flat2_front") && !empty.includes("flat2_back"));
-
-  // And a picture already filed in one is never hidden. Its partner comes back
-  // with it, because a lay flat is a front and a back or it is nothing.
-  const half = visibleSlots(PHOTO_SLOTS, { flat2_front: "https://x/f2.jpg" }).map((s) => s.id);
-  assert.ok(half.includes("flat2_front") && half.includes("flat2_back"));
-
-  // Retiring a slot must not cost the family its one open offer.
+  const filled = visibleSlots(PHOTO_SLOTS, {
+    flat_front: "https://x/f.jpg",
+    flat2_front: "https://x/f2.jpg",
+  }).map((s) => s.id);
+  for (const id of ["flat_front", "flat_back", "flat2_front", "flat2_back"]) {
+    assert.ok(!empty.includes(id), id);
+    assert.ok(!filled.includes(id), id);
+  }
+  // Removing the flats did not cost the detail family its one open offer.
   assert.ok(empty.includes("detail_2"));
 });
 
-test("a retired slot still stores, reads and writes like any other", () => {
-  for (const id of ["flat2_front", "flat2_back"]) {
+test("a removed lay flat is not a slot, is not read, but its URL is preserved", () => {
+  assert.equal(isPhotoSlot("flat_front"), false);
+  // normalizePhotos drops the key on read — nothing renders it.
+  assert.deepEqual(normalizePhotos({ flat_front: "https://x/f.jpg" }), {});
+  // ...but writePhotos, writing some other slot, leaves the flat URL in place,
+  // so the picture is hidden, never destroyed.
+  const next = writePhotos({ flat_front: "https://x/f.jpg" }, "detail", "https://x/d.jpg");
+  assert.equal(next.flat_front, "https://x/f.jpg");
+  assert.equal(next.detail, "https://x/d.jpg");
+});
+
+test("a retired detail still stores, reads and writes like any other", () => {
+  for (const id of ["detail_4", "detail_5"]) {
     assert.equal(isPhotoSlot(id), true, id);
     assert.ok(photoSlot(id));
     assert.equal(normalizePhotos({ [id]: ` https://x/${id}.jpg ` })[id], `https://x/${id}.jpg`);
@@ -387,8 +409,6 @@ test("visibleSlots leaves a list with no optional slots alone", () => {
 
 test("every new slot stores, reads and writes like any other", () => {
   for (const id of [
-    "flat2_front",
-    "flat2_back",
     "detail_3",
     "detail_4",
     "detail_5",

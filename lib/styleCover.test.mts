@@ -121,12 +121,18 @@ test("the jsonb is read defensively, whatever is actually in it", () => {
   assert.equal(styleCoverUrl({ photos: { gallery: [{ id: "g1", url: FLAT }] as unknown as string } }), null);
 });
 
-test("every slot the resolver names is a real slot", () => {
+test("every face slot is a real slot, or a known legacy cover source", () => {
   // The guard against drift: if lib/photoSlots.ts renames a slot and this file
   // is not updated, the profile picture would silently fall through to the
   // reference photograph. Fail here instead.
   const known = new Set(ALL_SLOTS.map((s) => s.id));
-  for (const id of faceSlotIds()) assert.ok(known.has(id), `${id} is not a slot in photoSlots.ts`);
+  // The lay flats were removed from the shoot (Tess, 2026-08-10: "no layflats")
+  // but stay a cover source, so a style whose only picture is an old lay flat
+  // still has a grid face. styleFaces reads them from the raw photo map, not the
+  // slot list, so they are legitimately absent from ALL_SLOTS.
+  const legacyCover = new Set(["flat_front", "flat_back"]);
+  for (const id of faceSlotIds())
+    assert.ok(known.has(id) || legacyCover.has(id), `${id} is neither a slot nor a known legacy cover`);
 });
 
 test("precedence is sketch, then flat, then model — in that order", () => {
