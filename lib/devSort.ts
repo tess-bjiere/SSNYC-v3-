@@ -215,6 +215,13 @@ export type DevSummary = {
    * feeds a class name and a colour is not a place to put arbitrary text.
    */
   rating: string;
+  /**
+   * The current round's fitting status, raw (Tess, 2026-08-10). The card shows
+   * this — turned into a short word — once a sample is in, in place of the date
+   * it arrived. "" when nothing is set. The label map lives in lib/types.ts, so
+   * this module stays dependency-free and hands the raw value up.
+   */
+  status: string;
   /** Sort key for "recent" — updated_at, falling back to created_at. */
   touchedAt: string;
 };
@@ -357,6 +364,7 @@ export function summarize<S extends DevStyleLike, T extends DevSampleLike>(
     attention,
     attentionLabel,
     rating: RATINGS.includes(text(sample?.rating)) ? text(sample?.rating) : "",
+    status: text(sample?.status),
     touchedAt: text(style.updated_at) || text(style.created_at),
   };
 }
@@ -464,10 +472,4 @@ export function sortStyles<S extends DevStyleLike>(
   });
 
   return scored.map((x) => x.style);
-}
-
-/** "2nd Proto · 3 days overdue" — the one line a thumbnail has room for. */
-export function thumbLine(s: DevSummary | null | undefined): string {
-  if (!s) return "";
-  return [s.roundLabel, s.etaLabel].filter(Boolean).join(" · ");
 }

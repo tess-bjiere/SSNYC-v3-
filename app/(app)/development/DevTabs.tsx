@@ -3,12 +3,18 @@
 import Select from "@/app/components/Select";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { styleStatusLabel, sampleRatingLabel, SAMPLE_RATINGS, type Style } from "@/lib/types";
+import {
+  styleStatusLabel,
+  sampleRatingLabel,
+  sampleStatusShort,
+  isApprovedStatus,
+  SAMPLE_RATINGS,
+  type Style,
+} from "@/lib/types";
 import {
   DEV_SORTS,
   DEFAULT_DEV_SORT,
   sortStyles,
-  thumbLine,
   type DevSummary,
 } from "@/lib/devSort";
 import {
@@ -347,7 +353,13 @@ export default function DevTabs({
         <div className="grid">
           {shown.map((s) => {
             const sum = summaries[s.id] ?? null;
-            const line = thumbLine(sum);
+            const roundLabel = sum?.roundLabel ?? "";
+            // A date on the line only when a sample is still out — the ETA/overdue
+            // badge over the picture already carries that. Once the sample is in,
+            // the line reads the fitting status instead of the day it arrived
+            // (Tess, 2026-08-10). See sampleStatusShort.
+            const statusShort = sum && sum.etaState === "landed" ? sampleStatusShort(sum.status) : "";
+            const approved = sum?.etaState === "landed" && isApprovedStatus(sum.status);
             const thumb = styleCoverUrl(s);
             return (
               <Link className="card" key={s.id} href={`/styles/${s.id}`}>
@@ -394,7 +406,7 @@ export default function DevTabs({
                       is read as a judgement, and "nobody has looked yet" is not
                       one. The title carries the word, because a colour on its
                       own is not readable to everyone. */}
-                  {line && (
+                  {(roundLabel || statusShort) && (
                     <div className="card-round">
                       {sum?.rating && (
                         <span
@@ -403,7 +415,17 @@ export default function DevTabs({
                           aria-label={`Latest round rated ${sum.rating}`}
                         />
                       )}
-                      {line}
+                      {/* One text run so the "·" spaces normally inside the
+                          inline-flex row; only the status is coloured. Approved
+                          reads green — the one "done" state, worth spotting
+                          across the grid (Tess, 2026-08-10). */}
+                      <span>
+                        {roundLabel}
+                        {roundLabel && statusShort ? " · " : ""}
+                        {statusShort && (
+                          <span className={approved ? "card-status-ok" : undefined}>{statusShort}</span>
+                        )}
+                      </span>
                     </div>
                   )}
 

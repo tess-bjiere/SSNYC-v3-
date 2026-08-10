@@ -283,6 +283,34 @@ export function sampleStatusLabel(v: string | null | undefined): string {
   return SAMPLE_STATUS_LABELS[key as SampleStatus] ?? key;
 }
 
+// The same statuses, shortened for the development thumbnail (Tess, 2026-08-10:
+// the card's date "In 28 Aug 26" was the day the sample arrived — a past date,
+// not an action — so it reads the fitting status instead once a sample is in).
+// Long captions wrap a card; these are the same word in the fewest characters
+// that still says it. The full labels stay on the profile.
+export const SAMPLE_STATUS_SHORT: Record<SampleStatus, string> = {
+  "needs to fit": "Needs fitting",
+  "fitting scheduled": "Fitting scheduled",
+  "with designer": "With designer",
+  "notes sent to factory": "Notes sent",
+  "approved minor notes": "Approved (notes)",
+  approved: "Approved",
+  "on hold": "On hold",
+  "not moving forward": "Dropped",
+};
+
+export function sampleStatusShort(v: string | null | undefined): string {
+  const key = (v ?? "").trim();
+  if (!key) return "";
+  return SAMPLE_STATUS_SHORT[key as SampleStatus] ?? sampleStatusLabel(key);
+}
+
+/** The two "yes" statuses — the round is approved and closed happily. */
+export function isApprovedStatus(v: string | null | undefined): boolean {
+  const key = (v ?? "").trim();
+  return key === "approved" || key === "approved minor notes";
+}
+
 /**
  * The status as somebody reads it, with the fitting date folded in.
  *

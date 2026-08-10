@@ -1521,6 +1521,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    line box, which at 10.5px is a visible difference. */
 .card-round{font-size:var(--t-meta);color:var(--muted);margin-top:5px;letter-spacing:.02em;
   display:inline-flex;align-items:center;gap:6px}
+/* Approved reads green on the card — the one "done" fitting status, worth
+   spotting across the grid (Tess, 2026-08-10). Same green as the "Ready for
+   fitting" badge so one colour keeps meaning one thing. */
+.card-status-ok{color:#8fbf9f}
 /* Who is making it (Tess, 2026-08-05: "factory should be listed small on
    thumbnial"). Its own line, below the style number and garment, because it
    answers a different question than they do — and small, because the style is

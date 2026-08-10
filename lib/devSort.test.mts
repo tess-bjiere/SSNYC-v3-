@@ -10,7 +10,6 @@ import {
   groupSamples,
   summarizeAll,
   sortStyles,
-  thumbLine,
   type DevSampleLike,
   type DevStyleLike,
   type DevSummary,
@@ -281,6 +280,8 @@ function fake(id: string, over: Partial<DevSummary>): DevSummary {
     readyForFitting: false,
     attention: 0,
     attentionLabel: "",
+    rating: "",
+    status: "",
     touchedAt: "2026-01-01",
     ...over,
   };
@@ -395,21 +396,6 @@ test("sorting does not mutate the list it was handed", () => {
 });
 
 // ---------------------------------------------------------------------------
-// The thumbnail line
-// ---------------------------------------------------------------------------
-
-test("the thumbnail line is the round and the date, and nothing when there is neither", () => {
-  assert.equal(thumbLine(null), "");
-  assert.equal(thumbLine(undefined), "");
-  assert.equal(thumbLine(fake("a", {})), "");
-  assert.equal(thumbLine(fake("a", { roundLabel: "2nd Proto" })), "2nd Proto");
-  assert.equal(
-    thumbLine(fake("a", { roundLabel: "SMS", etaLabel: "3 days overdue" })),
-    "SMS · 3 days overdue"
-  );
-  assert.equal(thumbLine(fake("a", { etaLabel: "ETA 10 Aug 26" })), "ETA 10 Aug 26");
-});
-
 // --- The rating on the thumbnail (Tess, 2026-08-06) -------------------------
 
 test("the summary carries the rating of the round the style is on", () => {
@@ -420,6 +406,20 @@ test("the summary carries the rating of the round the style is on", () => {
   // proto2, not the newest row by accident — the same currentSample rule the
   // round label uses, so the dot and the words describe the same sample.
   assert.equal(s1.rating, "good");
+});
+
+test("the summary carries the current round's fitting status for the card", () => {
+  // The card reads this in place of the arrival date once a sample is in
+  // (Tess, 2026-08-10). It is the status of the round the style is ON — same
+  // currentSample rule as the rating and the round label.
+  const s = sum({ id: "s1", status: "development" }, [
+    { style_id: "s1", round: "proto1", status: "with designer", created_at: "2026-01-01" },
+    { style_id: "s1", round: "proto2", status: "notes sent to factory", received_date: "2026-08-06", created_at: "2026-02-01" },
+  ]);
+  assert.equal(s.status, "notes sent to factory");
+  assert.equal(s.etaState, "landed"); // received, so the card shows the status
+  // No status set reads as empty rather than inventing one.
+  assert.equal(sum({ id: "s2" }, [{ style_id: "s2", round: "proto1", created_at: "2026-01-01" }]).status, "");
 });
 
 test("a late-entered earlier round does not steal the dot", () => {
