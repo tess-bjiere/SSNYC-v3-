@@ -1,4 +1,5 @@
 import Select from "@/app/components/Select";
+import GarmentField from "@/app/components/GarmentField";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +7,6 @@ import {
   STYLE_STATUSES,
   STYLE_STATUS_LABELS,
   STYLE_CATEGORIES,
-  STYLE_GARMENTS,
   SAMPLE_ROUNDS,
   SAMPLE_ROUND_LABELS,
   styleStatusLabel,
@@ -890,14 +890,10 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   are one question asked twice — jersey, in 100% cotton — and a
                   row apart they read as two unrelated facts. */}
               <div className="row3">
+                {/* Garment picklist with an Other escape; a legacy off-list
+                    garment opens into Other with its text kept. */}
                 <div className="field"><label>Garment</label>
-                  <Select
-                    className="select"
-                    name="garment"
-                    aria-label="Garment"
-                    defaultValue={st.garment ?? ""}
-                    options={[{ value: "", label: "—" }, ...STYLE_GARMENTS.map((g) => ({ value: g, label: g }))]}
-                  />
+                  <GarmentField defaultValue={st.garment ?? ""} />
                 </div>
                 <div className="field"><label>Fabric type</label><input className="input" name="fabric" defaultValue={st.fabric ?? ""} placeholder="e.g. jersey" /></div>
                 <div className="field"><label>Material</label><input className="input" name="material" defaultValue={st.material ?? ""} placeholder="e.g. 100% cotton" /></div>

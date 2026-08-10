@@ -1,7 +1,8 @@
 import Select from "@/app/components/Select";
 import Link from "next/link";
 import { createStyle } from "@/app/actions/styles";
-import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES, STYLE_GARMENTS } from "@/lib/types";
+import GarmentField from "@/app/components/GarmentField";
+import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES } from "@/lib/types";
 
 export default function NewStylePage() {
   return (
@@ -58,14 +59,9 @@ export default function NewStylePage() {
           <div className="field">
             <label>Garment</label>
             {/* The specific type under the category (Tess, 2026-08-09: "garment
-                should be a picklist too"). Also optional. */}
-            <Select
-              className="select"
-              name="garment"
-              aria-label="Garment"
-              defaultValue=""
-              options={[{ value: "", label: "—" }, ...STYLE_GARMENTS.map((g) => ({ value: g, label: g }))]}
-            />
+                should be a picklist too"), with an Other escape for the long
+                tail. Optional. */}
+            <GarmentField />
           </div>
           <div className="field">
             <label>Fabric type</label>
