@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   STYLE_STATUSES,
   STYLE_STATUS_LABELS,
+  STYLE_CATEGORIES,
+  STYLE_GARMENTS,
   SAMPLE_ROUNDS,
   SAMPLE_ROUND_LABELS,
   styleStatusLabel,
@@ -870,14 +872,33 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               <div className="row3">
                 <div className="field"><label>Style no.</label><input className="input" name="style_no" defaultValue={st.style_no ?? ""} /></div>
                 <div className="field"><label>Season</label><input className="input" name="season" defaultValue={st.season ?? ""} /></div>
-                <div className="field"><label>Category</label><input className="input" name="category" defaultValue={st.category ?? ""} /></div>
+                {/* Category as a fixed picklist (Tess, 2026-08-09). A stored
+                    value that predates the list still shows on the control, so
+                    an old free-text category is never silently dropped. */}
+                <div className="field"><label>Category</label>
+                  <Select
+                    className="select"
+                    name="category"
+                    aria-label="Category"
+                    defaultValue={st.category ?? ""}
+                    options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+                  />
+                </div>
               </div>
               {/* What it is: the garment, and the two halves of what it is made
                   from. Fabric type and Material sit side by side because they
                   are one question asked twice — jersey, in 100% cotton — and a
                   row apart they read as two unrelated facts. */}
               <div className="row3">
-                <div className="field"><label>Garment</label><input className="input" name="garment" defaultValue={st.garment ?? ""} /></div>
+                <div className="field"><label>Garment</label>
+                  <Select
+                    className="select"
+                    name="garment"
+                    aria-label="Garment"
+                    defaultValue={st.garment ?? ""}
+                    options={[{ value: "", label: "—" }, ...STYLE_GARMENTS.map((g) => ({ value: g, label: g }))]}
+                  />
+                </div>
                 <div className="field"><label>Fabric type</label><input className="input" name="fabric" defaultValue={st.fabric ?? ""} placeholder="e.g. jersey" /></div>
                 <div className="field"><label>Material</label><input className="input" name="material" defaultValue={st.material ?? ""} placeholder="e.g. 100% cotton" /></div>
               </div>

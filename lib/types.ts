@@ -80,6 +80,58 @@ export function styleStatusLabel(s: string | null | undefined): string {
   );
 }
 
+// Category and garment are a two-level hierarchy, and until now both were free
+// text (Tess, 2026-08-09: "jackets and outerwear would fall into same category?
+// how should we organize that"). Category was catching words from two levels —
+// a style filed under "Jacket" and another under "Outerwear" split one real
+// group in two. So category is now a fixed set of broad merchandising buckets,
+// and garment the specific type that sits under one (Tess, 2026-08-09: "garment
+// should be a picklist too").
+//
+// Both are stored as the display string, the way category has always been
+// stored, so a row that already says "Outerwear" keeps resolving with nothing
+// migrated. NEITHER is enforced in the database — they govern what the forms
+// OFFER, not what a column will hold, and lib/components/Select.tsx still shows
+// a stored value that has fallen off the list, so no old row is ever lost or
+// hidden. Adding or retiring a value is an edit to one array here.
+//
+// The lists are a starting point and meant to be trimmed and extended to the
+// studio's real range; keeping them in one place is what makes that a one-line
+// change rather than a hunt through the forms.
+export const STYLE_CATEGORIES = [
+  "Outerwear",
+  "Tops",
+  "Bottoms",
+  "Knitwear",
+  "Dresses",
+  "Activewear",
+  "Swimwear",
+  "Accessories",
+  "Bags",
+] as const;
+export type StyleCategory = (typeof STYLE_CATEGORIES)[number];
+
+// The specific garment under a category — Outerwear holds Jacket, Coat, Anorak;
+// Tops holds Tee, Tank, Shirt; and so on. A flat list on purpose: a style has
+// one garment, and a dependent category→garment cascade is more machinery than
+// the choice needs today. Ordered roughly by category so the menu reads in
+// runs rather than alphabetical scatter.
+export const STYLE_GARMENTS = [
+  // Outerwear
+  "Jacket", "Coat", "Anorak", "Vest",
+  // Tops
+  "Tee", "Tank", "Long Sleeve", "Shirt", "Blouse",
+  // Knitwear
+  "Sweater", "Cardigan", "Hoodie", "Sweatshirt",
+  // Bottoms
+  "Legging", "Pant", "Trouser", "Short", "Jogger", "Skirt",
+  // One-piece
+  "Dress", "Jumpsuit", "Bodysuit", "Bra",
+  // Accessories
+  "Beanie", "Hat", "Scarf", "Sock", "Bag",
+] as const;
+export type StyleGarment = (typeof STYLE_GARMENTS)[number];
+
 export const SAMPLE_ROUNDS = ["proto1", "proto2", "proto3", "sms", "pps1", "pps2", "bulk"] as const;
 export type SampleRound = (typeof SAMPLE_ROUNDS)[number];
 

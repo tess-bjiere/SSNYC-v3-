@@ -1,7 +1,7 @@
 import Select from "@/app/components/Select";
 import Link from "next/link";
 import { createStyle } from "@/app/actions/styles";
-import { STYLE_STATUSES, STYLE_STATUS_LABELS } from "@/lib/types";
+import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES, STYLE_GARMENTS } from "@/lib/types";
 
 export default function NewStylePage() {
   return (
@@ -43,11 +43,29 @@ export default function NewStylePage() {
         <div className="row3">
           <div className="field">
             <label>Category</label>
-            <input className="input" name="category" />
+            {/* Category is a fixed set of broad buckets now, not free text, so a
+                jacket is filed under Outerwear rather than under a category of
+                its own (Tess, 2026-08-09). Optional — the leading "—" leaves it
+                unset. */}
+            <Select
+              className="select"
+              name="category"
+              aria-label="Category"
+              defaultValue=""
+              options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+            />
           </div>
           <div className="field">
             <label>Garment</label>
-            <input className="input" name="garment" />
+            {/* The specific type under the category (Tess, 2026-08-09: "garment
+                should be a picklist too"). Also optional. */}
+            <Select
+              className="select"
+              name="garment"
+              aria-label="Garment"
+              defaultValue=""
+              options={[{ value: "", label: "—" }, ...STYLE_GARMENTS.map((g) => ({ value: g, label: g }))]}
+            />
           </div>
           <div className="field">
             <label>Fabric type</label>
