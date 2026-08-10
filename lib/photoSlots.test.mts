@@ -307,7 +307,7 @@ test("the required standard is three model shots and one detail", () => {
   assert.equal(photoProgressLabel(shot), "");
 });
 
-test("an empty round offers three model shots, one detail and one spare — no flats", () => {
+test("an empty round offers three model shots and three detail slots — no flats", () => {
   const ids = visibleSlots(PHOTO_SLOTS, {}).map((s) => s.id);
   assert.deepEqual(ids, [
     "model_front",
@@ -315,9 +315,10 @@ test("an empty round offers three model shots, one detail and one spare — no f
     "model_side",
     "detail",
     "detail_2",
+    "detail_3",
   ]);
-  // Nothing beyond the next spare detail, and no lay flats at all.
-  for (const id of ["flat_front", "flat_back", "detail_3", "detail_4"])
+  // No lay flats, and nothing past the third detail — details 4-8 are retired.
+  for (const id of ["flat_front", "flat_back", "detail_4", "detail_8"])
     assert.ok(!ids.includes(id), id);
 });
 
@@ -325,7 +326,7 @@ test("details stop at three, and a retired slot with a photo still shows", () =>
   // Fill the first spare: the second is offered, but never a fourth.
   const one = visibleSlots(PHOTO_SLOTS, { detail_2: "https://x/d2.jpg" }).map((s) => s.id);
   assert.ok(one.includes("detail_2"));
-  assert.ok(one.includes("detail_3")); // the one open offer
+  assert.ok(one.includes("detail_3")); // the third live detail slot, always offered
   assert.ok(!one.includes("detail_4")); // retired, never offered
 
   // Both live spares filled — there is no further offer. Detail stops at three.
@@ -384,12 +385,12 @@ test("a retired detail still stores, reads and writes like any other", () => {
 });
 
 test("a picture is never hidden, whatever order the slots were filled in", () => {
-  // Somebody fills the fourth detail first — the card holding it still shows,
-  // and the offer of the next empty one is still exactly one card.
+  // Somebody fills the fourth detail first (a retired slot): the card holding it
+  // still shows, and all three live detail slots are still offered.
   const ids = visibleSlots(PHOTO_SLOTS, { detail_4: "https://x/d4.jpg" }).map((s) => s.id);
   assert.ok(ids.includes("detail_4"));
   assert.ok(ids.includes("detail_2"));
-  assert.ok(!ids.includes("detail_3"));
+  assert.ok(ids.includes("detail_3"));
 });
 
 test("visibleSlots leaves a list with no optional slots alone", () => {

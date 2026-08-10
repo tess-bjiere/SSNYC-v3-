@@ -283,45 +283,39 @@ function unitOf(slot: PhotoSlot): string {
  *
  * Every required slot, always — an empty required card IS the shot list, and
  * hiding it would be hiding the work. Every optional slot that holds a
- * photograph, because a picture that exists is never hidden. And then exactly
- * ONE empty optional unit per family: the next place to put a detail, the next
- * pair of flats.
+ * photograph, because a picture that exists is never hidden. And every LIVE
+ * (non-retired) optional slot that is empty, so all of them are there to fill.
  *
- * The alternative was showing all eleven, and a round with two photographs on
- * it would have been nine blank boxes — which reads as nine things somebody
- * forgot rather than nine things nobody needs. This way the grid grows as it is
- * used: fill the second detail and the third appears, fill the third and the
- * fourth appears, and there is never more than one spare of anything.
+ * This used to offer only one empty optional unit per family, growing the grid
+ * one card at a time — a guard against a round sprouting a dozen blank boxes
+ * back when there were eight details and four pairs of flats. The standard is
+ * now three model shots and three details (Tess, 2026-08-10), so the entire
+ * optional set is at most two empty cards; hiding one of them behind the other
+ * just meant a third detail slot you could not see until the second was full
+ * ("add detail 3 optional image slot"). So all live optional slots show now.
  *
- * A list with no optional slots in it comes back untouched, so the design
- * slots and the filed view pass straight through.
+ * A retired unit is still never offered as an empty card — it appears only where
+ * it already holds a picture. A list with no optional slots in it comes back
+ * untouched, so the design slots and the filed view pass straight through.
  */
 export function visibleSlots(slots: readonly PhotoSlot[], photos: PhotoMap): PhotoSlot[] {
-  // A unit counts as used the moment any one of its slots holds a picture: a
-  // second lay flat with only a front on it is still in play, and hiding its
-  // back would leave the pair permanently half-shot.
+  // A unit counts as used the moment any one of its slots holds a picture.
   const used = new Set<string>();
   for (const s of slots) if (photos[s.id]) used.add(unitOf(s));
 
-  // The first unused optional unit in each family — the one open offer.
-  //
-  // A retired unit is never the offer, and is never allowed to be the reason a
-  // family has no offer: it is skipped here entirely, so the next live unit
-  // behind it takes the place. What it does NOT lose is the line above — if it
-  // holds a picture it is in `used`, and `used` always shows.
-  const offered = new Map<string, string>();
+  // Every unused live optional unit is offered. A retired unit is skipped, so it
+  // shows only through `used` above — where it already holds a photograph.
+  const offered = new Set<string>();
   for (const s of slots) {
     if (!s.optional || s.retired) continue;
     const u = unitOf(s);
-    if (used.has(u)) continue;
-    const family = s.group ?? u;
-    if (!offered.has(family)) offered.set(family, u);
+    if (!used.has(u)) offered.add(u);
   }
 
   return slots.filter((s) => {
     if (!s.optional) return true;
     const u = unitOf(s);
-    return used.has(u) || offered.get(s.group ?? u) === u;
+    return used.has(u) || offered.has(u);
   });
 }
 
