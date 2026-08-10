@@ -1,144 +1,92 @@
-"use client";
-
-import { useRef, useState, useTransition } from "react";
 import { PHOTO_SLOTS, photoProgressLabel, type PhotoMap } from "@/lib/photoSlots";
-import { setStylePhoto, clearStylePhoto } from "@/app/actions/styles";
+import type { ImageNote } from "@/lib/imageNotes";
+import SlotCards from "./SlotCards";
 
-// The photography standard, rendered (P3 #39).
+// Photography that hangs off the style rather than off a round.
 //
-// One card per slot, always all of them, always in standard order — an empty
-// card is the shot list. The card shows its shooting note while empty and gets
-// out of the way once the shot is in, which is the only way the standard
-// actually gets followed on a busy day.
+// Tess, 2026-08-05: "photography should not be it's own section, it needs to
+// live within the specific sample round."
 //
-// Removing a shot is two clicks, never a browser confirm(): "Remove" arms the
-// card and "Remove?" does it. Moving the mouse off the card disarms.
-export default function PhotoSlots({ styleId, photos }: { styleId: string; photos: PhotoMap }) {
-  const [pending, start] = useTransition();
-  const [busySlot, setBusySlot] = useState<string | null>(null);
-  const [armed, setArmed] = useState<string | null>(null);
-  const [urlOpen, setUrlOpen] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  function upload(slotId: string, form: FormData) {
-    setError("");
-    setBusySlot(slotId);
-    start(async () => {
-      const res = await setStylePhoto(styleId, slotId, form);
-      setBusySlot(null);
-      if (!res.ok) setError(res.error || "That didn't save.");
-      else setUrlOpen(null);
-    });
+// This file used to BE that section — the five slots, on the style, with a
+// "3 of 5 shot" heading. The slots have moved to the round card in
+// SampleRounds.tsx, where a photograph sits with the garment it is a
+// photograph of. What is left here does two jobs, and which one it is doing
+// depends entirely on whether the style has been sampled yet.
+//
+// BEFORE THE FIRST ROUND — mode "live". A style with no rounds has no round
+// card, and moving photography onto the rounds without this would have taken
+// photography off the profile completely until somebody logged a proto. That is
+// exactly what happened the first time this shipped, and it is the wrong answer:
+// an inspo style, a carry-over, a garment that already exists and is being
+// re-developed can all be photographed before they are ever sampled. So the
+// full five-slot standard is on the page, open, editable, in the same place it
+// always was. The moment a round exists, the round card takes over as the place
+// to shoot and this block steps back.
+//
+// AFTER THE FIRST ROUND — mode "filed". Every shot already taken and already
+// stored on styles.photos. Nothing was migrated and nothing was deleted: moving
+// those rows would have meant guessing which round each old photograph belonged
+// to, and a guess written into the database is indistinguishable afterwards
+// from a fact. So they stay exactly where they were put, and this block shows
+// them — named, full size, still replaceable, still removable — folded away
+// under the rounds, labelled as what they are.
+//
+// In "filed" mode only the slots that actually hold something are drawn. Five
+// empty cards there would be a second, older place to file a photograph,
+// competing with the round for the same picture. When the last one is removed
+// or re-shot onto a round, the block stops rendering on its own.
+//
+// The style's map is also still read for the profile picture — see
+// withRoundPhotos in lib/styleCover.ts, which lays the newest round over it —
+// so an old lay flat goes on being a style's face until a round supplies a
+// newer one.
+//
+// Server component: no state, and the slot list is computed once where `photos`
+// already lives.
+export default function PhotoSlots({
+  styleId,
+  photos,
+  notes,
+  /** True once the style has at least one sample round. */
+  hasRounds = true,
+}: {
+  styleId: string;
+  photos: PhotoMap;
+  /** Marks and captions written on these pictures, keyed by image URL. */
+  notes?: Record<string, ImageNote>;
+  hasRounds?: boolean;
+}) {
+  if (!hasRounds) {
+    return (
+      <div className="sr-shoot" id="photography">
+        <div className="sr-legend">
+          Sample images <span className="ph-progress">{photoProgressLabel(photos)}</span>
+        </div>
+        <p className="sr-filed-note">
+          Shot against the style for now. Log a sample round and photography moves onto it, so each
+          proto keeps its own pictures — these stay exactly where they are.
+        </p>
+        <SlotCards styleId={styleId} photos={photos} slots={PHOTO_SLOTS} notes={notes} />
+      </div>
+    );
   }
 
-  function onPick(slotId: string, files: FileList | null) {
-    const f = files?.[0];
-    if (!f) return;
-    const fd = new FormData();
-    fd.set("file", f);
-    upload(slotId, fd);
-  }
-
-  function remove(slotId: string) {
-    setArmed(null);
-    setError("");
-    setBusySlot(slotId);
-    start(async () => {
-      await clearStylePhoto(styleId, slotId);
-      setBusySlot(null);
-    });
-  }
+  const filled = PHOTO_SLOTS.filter((slot) => photos[slot.id]);
+  if (filled.length === 0) return null;
 
   return (
-    // Named so the shot list can link straight at it — someone arriving from
-    // /photography wants the slots, not the top of the profile.
-    <div className="section" id="photography">
-      <h3>
-        Photography <span className="ph-progress">{photoProgressLabel(photos)}</span>
-      </h3>
-
-      {error && <div className="ph-error">{error}</div>}
-
-      <div className="ph-grid">
-        {PHOTO_SLOTS.map((slot) => {
-          const src = photos[slot.id];
-          const busy = busySlot === slot.id && pending;
-          return (
-            <div
-              className={"ph-card" + (src ? " filled" : "")}
-              key={slot.id}
-              onMouseLeave={() => setArmed((a) => (a === slot.id ? null : a))}
-            >
-              <div className="ph-frame">
-                {src ? (
-                  <a href={src} target="_blank" rel="noreferrer" title="Open full size">
-                    <img src={src} alt={slot.label} loading="lazy" />
-                  </a>
-                ) : (
-                  <span className="ph-hint">{slot.hint}</span>
-                )}
-                {busy && <span className="ph-busy">Saving…</span>}
-              </div>
-
-              <div className="ph-label">{slot.label}</div>
-
-              <div className="ph-actions">
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  ref={(el) => {
-                    fileRefs.current[slot.id] = el;
-                  }}
-                  onChange={(e) => {
-                    onPick(slot.id, e.target.files);
-                    e.target.value = "";
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn ghost sm"
-                  disabled={busy}
-                  onClick={() => fileRefs.current[slot.id]?.click()}
-                >
-                  {src ? "Replace" : "Upload"}
-                </button>
-                <button
-                  type="button"
-                  className="ph-link"
-                  disabled={busy}
-                  onClick={() => setUrlOpen((u) => (u === slot.id ? null : slot.id))}
-                >
-                  URL
-                </button>
-                {src &&
-                  (armed === slot.id ? (
-                    <button type="button" className="ph-link danger" disabled={busy} onClick={() => remove(slot.id)}>
-                      Remove?
-                    </button>
-                  ) : (
-                    <button type="button" className="ph-link" disabled={busy} onClick={() => setArmed(slot.id)}>
-                      Remove
-                    </button>
-                  ))}
-              </div>
-
-              {urlOpen === slot.id && (
-                <form
-                  className="ph-url"
-                  action={(fd) => upload(slot.id, fd)}
-                >
-                  <input className="input sm" name="url" placeholder="Paste an image URL" autoFocus />
-                  <button className="btn sm" type="submit" disabled={busy}>
-                    Save
-                  </button>
-                </form>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <details className="sr-filed">
+      <summary>
+        Sample images filed on the style{" "}
+        <span className="ph-progress">
+          {filled.length} image{filled.length === 1 ? "" : "s"}
+        </span>
+      </summary>
+      <p className="sr-filed-note">
+        Shot before photography moved onto the sample rounds. Still here, still yours — replace or
+        remove any of them, or re-upload it onto the round it belongs to and this list gets shorter.
+      </p>
+      <SlotCards styleId={styleId} photos={photos} slots={filled} notes={notes} />
+    </details>
   );
 }

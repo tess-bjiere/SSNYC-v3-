@@ -10,6 +10,8 @@ const TODAY: ReadinessInput = {
   anonCanReadPrivateTable: true,
   hasMailer: false,
   hasImagegen: false,
+  hasWipEmail: false,
+  hasWipKey: false,
 };
 
 // Everything done.
@@ -20,6 +22,8 @@ const LIVE: ReadinessInput = {
   anonCanReadPrivateTable: false,
   hasMailer: true,
   hasImagegen: true,
+  hasWipEmail: true,
+  hasWipKey: true,
 };
 
 const by = (input: ReadinessInput, id: string) => {
@@ -151,7 +155,7 @@ test("the check order is fixed, so the page does not reshuffle between loads", (
   const a = readiness(TODAY).map((c) => c.id);
   const b = readiness(LIVE).map((c) => c.id);
   assert.deepEqual(a, b);
-  assert.deepEqual(a, ["google", "bypass", "service-key", "rls", "backups", "mail", "imagegen"]);
+  assert.deepEqual(a, ["google", "bypass", "service-key", "rls", "backups", "mail", "imagegen", "wip"]);
 });
 
 test("the headline counts only blocking checks", () => {
@@ -165,4 +169,44 @@ test("the headline counts only blocking checks", () => {
   assert.match(s.headline, /0 of 5 confirmed, 3 to go/);
   assert.equal(s.outstanding, 3);
   assert.equal(s.toConfirm, 2);
+});
+
+// --- Pull from WIP ---------------------------------------------------------
+//
+// Three states rather than two. The half-set one is the whole reason this check
+// exists: Vercel shows a Google variable, the app says there are no Google
+// credentials, and both are telling the truth about different things.
+
+test("no Google credentials is a thing to set up, not a thing that is broken", () => {
+  const c = by(TODAY, "wip");
+  assert.equal(c.state, "manual");
+  assert.equal(c.blocking, false);
+  // The fallback is the point: the feature is not down, only the fetch.
+  assert.match(c.detail, /pasted in rather than fetched/);
+});
+
+test("an address with no key is called out as half set, and named", () => {
+  const c = by({ ...TODAY, hasWipEmail: true }, "wip");
+  assert.equal(c.state, "blocked");
+  assert.match(c.detail, /GOOGLE_SA_PRIVATE_KEY is not/);
+});
+
+test("a key with no address is the same failure the other way round", () => {
+  const c = by({ ...TODAY, hasWipKey: true }, "wip");
+  assert.equal(c.state, "blocked");
+  assert.match(c.detail, /GOOGLE_SA_EMAIL is not/);
+});
+
+test("both set reads as ready and still mentions sharing the file", () => {
+  const c = by(LIVE, "wip");
+  assert.equal(c.state, "ready");
+  // Configured and permitted are different, and the second one is the failure
+  // people hit next.
+  assert.match(c.action ?? "", /Viewer/);
+});
+
+test("the WIP check never gates the team getting in", () => {
+  for (const input of [TODAY, LIVE, { ...TODAY, hasWipEmail: true }]) {
+    assert.equal(by(input, "wip").blocking, false);
+  }
 });

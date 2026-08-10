@@ -57,7 +57,7 @@ export default async function SharedReference({ params }: { params: Promise<{ id
 
         <div className="detail-info">
           <div className="detail-head">
-            <h2 className="serif">{r.designer || "Reference"}</h2>
+            <h2 className="display">{r.designer || "Reference"}</h2>
             {r.year && <div className="yr">{r.year}</div>}
           </div>
 

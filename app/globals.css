@@ -2,8 +2,31 @@
   --bg:#0c0c0c;
   --panel:#181818;
   --field:#141414;
+
+  /* THREE STEPS OF INK, NOT TWO (Tess, 2026-08-06: "make ui hierarhcy much
+     clearer and more readable thru size, weight, spacing and color").
+
+     The page used to have exactly two text colours, --ink and --muted, and
+     --muted at #b8babf was so close to --ink in luminance that colour was
+     doing almost none of the ranking. A caption, a field label, a factory
+     name and a fit note all landed within a hair of each other, so the only
+     way to find the important thing on a card was to read all of it.
+
+     Now: --ink is what you came to read. --muted is the supporting line that
+     belongs to it. --faint is everything that is only there so the page can
+     be navigated — captions, counts, timestamps, the word "SEASON" above a
+     season. --faint is deliberately dim enough that the eye skips it and
+     still legible enough to be read on purpose.
+
+     --pill is the OLD --muted, kept because two controls used --muted as a
+     BACKGROUND behind --btnfg text (the rating chip and its picker). Dimming
+     a text colour must not dim a chip; they are different jobs and now they
+     are different tokens. */
   --ink:#f3efe8;
-  --muted:#b8babf;
+  --muted:#9ea2a9;
+  --faint:#767a81;
+  --pill:#b8babf;
+
   --line:rgba(236,238,241,.19);
   --hair:rgba(236,238,241,.14);
   --accent:#f3efe8;
@@ -11,6 +34,125 @@
   --chip:#242424;
   --danger:#e0685b;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 34px rgba(0,0,0,.5);
+
+  /* THE TYPE SCALE.
+
+     Before this there were twenty-two distinct font sizes in this file and
+     forty-six things set at 11px, which is not a scale — it is a puddle. The
+     sizes below are the only ones anything should be set in, and they have
+     real gaps between them so a step is visible out of the corner of an eye
+     rather than only under a ruler.
+
+     Tess asked for smaller type as well as clearer type, and those pull in
+     opposite directions below about 10px: shrinking a tracked uppercase
+     caption past 9px makes it unreadable rather than quiet. So the SMALL end
+     barely moves and the LARGE end comes down a long way — 26px titles to
+     20px, the login mark 40px to 32px. The page gets denser, and the ranking
+     gets clearer, because the range is now spent where it buys something. */
+  --t-display:19px;  /* page titles, the style name, the login mark scales up */
+  --t-lead:14px;     /* the one sentence at the top of a thing */
+  --t-title:13px;    /* a card's own name */
+  --t-body:12.5px;   /* prose and field values — the reading size */
+  --t-sm:11.5px;     /* secondary prose, help text */
+  --t-meta:10.5px;   /* sentence-case meta, small controls */
+  --t-cap:9.5px;     /* uppercase tracked captions and labels */
+  --t-micro:9px;     /* the smallest tracked thing on the page */
+
+  /* THE SCALE IS NOW THE ONLY SIZE IN THE FILE (Tess, 2026-08-06: "you can go
+     smaller on text and links").
+
+     When the scale was introduced the tokens were added but the hundred and
+     seventy-two existing font-size declarations were left in raw pixels, so
+     the file had a scale AND a puddle and the puddle was winning — thirty-four
+     things at 12px, thirty-two at 13px, and a scattering of 12.5 / 11.5 / 9.5
+     that existed only because somebody once nudged one thing. Every one of
+     those under 14px has been snapped onto the nearest token. Nothing on the
+     page moved by more than half a pixel, and there is now exactly one place
+     to change a size.
+
+     That is what let the whole scale come down a step here: shrinking a token
+     used to shrink about a third of the page and leave the rest where it was,
+     which is why the previous pass shrank the big end only. Now it shrinks
+     everything that belongs to that rank, together. The floor stays at 9px —
+     a tracked uppercase caption below that stops being readable, and going
+     smaller is not worth an unreadable word. */
+
+  /* WEIGHT IS THE SECOND AXIS. Barlow Semi Condensed carries 300 through 700
+     and the app was using precisely two of them. A caption at 600 and a value
+     at 400 rank themselves without either changing size or colour, which is
+     what lets the sizes come down at all. */
+  --w-cap:600;
+  --w-title:600;
+  --w-body:400;
+  --w-thin:300;
+
+  /* THE CONTROL SCALE (Tess, 2026-08-07: "come up with consistent sizing
+     across small medium large buttons, links, fields, text, check boxes,
+     etc").
+
+     The type scale above fixed the words. This fixes the boxes around them,
+     which were in exactly the state the type was in before: eleven different
+     button paddings, nine different field paddings, and pairs of controls
+     sitting side by side at 6px and 7px because somebody once nudged one of
+     them. Nothing in the file said what a "small button" was, so every new
+     control was a fresh guess.
+
+     Four steps, and a control picks one:
+
+       xs   3 / 7    marks you cannot press — badges, counts, status pills.
+       sm   5 / 10   compact controls in a dense row: chips, ratings, the
+                     inline field beside a button, buttons inside a card.
+       md   8 / 13   the default. Every button and every form field unless
+                     there is a reason. If you are unsure, it is this one.
+       lg  11 / 16   a page-level primary action, used sparingly — a size is
+                     only loud while almost nothing else is wearing it.
+
+     The steps are ~1.6x apart in the vertical, which is what makes two of
+     them distinguishable side by side; 6 against 7 never was.
+
+     PADDING IS THE SCALE, NOT FONT SIZE. A control's type still comes from
+     the type scale by role — a field holds what somebody typed, so it is set
+     at reading size whatever its box; a button holds a label, so it takes the
+     label size for its step. Binding the two together would mean a compact
+     field rendering its contents smaller than the same words elsewhere on the
+     page, which is the thing the type scale was introduced to stop.
+
+     The boxes track the cap height of the label beside them, so a tick and its
+     word look level rather than approximately level. */
+  /* SPACE BETWEEN CONTROLS (Tess, 2026-08-07: "Spacing is funny here with good
+     button too close to words on the left. make sure that all buttons / links
+     throughout the site have plenty of breathing room").
+
+     The control scale above says how big a control is. This says how far apart
+     two of them sit, which was the half nobody had written down: action rows
+     were at 6, 8, 10, 12, 14 and 16px depending on which one you were looking
+     at, and the tightest of them read as one control that had been cut in half.
+
+     Two numbers, because there are two situations. Chips and marks sit in a
+     band and are read as a group, so they can be closer. Buttons and links are
+     each a separate decision and need to look separable — especially the text
+     tier, which has no border to end at, so the only thing saying where one
+     link stops and the next starts is the space.
+
+     Both were raised, not just equalised. Every row in the app is now at least
+     as roomy as the roomiest one was before. */
+  --sp-chip:12px;
+  --sp-ctl:18px;
+
+  --ctl-y-xs:3px;  --ctl-x-xs:7px;
+  --ctl-y-sm:5px;  --ctl-x-sm:10px;
+  --ctl-y-md:8px;  --ctl-x-md:13px;
+  --ctl-y-lg:11px; --ctl-x-lg:16px;
+
+  /* Room for the dropdown chevron: the x-padding of the step, plus the mark. */
+  --ctl-chev-sm:24px;
+  --ctl-chev-md:28px;
+
+  /* Tick boxes. One step under the control they sit in, because a box drawn at
+     the full step reads as a button somebody forgot to label. */
+  --box-sm:13px;
+  --box-md:16px;
+  --box-lg:19px;
 }
 *{box-sizing:border-box}
 html,body{padding:0;margin:0}
@@ -23,42 +165,162 @@ body{
   color-scheme:dark; /* native dropdown popups + scrollbars render dark */
 }
 a{color:inherit;text-decoration:none}
-.serif{font-family:"Instrument Serif",Georgia,serif}
+/* EVERY CONTROL IS BARLOW (Tess, 2026-08-07: "all buttons thru out site should
+   be barlow").
+
+   Form controls do not inherit the page font. That is a browser default, not a
+   choice: a <button> with no font-family set is drawn in the operating system's
+   UI face, so most of this app was Barlow and a handful of chips were San
+   Francisco. Individual rules had been adding font-family:inherit one control
+   at a time — .btn, .tab, .rate, a dozen others — which meant every new button
+   was one line away from being wrong, and .note-chip was the one that was.
+
+   Declared once, here, so it is impossible to miss. The specific rules below
+   still say font-family:inherit in places; they are harmless and left alone. */
+button,input,select,textarea,optgroup{font-family:inherit}
+/* ONE FAMILY, EVERYWHERE (Tess, 2026-08-06: "change all fonts to barlow").
+
+   Instrument Serif was the display face on every page title, the detail
+   modal's heading and the AI summary sentence. It is gone — from this file,
+   from the two export stylesheets and from the font link in app/layout.tsx,
+   so the browser fetches one family instead of two.
+
+   The class it lived on was called .serif, which would now be a lie, so the
+   call sites say .display. The old name is kept as an alias immediately below
+   because nothing in this app is deleted, only stopped being read, and a
+   stray .serif left anywhere still gets the display treatment rather than
+   silently falling back to the body face.
+
+   With no second family to mark a title out, the display treatment has to be
+   made of weight and tracking instead: 600 against the body's 400, and the
+   tracking pulled slightly tight where every caption on the page is tracked
+   wide. That contrast is the hierarchy the serif used to carry. */
+.display,.serif{font-weight:var(--w-title);letter-spacing:-.005em}
 .wrap{max-width:1400px;margin:0 auto;padding:0 26px;transition:padding-right .18s ease}
 /* When the notes drawer is open, push content left so it doesn't cover images */
 body.notes-open .wrap{padding-right:378px}
 @media(max-width:900px){body.notes-open .wrap{padding-right:26px}}
 
 /* Top nav */
-.nav{display:flex;align-items:center;gap:26px;height:64px;border-bottom:1px solid var(--line);padding:0 26px;position:sticky;top:0;background:var(--bg);z-index:20}
-.brand{font-size:22px;letter-spacing:.06em;font-weight:600}
-.nav-links{display:flex;gap:20px;align-items:center}
-.nav-link{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);padding:4px 0;border-bottom:1.5px solid transparent}
-.nav-link:hover{color:var(--ink)}
-.nav-link.active{color:var(--ink);border-color:var(--ink)}
+.nav{display:flex;align-items:center;gap:34px;height:64px;border-bottom:1px solid var(--line);padding:0 26px;position:sticky;top:0;background:var(--bg);z-index:20}
+/* Tess, 2026-08-06: "logo looks off of center vertical point".
+   It was, and centring the boxes could not have fixed it. SSYNC is set in
+   capitals, and a line of capitals does not fill its own line box: the space
+   reserved below the baseline for descenders — the tail of a g or a y — is
+   empty here. Centre that box and you centre the empty space with it, so the
+   letters ride high. The larger the type the more it shows, which is why the
+   18px wordmark read wrong while the 9.5px tabs did not.
+   The fix is to put that unused descender space back ABOVE the letters, as
+   padding, so the box's centre and the letters' centre are the same point. In
+   em rather than px so it stays true if the wordmark is ever resized. The tabs
+   and the group pills below get the same correction at their own size, so the
+   whole bar is aligned on the LETTERS rather than on their containers. */
+.brand{font-size:18px;letter-spacing:.09em;font-weight:600;line-height:1;padding-top:.21em}
+/* Tess, 2026-08-06: "move those sections to the left close to logo but with
+   breathing room" — so the row sits beside the wordmark again rather than
+   centred in the bar. It no longer takes the free space (no flex:1); the gap
+   below is the breathing room, and everything spare falls to the right of the
+   groups where the account cluster already lives. */
+/* Tess, 2026-08-06: "all items in nav should have same vertical center point".
+   These three rows were on align-items:baseline, which was right when the group
+   captions were bare words — a shared baseline is what makes text of different
+   sizes look level. It stopped being right the moment those captions became
+   pills: a pill is a BOX, and sitting a box on a text baseline hangs its lower
+   half below the line the links sit on. Every row in the bar is now centred on
+   one horizontal axis instead, and .nav-link is given the pill's line-height so
+   the two boxes are measured the same way before they are centred. */
+.nav-links{display:flex;gap:38px;align-items:center;margin-left:8px}
+/* Two groups rather than one row of five (Tess, 2026-08-06: "rethinnk
+   navigation / organization ... i just want it to be very clear / logical in
+   that somethings are actual development and somethings are ideation"). The
+   caption is the whole feature: the tabs and the URLs are unchanged, they are
+   just told apart. */
+/* Tess, 2026-08-06: "i like the thought of how the navigation is organized --
+   but it looks messy with it stacked." The caption sits on the line WITH its
+   links now, not above them, so the bar is one row of type again. The grouping
+   is unchanged — only its geometry. */
+.nav-group{display:flex;flex-direction:row;align-items:center;gap:13px}
+/* Tess, 2026-08-06: "make the product and ideation more readable" — it was
+   9px at half opacity in the faintest grey in the palette, which is a
+   watermark, not a word. Same size as the tabs it labels now, one step up the
+   grey scale, full opacity, and less tracking so the letters read as a word
+   rather than as spaced-out capitals. It stays lighter than an active tab, so
+   the hierarchy still says "label, not link". */
+/* Tess, 2026-08-06: "make sure all text in navigation is aligned -- produtc and
+   ideation seem to be sitting lower". They were: a .nav-link is not just its
+   text, it is 4px of padding above and below plus a 1.5px underline rule, and
+   centring that taller box against a bare caption pushes the caption down by
+   half the difference. The label now carries the SAME box — same padding, same
+   transparent rule — so the two sit on one baseline by construction rather
+   than by a nudge that would drift the next time the tabs change. */
+/* Tess, 2026-08-06: "instead of italics can you put those in the a pill shape?"
+   Same job as the italic and the divider before it — say that this word is a
+   label and not a tab — but said with the shape the app already uses for a
+   standing fact: the sibling pills on a style profile. Borrowed rather than
+   invented, so the bar does not introduce a fifth way of drawing a small word.
+   The links keep their square underline; only the captions are rounded, which
+   is the distinction. Baseline alignment still comes from .nav-group, so the
+   padding here cannot push the caption off the row. */
+.nav-grouplabel{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
+  letter-spacing:.1em;color:var(--pill);line-height:1;white-space:nowrap;
+  padding:calc(4px + .21em) 10px 4px;border:1px solid var(--hair);border-radius:999px;
+  background:var(--chip)}
+.nav-grouplinks{display:flex;gap:18px;align-items:center}
+/* Tess, 2026-08-06: "remove underline on select in nav-- just change to white".
+   The rule is gone entirely rather than left transparent, so nothing in the bar
+   is reserving space for a line that will never be drawn. Which tab you are on
+   is now said by colour alone: white for here, faint for elsewhere. Hover lands
+   between the two so it still answers "is this clickable" without impersonating
+   the page you are already on. */
+.nav-link{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding:calc(4px + .21em) 0 4px;line-height:1}
+.nav-link:hover{color:var(--muted)}
+.nav-link.active{color:var(--ink)}
+.nav-link.active:hover{color:var(--ink)}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.who{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.who{font-size:var(--t-cap);color:var(--faint);text-transform:uppercase;letter-spacing:.12em;line-height:1;padding-top:.21em}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--btnfg);border:1px solid var(--accent);border-radius:0;padding:9px 16px;font-family:inherit;font-size:12px;text-transform:uppercase;letter-spacing:.12em;cursor:pointer}
+/* BUTTONS ARE SENTENCE CASE NOW (Tess, 2026-08-06: "please simplify even
+   further to make this as simple and clear and readable as possible … some
+   buttons should just be underlined text").
+
+   Every button in this app was UPPERCASE WITH .12em OF TRACKING, which is a
+   caption treatment borrowed onto things you press. It costs on both counts
+   she names. Readability: capitals remove the ascender-and-descender shape
+   that lets a word be recognised without being spelled out, and tracking pulls
+   the letters far enough apart that a two-word label reads as two objects.
+   Simplicity: it made every control look equally important and equally
+   ceremonial, so "Save" and "Previous samples" shouted at the same volume.
+
+   Sentence case, no tracking. The words are shorter on the line, quieter, and
+   read at a glance — which is what buying back the space was for. */
+/* md is the default. .sm and .lg are the only other two, and they are the
+   control scale — see :root. A button that needs a padding of its own is a
+   button that has found a fifth size, and there is not one. */
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--btnfg);border:1px solid var(--accent);border-radius:0;padding:var(--ctl-y-md) var(--ctl-x-md);font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-title);text-transform:none;letter-spacing:0;cursor:pointer}
 .btn:hover{opacity:.9}
 .btn.ghost{background:none;color:var(--ink);border-color:var(--line)}
 .btn.ghost:hover{border-color:var(--ink)}
-.btn.sm{padding:6px 11px;font-size:11px}
+.btn.sm{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta);gap:6px}
+.btn.lg{padding:var(--ctl-y-lg) var(--ctl-x-lg);font-size:var(--t-body);gap:9px}
 
 /* Sections */
 .page{padding:24px 0 80px}
-.page-head{display:flex;align-items:center;gap:16px;margin-bottom:22px}
-.page-title{font-size:26px;letter-spacing:.02em}
-.count{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em}
+.page-head{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+.page-title{font-size:var(--t-display);letter-spacing:.01em;font-weight:var(--w-title);line-height:1.12}
+.count{color:var(--faint);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em}
 .spacer{flex:1}
 
 /* Tabs */
 .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px}
-.tab{padding:11px 18px;font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
+/* Tabs are words you read to choose between, so they are set like words.
+   Uppercase-tracked they were four grey blocks you had to decode one at a
+   time. The active one is marked by ink and the rule under it, which is
+   plenty — it does not also need to be shouting. */
+.tab{padding:var(--ctl-y-md) 2px;margin-right:22px;font-size:var(--t-sm);font-weight:var(--w-body);text-transform:none;letter-spacing:0;color:var(--faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
 .tab:hover{color:var(--ink)}
 .tab.active{color:var(--ink);border-color:var(--ink)}
-.tab .n{margin-left:8px;font-size:11px;color:var(--muted)}
+.tab .n{margin-left:7px;font-size:var(--t-micro);font-weight:var(--w-body);color:var(--faint)}
 
 /* Grid of cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
@@ -66,12 +328,13 @@ body.notes-open .wrap{padding-right:378px}
 .card .imgwrap{aspect-ratio:3/4;background:#111;overflow:hidden}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
 .card .meta{padding:10px 12px 12px}
-.card .d{font-size:14px;letter-spacing:.01em}
-.card .s{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
+.card .d{font-size:var(--t-title);font-weight:var(--w-title);letter-spacing:0;line-height:1.25}
+.card .s{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
 .card:hover{outline:1.5px solid var(--ink)}
 
 /* Style cards */
-.badge{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.12em;padding:3px 7px;border:1px solid var(--line);color:var(--muted)}
+/* xs — the step for a mark you cannot press. */
+.badge{display:inline-block;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.13em;padding:var(--ctl-y-xs) var(--ctl-x-xs);border:1px solid var(--line);color:var(--faint)}
 .badge.dev{color:#e9c46a;border-color:#e9c46a}
 .badge.prod{color:#8fbf9f;border-color:#8fbf9f}
 .badge.inspo{color:var(--muted)}
@@ -83,7 +346,7 @@ body.notes-open .wrap{padding-right:378px}
 .card .pin{position:absolute;top:8px;right:8px;z-index:2;width:26px;height:26px;border:1px solid var(--line);background:rgba(20,20,20,.9);color:var(--ink);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .12s}
 .card:hover .pin{opacity:1}
 .card .pin:hover{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
-.card-extra{position:absolute;bottom:52px;right:8px;z-index:2;background:rgba(20,20,20,.85);color:var(--ink);font-size:10px;letter-spacing:.06em;padding:2px 6px;border:1px solid var(--line)}
+.card-extra{position:absolute;bottom:52px;right:8px;z-index:2;background:rgba(20,20,20,.85);color:var(--ink);font-size:var(--t-cap);letter-spacing:.06em;padding:2px 6px;border:1px solid var(--line)}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .modal{background:var(--panel);border:1px solid var(--line);max-height:88vh;overflow:auto;box-shadow:var(--shadow)}
@@ -93,37 +356,39 @@ body.notes-open .wrap{padding-right:378px}
 
 /* Add / bulk upload modal */
 .up-body{display:flex;flex-direction:column;gap:16px}
-.up-drop{border:1px dashed var(--line);padding:20px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:border-color .12s,background .12s}
+.up-drop{border:1px dashed var(--line);padding:20px;text-align:center;color:var(--muted);font-size:var(--t-body);cursor:pointer;transition:border-color .12s,background .12s}
 .up-drop:hover,.up-drop.over{border-color:var(--ink);background:rgba(236,238,241,.03)}
 .up-thumbs{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-start}
 .up-thumb{position:relative;width:78px;height:100px;border:1px solid var(--line);overflow:hidden}
 .up-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.up-x{position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;background:rgba(12,12,12,.8);color:var(--ink);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.up-add{display:flex;align-items:center;justify-content:center;width:78px;height:100px;border:1px dashed var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
-.up-note{font-size:12px;color:var(--muted);background:var(--field);border:1px solid var(--line);padding:8px 12px}
+.up-x{position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;background:rgba(12,12,12,.8);color:var(--ink);font-size:var(--t-body);line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.up-add{display:flex;align-items:center;justify-content:center;width:78px;height:100px;border:1px dashed var(--line);color:var(--muted);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.08em}
+.up-note{font-size:var(--t-sm);color:var(--muted);background:var(--field);border:1px solid var(--line);padding:8px 12px}
 .up-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 .up-fields .field{margin-bottom:0}
 .up-fields .up-full{grid-column:1 / -1}
-.up-err{color:var(--danger);font-size:12px}
+.up-err{color:var(--danger);font-size:var(--t-sm)}
 .combo{position:relative}
 .combo-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:8;background:var(--panel);border:1px solid var(--line);max-height:216px;overflow:auto;box-shadow:var(--shadow)}
-.combo-opt{padding:8px 12px;font-size:13px;color:var(--ink);cursor:pointer;border-bottom:1px solid var(--hair)}
+.combo-opt{padding:8px 12px;font-size:var(--t-body);color:var(--ink);cursor:pointer;border-bottom:1px solid var(--hair)}
 .combo-opt:last-child{border-bottom:none}
 .combo-opt:hover,.combo-opt.active{background:var(--accent);color:var(--btnfg)}
 .up-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--panel)}
-.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-ctl);padding:15px 18px;border-bottom:1px solid var(--line);font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
 .modal-body{padding:18px}
 .board-pick{display:flex;flex-direction:column;gap:8px}
 .board-pick .btn{justify-content:flex-start;display:flex;align-items:center}
 .pick-more{margin-left:auto;color:var(--muted)}
-.pick-step{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}
-.pick-back{background:none;border:none;color:var(--muted);font-family:inherit;font-size:11px;text-transform:uppercase;letter-spacing:.13em;cursor:pointer;padding:0}
+.pick-step{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}
+.pick-back{background:none;border:none;color:var(--muted);font-family:inherit;font-size:var(--t-sm);text-transform:none;letter-spacing:0;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
 .pick-back:hover{color:var(--ink)}
 /* add-references bar on the moodboard */
 .addrefs-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:16px}
 .addrefs-bar .input{flex:1;min-width:220px}
-.addrefs-target{display:flex;align-items:center;gap:8px;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
-.addrefs-target .select{width:210px;padding:8px 28px 8px 11px}
+/* References | In development — which shelf the picker is showing. */
+.addrefs-source{display:inline-flex;gap:6px;flex:none}
+.addrefs-target{display:flex;align-items:center;gap:8px;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.addrefs-target .select{width:210px;padding:var(--ctl-y-md) var(--ctl-chev-md) var(--ctl-y-md) var(--ctl-x-md)}
 .detail-grid{display:grid;grid-template-columns:1fr 430px;gap:0}
 .detail-imgs{padding:18px;border-right:1px solid var(--line)}
 .detail-main{background:#111;overflow:hidden}
@@ -136,29 +401,32 @@ body.notes-open .wrap{padding-right:378px}
 .detail-x{position:absolute;top:20px;right:22px;background:none;border:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;padding:0}
 .detail-x:hover{color:var(--ink)}
 .detail-head{margin-bottom:16px;padding-right:28px}
-.detail-head h2{font-size:26px;line-height:1.03;margin:0}
-.detail-head .yr{font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);margin-top:7px}
+.detail-head h2{font-size:var(--t-display);font-weight:var(--w-title);line-height:1.1;letter-spacing:-.005em;margin:0}
+.detail-head .yr{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.16em;color:var(--faint);margin-top:7px}
 .detail-rows{border-top:1px solid var(--line)}
 .detail-row{display:flex;align-items:flex-start;gap:16px;padding:12px 2px;border-bottom:1px solid var(--line)}
-.detail-row .k{width:130px;flex-shrink:0;font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);padding-top:2px}
-.detail-row .v{flex:1;font-size:13px;line-height:1.45;white-space:pre-wrap}
-.detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
-.detail-actions .btn{padding:6px 11px;font-size:10px;letter-spacing:.1em}
+.detail-row .k{width:118px;flex-shrink:0;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding-top:3px}
+.detail-row .v{flex:1;font-size:var(--t-body);line-height:1.5;white-space:pre-wrap}
+.detail-actions{display:flex;flex-wrap:wrap;gap:var(--sp-ctl);margin-top:24px}
+.detail-actions .btn{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta);letter-spacing:0}
 .btn.danger{background:none;color:var(--danger);border-color:var(--danger)}
 .btn.danger:hover{background:var(--danger);color:var(--btnfg)}
-.detail-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--danger);font-size:13px}
-.view-product{margin-top:20px}
-.view-product a{font-size:10px;text-transform:uppercase;letter-spacing:.13em;text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
-.detail-savedby{margin-top:14px;font-size:11px;color:var(--muted)}
+.detail-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--danger);font-size:var(--t-body)}
+/* View product and Share, side by side — the two ways out of a reference, as
+   against the row of things you do TO one. Same type on both so neither reads
+   as the more important exit. */
+.view-product{margin-top:20px;display:flex;align-items:baseline;gap:var(--sp-ctl);flex-wrap:wrap}
+.view-product a{font-size:var(--t-sm);text-transform:none;letter-spacing:0;text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
+.detail-savedby{margin-top:14px;font-size:var(--t-meta);color:var(--muted)}
 .detail-edit{max-height:none}
 .detail-edit .field{margin-bottom:12px}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--btnfg);padding:10px 18px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;z-index:70}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--btnfg);padding:9px 16px;font-size:var(--t-sm);text-transform:none;letter-spacing:0;z-index:70}
 @media(max-width:760px){.detail-grid{grid-template-columns:1fr}.detail-imgs{border-right:none;border-bottom:1px solid var(--line)}}
 
 /* Library filter bar */
 .lib-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
 .lib-tabs{display:flex;border:1px solid var(--line)}
-.lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:8px 16px;cursor:pointer;font-family:inherit;font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+.lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:var(--ctl-y-md) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-sm);text-transform:none;letter-spacing:0}
 .lib-tab:last-child{border-right:none}
 .lib-tab:hover{color:var(--ink)}
 .lib-tab.active{background:var(--accent);color:var(--btnfg)}
@@ -170,35 +438,35 @@ body.notes-open .wrap{padding-right:378px}
 .dens-btn:hover{color:var(--ink)}
 .dens-btn.active{background:var(--accent);color:var(--btnfg)}
 .lib-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
-.lib-filters .select{width:auto;min-width:120px;padding:8px 30px 8px 10px;font-size:13px}
+.lib-filters .select{width:auto;min-width:120px;padding:var(--ctl-y-md) var(--ctl-chev-md) var(--ctl-y-md) var(--ctl-x-md);font-size:var(--t-body)}
 
 /* Moodboard toolbar */
 .mb-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:26px;border-bottom:1px solid var(--line);padding-bottom:16px}
 .mb-toolbar .mb-boardsel{width:230px;flex:0 0 auto;padding:9px 30px 9px 12px}
 .mb-newboard{display:flex;gap:6px}
-.mb-newboard .input{width:130px;padding:7px 10px}
+.mb-newboard .input{width:130px;padding:var(--ctl-y-sm) var(--ctl-x-sm)}
 .mb-spacer{flex:1;min-width:12px}
 .mb-sizes{display:flex;border:1px solid var(--line)}
-.mb-size{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:6px 11px;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:.08em}
+.mb-size{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:6px 11px;cursor:pointer;font-family:inherit;font-size:var(--t-meta);letter-spacing:.08em}
 .mb-size:last-child{border-right:none}
 .mb-size:hover{color:var(--ink)}
 .mb-size.active{background:var(--accent);color:var(--btnfg)}
 
 /* Moodboard sections (matches the original: header + rule, clean image rows) */
 .mb-sec{margin:30px 0}
-.mb-sec-head{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px;min-height:14px}
+.mb-sec-head{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px;min-height:14px}
 .mb-sec-editable{cursor:pointer;display:flex;align-items:baseline;gap:10px}
 .mb-sec-editable:hover{color:var(--ink)}
-.mb-sec-pencil{font-size:9px;opacity:0;transition:opacity .12s}
+.mb-sec-pencil{font-size:var(--t-micro);opacity:0;transition:opacity .12s}
 .mb-sec-editable:hover .mb-sec-pencil{opacity:1}
 .mb-sec-edit{display:flex;gap:6px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px}
-.mb-sec-edit .input{max-width:340px;padding:7px 10px}
+.mb-sec-edit .input{max-width:340px;padding:var(--ctl-y-sm) var(--ctl-x-sm)}
 /* section header row: label on the left, reorder arrows on the right */
 .mb-sec-bar{display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .mb-sec-bar > .mb-sec-head,.mb-sec-bar > .mb-sec-edit{flex:1;min-width:0;border-bottom:none;margin-bottom:0}
 .mb-sec-move{display:flex;gap:2px;padding-bottom:8px;opacity:0;transition:opacity .12s}
 .mb-sec-bar:hover .mb-sec-move{opacity:1}
-.mb-sec-arrow{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:11px;line-height:1;padding:4px 7px;cursor:pointer}
+.mb-sec-arrow{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:var(--t-meta);line-height:1;padding:4px 7px;cursor:pointer}
 .mb-sec-arrow:hover:not(:disabled){background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
 .mb-sec-arrow:disabled{opacity:.28;cursor:default}
 .mb-row{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
@@ -210,81 +478,224 @@ body.notes-open .wrap{padding-right:378px}
 .mb-tile:hover img{outline:1.5px solid var(--ink)}
 .mb-tile.dragging{opacity:.4}
 .mb-tile.over img{outline:2px solid var(--ink);outline-offset:2px}
-.mb-drop-hint{color:var(--muted);font-size:12px;border:1px dashed var(--line);padding:24px 40px}
+.mb-drop-hint{color:var(--muted);font-size:var(--t-sm);border:1px dashed var(--line);padding:24px 40px}
 /* remove-from-board control — top right */
 .mb-del-ctl{position:absolute;right:6px;top:6px;opacity:0;transition:opacity .12s}
 .mb-tile:hover .mb-del-ctl{opacity:1}
-.mb-del-ctl button{background:rgba(12,12,12,.82);border:1px solid var(--hair);color:var(--ink);font-family:inherit;font-size:12px;line-height:1;width:22px;height:22px;cursor:pointer;padding:0}
+.mb-del-ctl button{background:rgba(12,12,12,.82);border:1px solid var(--hair);color:var(--ink);font-family:inherit;font-size:var(--t-sm);line-height:1;width:22px;height:22px;cursor:pointer;padding:0}
 .mb-del-ctl button:hover{background:#8c2b2b;border-color:#8c2b2b;color:#fff}
-.mb-del-ctl .mb-del-confirm{width:auto;height:22px;padding:0 8px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#8c2b2b;border-color:#8c2b2b;color:#fff}
+.mb-del-ctl .mb-del-confirm{width:auto;height:22px;padding:0 8px;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.1em;background:#8c2b2b;border-color:#8c2b2b;color:#fff}
 /* image size scaling (toolbar S/M/L) — sets the base each tile scales against */
 body{--tw:185px;--th:247px}
 body.tiles-sm{--tw:145px;--th:193px}
 body.tiles-lg{--tw:240px;--th:320px}
 
 /* Notes drawer (right side, expand/collapse) */
-.notes-tab{position:fixed;top:50%;transform:translateY(-50%);right:0;z-index:29;writing-mode:vertical-rl;background:var(--accent);color:var(--btnfg);border:none;padding:20px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.18em;cursor:pointer;box-shadow:-4px 0 18px rgba(0,0,0,.5);border-radius:6px 0 0 6px}
+.notes-tab{position:fixed;top:50%;transform:translateY(-50%);right:0;z-index:29;writing-mode:vertical-rl;background:var(--accent);color:var(--btnfg);border:none;padding:18px 10px;font-size:var(--t-sm);font-weight:var(--w-title);text-transform:none;letter-spacing:.02em;cursor:pointer;box-shadow:-4px 0 18px rgba(0,0,0,.5);border-radius:6px 0 0 6px}
 .notes-tab:hover{color:var(--btnfg);padding-right:16px}
 .notes-drawer{position:fixed;top:64px;right:0;height:calc(100vh - 64px);width:340px;background:var(--panel);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .18s ease;z-index:30;display:flex;flex-direction:column}
 .notes-drawer.open{transform:translateX(0);box-shadow:-12px 0 34px rgba(0,0,0,.45)}
-.notes-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted)}
+.notes-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line);font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted)}
 .notes-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
 .notes-close:hover{color:var(--ink)}
 .notes-drawer-body{padding:16px 18px;overflow:auto;flex:1}
 .note{padding:14px 0;border-bottom:1px solid var(--hair)}
 .note-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:5px}
-.note-by{font-size:13px;color:var(--ink)}
-.note-when{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-.note-text{font-size:14px;line-height:1.5}
+.note-by{font-size:var(--t-sm);font-weight:var(--w-title);color:var(--ink);letter-spacing:.01em}
+.note-when{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
+.note-text{font-size:var(--t-body);line-height:1.55}
+/* The way back from a delete (Tess, 2026-08-06: "once i delete i shouldnt
+   still have to see my own cooment"). The comment itself is gone from the
+   column the instant it is deleted — this one quiet strip is all that is left
+   behind, at the top of the drawer, and it can be dismissed. It is not a
+   comment and must not read as one: no author line, no rule under it, a tint
+   of the panel rather than the page. */
+.note-undo{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;padding:8px 10px;border-radius:4px;
+  background:var(--chip);color:var(--muted);
+  font-size:var(--t-sm);line-height:1.3;
+}
+.note-undo .note-act{margin-left:0}
+.note-undo-x{
+  margin-left:auto;background:none;border:none;padding:0 2px;cursor:pointer;
+  color:var(--faint);font:inherit;font-size:14px;line-height:1;
+}
+.note-undo-x:hover{color:var(--ink)}
 .note-replies{margin:10px 0 4px;padding-left:12px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:10px}
-.note-reply .note-by{font-size:12px}
-.note-reply .note-text{font-size:13px}
-.note-edit{margin-left:auto;background:none;border:none;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;padding:0}
+.note-reply .note-by{font-size:var(--t-meta)}
+.note-reply .note-text{font-size:var(--t-sm)}
+.note-edit{margin-left:auto;background:none;border:none;color:var(--muted);font-size:var(--t-sm);text-transform:none;letter-spacing:0;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
 .note-edit:hover{color:var(--ink)}
-.note-edit-form{margin-top:4px}
+.note-edit-form{margin-top:4px;display:flex;flex-direction:column;gap:8px}
+/* Editing your own comment (Tess, 2026-08-05: "make my own comments
+   editable"). Save is a real button because it commits; Cancel is quiet
+   because backing out should not look like an action. */
+.note-edit-row{display:flex;align-items:center;gap:12px}
+.note-edit-row .note-edit{margin-left:0}
+.note-edit-hint{font-size:var(--t-meta);color:var(--muted);line-height:1.4}
+/* Mark received and Edit sit on one line under the text. Both are quiet; the
+   auto margin that used to push a single button right would separate them. */
+.note-acts{display:flex;align-items:center;gap:14px;margin-top:6px}
+.note-acts .note-edit{margin-left:0}
+.note-acts .note-ack{margin-top:0}
 .note-reply-form{display:flex;gap:6px;margin-top:10px}
-.note-reply-form .input{padding:6px 10px;font-size:13px}
+.note-reply-form .input{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
 .note-add{border-top:1px solid var(--line);padding:14px 18px;display:flex;flex-direction:column;gap:8px}
 
 /* Empty state */
-.empty{border:1px dashed var(--line);padding:48px;text-align:center;color:var(--muted);font-size:13px}
+.empty{border:1px dashed var(--line);padding:48px;text-align:center;color:var(--faint);font-size:var(--t-sm)}
 
 /* Forms */
 .field{display:block;margin-bottom:16px}
-.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px}
-.input,.select,.textarea{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:0;padding:10px 12px;font-family:inherit;font-size:14px}
+.field label{display:block;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:6px}
+/* md, like a button, so a field and the button beside it are the same height.
+   The type stays at reading size at every step: a field holds what somebody
+   typed, and the same words must not be smaller here than anywhere else. */
+.input,.select,.textarea{width:100%;background:var(--field);border:1px solid var(--line);color:var(--ink);border-radius:0;padding:var(--ctl-y-md) var(--ctl-x-md);font-family:inherit;font-size:var(--t-body)}
+.input.sm,.select.sm,.textarea.sm{padding:var(--ctl-y-sm) var(--ctl-x-sm)}
+.input.lg,.select.lg,.textarea.lg{padding:var(--ctl-y-lg) var(--ctl-x-lg)}
+.select.sm{padding-right:var(--ctl-chev-sm);background-position:right var(--ctl-x-sm) center}
 .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--ink)}
 .textarea{min-height:90px;resize:vertical}
 /* Custom-styled dropdowns matching the dark theme (no native light-grey control) */
 .select{
   appearance:none;-webkit-appearance:none;-moz-appearance:none;
   background-color:var(--field);
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23b8babf' stroke-width='1.4'/></svg>");
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%239ea2a9' stroke-width='1.4'/></svg>");
   background-repeat:no-repeat;
-  background-position:right 11px center;
+  background-position:right var(--ctl-x-md) center;
   background-size:9px 6px;
-  padding-right:30px;
+  padding-right:var(--ctl-chev-md);
   cursor:pointer;
 }
 .select:hover{border-color:var(--muted)}
 .select option{background:var(--panel);color:var(--ink)}
+
+/* The app's own dropdown (app/components/Select.tsx). The trigger still carries
+   .select, so every width and size modifier written for the native control —
+   .select.sm, .sortbar .select, .lib-filters .select — lands on it unchanged.
+   What is new is the open panel, which the operating system used to draw. */
+.sel{position:relative;display:block;min-width:0}
+.sel-trigger{text-align:left;display:block;min-width:0;line-height:1.35}
+.sel-trigger .sel-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sel-trigger .sel-label.is-placeholder{color:var(--faint)}
+.sel-trigger[aria-expanded="true"]{border-color:var(--ink)}
+.sel.is-disabled{opacity:.55}
+.sel-trigger:disabled{cursor:default}
+/* Carries the value into the form, and carries `required` with it. Invisible
+   but not display:none, or the browser could not point its validation bubble
+   at it. One pixel at the bottom of the field, where the bubble belongs. */
+.sel-value{position:absolute;left:0;right:0;bottom:0;height:1px;width:100%;
+  opacity:0;pointer-events:none;border:none;padding:0;background:none}
+.sel-menu{position:absolute;top:calc(100% + 2px);left:0;min-width:100%;z-index:9;
+  list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line);
+  max-height:264px;overflow:auto;box-shadow:var(--shadow)}
+.sel-opt{padding:8px 12px;font-size:var(--t-body);color:var(--ink);cursor:pointer;
+  border-bottom:1px solid var(--hair);white-space:nowrap}
+.sel-opt:last-child{border-bottom:none}
+.sel-opt.active{background:var(--accent);color:var(--btnfg)}
+/* The one already chosen, when the keyboard is somewhere else: marked, not
+   highlighted, so "where I am" and "what is set" never look like each other. */
+.sel-opt.on:not(.active){color:var(--ink);background:var(--chip)}
+.sel-opt.off{color:var(--faint);cursor:default}
+.sel-opt.off.active{background:none;color:var(--faint)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 
 /* Profile layout */
 .profile{display:grid;grid-template-columns:320px 1fr;gap:32px}
-.profile .cover{aspect-ratio:3/4;background:var(--panel);border:1px solid var(--line);overflow:hidden}
-.profile .cover img{width:100%;height:100%;object-fit:cover}
-.section{margin-bottom:30px}
-.section h3{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);border-bottom:1px solid var(--hair);padding-bottom:8px;margin:0 0 14px}
-.kv{display:flex;gap:8px;font-size:14px;padding:5px 0;border-bottom:1px solid var(--hair)}
-.kv .k{width:120px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;flex-shrink:0}
+.profile .cover{position:relative;aspect-ratio:3/4;background:var(--panel);border:1px solid var(--line);overflow:hidden;margin:0}
+.profile .cover img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* The face of the style — front and back (Tess, 2026-08-05: "the sketch or
+   flat should be the profile picture of the style. You should be able to add
+   front and back images").
+   One frame, always full column width, with the back reached by the arrow in
+   the caption (Tess, 2026-08-05: "profile image should have an arrow to view
+   back as opposed to having it as 2 stacked images"). Both pictures are in the
+   frame from the first paint and only their opacity changes, so nothing loads
+   on the click and nothing about the layout moves when the back arrives. */
+.cover-face{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity .16s ease}
+.cover-face.on{opacity:1}
+/* Which of the three families the picture came from, said quietly, and the way
+   to the other side of it. Without the label a lay flat and a model shot are
+   indistinguishable at thumbnail size, and nobody can tell whether the sketch
+   is still missing. */
+/* Black type straight on the picture, no scrim (Tess, 2026-08-05: "have text
+   on profile image in black with no scrim"). A sketch and a lay flat are both
+   drawn on white, so a dark gradient across the bottom of them was a bar of
+   dirt over the hem — the one part of a drawing people zoom in on. The type is
+   black because the paper is white, and it sits on the picture rather than on
+   a panel over it. */
+.cover-tag{position:absolute;left:0;right:0;bottom:0;padding:8px 10px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.11em;color:#000;
+  background:none}
+/* The arrow. It lives in the caption rather than floating over the middle of
+   the picture, because the picture is the point and a control on top of a
+   sketch hides the part of the sketch it sits on. Same size and colour as the
+   label beside it — it is a quiet offer, not a call to action. */
+.cover-flip{background:none;border:0;padding:0;margin:0;cursor:pointer;
+  font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;
+  opacity:.62;text-decoration:none;white-space:nowrap}
+.cover-flip:hover{opacity:1}
+/* The empty half of the pair is an invitation, not a gap: it jumps to the
+   section that fills it. */
+.cover-blank{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+  padding:12px;text-align:center;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted);text-decoration:none;border:1px dashed var(--hair);box-sizing:border-box}
+.cover-blank:hover{color:var(--ink);border-color:var(--line)}
+
+/* The identity column. Versions moved in here (Tess, 2026-08-05: "i think
+   versions should be it's own section below the status section"), and it was
+   built for the wide main column: three tiles across and two fields to a row
+   do not fit in 320px. Nothing about the component changes — only what it is
+   allowed to assume about its width. */
+.profile-side .img-tiles{grid-template-columns:repeat(2,1fr);gap:10px}
+.profile-side .row,
+.profile-side .row3{grid-template-columns:1fr;gap:10px}
+.profile-side .img-add{gap:10px}
+.profile-side .ver-changes{font-size:var(--t-sm)}
+.profile-side .ver-tile{padding:6px}
+/* SPACING IS THE THIRD AXIS. Sections were 30px apart with 14px under their
+   own heading — a ratio of two to one, which is not enough for the eye to
+   tell "the heading belongs to what follows" from "these two blocks are
+   separate". 38px between, 16px under, and the gap now does the grouping
+   without another rule or box being drawn. */
+.section{margin-bottom:38px}
+.section h3{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);border-bottom:1px solid var(--hair);padding-bottom:8px;margin:0 0 16px}
+.kv{display:flex;gap:8px;font-size:var(--t-body);padding:5px 0;border-bottom:1px solid var(--hair)}
+.kv .k{width:112px;color:var(--faint);font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;flex-shrink:0}
+/* A link sitting in a details row — the tech pack (Tess, 2026-08-05: "techpack
+   link should be viewable in the initial details section"). It reads at the
+   same weight as the value beside it and only underlines on hover, so the row
+   still scans as a fact rather than as a button dropped into a list. */
+.kv-link{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.kv-link:hover{border-bottom-color:var(--ink)}
+/* Details in two columns once there is room (Tess, 2026-08-05: "Make details
+   2 columns on desktop to save space"). The rows are short facts — Style no.,
+   Category, Garment — and a single file of them pushed everything underneath,
+   Reference(s) included, below the fold on a laptop.
+
+   Column-gap only, no row-gap: the hairline under each .kv is the ruling, and
+   a gap between rows would break the two columns into two separate-looking
+   lists. `align-content:start` keeps the shorter column from stretching its
+   rows to match the taller one.
+
+   Below 900px it is a plain block again and the rows stack exactly as before —
+   two columns of 120px labels plus values do not fit a phone. */
+.kv-wide{grid-column:1 / -1}
+@media (min-width:900px){
+  .kv-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;align-content:start}
+}
 .list-item{padding:12px 0;border-bottom:1px solid var(--hair);font-size:14px}
-.list-item .when{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
-.notice{background:var(--panel);border:1px solid var(--line);padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:20px}
+.list-item .when{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.notice{background:var(--panel);border:1px solid var(--line);padding:10px 14px;font-size:var(--t-sm);color:var(--muted);margin-bottom:20px}
 
 /* Trash */
-.trash-note{color:var(--muted);font-size:12px;line-height:1.6;max-width:620px;margin:0 0 20px}
+.trash-note{color:var(--muted);font-size:var(--t-sm);line-height:1.6;max-width:620px;margin:0 0 20px}
 .trash-card{cursor:default}
 .trash-card:hover{outline:none}
 .trash-card .imgwrap{cursor:pointer;opacity:.72;transition:opacity .12s}
@@ -295,36 +706,39 @@ body.tiles-lg{--tw:240px;--th:320px}
 .trash-card .card-extra{top:8px;bottom:auto}
 .trash-when{color:var(--muted);opacity:.8}
 .trash-boards{color:#e9c46a}
-.trash-actions{display:flex;gap:6px;padding:0 12px 12px}
-.trash-actions .btn{flex:1;padding:6px 4px;font-size:10px;letter-spacing:.08em;text-align:center}
+.trash-actions{display:flex;gap:10px;padding:0 12px 12px}
+/* Two buttons sharing a narrow column, so the horizontal padding gives way
+   and the vertical stays on the scale — the height is what makes a row of
+   controls look like one row. */
+.trash-actions .btn{flex:1;padding:var(--ctl-y-sm) 4px;font-size:var(--t-cap);letter-spacing:.08em;text-align:center}
 .trash-danger:hover{color:var(--danger);border-color:var(--danger)}
-.lib-trash-link{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);text-decoration:none;padding:0 4px}
+.lib-trash-link{font-size:var(--t-sm);text-transform:none;letter-spacing:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding:0 4px}
 .lib-trash-link:hover{color:var(--ink)}
 button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inherit}
 
 /* Manage list options — the taxonomy drawer behind every dropdown */
 .lists-drawer{width:420px;z-index:62}
-.lists-help{color:var(--muted);font-size:12px;line-height:1.6;margin:0 0 20px}
+.lists-help{color:var(--muted);font-size:var(--t-sm);line-height:1.6;margin:0 0 20px}
 .lists-group{margin-bottom:26px}
-.lists-group-head{font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);margin-bottom:10px}
-.lists-empty{color:var(--muted);font-size:12px;opacity:.7;margin-bottom:10px}
-.lists-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.lists-chip{display:inline-flex;align-items:center;gap:2px;background:var(--chip);border:1px solid var(--hair);padding:2px 4px 2px 2px;font-size:12px}
+.lists-group-head{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);margin-bottom:10px}
+.lists-empty{color:var(--muted);font-size:var(--t-sm);opacity:.7;margin-bottom:10px}
+.lists-chips{display:flex;flex-wrap:wrap;gap:var(--sp-chip);margin-bottom:10px}
+.lists-chip{display:inline-flex;align-items:center;gap:2px;background:var(--chip);border:1px solid var(--hair);padding:2px 4px 2px 2px;font-size:var(--t-sm)}
 .lists-chip.armed{border-color:var(--danger)}
 .lists-chip-label{padding:0 6px}
-.lists-move{background:none;border:none;color:var(--muted);font-size:11px;line-height:1;padding:3px 2px;cursor:pointer;font-family:inherit}
+.lists-move{background:none;border:none;color:var(--muted);font-size:var(--t-meta);line-height:1;padding:3px 2px;cursor:pointer;font-family:inherit}
 .lists-move:hover:not(:disabled){color:var(--ink)}
 .lists-move:disabled{opacity:.25;cursor:default}
-.lists-x{background:none;border:none;color:var(--muted);font-size:12px;line-height:1;padding:3px 4px;cursor:pointer;font-family:inherit}
+.lists-x{background:none;border:none;color:var(--muted);font-size:var(--t-sm);line-height:1;padding:3px 4px;cursor:pointer;font-family:inherit}
 .lists-x:hover{color:var(--danger)}
-.lists-chip.armed .lists-x{color:var(--danger);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.lists-chip.armed .lists-x{color:var(--danger);font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.08em}
 .lists-add{display:flex;gap:6px}
-.lists-add .input{flex:1;padding:7px 10px;font-size:12px}
+.lists-add .input{flex:1;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
 .lists-close{width:100%;margin-bottom:8px}
 
 /* "In development" tag on a moodboard tile (P3 #42). Sits over the bottom-left
    corner of the image so a glance at a board says what is already being made. */
-.mb-dev-tag{position:absolute;left:0;bottom:0;max-width:100%;background:var(--accent);color:var(--btnfg);font-size:9px;text-transform:uppercase;letter-spacing:.1em;padding:3px 7px;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1}
+.mb-dev-tag{position:absolute;left:0;bottom:0;max-width:100%;background:var(--accent);color:var(--btnfg);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;padding:3px 7px;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1}
 .mb-dev-tag:hover{background:var(--ink)}
 /* An exported board is a client-facing image — internal status never rides along. */
 .exporting .mb-dev-tag{display:none}
@@ -332,29 +746,28 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* Reference ⇄ style link (P3) */
 /* The card's "In development" line sits above the detail rows and borrows their
    k/v column widths so the label lines up with Designer, Year and the rest. */
-.dev-links{display:flex;gap:10px;margin-bottom:14px;font-size:13px}
-.dev-links .k{width:130px;flex:none;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding-top:2px}
+.dev-links{display:flex;gap:10px;margin-bottom:14px;font-size:var(--t-body)}
+.dev-links .k{width:130px;flex:none;color:var(--muted);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.1em;padding-top:2px}
 .dev-links .v{display:flex;flex-wrap:wrap;gap:6px}
-.dev-link{display:inline-block;background:var(--chip);border:1px solid var(--hair);padding:2px 8px;font-size:12px;color:var(--ink);text-decoration:none}
+.dev-link{display:inline-block;background:var(--chip);border:1px solid var(--hair);padding:2px 8px;font-size:var(--t-sm);color:var(--ink);text-decoration:none}
 .dev-link:hover{border-color:var(--ink)}
 
 .dev-panel{margin-top:14px;border:1px solid var(--hair);background:var(--field);padding:14px}
-.dev-empty{color:var(--muted);font-size:12px;line-height:1.6}
+.dev-empty{color:var(--muted);font-size:var(--t-sm);line-height:1.6}
 .dev-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .dev-row{display:flex;align-items:center;gap:8px}
-.dev-row-name{color:var(--ink);text-decoration:none;font-size:13px;border-bottom:1px solid transparent}
+.dev-row-name{color:var(--ink);text-decoration:none;font-size:var(--t-body);border-bottom:1px solid transparent}
 .dev-row-name:hover{border-bottom-color:var(--ink)}
 .dev-new{width:100%;justify-content:center;margin-top:10px}
 /* A quiet rule with a label in it, so the two ways in aren't confusable. */
-.dev-or{display:flex;align-items:center;gap:8px;margin:14px 0 8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+.dev-or{display:flex;align-items:center;gap:8px;margin:14px 0 8px;color:var(--muted);font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em}
 .dev-or::before,.dev-or::after{content:"";flex:1;height:1px;background:var(--hair)}
-.dev-panel .input.sm{padding:7px 10px;font-size:12px}
 .dev-picks{display:flex;flex-direction:column;margin-top:8px;max-height:180px;overflow:auto}
-.dev-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--hair);color:var(--ink);font-family:inherit;font-size:13px;padding:8px 4px;cursor:pointer}
+.dev-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--hair);color:var(--ink);font-family:inherit;font-size:var(--t-body);padding:8px 4px;cursor:pointer}
 .dev-pick:last-child{border-bottom:none}
 .dev-pick:hover:not(:disabled){background:var(--accent);color:var(--btnfg)}
 .dev-pick:disabled{opacity:.5;cursor:default}
-.dev-pick-add{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.dev-pick-add{font-size:var(--t-sm);text-transform:none;letter-spacing:0;color:var(--muted)}
 .dev-pick:hover:not(:disabled) .dev-pick-add{color:var(--btnfg)}
 
 /* "Developed from" on the style profile. */
@@ -363,16 +776,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .devfrom-img{display:block;width:52px;height:66px;flex:none;background:var(--chip);overflow:hidden}
 .devfrom-img img{width:100%;height:100%;object-fit:cover;display:block}
 .devfrom-meta{flex:1;min-width:0}
-.devfrom-meta .d{font-size:13px}
-.devfrom-meta .s{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
+.devfrom-meta .d{font-size:var(--t-body)}
+.devfrom-meta .s{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
 /* A trashed reference is shown, flagged, rather than silently disappearing —
    losing the provenance would be worse than showing a dead link. */
 .devfrom-meta .s.warn{color:var(--danger)}
 
 /* Login */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:26px;text-align:center;padding:24px}
-.login-brand{font-size:40px;letter-spacing:.06em;font-weight:600}
-.login-sub{color:var(--muted);font-size:13px;max-width:340px;line-height:1.6}
+.login-brand{font-size:32px;letter-spacing:.09em;font-weight:600}
+.login-sub{color:var(--faint);font-size:var(--t-sm);max-width:340px;line-height:1.6}
 
 @media(max-width:860px){
   .profile{grid-template-columns:1fr}
@@ -380,7 +793,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 }
 
 /* ---------------------------------------------------------------------------
-   Sample cycle (P3 #40)
+   Sample rounds (P3 #40)
 
    A round is a small card rather than a line, because it now carries two legs:
    the raw material (ordered -> ETA -> in) and the factory (submitted ->
@@ -392,33 +805,146 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-card.material{border-left-color:#c8a06a}
 .sr-card.at_factory{border-left-color:var(--ink)}
 .sr-card.received{border-left-color:var(--hair)}
-.sr-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sr-head strong{font-size:14px}
-.sr-state{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);border:1px solid var(--hair);padding:2px 7px}
+.sr-head{display:flex;align-items:center;gap:var(--sp-chip);flex-wrap:wrap}
+.sr-head strong{font-size:var(--t-title);font-weight:var(--w-title);letter-spacing:0}
+.sr-state{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.13em;color:var(--faint);border:1px solid var(--hair);padding:2px 7px}
 .sr-state.at_factory{color:var(--ink);border-color:var(--line)}
-.sr-state.received{color:var(--muted)}
-.sr-factory{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.sr-state.received{color:var(--faint)}
+.sr-factory{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.12em}
+
+/* How the sample came out (Tess, 2026-08-05: "add a rating to each sample round
+   as good - green, workable - yellow, poor - red").
+
+   The only saturated colour on a round card, and that is the point: everything
+   else in this app is bone on charcoal, so three traffic lights down a column
+   of rounds are readable across a studio. Filled rather than outlined, unlike
+   the state and ETA chips beside it, so the rating cannot be mistaken for
+   another postal state — it is a judgement, and judgements are the loud thing
+   here. The text is the panel colour rather than black so it sits in the same
+   palette as the solid buttons.
+
+   Amber and red are the two the app already uses for "due" and "late"; the
+   green is new and deliberately muted — a sample that came out well is good
+   news, not an alarm. There is no chip for unrated, so a new round says
+   nothing rather than saying grey. */
+.sr-rate{
+  font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;
+  padding:3px 8px;border-radius:2px;color:var(--btnfg);background:var(--pill);font-weight:var(--w-cap);
+}
+.sr-rate.good{background:#6fae7a}
+.sr-rate.workable{background:#e9c46a}
+.sr-rate.poor{background:var(--danger)}
+
+/* The control that sets it. Three answers, three targets, no dropdown — a
+   rating is meant to be given in the second after somebody puts the garment
+   down. The colour lives on the chosen one only, so an unanswered row is quiet
+   and an answered one shows the colour it will carry on the card. */
+.rate-row{display:flex;flex-wrap:wrap;gap:var(--sp-chip)}
+.rate{cursor:pointer}
+.rate input{position:absolute;opacity:0;width:0;height:0}
+.rate span{
+  display:inline-block;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;
+  padding:var(--ctl-y-sm) var(--ctl-x-sm);border:1px solid var(--hair);border-radius:2px;color:var(--muted);
+}
+.rate input:checked + span{color:var(--btnfg);border-color:transparent;background:var(--pill)}
+.rate.rate-good input:checked + span{background:#6fae7a}
+.rate.rate-workable input:checked + span{background:#e9c46a}
+.rate.rate-poor input:checked + span{background:var(--danger)}
+.rate.rate-none input:checked + span{background:none;color:var(--ink);border-color:var(--line)}
+.rate input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .sr-edit{margin-left:auto}
 
 /* The material line only appears when the material leg is being tracked —
    silence is the correct display for a round nobody is tracking fabric on. */
-.sr-material{font-size:12px;color:var(--muted);margin-top:8px}
+.sr-material{font-size:var(--t-sm);color:var(--muted);margin-top:8px}
 .sr-material.due{color:#c8a06a}
 .sr-material.late{color:var(--danger)}
 .sr-material.received{color:var(--muted)}
 
+/* One shape for everything on a round card (Tess, 2026-08-05: "clean this up so
+   all have full title before the notes and spacing makes sense").
+
+   What she was looking at had three different kinds of line on one card: the
+   fabric and the factory's status printed bare with nothing to say what they
+   were, the fit note with its title run inline ahead of it, and the lead times
+   showing as a caption with the value folded into it — "FACTORY LEG 9D" — so the
+   only two lines that read properly were the two dates. The dates won.
+
+   .sr-field is that pattern: a small caption, then the value under it, one
+   rhythm from the fabric at the top to the factory's comments at the bottom.
+   Every value on the card gets a full title now, whether it is one word or a
+   paragraph, so nothing on the card is a line you have to recognise to read.
+
+   .sr-facts is the row the short ones share — the dates and the two lead times
+   sit side by side because they are all one number each and stacking them would
+   have made a column of five two-word lines. It wraps, so a narrow card gets
+   them two-up rather than clipped. */
+.sr-field{margin-top:12px}
+.sr-field .k{display:block;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:4px}
+.sr-field .v{font-size:var(--t-body);line-height:1.55;color:var(--ink)}
+.sr-field .sr-material{margin-top:4px}
+.sr-facts{display:flex;flex-wrap:wrap;gap:12px 26px;margin-top:12px}
+.sr-facts .sr-field{margin-top:0}
+
+/* The written half of the card, set off the same way photography is — the card
+   reads as three bands: what happened, what was said about it, what it looks
+   like. */
+.sr-notes{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
+
+/* Retired with the tidy-up above, kept because other cards may still be using
+   the same vocabulary and a stylesheet is not the place to find out the hard
+   way. Nothing reads .sr-timeline/.sr-step/.sr-lead/.sr-status/.sr-note today. */
 .sr-timeline{display:flex;flex-wrap:wrap;gap:18px;margin-top:10px}
 .sr-step{display:flex;flex-direction:column;gap:2px}
-.sr-step .l{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
-.sr-step .d{font-size:12px}
-.sr-lead{display:flex;gap:14px;margin-top:10px;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
-.sr-status{font-size:13px;margin-top:10px}
-.sr-note{font-size:13px;margin-top:8px;line-height:1.55}
-.sr-note .k{display:inline-block;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-right:8px;vertical-align:1px}
+.sr-step .l{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.sr-step .d{font-size:var(--t-sm)}
+.sr-lead{display:flex;gap:14px;margin-top:10px;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.sr-status{font-size:var(--t-body);margin-top:10px}
+.sr-note{font-size:var(--t-body);margin-top:8px;line-height:1.55}
+.sr-note .k{display:inline-block;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-right:8px;vertical-align:1px}
 .sr-form{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
 .sr-form.add{border-top:none;padding-top:0;margin-top:14px}
-.sr-legend{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:2px 0 10px}
-.sr-today{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:14px}
+.sr-legend{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:2px 0 10px}
+.sr-today{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:14px}
+
+/* Photography, inside the round card (Tess, 2026-08-05: "photography should
+   not be it's own section, it needs to live within the specific sample round").
+
+   A ruled band rather than a nested box: the five slots are already five framed
+   cards, and putting a border around a row of borders makes the round card read
+   as two cards. The hairline above says "new subject, same round" and nothing
+   more. */
+.sr-shoot{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
+
+/* The rounds behind the click.
+
+   Only the latest round is on the page; the rest are one button away and are
+   not mounted until it is pressed, so a style on its sixth round does not build
+   six sets of photo cards nobody asked for. The toggle is set apart by a
+   hairline so it reads as the end of the current round rather than as a control
+   belonging to it. */
+.sr-history{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
+.sr-history-toggle{
+  background:none;border:1px solid var(--hair);color:var(--muted);cursor:pointer;
+  font-family:inherit;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;
+  padding:7px 12px;margin-bottom:14px;
+}
+.sr-history-toggle:hover{color:var(--ink);border-color:var(--line)}
+
+/* Photography filed on the style, before it moved onto the rounds.
+
+   Folded away and quiet on purpose. It is history, not a place to file a new
+   photograph — but it is real work somebody did, so it is legible and its
+   images are the same size as every other image on the page. */
+.sr-filed{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
+.sr-filed > summary{
+  cursor:pointer;color:var(--muted);font-size:var(--t-cap);
+  text-transform:uppercase;letter-spacing:.12em;
+}
+.sr-filed > summary:hover{color:var(--ink)}
+.sr-filed-note{
+  margin:12px 0 14px;font-size:var(--t-sm);line-height:1.55;color:var(--muted);max-width:62ch;
+}
 
 /* The running fit story on the profile. */
 .fitnote{font-size:14px;line-height:1.6;white-space:pre-wrap}
@@ -430,27 +956,158 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    list, and it carries the shooting note so the standard is readable at the
    moment it's being followed rather than in a document nobody opens.
    --------------------------------------------------------------------------- */
-.ph-progress{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-left:10px}
-.ph-error{color:var(--danger);font-size:12px;margin-bottom:10px}
+.ph-progress{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-left:10px}
+.ph-error{color:var(--danger);font-size:var(--t-sm);margin-bottom:10px}
 .ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+/* A front/back pair takes half the row each rather than two thirds of it, so
+   the two drawings are the same size and sit next to each other — the way they
+   are actually compared. Three-up is still the default for the shoot slots. */
+.ph-grid.two{grid-template-columns:repeat(2,1fr)}
 .ph-card{border:1px solid var(--hair);background:var(--field);padding:8px}
 .ph-card.filled{border-color:var(--line)}
 .ph-frame{position:relative;aspect-ratio:3/4;background:var(--chip);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .ph-frame a{display:block;width:100%;height:100%}
+/* The picture is a button now (Tess, 2026-08-05: "when you click into photo you
+   should be able to see comments / text / mark-ups"). Stripped back to nothing
+   so it still looks like a photograph in a frame — the only tell is the cursor,
+   which is the right amount of tell for something the whole frame does. */
+.ph-open{display:block;width:100%;height:100%;padding:0;margin:0;border:none;background:none;cursor:zoom-in}
 .ph-frame img{width:100%;height:100%;object-fit:cover;display:block}
-.ph-hint{font-size:11px;line-height:1.55;color:var(--muted);padding:12px;text-align:center}
-.ph-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(12,12,12,.72);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink)}
-.ph-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:8px}
-.ph-actions{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
-.ph-link{background:none;border:none;padding:0;font-family:inherit;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);cursor:pointer}
+.ph-hint{font-size:var(--t-meta);line-height:1.55;color:var(--muted);padding:12px;text-align:center}
+.ph-busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(12,12,12,.72);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.12em;color:var(--ink)}
+.ph-label{font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:8px}
+/* "Optional" beside a slot name — a shot with a proper named place that is
+   never chased, so a count of six under seven cards explains itself. */
+.ph-opt{margin-left:8px;font-size:var(--t-micro);letter-spacing:.12em;color:var(--muted);border:1px solid var(--hair);padding:1px 5px}
+.ph-actions{display:flex;align-items:center;gap:var(--sp-ctl);margin-top:8px;flex-wrap:wrap}
+/* Same treatment as .btn.link — these were the two places doing the text tier
+   by hand, and they follow it rather than diverge from it. */
+.ph-link{background:none;border:none;padding:0;font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-body);text-transform:none;letter-spacing:0;color:var(--muted);cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 .ph-link:hover:not(:disabled){color:var(--ink)}
 .ph-link.danger{color:var(--danger)}
 .ph-link:disabled{opacity:.5;cursor:default}
 .ph-url{display:flex;gap:6px;margin-top:8px}
-.ph-url .input{flex:1;padding:7px 10px;font-size:12px}
+.ph-url .input{flex:1;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
+
+/* Writing on a photograph (Tess, 2026-08-05) --------------------------------
+   "you should be able to add text comments to each image as well as notate on
+   the images."
+
+   The annotator is a ROW IN THE GRID, not a modal. grid-column:1/-1 makes it
+   span the full width of whichever grid it is dropped into — .ph-grid or
+   .img-tiles, which are both three-column grids with the same gap — so opening
+   the notes on a picture pushes the pictures after it down and shows the big
+   version directly under its own card. Nothing is trapped, nothing overlays the
+   page, the page still scrolls, and no browser dialog is ever involved.
+
+   .ann-stage is the one rule that has to be exactly right: it shrinks to the
+   picture (inline-block around a block img) rather than the picture filling a
+   fixed box. Marks are stored as fractions of the image, so the element a click
+   is measured against has to BE the image. An object-fit frame with letterbox
+   bars either side would put every mark a few percent off, consistently, and
+   the error would only show up on the pictures whose shape differs most from
+   the frame — which is exactly where a fit note matters. */
+.ann{grid-column:1/-1;border:1px solid var(--line);background:var(--panel);padding:14px}
+.ann-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ann-head .l{font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.12em;color:var(--ink)}
+.ann-head .h{font-size:var(--t-sm);color:var(--muted)}
+.ann-head .spacer{flex:1}
+/* Walking the set. Sat with the Done button rather than over the picture: an
+   arrow on top of a photograph is an arrow you have to avoid when the thing you
+   came to do is click the photograph. */
+.ann-nav{display:flex;align-items:center;gap:8px}
+.ann-nav .p{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);min-width:52px;text-align:center}
+/* Drawn as buttons rather than as two more small-caps links (Tess: "there are
+   no arrows in the header showing"). A 10px muted glyph sitting in a row of
+   10px muted glyphs is not a control anybody finds — a bordered box the size of
+   a fingertip is. */
+.ann-nav .ph-link.arrow{width:30px;height:26px;border:1px solid var(--line);font-size:14px;line-height:1;color:var(--ink);display:inline-flex;align-items:center;justify-content:center}
+.ann-nav .ph-link.arrow:hover:not(:disabled){background:var(--chip)}
+.ann-nav .ph-link.arrow:disabled{opacity:.3}
+.ann-head a.ph-link{text-decoration:none}
+.ann-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
+.ann-stagewrap{display:flex;justify-content:center;background:var(--chip);padding:10px}
+.ann-stage{position:relative;display:inline-block;line-height:0;cursor:crosshair}
+.ann-stage img{display:block;max-width:100%;max-height:62vh;width:auto;height:auto}
+/* The mark itself. Centred on its own point, so the number sits where the
+   finger pointed rather than hanging below and to the right of it.
+
+   The disc is translucent (Tess, 2026-08-06: "make circle behind number on
+   marker slightly transparent so can see garment underneath"). A mark points
+   at a seam, a pucker, a placket — a thing about a square centimetre across —
+   and a solid 22px disc centred on it covers the very fault it was put there
+   to indicate. At 68% the number still reads as a number and the cloth is
+   still visible through it, so the pin annotates the picture instead of
+   patching over it. The dark ring stays fully opaque: it is what keeps the
+   pin legible on a white shirt and on a black one, and it sits outside the
+   dot rather than over anything. */
+.ann-pin{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;
+  border:1px solid var(--bg);background:rgba(243,239,232,.68);color:var(--btnfg);
+  font-family:inherit;font-size:var(--t-meta);line-height:1;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;box-shadow:0 0 0 2px rgba(12,12,12,.45)}
+/* The one being edited goes solid as well as red — it is the pin being worked
+   on, so it should be the one thing on the picture that is unambiguous. */
+.ann-pin.on{background:var(--danger);color:var(--ink)}
+/* Hovering firms it up, so anything hidden under a pin is one pointer-move
+   from being read, and pressing it is never a guess. */
+.ann-pin:hover{background:rgba(243,239,232,.95)}
+.ann-pin.ghost{background:transparent;border:1px dashed var(--accent);color:var(--accent);box-shadow:none;pointer-events:none}
+/* FULL SIZE, WITH EVERYTHING STILL ON IT (Tess, 2026-08-05: "comments and
+   markups should be available on full size"). "Full size" used to be a link to
+   the raw file in another tab, which is the one view of a photograph in this
+   tool that carried none of what had been written about it — the marks, the
+   caption and the arrows were all left behind on the page you came from.
+   It is now the same component filling the window: the picture as large as it
+   fits, its marks still on it, its notes still beside it, the arrows still in
+   the header. The original file is still reachable, as "Original file", for
+   downloading and forwarding — which is all the old link was ever good for.
+   Fixed rather than a browser dialog: nothing here traps the page, Escape and
+   Done both back out of it. */
+/* Above the round's full-screen view, which is also a fixed layer at 60. */
+.sr-full .ann.full{z-index:61}
+.ann.full{position:fixed;inset:0;z-index:60;overflow:auto;margin:0;padding:16px 18px;
+  background:var(--bg);border:none}
+.ann.full .ann-body{grid-template-columns:minmax(0,2.1fr) minmax(0,1fr);gap:22px}
+.ann.full .ann-stagewrap{background:none;padding:0}
+.ann.full .ann-stage img{max-height:calc(100vh - 130px)}
+@media(max-width:860px){
+  .ann.full .ann-body{grid-template-columns:minmax(0,1fr)}
+  .ann.full .ann-stage img{max-height:56vh}
+}
+.ann-side{min-width:0}
+.ann-editor .textarea{width:100%;min-height:96px}
+.ann-editor-tools{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+.ann-empty{font-size:var(--t-sm);line-height:1.6;color:var(--muted);margin:0}
+.ann-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+/* The pin row was a single button until 2026-08-06; it is now a row holding a
+   number button and a text span, so that a link inside the note can be a real
+   anchor without nesting <a> in <button>. The look is unchanged. */
+.ann-listrow{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;color:var(--ink)}
+.ann-listnum{flex:none;width:20px;height:20px;border-radius:50%;background:var(--chip);
+  border:1px solid var(--hair);font-family:inherit;color:var(--ink);padding:0;cursor:pointer;
+  font-size:var(--t-cap);display:flex;align-items:center;justify-content:center}
+.ann-listtext{font-size:var(--t-sm);line-height:1.5;color:var(--ink);cursor:pointer;min-width:0;
+  overflow-wrap:anywhere}
+.ann-listrow:hover .ann-listtext{color:var(--accent)}
+/* ...but a link keeps its own colour on hover, so it stays legible as a link
+   rather than melting into the row's hover state. */
+.ann-listtext .linkified{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.ann-listtext .linkified:hover{color:var(--accent)}
+.ann-listtext em{color:var(--muted);font-style:italic}
+.ann-cap{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
+.ann-cap label{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.ann-cap .input{width:100%;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
 
 @media(max-width:860px){
-  .ph-grid{grid-template-columns:repeat(2,1fr)}
+  /* The gallery drops to two columns with the slots, not on its own — the two
+     grids have to stay the same size at every width, not just the widest. */
+  .ph-grid,
+  .img-tiles{grid-template-columns:repeat(2,1fr)}
+  /* The picture and its marks stop being side by side well before the grid
+     does: a photograph squeezed into half of a narrow column is not a
+     photograph you can point at accurately. */
+  .ann-body{grid-template-columns:minmax(0,1fr)}
+  .ann-stage img{max-height:52vh}
 }
 
 /* By-factory view (P3 #41) --------------------------------------------------
@@ -459,29 +1116,29 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    see first. */
 .fx{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:start}
 .fx-tabs{display:flex;flex-direction:column;gap:6px}
-.fx-tab{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 12px;background:var(--panel);
+.fx-tab{display:flex;flex-direction:column;gap:3px;text-align:left;padding:var(--ctl-y-lg) var(--ctl-x-md);background:var(--panel);
   border:1px solid var(--hair);color:var(--ink);cursor:pointer;font:inherit}
 .fx-tab:hover{border-color:var(--line)}
 .fx-tab.active{background:var(--chip);border-color:var(--line)}
-.fx-tab .n{font-size:13px;letter-spacing:.02em}
-.fx-tab .c{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.fx-tab .n{font-size:var(--t-body);font-weight:var(--w-title);letter-spacing:0}
+.fx-tab .c{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.13em}
 .fx-panel{border:1px solid var(--hair);background:var(--panel);padding:16px 18px}
 .fx-panel-head{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
-.fx-panel-head h3{font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.fx-panel-head h3{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .fx-rows{display:flex;flex-direction:column}
 .fx-row{display:grid;grid-template-columns:1.4fr 1fr 1.2fr 1fr;gap:14px;align-items:center;
   padding:12px 0;border-top:1px solid var(--hair)}
 .fx-row:first-child{border-top:0}
 .fx-name{display:flex;flex-direction:column;gap:2px;min-width:0}
-.fx-name a{color:var(--ink);text-decoration:none;font-size:14px}
+.fx-name a{color:var(--ink);text-decoration:none;font-size:var(--t-title);font-weight:var(--w-title)}
 .fx-name a:hover{text-decoration:underline}
-.fx-no{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
-.fx-round{display:flex;align-items:center;gap:8px;font-size:13px}
-.fx-dates{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--ink)}
-.fx-dates .k{color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-size:10px;margin-right:4px}
+.fx-no{font-size:var(--t-micro);color:var(--faint);letter-spacing:.13em;text-transform:uppercase}
+.fx-round{display:flex;align-items:center;gap:8px;font-size:var(--t-sm)}
+.fx-dates{display:flex;flex-wrap:wrap;gap:10px;font-size:var(--t-meta);color:var(--ink)}
+.fx-dates .k{color:var(--faint);text-transform:uppercase;letter-spacing:.13em;font-size:var(--t-micro);font-weight:var(--w-cap);margin-right:4px}
 .fx-dates .dim{color:var(--muted)}
 .fx-out{color:var(--muted)}
-.fx-mat{font-size:12px;color:var(--muted);text-align:right}
+.fx-mat{font-size:var(--t-meta);color:var(--faint);text-align:right}
 .fx-matlabel.late{color:var(--danger)}
 .fx-matlabel.due{color:#c8a06a}
 @media(max-width:900px){
@@ -493,12 +1150,12 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 
 /* Evergreen tab + repurpose (P3 #43) */
 .tab-note{
-  margin:-6px 0 18px; font-size:13px; line-height:1.5; color:var(--muted);
+  margin:-6px 0 18px; font-size:var(--t-body); line-height:1.5; color:var(--muted);
   max-width:62ch;
 }
 .tab-note strong{ color:var(--ink); font-weight:500 }
 .repurpose-note{
-  margin:14px 0 0; font-size:13px; line-height:1.55; color:var(--muted); max-width:62ch;
+  margin:14px 0 0; font-size:var(--t-body); line-height:1.55; color:var(--muted); max-width:62ch;
 }
 .repurpose-note strong{ color:var(--ink); font-weight:500 }
 
@@ -508,44 +1165,58 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    Black on white on purpose. Everywhere else in SSYNC is cream on near-black,
    but this page exists to leave the app: Google Docs keeps the colours of what
    you paste and a printer keeps the background you hand it, so a dark export
-   would arrive either invisible or as a wall of toner. The type is a serif at a
+   would arrive either invisible or as a wall of toner. The type is set at a
    document size for the same reason — what lands in the Doc should already look
-   like the document it is about to become.
+   like the document it is about to become. (It was a serif until 2026-08-06;
+   the whole app is Barlow now, exports included.)
 --------------------------------------------------------------------------- */
-.export-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 18px}
-.export-said{font-size:12px;color:var(--muted)}
+.export-actions{display:flex;gap:var(--sp-ctl);align-items:center;flex-wrap:wrap;margin:0 0 18px}
+.export-said{font-size:var(--t-sm);color:var(--muted)}
 
+/* ONE FAMILY ON EVERY PRINTED DOCUMENT (Tess, 2026-08-05: "edit report exports
+   to be only barlow font family"). Both exports — the style history and the
+   round's notes to a factory — were Georgia body with Barlow headings, which
+   is a typographic decision the app never made anywhere else. They are now
+   Barlow Semi Condensed throughout, the same face the app is set in, so a
+   report pasted into a Doc looks like it came from this studio rather than
+   from a word processor. Arial is the fallback because the file may be opened
+   somewhere the webfont never loads. */
 .paper{
   background:#fff;color:#111;
-  font-family:Georgia,"Times New Roman",serif;
-  max-width:820px;margin:0 auto 60px;padding:56px 60px;
-  border-radius:2px;box-shadow:var(--shadow);
-  font-size:14px;line-height:1.55;
-}
-.paper h1{font-size:28px;line-height:1.15;margin:0 0 4px;font-weight:normal}
-.paper .paper-sub{margin:0 0 6px;color:#555;font-size:13px}
-.paper section{margin-top:30px}
-.paper h2{
   font-family:"Barlow Semi Condensed",Arial,sans-serif;
-  font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#666;
-  margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid #ddd;font-weight:600;
+  max-width:780px;margin:0 auto 60px;padding:44px 48px;
+  border-radius:2px;box-shadow:var(--shadow);
+  /* Tess, 2026-08-06: "Report output can still be tighter line spacing and
+     smaller fonts". Second pass on the same complaint — the body was 14/1.55,
+     which is a reading size for an essay, and a factory report is a reference
+     document somebody scans standing up. 12.5/1.4 is the app's own body size
+     and rhythm, so the export now matches the page it came from, and the whole
+     of a style lands in noticeably less paper. */
+  font-size:var(--t-body);line-height:1.4;
 }
-.paper h3{font-size:15px;margin:0 0 6px;font-weight:bold}
-.paper .paper-entry{margin-top:16px}
-.paper .paper-entry-sub{font-weight:normal;color:#555;font-size:13px}
-.paper table{border-collapse:collapse;width:100%;margin:0 0 8px}
+.paper h1{font-size:22px;line-height:1.12;margin:0 0 3px;font-weight:500;letter-spacing:.01em}
+.paper .paper-sub{margin:0 0 5px;color:#555;font-size:var(--t-sm)}
+.paper section{margin-top:22px}
+.paper h2{
+  font-size:var(--t-cap);letter-spacing:.16em;text-transform:uppercase;color:#666;
+  margin:0 0 8px;padding-bottom:5px;border-bottom:1px solid #ddd;font-weight:600;
+}
+.paper h3{font-size:var(--t-title);margin:0 0 5px;font-weight:600}
+.paper .paper-entry{margin-top:13px}
+.paper .paper-entry-sub{font-weight:normal;color:#555;font-size:var(--t-sm)}
+.paper table{border-collapse:collapse;width:100%;margin:0 0 7px}
 .paper th{
   text-align:left;font-weight:normal;color:#555;
-  width:190px;padding:3px 12px 3px 0;vertical-align:top;font-size:13px;
+  width:170px;padding:2px 12px 2px 0;vertical-align:top;font-size:var(--t-sm);
 }
-.paper td{padding:3px 0;vertical-align:top}
+.paper td{padding:2px 0;vertical-align:top;font-size:var(--t-sm)}
 /* Fit notes and comments are typed with their own line breaks; a document that
    reflows them into one paragraph loses the shape the person wrote. */
-.paper .paper-body{margin:6px 0;white-space:pre-wrap}
-.paper .paper-empty{margin:6px 0;color:#777;font-style:italic}
+.paper .paper-body{margin:5px 0;white-space:pre-wrap;font-size:var(--t-sm);line-height:1.45}
+.paper .paper-empty{margin:5px 0;color:#777;font-style:italic;font-size:var(--t-sm)}
 .paper .paper-footer{
-  margin-top:38px;padding-top:12px;border-top:1px solid #ddd;
-  color:#666;font-size:12px;
+  margin-top:28px;padding-top:10px;border-top:1px solid #ddd;
+  color:#666;font-size:var(--t-meta);
 }
 
 @media print{
@@ -563,13 +1234,13 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    text is the part that stops someone turning off the wrong one. */
 .who{text-decoration:none}
 .who:hover{color:var(--ink)}
-.muted-line{font-size:12px;color:var(--muted);line-height:1.6;max-width:620px;margin:0 0 18px}
+.muted-line{font-size:var(--t-sm);color:var(--muted);line-height:1.6;max-width:620px;margin:0 0 18px}
 .prefs{border:1px solid var(--line);background:var(--panel);max-width:620px;margin-bottom:20px}
 .pref-row{display:flex;align-items:flex-start;gap:20px;padding:16px 18px;border-bottom:1px solid var(--hair)}
 .pref-row:last-child{border-bottom:0}
 .pref-copy{flex:1;min-width:0}
-.pref-label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);margin-bottom:5px}
-.pref-help{font-size:12px;color:var(--muted);line-height:1.55}
+.pref-label{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.13em;text-transform:uppercase;color:var(--ink);margin-bottom:5px}
+.pref-help{font-size:var(--t-sm);color:var(--faint);line-height:1.55}
 .toggle{flex:none;width:38px;height:22px;border-radius:11px;border:1px solid var(--line);
   background:var(--field);position:relative;cursor:pointer;padding:0;transition:background .15s,border-color .15s}
 .toggle:disabled{opacity:.55;cursor:default}
@@ -577,7 +1248,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   background:var(--muted);transition:transform .15s,background .15s}
 .toggle.on{background:var(--accent);border-color:var(--accent)}
 .toggle.on .knob{transform:translateX(16px);background:var(--btnfg)}
-.pref-said{font-size:11px;color:var(--muted);padding:10px 18px;border-top:1px solid var(--hair)}
+.pref-said{font-size:var(--t-meta);color:var(--muted);padding:10px 18px;border-top:1px solid var(--hair)}
 /* A link inside the muted line still has to look like a link — at this size the
    colour alone doesn't read as clickable. */
 .muted-line a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
@@ -590,14 +1261,14 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .ph-summary{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;
   border:1px solid var(--line);background:var(--panel);padding:16px 18px;margin-bottom:14px}
 .ph-figure{flex:none;min-width:190px}
-.ph-pct{font-size:30px;line-height:1;letter-spacing:-.02em}
-.ph-figsub{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.05em;text-transform:uppercase}
+.ph-pct{font-size:26px;font-weight:var(--w-title);line-height:1;letter-spacing:-.02em}
+.ph-figsub{font-size:var(--t-micro);font-weight:var(--w-cap);color:var(--faint);margin-top:6px;letter-spacing:.14em;text-transform:uppercase}
 .ph-bar{margin-top:9px;height:3px;background:var(--field);border:1px solid var(--hair);position:relative}
 .ph-bar span{position:absolute;inset:0 auto 0 0;background:var(--accent);display:block}
 .ph-tally{flex:1;min-width:260px;display:flex;flex-wrap:wrap;gap:0 26px;align-items:flex-start}
 .ph-tallyitem{padding:2px 0}
-.ph-tallylabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.ph-tallyn{font-size:13px;margin-top:3px}
+.ph-tallylabel{font-size:var(--t-micro);font-weight:var(--w-cap);letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+.ph-tallyn{font-size:var(--t-body);margin-top:3px}
 
 .ph-list{border:1px solid var(--line);background:var(--panel)}
 .ph-row{display:flex;align-items:center;gap:14px;padding:9px 14px;border-bottom:1px solid var(--hair)}
@@ -608,18 +1279,18 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .ph-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ph-nothumb{display:block;width:100%;height:100%}
 .ph-id{flex:1;min-width:0}
-.ph-name{display:block;font-size:14px;text-decoration:none;color:var(--ink);
+.ph-name{display:block;font-size:var(--t-title);font-weight:var(--w-title);text-decoration:none;color:var(--ink);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ph-name:hover{text-decoration:underline;text-underline-offset:2px}
-.ph-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.ph-sub{font-size:var(--t-micro);color:var(--faint);margin-top:3px;text-transform:uppercase;letter-spacing:.12em}
 .ph-status{flex:none;width:120px}
 /* Fixed width so the dots line up as a column down the whole list. */
 .ph-dots{flex:none;display:flex;gap:6px;width:80px}
 .ph-dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:transparent}
 .ph-dot.on{background:var(--accent);border-color:var(--accent)}
 .ph-need{flex:none;width:300px;display:flex;align-items:baseline;gap:9px}
-.ph-count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.ph-needline{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph-count{font-size:var(--t-meta);color:var(--faint);font-variant-numeric:tabular-nums}
+.ph-needline{font-size:var(--t-meta);color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Nothing shot at all is a different kind of item from "one left" — it needs a
    setup and a booking, not twenty minutes — so it is allowed to be louder. */
 .ph-needline.none{color:#c8a06a}
@@ -639,25 +1310,35 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    is meant to be read, not a tooltip.
 --------------------------------------------------------------------------- */
 .section-toggle{
-  cursor:pointer; color:var(--muted); font-size:12px;
-  text-transform:uppercase; letter-spacing:.12em;
+  cursor:pointer; color:var(--muted); font-size:var(--t-cap);
+  font-weight:var(--w-cap); text-transform:uppercase; letter-spacing:.16em;
 }
+/* An opened <details> section needs the same air under its heading that an
+   <h3> has under it, or the first row of cards sits on the summary. */
+.section > summary + *{margin-top:16px}
+/* The sketch, folded in under the profile picture rather than given a section
+   of its own (Tess, 2026-08-05: "remove sketch section -- that can be
+   simplified to just live in the profile image area"). It belongs to the frame
+   above it, so it sits tight to it and keeps the section's own spacing below
+   for whatever comes next. */
+.cover-sketch{margin:10px 0 26px}
+.cover-sketch > summary + *{margin-top:14px}
 .vary-note{
-  margin:14px 0 0; font-size:13px; line-height:1.55; color:var(--muted); max-width:62ch;
+  margin:14px 0 0; font-size:var(--t-body); line-height:1.55; color:var(--muted); max-width:62ch;
 }
 .vary-note strong, .vary-note em{ color:var(--ink); font-weight:500; font-style:normal }
 
-.vary-axes{ display:flex; gap:6px; flex-wrap:wrap; margin:16px 0 4px }
+.vary-axes{ display:flex; gap:var(--sp-chip); flex-wrap:wrap; margin:16px 0 4px }
 .chip{
   background:var(--chip); border:1px solid var(--hair); color:var(--ink);
-  padding:5px 12px; font-size:12px; letter-spacing:.04em; cursor:pointer;
+  padding:var(--ctl-y-sm) var(--ctl-x-sm); font-size:var(--t-sm); letter-spacing:.04em; cursor:pointer;
 }
 .chip:hover{ border-color:var(--line) }
 .chip.on{ background:var(--accent); color:var(--btnfg); border-color:var(--accent) }
 
 /* A caution, never a refusal — the brief still builds. */
 .vary-warn{
-  margin:6px 0 0; padding:0 0 0 18px; font-size:12.5px; line-height:1.55; color:#c8a06a;
+  margin:6px 0 0; padding:0 0 0 18px; font-size:var(--t-sm); line-height:1.55; color:#c8a06a;
   max-width:62ch;
 }
 
@@ -666,16 +1347,1164 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   display:flex; align-items:center; gap:12px; justify-content:space-between;
   padding:8px 10px; border-bottom:1px solid var(--hair);
 }
-.vary-title{ font-size:13px; color:var(--ink) }
+.vary-title{ font-size:var(--t-body); color:var(--ink) }
 .vary-prompt{
-  margin:0; padding:12px 14px; font-size:12.5px; line-height:1.65; color:var(--muted);
+  margin:0; padding:12px 14px; font-size:var(--t-sm); line-height:1.65; color:var(--muted);
   white-space:pre-wrap; word-break:break-word; max-height:280px; overflow:auto;
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
-.vary-actions{ display:flex; align-items:center; gap:12px; margin:14px 0 4px; flex-wrap:wrap }
-.vary-off{ font-size:12.5px; line-height:1.55; color:var(--muted); max-width:52ch }
+.vary-actions{ display:flex; align-items:center; gap:var(--sp-ctl); margin:14px 0 4px; flex-wrap:wrap }
+.vary-off{ font-size:var(--t-sm); line-height:1.55; color:var(--muted); max-width:52ch }
 .vary-savefield{ display:flex; align-items:flex-end }
 .vary-preview{ margin-top:14px; max-width:260px; border:1px solid var(--hair) }
 .vary-preview img{ display:block; width:100%; height:auto }
-.vary-msg{ margin-top:12px; font-size:12.5px; color:var(--muted) }
+.vary-msg{ margin-top:12px; font-size:var(--t-sm); color:var(--muted) }
+
+/* ---------------------------------------------------------------------------
+   Development refinements (P3, second pass)
+
+   Everything below came out of watching the development team use the first
+   version: more pictures than five slots hold, a sketch that had nowhere to
+   live, feedback buried under the fold, and a grid that could only be ordered
+   by "what did somebody touch". Nothing here is decorative — each rule is a
+   question somebody was asking the screen.
+   --------------------------------------------------------------------------- */
+
+/* A single named slot — the sketch — was capped narrower than a photography
+   card on the theory that one card should not read like a row. It read as a
+   smaller-mattering picture instead (Tess, 2026-08-04). It now takes the first
+   column of the ordinary grid, so it is exactly the width of every other image
+   on the profile. The .one class stays on the element as a hook; there is
+   nothing left for it to change — and since the sketch became a front/back
+   pair (2026-08-05) the design list is two slots, so .one is now only reached
+   if some future list has exactly one. .two, just above, is the live rule. */
+
+/* Image strips: the style gallery, and the shots on a sample round ------------
+   The same component in both places, so the same rules — and deliberately the
+   same rules as the fixed photography slots above them (Tess, 2026-08-04).
+   These were smaller and square at first, on the theory that a gallery is a
+   pile you scan rather than a shoot you assess. In front of real work that read
+   as a second-class picture: a swatch or a factory screenshot is looked at just
+   as hard as a lay-flat, and two picture sizes in one profile makes the smaller
+   one feel like an afterthought. So the grid, the frame, the padding and the
+   breakpoint are all shared with .ph-grid / .ph-card / .ph-frame. If one of
+   them changes, change both. */
+.img-strip{margin-top:14px}
+.img-strip-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.img-strip-head .l{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.img-strip-head .n{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.img-strip-head .h{font-size:var(--t-meta);line-height:1.5;color:var(--faint);flex:1;min-width:180px}
+.img-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.img-tile{border:1px solid var(--hair);background:var(--field);padding:8px}
+.img-tile a{display:block;aspect-ratio:3/4;background:var(--chip);overflow:hidden}
+.img-open{display:block;width:100%;aspect-ratio:3/4;background:var(--chip);overflow:hidden;padding:0;margin:0;border:none;cursor:zoom-in}
+.img-tile img{width:100%;height:100%;object-fit:cover;display:block}
+.img-cap{font-size:var(--t-meta);line-height:1.45;color:var(--ink);margin-top:8px;word-break:break-word}
+.img-capform{display:flex;gap:6px;margin-top:8px}
+.img-capform .input{flex:1;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
+/* The tools sit under the tile rather than over it: half of this is done on a
+   phone, and a control on top of the picture is a control you miss. */
+.img-tools{display:flex;align-items:center;gap:9px;margin-top:8px;flex-wrap:wrap}
+.img-add{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+
+/* Sample round: material line, ETA chip, retired dates ----------------------- */
+.sr-matline{font-size:var(--t-sm);color:var(--ink);margin-top:2px}
+/* The chip that answers "when is it landing?" — amber while it is a promise,
+   red once the promise is broken, and absent entirely once it is here. */
+.sr-eta{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;padding:3px 7px;border:1px solid currentColor}
+.sr-eta.due{color:#c8a06a}
+.sr-eta.late{color:var(--danger)}
+.sr-legacy{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin:2px 0 16px;padding:10px 12px;
+  border:1px dashed var(--hair);font-size:var(--t-sm);color:var(--muted)}
+.sr-legacy .k{text-transform:uppercase;letter-spacing:.12em;font-size:var(--t-cap)}
+.sr-legacy .h{flex-basis:100%;font-size:var(--t-meta);line-height:1.5;opacity:.85}
+.field-hint{display:block;font-size:var(--t-meta);line-height:1.45;color:var(--muted);margin-top:5px}
+
+/* Status + evergreen, side by side ------------------------------------------
+   Evergreen is a hard-cornered box, filled or empty, at a size you can hit
+   without aiming. A native checkbox rounds itself off and shrinks to nothing at
+   this scale, and this flag is the difference between a style the studio remakes
+   every season and one it does not. */
+.statusctl{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.statusctl .select{width:100%}
+.everbox{display:inline-flex;align-items:center;gap:9px;background:none;border:none;padding:0;
+  font-family:inherit;color:var(--muted);cursor:pointer;position:relative}
+.everbox .box{width:var(--box-md);height:var(--box-md);flex:0 0 var(--box-md);border:1px solid var(--line);border-radius:0;
+  background:var(--field);display:block;transition:background .12s,border-color .12s}
+.everbox .l{font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.12em}
+/* The tick box tracks the cap height of its label, so the two look level. */
+.everbox.sm .box{width:var(--box-sm);height:var(--box-sm);flex:0 0 var(--box-sm)}
+.everbox.sm .l{font-size:var(--t-cap)}
+.everbox.lg .box{width:var(--box-lg);height:var(--box-lg);flex:0 0 var(--box-lg)}
+.everbox.lg .l{font-size:var(--t-sm)}
+.everbox:hover:not(:disabled) .box{border-color:var(--muted)}
+.everbox:hover:not(:disabled){color:var(--ink)}
+.everbox.on{color:#a9c7ff}
+.everbox.on .box{background:#a9c7ff;border-color:#a9c7ff}
+.everbox:disabled{opacity:.55;cursor:default}
+/* Same box, driven by a real checkbox — inside the details form the flag has to
+   post with everything else, or saving the form would clear it. */
+.everbox.check{cursor:pointer}
+.everbox.check input{position:absolute;opacity:0;width:0;height:0}
+.everbox.check input:checked ~ .box{background:#a9c7ff;border-color:#a9c7ff}
+.everbox.check input:checked ~ .l{color:#a9c7ff}
+.everbox.check input:focus-visible ~ .box{border-color:var(--ink)}
+
+/* Comments drawer ----------------------------------------------------------- */
+.notes-count{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);
+  padding-bottom:10px;border-bottom:1px solid var(--hair)}
+.note-ack{margin-top:6px}
+/* A badge is already xs; .sm on one means tighter still, inside a dense row. */
+.badge.sm{font-size:var(--t-micro);padding:2px 5px;letter-spacing:.1em}
+
+/* The development grid: an order you choose, a round on the thumbnail --------- */
+.sortbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px}
+.sortbar label{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint)}
+.sortbar .select{width:auto;min-width:170px}
+.sortbar .h{font-size:var(--t-meta);color:var(--faint);margin-left:auto;text-align:right}
+/* Search leads the bar and takes the slack, because it is the control people
+   reach for before they know which tab the thing is in. */
+.findbox{flex:1 1 260px;min-width:200px;max-width:420px}
+/* A filter that is in force has to look different from one that is not — the
+   whole safety of hiding rows is that you can see what did the hiding. */
+.sortbar .select.on{border-color:var(--ink);color:var(--ink)}
+/* A button that reads as a link, for the one inside a sentence in an empty
+   state. Clearing a search is not a form submission and should not look like one. */
+.linkish{background:none;border:none;padding:0;font:inherit;color:var(--ink);
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+/* Over the picture, because it is the one thing worth reading from across the
+   room. Only ever a promise or a broken one — a sample that has landed says so
+   in the round line instead. */
+.card-eta{position:absolute;top:8px;left:8px;z-index:2;background:rgba(20,20,20,.88);
+  font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.1em;padding:3px 7px;border:1px solid currentColor}
+.card-eta.due{color:#c8a06a}
+.card-eta.late{color:var(--danger)}
+/* The round line, now able to carry the rating dot in front of it. inline-flex
+   rather than block so the dot sits on the text's own midline instead of on the
+   line box, which at 10.5px is a visible difference. */
+.card-round{font-size:var(--t-meta);color:var(--muted);margin-top:5px;letter-spacing:.02em;
+  display:inline-flex;align-items:center;gap:6px}
+/* Who is making it (Tess, 2026-08-05: "factory should be listed small on
+   thumbnial"). Its own line, below the style number and garment, because it
+   answers a different question than they do — and small, because the style is
+   still the subject of the card. */
+.card-factory{font-size:var(--t-micro);color:var(--faint);margin-top:3px;letter-spacing:.12em;
+  text-transform:uppercase}
+.badge.fit{color:#8fbf9f;border-color:#8fbf9f}
+.badge.warn{color:#c8a06a;border-color:#c8a06a}
+
+@media(max-width:900px){
+  /* The sort hint drops to its own line rather than squeezing the sort buttons
+     off the edge — the buttons are the control, the hint is the explanation.
+     The search box takes a whole line of its own for the same reason. */
+  .sortbar .h{flex-basis:100%;margin-left:0;text-align:left}
+  .findbox{flex-basis:100%;max-width:none}
+}
+
+/* Links inside notes (2026-08-04) -------------------------------------------
+   Tess: "Make links in notes hyperlink." Every note field in the tool is plain
+   text, and half of what gets pasted into one is a URL — a tech pack, a Drive
+   folder, a factory's shared album — which until now landed as dead text you
+   had to select and copy by hand.
+   Underlined rather than coloured: these sit inside sentences on a page with
+   almost no colour in it, and a coloured word in the middle of a factory note
+   reads as a status, not a link. lib/linkify.ts decides what is one. */
+.linkified{color:inherit;text-decoration:underline;text-underline-offset:2px;
+  text-decoration-color:var(--line);word-break:break-word}
+.linkified:hover{text-decoration-color:var(--ink);color:var(--ink)}
+
+/* Comment scope (2026-08-04) ------------------------------------------------
+   Tess: "comments should be linked to specific sample or general profile of
+   style." The chips are the filter *and* the filing: whatever is selected is
+   what a new comment gets attached to, so there is no second step to forget.
+   Rounds with nothing said about them still get a chip. */
+.note-chips{display:flex;flex-wrap:wrap;gap:var(--sp-chip);padding-bottom:12px}
+.note-chip{background:var(--chip);border:1px solid var(--hair);color:var(--muted);
+  padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta);letter-spacing:.03em;cursor:pointer;display:inline-flex;
+  align-items:baseline;gap:5px}
+.note-chip:hover{border-color:var(--line);color:var(--ink)}
+.note-chip.on{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
+.note-chip .n{font-size:var(--t-micro);opacity:.7;letter-spacing:.08em}
+/* Which round a comment is about — only shown in the All view, where the
+   scope is not already implied by the chip you are standing on. */
+.note-scope{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  border:1px solid var(--hair);padding:2px 5px}
+.note-scope-note{text-transform:none;letter-spacing:.04em;opacity:.85}
+
+/* What is written ON the photographs, read in the drawer (Tess, 2026-08-05:
+   "notes on the specific sample photos should show up in the comments drawer
+   under their sample round").
+
+   Boxed and slightly inset so it reads as a different KIND of thing from the
+   conversation under it: these are not comments, they cannot be replied to, and
+   they are not edited here — they are a window onto the marks on the pictures.
+   The mark numbers are the same numbers drawn on the photograph, so they are
+   drawn the same way: a small square with a figure in it. */
+/* A photograph and what is written on it, as a card in the same feed as the
+   comments (Tess, 2026-08-05: "rethink how notes from photos are added to the
+   drawer"). It was a bordered box above the conversation with a heading of its
+   own, which read as a second, competing list. It is a .note now, like every
+   other thing anybody said, led by the picture. */
+.note-photo-top{display:flex;gap:9px;align-items:flex-start;margin-bottom:6px}
+/* The thumbnail IS the link back — it replaced a text link reading "View
+   photo" that sat where the picture should have been. */
+.note-photo-thumb{flex:none;width:52px;height:64px;padding:0;border:1px solid var(--line);
+  background:var(--field);cursor:pointer;overflow:hidden;display:block}
+.note-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.note-photo-thumb:hover{border-color:var(--ink)}
+.note-photo-head{min-width:0;flex:1}
+/* A subject line, not an author. Nobody is called "Lay flat — front". */
+.note-subject{font-size:var(--t-body);color:var(--ink);line-height:1.3;margin-bottom:3px}
+.note-photo .note-meta{margin-bottom:0}
+.note-photo .note-text{font-size:var(--t-body);color:var(--muted)}
+.note-pins{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+/* Each mark is clickable for the same reason the thumbnail is: the note only
+   half means anything away from the spot it is pinned to. */
+.note-pin{display:flex;align-items:flex-start;gap:7px;width:100%;text-align:left;
+  background:none;border:none;padding:0;cursor:pointer;color:inherit;font:inherit}
+.note-pin:hover .t{color:var(--ink)}
+.note-pin .n{flex:none;width:16px;height:16px;border:1px solid var(--line);
+  font-size:var(--t-micro);line-height:1;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--ink);margin-top:1px}
+.note-pin .t{font-size:var(--t-body);line-height:1.45;min-width:0;color:var(--muted)}
+.note-photo .note-edit{margin-left:0;margin-top:8px;display:block;
+  text-decoration:underline;text-underline-offset:2px}
+
+/* The count on a round card. Quiet at zero — it is an invitation, not a
+   notification — and it takes the ink colour once there is something to read. */
+.sr-comments{margin-left:auto;background:none;border:none;color:var(--muted);
+  font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.1em;cursor:pointer;padding:0}
+.sr-comments:hover{color:var(--ink)}
+.sr-comments.has{color:var(--ink)}
+/* Edit follows the count rather than being pushed to the far edge by it. */
+.sr-head .sr-edit{margin-left:0}
+
+/* Versions as a strip, AI folded in (2026-08-04) -----------------------------
+   Tess: "i dont feel like the ai and version ui is logical where it is."
+   Same grid and frame as the Design gallery and a round's Shots — three
+   picture-bearing lists on one page should not be three different shapes. */
+.ver-strip{margin-top:10px}
+.ver-tile .ver-cap{display:flex;align-items:baseline;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ver-tile .ver-cap strong{font-size:var(--t-body)}
+/* A version with no picture is the common case — most are a line about a
+   colourway. It gets its own number, large, rather than an empty grey
+   rectangle that reads as a broken image. */
+.ver-blank{display:flex;align-items:center;justify-content:center;aspect-ratio:3/4;
+  background:var(--chip);color:var(--faint);font-size:20px;letter-spacing:.04em;
+  font-weight:var(--w-thin)}
+.ver-season{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.ver-changes{font-size:var(--t-sm);line-height:1.5;margin-top:6px;color:var(--ink)}
+.ver-when{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:6px}
+.ver-add{margin-top:16px}
+/* AI is not Evergreen. It used to borrow .badge.ever — the same blue chip as
+   the Evergreen tag at the top of the page — so two unrelated meanings had one
+   appearance. Amber, and only ever on something a model made. */
+.badge.ai{color:#c8a06a;border-color:#c8a06a}
+/* The generator, now nested inside the Versions section rather than being a
+   section of its own. A rule so it reads as part of Versions and not as a
+   second thing that happens to be below it. */
+.vary{margin-top:18px;padding-top:14px;border-top:1px solid var(--hair)}
+
+/* Link a reference from the style side (2026-08-04) --------------------------
+   The join table has always been many-to-many; only the button was missing.
+   Closed by default — a search box open on every profile is a question nobody
+   asked. */
+.linkref{margin-top:14px;border:1px solid var(--hair);background:var(--field);padding:12px}
+.linkref-head{display:flex;gap:8px;align-items:center}
+.linkref-head .input{flex:1;padding:var(--ctl-y-md) var(--ctl-x-md);font-size:var(--t-body)}
+.linkref-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.linkref-card{display:flex;align-items:center;gap:10px;border:1px solid var(--hair);
+  background:var(--panel);padding:8px}
+.linkref-img{width:44px;height:56px;flex:none;background:var(--chip);overflow:hidden}
+.linkref-img img{width:100%;height:100%;object-fit:cover;display:block}
+.linkref-meta{flex:1;min-width:0}
+.linkref-meta .d{font-size:var(--t-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linkref-meta .s{font-size:var(--t-cap);color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:3px}
+.linkref-msg{font-size:var(--t-sm);color:var(--muted);margin-top:12px}
+.linkref-hint{font-size:var(--t-meta);line-height:1.5;color:var(--muted);margin-top:12px;max-width:60ch}
+
+@media(max-width:860px){
+  .linkref-grid{grid-template-columns:1fr}
+}
+
+/* --- Also in development with … (SiblingStrip) --------------------------
+   Two profiles of the same garment, at different factories. A titled section
+   under the status badges, sharing the .section heading every other block on
+   the profile uses, so it is read as a fact about the style rather than a
+   caption on whatever sits above it. Tighter than the others because it is
+   usually one pill long. */
+.siblings-section{margin-bottom:22px}
+/* In the identity column it is narrow, so the pills stack rather than being
+   squeezed; each one still shows the factory and that development's status.
+
+   They are sized to their own text, not to the column (Tess, 2026-08-06: "this
+   can be much narrower in width"). They used to stretch and push the round to
+   the far edge, which put half an inch of empty pill between "Jiaxing" and "2nd
+   proto" and made one short fact look like a table with a missing middle
+   column. align-items:flex-start lets each pill end where its words end, and
+   dropping space-between closes the gap back to the normal 8px — so the pill is
+   as wide as what it says and no wider, and two of them stacked line up on the
+   left the way a list should. */
+.profile-side .siblings{flex-direction:column;align-items:flex-start;gap:5px}
+.siblings{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
+.sibling{
+  display:inline-flex;align-items:baseline;gap:8px;
+  padding:5px 10px;border:1px solid var(--line);border-radius:999px;
+  background:var(--chip);color:var(--ink);text-decoration:none;font-size:var(--t-body);
+}
+.sibling:hover{border-color:var(--ink)}
+.sibling .f{font-weight:500}
+.sibling .st{font-size:var(--t-meta);color:var(--muted);text-transform:lowercase}
+
+/* How the other factory's last round came out (Tess, 2026-08-06: "this should
+   have color dot on what the last round received was"). The same three colours
+   as the .sr-rate chips on the round cards, shrunk to a dot — a chip reading
+   GOOD inside a pill that already carries a round name would be two labels
+   fighting in a 10px line, where a dot is read at a glance and adds no words.
+   It sits before the round, so the eye gets the verdict and the stage in one
+   pass. Unrated draws nothing at all; there is no grey. */
+/* display:inline-block is load-bearing, not decoration. A bare <span> is an
+   inline box, and width and height do not apply to one — so this dot rendered
+   at nothing at all anywhere its parent was not a flex container. It worked in
+   the sibling pills and the factory list because both are flex rows and a flex
+   item is blockified; it vanished beside the style title, which is an <h1>.
+   The fix belongs on the base rule, not on that one call site, or the next
+   place it is used outside a flex row breaks in exactly the same silent way. */
+.sib-dot{
+  display:inline-block;
+  width:6px;height:6px;border-radius:50%;flex:0 0 auto;
+  align-self:center;background:var(--pill);
+}
+.sib-dot.good{background:#6fae7a}
+.sib-dot.workable{background:#e9c46a}
+.sib-dot.poor{background:var(--danger)}
+
+/* --- Versions: the two buttons and the quiet third way ------------------ */
+.ver-add-row{gap:var(--sp-ctl);margin-top:14px}
+
+/* --- AI box: which picture it works from -------------------------------- */
+.vary-src{margin:14px 0 4px}
+.vary-src-head{font-size:var(--t-sm);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.vary-src-list{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.vary-src-tile{
+  flex:0 0 auto;width:82px;padding:0;border:1px solid var(--line);border-radius:8px;
+  background:var(--field);color:var(--muted);cursor:pointer;overflow:hidden;text-align:left;
+}
+.vary-src-tile img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:var(--panel)}
+.vary-src-tile span{
+  display:block;padding:5px 6px;font-size:var(--t-cap);line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.vary-src-tile:hover{border-color:var(--ink)}
+.vary-src-tile.on{border-color:var(--accent);color:var(--ink)}
+.vary-src-tile.on span{color:var(--ink)}
+
+/* --- AI box: the two places a variation can land ------------------------
+   Side by side and equally weighted on a desktop, stacked on a phone. Neither
+   is the default answer, so neither gets the bigger button. */
+.vary-keep{display:grid;gap:14px;margin-top:16px}
+@media (min-width:760px){.vary-keep{grid-template-columns:1fr 1fr}}
+.vary-keep-one{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+  padding:14px;border:1px solid var(--hair);border-radius:10px;background:var(--field);
+}
+.vary-keep-one .h{font-size:var(--t-sm);line-height:1.45;color:var(--muted)}
+
+/* ===========================================================================
+   Twelfth batch (2026-08-05) — the round in full, the round being edited,
+   the round on its way to a factory, and versions as a list.
+   =========================================================================== */
+
+/* --- A round, edited in place -------------------------------------------
+   Tess: "when you edit the sample round, the fields should turn editable and
+   show the ones you haven't added, as opposed to making you scroll down below
+   photos."
+
+   The form now sits exactly where the facts were — above the photography —
+   so the field you are correcting does not move to the bottom of the card the
+   moment you decide to correct it. .sr-form already carries the rule and the
+   spacing; inline only widens the fields, because a form that has taken the
+   place of readable text should look like it belongs to the same card and not
+   like a panel that dropped in on top of it. */
+.sr-form-inline{border-top:1px solid var(--hair)}
+.sr-form-inline .row{gap:12px}
+.sr-form-inline .field label{font-size:var(--t-micro);letter-spacing:.14em}
+/* Cancel sits beside Save, not under it — leaving the form is as ordinary an
+   act as saving it and should cost the same one click in the same place. */
+.sr-form-inline .sr-form-actions{display:flex;gap:var(--sp-ctl);align-items:center;margin-top:14px}
+
+/* --- A round, full screen ------------------------------------------------
+   Tess: "there should be a full screen view of sample rounds on desktop that
+   is easy for team to see images large and clear with all notes super clear."
+
+   This is the view for the four people standing at a screen deciding whether
+   a proto is right, which is a different job from working the card. So: no
+   uploads, no fields, nothing to press by accident. The facts run across the
+   top at reading size and the photographs are given the rest of the window,
+   two up, with every pin printed under its own picture rather than hidden
+   behind a hover. A note nobody can see is a note nobody acted on. */
+.sr-full-overlay{padding:0;align-items:stretch;justify-content:stretch}
+.sr-full{width:100vw;height:100vh;max-height:100vh;border:0;
+  display:flex;flex-direction:column}
+.sr-full .modal-head{flex:none}
+/* The round name, its rating chip and the factory were three inline things in
+   one <span> with nothing between them but whatever the markup happened to
+   leave — which is nothing, so the chip sat against the last letter of the
+   round name (Tess, 2026-08-07: "spacing still too tight in header of full
+   screen view").
+
+   A flex row on the control-chip gap, like every other band of chips in the
+   app. The factory's own margin goes with it: a margin on one child and a gap
+   on the parent add up, and then the row is spaced two different ways. */
+.sr-full .modal-head > span{display:inline-flex;align-items:center;gap:var(--sp-chip);
+  flex-wrap:wrap;min-width:0}
+.sr-full-factory{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.13em;
+  color:var(--faint)}
+
+/* Details beside the photographs, not above them — a quarter of the width,
+   scrolling on its own if this round has a lot written on it, so the view as a
+   whole never scrolls. */
+.sr-full-body{padding:0;flex:1 1 auto;min-height:0;
+  display:grid;grid-template-columns:minmax(190px,25%) 1fr}
+.sr-full-side{padding:18px 20px 22px;border-right:1px solid var(--hair);
+  overflow:auto;min-height:0}
+.sr-full-side .sr-facts{grid-template-columns:1fr 1fr;gap:12px 18px}
+.sr-full-side .sr-field .v{font-size:var(--t-body);line-height:1.5}
+.sr-full-side .sr-field .k{font-size:var(--t-micro)}
+.sr-full-shot{margin:0}
+.sr-full-shot figcaption{margin-top:10px}
+.sr-full-shot figcaption .k{display:block;font-size:var(--t-cap);text-transform:uppercase;
+  letter-spacing:.14em;color:var(--muted);margin-bottom:5px}
+.sr-full-shot figcaption .cap{font-size:var(--t-body);line-height:1.5;color:var(--ink)}
+.sr-full-empty{padding:34px 24px;color:var(--muted);font-size:var(--t-body)}
+
+/* Narrow screens have no 25% worth having, so the details go back on top and
+   that one view is allowed to scroll. */
+@media(max-width:820px){
+  .sr-full-body{grid-template-columns:1fr;grid-template-rows:auto 1fr;overflow:auto}
+  .sr-full-side{border-right:0;border-bottom:1px solid var(--hair)}
+}
+
+/* --- Versions, as two buttons and a list ---------------------------------
+   Tess: "remove v1 thumbnails / remove add 1 by hand / once a new version is
+   created it should live under the buttons as a small link."
+
+   The thumbnails were a picture grid for a list whose commonest entry has no
+   picture at all — most versions are a sentence about a colourway — so the
+   grid was mostly grey rectangles standing in for text. As a list, a version
+   is what it always was: a number, what changed, and when. The ones that do
+   carry an image link to it. */
+.ver-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.ver-none{font-size:var(--t-sm);line-height:1.6;color:var(--muted);margin:12px 0 0;max-width:62ch}
+.ver-list{list-style:none;margin:12px 0 0;padding:0}
+.ver-list li{border-top:1px solid var(--hair);padding:9px 0}
+.ver-list li:first-child{border-top:none}
+.ver-list a,.ver-list span{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  color:var(--ink);text-decoration:none}
+.ver-list a:hover .ver-what{text-decoration:underline}
+.ver-list strong{font-size:var(--t-sm);letter-spacing:.06em;color:var(--muted);flex:none}
+.ver-what{font-size:var(--t-body);line-height:1.5;flex:1;min-width:0}
+.ver-list .ver-when{margin-top:0;flex:none}
+
+/* --- A small button that opens a box (ModalButton) -----------------------
+   Tess: "Edit details should be a small button that then opens up the options
+   in a modal / sketch should be a small button that then opens up the options
+   in a modal." The count sits beside the button so a shut box still says
+   whether there is anything in it. */
+.modal-btn-row{display:flex;align-items:center;gap:var(--sp-ctl);margin-top:18px}
+
+/* --- One round, on paper ------------------------------------------------
+   The photographs are shown on the page and linked in the text, because the
+   page can carry a picture and a mail body cannot. Two up at document width,
+   with the URL printed under each one so the version that is pasted, printed
+   or forwarded still says where the full-size image lives. */
+.paper-shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
+.paper-shots figure{margin:0;break-inside:avoid}
+
+/* The frame shrink-wraps the photograph, exactly, because the marks are drawn
+   on it in per cent — a frame one pixel bigger than the picture puts every mark
+   in the wrong place. Hence inline-block, line-height:0 and a width-driven
+   image, and deliberately no object-fit. */
+.paper-shot-frame{position:relative;display:inline-block;width:100%;line-height:0}
+.paper-shots img{width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}
+.paper-pin{
+  position:absolute;transform:translate(-50%,-50%);
+  min-width:17px;height:17px;padding:0 4px;border-radius:999px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#111;color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.85);
+  font-family:"Barlow Semi Condensed",Arial,sans-serif;
+  font-size:var(--t-cap);line-height:1;font-variant-numeric:tabular-nums;
+}
+.paper-shots figcaption{margin-top:4px;font-size:var(--t-micro);line-height:1.4;color:#333}
+
+/* --- The round report, condensed ----------------------------------------
+   Tess, 2026-08-05: "text on reports can be smaller / more condensed."
+   A one-round report is read next to the garment, not across a desk, and at
+   the sizes the style export uses it ran to two pages to say six things. Same
+   typefaces, same hierarchy, roughly four fifths the size, and the air between
+   sections cut to match — so the whole round lands on one page. */
+.paper-tight{padding:34px 38px;font-size:var(--t-sm);line-height:1.4;max-width:720px}
+.paper-tight h1{font-size:18px;margin-bottom:2px}
+.paper-tight .paper-sub{font-size:var(--t-meta);margin-bottom:3px}
+.paper-tight section{margin-top:16px}
+.paper-tight h2{font-size:var(--t-micro);margin-bottom:6px;padding-bottom:4px}
+.paper-tight h3{font-size:var(--t-body)}
+.paper-tight th,.paper-tight td,.paper-tight .paper-body,.paper-tight .paper-empty{
+  font-size:var(--t-meta);line-height:1.4}
+.paper-tight .paper-body{margin:3px 0}
+.paper-tight .paper-entry{margin-top:10px}
+.paper-tight .paper-footer{margin-top:20px;padding-top:8px;font-size:var(--t-micro)}
+
+/* What this round has nothing on, once, at the bottom. Quiet, because it is
+   the absence of news — but present, because a factory told nothing about the
+   fit assumes the fit was fine. */
+.paper-missing{margin:18px 0 0;color:#777;font-style:italic;font-size:var(--t-micro)}
+/* Said in the app's own colours, above the white document, because it is a
+   statement about what the buttons do and not part of what the factory reads. */
+.export-note{font-size:var(--t-meta);line-height:1.55;color:var(--muted);margin:0 0 16px;max-width:76ch}
+
+/* ===========================================================================
+   Design audit, 2026-08-05 — hierarchy, air, alignment.
+
+   Tess: "audit this as though you are a UI designer … rethink sizing of links
+   and buttons for hierarchy and readability. make sure there is plenty of
+   space and alignment is clean and not jumbled."
+
+   The diagnosis was one thing repeated everywhere: about twenty controls on
+   the style profile, and almost all of them the same small outlined uppercase
+   box. Repurpose looked like Unlink looked like Send to factory looked like
+   Upload. When everything is emphasised nothing is, so the page gave no
+   advice about what to press, and the reader had to read every button to find
+   the one they wanted.
+
+   So: three tiers, and a control has to earn its way up.
+
+     .btn            solid   — the one act that commits something. One per
+                               form or per region. Save, Post, Add.
+     .btn.ghost      outlined — the everyday act on a card. Edit, Sketch,
+                               Edit details. One per card head.
+     .btn.link       text    — everything occasional, reversible or navigational.
+                               Full screen, Send to factory, Cancel, Unlink,
+                               Previous samples, Replace, Remove.
+
+   The sizes now step with the tiers rather than all landing on 11px, so the
+   difference survives being seen out of the corner of an eye.
+   =========================================================================== */
+
+/* The text tier. Same metrics as .ph-link and .sr-comments, which were already
+   doing this by hand in two places — they now inherit it instead. */
+/* THE TEXT TIER IS UNDERLINED TEXT, AND NOTHING ELSE (Tess, 2026-08-06: "some
+   buttons should just be underlined text").
+
+   It used to be 9px uppercase tracked in the faintest ink — quiet enough that
+   it read as a label rather than as something you could press, which is the
+   opposite of the problem a text button is supposed to solve. Now it is a
+   sentence-case word with a line under it, which is the one convention every
+   reader already knows means "press this". Bigger type, less ink, and no
+   ambiguity about what it is.
+
+   The underline is offset and hairline so it sits under the word rather than
+   through its descenders. */
+.btn.link{
+  background:none;border:none;padding:0;border-radius:0;
+  color:var(--muted);font-size:var(--t-sm);font-weight:var(--w-body);
+  letter-spacing:0;line-height:1.4;
+  text-transform:none;cursor:pointer;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;
+}
+.btn.link:hover{color:var(--ink);opacity:1}
+.btn.link.danger{color:var(--danger)}
+.btn.link:disabled{opacity:.5;cursor:default}
+/* A link has no box, so its size is its type: one step down for a link inside
+   a dense row, one up for a link standing on its own as the only way onward.
+   Same three names as the boxed tiers, so .sm means the same thing whichever
+   tier it lands on. */
+.btn.link.sm{font-size:var(--t-meta)}
+.btn.link.lg{font-size:var(--t-body)}
+/* The outlined tier reads one step above the text tier and one below solid. */
+/* Nothing of its own to say any more: .sm is .sm whatever tier it is in. Kept
+   as a no-op rather than deleted so a stray .ghost.sm in the markup still
+   reads as deliberate. */
+.btn.ghost.sm{letter-spacing:0}
+
+/* --- Air between a control and whatever it opens onto --------------------
+   The Edit details button was landing directly on the SAMPLE ROUNDS rule, so
+   the button read as though it belonged to the sample rounds rather than to
+   the details above it. A button that opens a box needs the space under it to
+   say which heading it answers to. */
+.modal-btn-row{margin:20px 0 38px}
+/* Under the profile picture the sketch button belongs to the frame above it,
+   so it sits tight to the picture and keeps the air below. */
+.profile-side .modal-btn-row{margin:12px 0 30px}
+
+/* --- The round card head -------------------------------------------------
+   Name, state, factory and ETA on the left; the three controls together on
+   the right, so the head reads as "what this round is" then "what you can do
+   about it" rather than as one long queue of seven unrelated words. The rule
+   under it separates the head from the facts without a second box. */
+.sr-head{padding-bottom:11px;border-bottom:1px solid var(--hair);margin-bottom:2px}
+.sr-actions{display:inline-flex;align-items:center;gap:var(--sp-ctl);margin-left:18px}
+/* The count keeps its place on the left of the group, pushed there by the head
+   rather than by a margin on the buttons. */
+.sr-comments{margin-left:auto}
+.sr-head .sr-edit{margin-left:0}
+
+/* --- The line under the rounds ------------------------------------------
+   Previous samples, Add sample round and the date were three separate blocks
+   stacked one per line down the left edge. One row, one baseline, the date
+   pushed to the far end where a timestamp belongs. */
+/* The section heading and the one act that belongs to it, on one line. The
+   heading keeps its own margin; the button sits against the right so a long
+   "on 2nd Proto" between them never pushes it out of reach. */
+.sr-sechead{display:flex;align-items:baseline;gap:var(--sp-ctl);flex-wrap:wrap;justify-content:space-between}
+.sr-sechead h3{flex:1 1 auto;min-width:0}
+.sr-foot{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:20px}
+.sr-foot .sr-today{margin:0;margin-left:auto}
+.sr-history{margin-top:18px}
+
+/* --- The shoot list -----------------------------------------------------
+   Six empty slots carrying a full sentence each was 450 pixels of grey prose
+   between the notes and the next round — the instructions were shouting over
+   the photographs they exist to serve. Smaller, quieter, and the frame no
+   longer stretched to a full 3:4 when there is nothing in it. A filled slot
+   keeps its proper proportions; an empty one is a caption with a target. */
+.ph-hint{font-size:var(--t-cap);line-height:1.5;padding:10px;opacity:.85}
+.ph-card:not(.filled) .ph-frame{aspect-ratio:auto;min-height:104px}
+
+
+/* --- References, as a row you can read across --------------------------
+   Unlink was marooned at the far right of a 430-pixel-wide card, a long way
+   from the thing it unlinks. The card is now capped at a readable measure and
+   the control sits with the row it belongs to. */
+.devfrom-card{max-width:560px;padding:10px 12px;gap:14px}
+.devfrom-card .btn.link{flex:none}
+
+/* --- Section headings, one shape ----------------------------------------
+   A <details> section and an <h3> section were two different weights for the
+   same rank, so "Misc images for reference" and "Reference(s)" — sitting one
+   above the other, holding the same kind of thing — did not look like
+   siblings. The summary now wears the h3's rule and spacing. */
+.section > summary.section-toggle{
+  border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:0;
+  letter-spacing:.14em;
+}
+.section > summary + *{margin-top:18px}
+
+/* --- A style in the Trash, and the way back out -------------------------
+   Tess, 2026-08-05: "you should be able to delete a style and have it sent to
+   the trash."
+
+   The banner is the only warm colour on the profile, because it is the only
+   thing on the page that changes what everything under it means. Deliberately
+   not red: nothing has gone wrong and nothing has been lost — the style has
+   simply stopped being read. Red would say destroyed. */
+.trash-banner{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  border:1px solid rgba(233,196,106,.42);border-left:3px solid #e9c46a;
+  background:rgba(233,196,106,.07);border-radius:3px;
+  padding:12px 14px;margin:0 0 20px;
+}
+.trash-banner span{font-size:var(--t-sm);line-height:1.6;color:var(--ink);flex:1;min-width:260px}
+.trash-banner strong{letter-spacing:.02em}
+.trash-banner form{flex:none}
+
+/* Delete, at the end of the page head. Quietest thing in the row until it is
+   armed, at which point it is the loudest — that swap IS the confirmation. */
+.del-style{display:inline-flex;flex:none}
+.del-style .btn.link{white-space:nowrap}
+
+/* Trashed styles, above the trashed references. Its own heading because the
+   two are not the same kind of thing and a mixed grid would read as one. */
+.trash-styles{margin:0 0 34px}
+.trash-h{
+  font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
+  letter-spacing:.16em;color:var(--muted);
+  border-bottom:1px solid var(--hair);padding-bottom:8px;margin:0 0 16px;
+}
+
+/* --- A version that made a profile --------------------------------------
+   Tess, 2026-08-05: "versions listed should hyperlink to new proifle."
+   The arrow is the only thing that distinguishes it from the rest of the list,
+   which is the point: a row that goes somewhere should say so without
+   shouting, and the rows either side of it must not shift. */
+.ver-to .ver-go{color:var(--muted);flex:none;font-size:var(--t-sm);transition:transform .12s}
+.ver-to:hover .ver-go{transform:translateX(2px);color:var(--ink)}
+
+/* --- Where this style stands (lib/styleSummary.ts) -----------------------
+   Tess, 2026-08-05: "Add an ai summary to the top that says the current status
+   of the product and approximate timing between samples."
+
+   Sits under the style name, inside the working column (Tess, 2026-08-05:
+   "ai summary should be smaller, and go below product title"). Panel-coloured
+   and unlit by default; .warn only when something is late, unanswered or has
+   stopped moving, because a banner that is always lit stops being seen at all.
+
+   SMALLER, at her request. The headline was 19px serif — bigger than the
+   Details rows it summarises, which read as the page shouting its own
+   conclusion. At 15px it is still the first thing the eye lands on under the
+   name without outranking the title above it.
+
+   With the serif gone (2026-08-06) it needed a new way to read as a sentence
+   rather than as a heading, since it is now the same family as everything
+   around it. Weight 300 — the only light thing on the page — against captions
+   at 600 and body at 400. It is the biggest text in the working column and the
+   thinnest, which is exactly what a summary is: the largest claim, made
+   quietly. */
+.sumbar{
+  display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;
+  border:1px solid var(--hair);border-left:3px solid var(--line);
+  background:var(--panel);border-radius:3px;padding:11px 13px;margin:0 0 18px;
+}
+.sumbar.warn{border-left-color:#e9c46a}
+.sum-main{flex:1;min-width:240px}
+.sum-head{
+  font-size:var(--t-lead);font-weight:var(--w-thin);line-height:1.4;
+  color:var(--ink);margin:0;letter-spacing:.005em;
+}
+.sum-time{font-size:var(--t-meta);line-height:1.55;color:var(--muted);margin:4px 0 0;max-width:64ch}
+.sum-facts{
+  list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:5px;
+  flex:none;max-width:280px;
+}
+.sum-facts li{
+  background:var(--chip);border-radius:2px;padding:4px 8px;
+  font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  white-space:nowrap;
+}
+.sumbar.warn .sum-facts li:first-child{color:#e9c46a}
+/* The comparison against the same garment at other factories. Hairline above
+   it rather than a box: it is the third sentence of the same summary, not a
+   second panel. */
+.sum-vs{font-size:var(--t-meta);line-height:1.55;color:var(--muted);margin:7px 0 0;
+  padding-top:7px;border-top:1px solid var(--hair);max-width:64ch}
+.sum-vs.warn{color:#e9c46a}
+.sum-facts li.vs{background:none;border:1px solid var(--hair);color:var(--pill)}
+
+/* --- The comment control on a round card, as an icon ---------------------
+   Tess, 2026-08-05: "'comment' on the 2nd proto should be an icon."
+
+   Round hit area, bubble inside it, count beside the bubble when there is
+   one. Sized to sit on the same baseline row as the words either side of it
+   without making the head taller. Quiet at zero — it is an invitation, not a
+   notification — and it takes the ink colour the moment there is something in
+   it, so a round with a conversation on it is visible from the top of the
+   page. */
+.sr-comments{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 7px;border-radius:2px;line-height:1;
+}
+.sr-comments:hover{background:var(--chip)}
+.sr-comments svg{display:block}
+.sr-cn{font-size:var(--t-cap);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+
+/* --- The round card's facts, in columns that line up ---------------------
+   Tess, 2026-08-05: "align text columns on the sample round card details."
+
+   These were a wrapping flex row, so each field was as wide as its own longest
+   word: "Requested" and "Received" and "Material leg" started at three
+   different places, and the second line of fields started nowhere near the
+   first. Nothing was wrong with any single field and the card still read as a
+   jumble, because the eye reads a table by its left edges and there weren't
+   any.
+
+   A grid fixes it without deciding how many columns there are: the tracks are
+   equal, they wrap by available width, and every caption in a column starts on
+   the same pixel as the one above it. 132px is wide enough for "Material leg"
+   and a date on one line each, which is what these fields hold.
+
+   auto-fit was still not enough, and this is the second pass at it (Tess,
+   2026-08-06: "the alignment here is very messy"). auto-fit sizes the grid
+   from how many fields the block happens to hold, and a round card has two
+   of these blocks stacked: the dates and legs, then the status and location.
+   Three fields in the first, two in the second, so the first drew three equal
+   tracks and the second drew two — and "Current location" started in the
+   middle of the card, under nothing, lined up with neither the column above
+   it nor the one beside it. Every individual block was internally tidy and
+   the card as a whole looked broken.
+
+   A fixed track count fixes it for good: both blocks are the same width, so
+   three named tracks means column two starts on the same pixel in every block
+   on every card, whatever each one happens to contain. Blocks with more than
+   three fields wrap onto a second row still on those tracks. The count steps
+   down at narrow widths rather than letting a track fall under 132px, which
+   is what "Sample requested" and a date need to sit on one line each. */
+.sr-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px 26px;align-items:start}
+@media(max-width:1040px){.sr-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.sr-facts{grid-template-columns:minmax(0,1fr)}}
+
+/* --- The round card head, on one band -----------------------------------
+   The head holds four things of different natures — a name, a bordered state
+   chip, a filled rating chip, a bare factory name — and each was sized by its
+   own padding and its own inherited line height. Centred in a flex row they
+   shared a midline but nothing else: three different box heights and three
+   different cap heights along one line, which is what made the top of the
+   card look ragged.
+
+   One height for anything chip-shaped, one line-height so the padding means
+   the same thing on each, and the bare words vertically centred against them.
+   Nothing changes size; they stop disagreeing about where their edges are. */
+.sr-head .sr-state,
+.sr-head .sr-rate,
+.sr-head .sr-eta,
+/* The full-screen head is the same band of chips and gets the same treatment,
+   so a chip is one height in this app rather than one height per header. */
+.sr-full .modal-head .sr-rate{
+  display:inline-flex;align-items:center;height:20px;line-height:1;
+  padding:0 10px;box-sizing:border-box;
+}
+.sr-head strong,.sr-head .sr-factory{display:inline-flex;align-items:center;height:20px;line-height:1}
+/* The one bordered control on the row comes down to the same band, so Edit no
+   longer stands a third taller than everything it sits beside. */
+.sr-head .sr-edit{padding:4px 12px;line-height:1;height:24px}
+.sr-head .sr-actions .btn.link{line-height:1;display:inline-flex;align-items:center;height:24px}
+.sr-head .sr-comments{height:24px}
+/* Notes are prose, not a column of facts — they keep the full measure and
+   stack, so a long fit note is never squeezed into a third of the card. */
+.sr-notes .sr-field + .sr-field{margin-top:14px}
+.sr-notes .sr-field .v{max-width:70ch}
+
+/* --- Full screen: one row of photographs, markups drawn on them ----------
+   Tess, 2026-08-05: "full screen view should show the images horizontally with
+   markups on them and comments below. user should be able to scroll
+   horizontally."
+
+   The rail is a single scrolling row with a snap point on each shot, so a swipe
+   lands on a photograph rather than between two. Each shot is a fixed, generous
+   width: equal-sized pictures are the only ones that can be compared, and a
+   portrait flat next to a landscape detail should not make one of them small.
+   Focusable, so the arrow keys work for anyone not using a trackpad. */
+.sr-full-rail{
+  display:flex;align-items:flex-start;gap:22px;padding:20px;
+  overflow-x:auto;overflow-y:hidden;min-height:0;
+  scroll-snap-type:x mandatory;scroll-padding-left:20px;
+}
+.sr-full-rail:focus-visible{outline:1px solid var(--line);outline-offset:-4px}
+.sr-full-rail .sr-full-shot{
+  flex:0 0 auto;scroll-snap-align:start;margin:0;
+  display:flex;flex-direction:column;align-items:flex-start;max-height:100%;
+}
+
+/* THE FRAME MUST BE EXACTLY THE PICTURE. The pins are stored as fractions of
+   the image and drawn with left/top percentages of this box, so any letterbox
+   between the box and the photograph puts every mark in the wrong place. Hence
+   an inline-block that shrink-wraps and an image sized by its own aspect ratio
+   — and deliberately NO object-fit:contain, which is the usual way to fit a
+   picture and the one thing that would break the markups. The height cap is in
+   vh so the picture, its caption and its notes all land inside one screen. */
+/* The frame is a button now (Tess, 2026-08-05: "full screen view should allow
+   user to make / edit notes") — clicking a photograph opens the marking editor
+   on it. Every browser default that would put space between the button box and
+   the picture is reset here, because the pins are positioned in per cent of
+   this box: one pixel of padding and every mark sits off the garment. */
+.sr-full-frame{position:relative;display:inline-block;line-height:0;flex:none;
+  padding:0;border:0;background:none;font:inherit;color:inherit;cursor:zoom-in}
+.sr-full-frame:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr-full-frame img{
+  display:block;width:auto;height:auto;
+  max-width:min(560px,68vw);max-height:calc(100vh - 300px);
+  background:var(--chip);
+}
+.sr-full-rail figcaption{
+  align-self:stretch;max-width:min(560px,68vw);
+  max-height:200px;overflow:auto;padding-right:4px;
+}
+
+/* A markup, where it was made. Numbered to match the sentence under the
+   picture, ringed in the page's dark so it stays legible on a white shirt and
+   on a black one, and never so large that it hides the thing it points at.
+   translate(-50%,-50%) puts the centre of the dot on the stored point.
+
+   Translucent for the same reason as .ann-pin above: full size is the view
+   where the fault is actually inspected, so it is the last place a marker
+   should be sitting on top of it. Same 68%, so a pin does not change character
+   between the drawer and the full-size view. */
+.sr-full-pin{
+  position:absolute;transform:translate(-50%,-50%);
+  min-width:20px;height:20px;padding:0 5px;border-radius:999px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(243,239,232,.68);color:var(--btnfg);
+  box-shadow:0 0 0 2px rgba(12,12,12,.55);
+  font-size:var(--t-meta);line-height:1;font-variant-numeric:tabular-nums;
+  pointer-events:none;
+}
+
+/* The comments, under the picture they are about, on the same rhythm as the
+   numbered dots above them. */
+.sr-full-rail .sr-full-pins{list-style:none;margin:10px 0 0;padding:0}
+.sr-full-rail .sr-full-pins li{
+  display:flex;gap:9px;align-items:baseline;
+  font-size:var(--t-body);line-height:1.55;color:var(--ink);margin-top:6px;
+}
+.sr-full-rail .sr-full-pins .n{
+  flex:none;min-width:18px;height:18px;border-radius:999px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--chip);color:var(--muted);font-size:var(--t-cap);line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+
+/* --- The small controls inside a comment --------------------------------
+   Tess, 2026-08-05: "the notes section is still very clunky to me on the
+   drawer reduce unneeded text, clean-up and make super clear … make reply
+   smaller and change font to match other fonts on page."
+
+   Reply, Edit, Cancel and Mark received were all .note-edit: 10px, uppercase,
+   .1em tracking — the face this app uses for field captions. In a column of
+   sentence-case prose that face reads as a label for whatever comes next, so
+   "REPLY" under a comment looked like a heading introducing the replies rather
+   than the button that writes one. And four tracked capitals in a 340px column
+   is most of what made the drawer feel busy.
+
+   So: the page's own text font, sentence case, 11.5px — smaller than the
+   comment it sits under, which is the hierarchy that was missing. Underlined
+   on hover rather than merely brightening, so it is unmistakably a control. */
+.note-act{
+  background:none;border:none;padding:0;cursor:pointer;
+  color:var(--muted);font:inherit;font-size:var(--t-sm);line-height:1.4;
+  text-transform:none;letter-spacing:0;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;
+}
+.note-act:hover{color:var(--ink)}
+/* Armed. The word has already changed to "Delete?" — the colour is the second
+   half of the same sentence, and it is the only red in the drawer, so nothing
+   else can be mistaken for it. Quiet until armed, on purpose: an always-red
+   Delete on every comment would make a conversation look dangerous. */
+.note-act.danger{color:var(--danger)}
+.note-act.danger:hover{color:var(--danger)}
+.note-act:disabled{cursor:default;opacity:.6;text-decoration:none}
+.note-acts .note-act,.note-edit-row .note-act{margin-left:0}
+/* Reply sits under the thread it answers, with air above it so it is not
+   mistaken for the last line of the comment. */
+.note > .note-act{margin-top:10px}
+
+.notes-empty{color:var(--muted);font-size:var(--t-sm);line-height:1.6;margin-bottom:16px}
+
+/* --- The profile picture, 30% smaller -----------------------------------
+   Tess, 2026-08-05: "profile sketch can be 30% smaller."
+
+   It filled the full 320px of the identity column and, at 3:4, stood 427px
+   tall — so the name, the style number, the season, the factory and the
+   fitting status all began below the fold on a laptop. It is the face of the
+   style, not the page. 70% of the column width is the 30% asked for, measured
+   the way it reads: the picture is 30% narrower and, holding its ratio, a
+   little over half the height it was, which is what gives the facts beside it
+   room to be seen at the same time. The frame keeps its aspect ratio and its
+   caption, so nothing about how it works changed. */
+.profile .cover{width:70%;min-width:180px}
+
+/* Also in development with — small (Tess: "this should be quite small"), and
+   now a titled section of its own under the status badges. */
+.siblings{gap:6px;margin:0}
+.sibling{padding:2px 8px;font-size:var(--t-meta);gap:6px}
+.sibling .st{font-size:var(--t-micro)}
+.sibling .sib-dot{width:5px;height:5px}
+
+/* --- The AI summary's title ---------------------------------------------
+   Tess, 2026-08-05: "ai summary should be titled ai summary." Above the
+   sentence rather than beside it, in the caption face every other titled
+   thing on this page uses, so the block is labelled the same way the round
+   cards are. */
+.sum-kicker{
+  display:block;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.16em;
+  color:var(--muted);margin-bottom:5px;
+}
+
+/* ===========================================================================
+   Spacing audit, 2026-08-06
+
+   Tess: "Audit spacing of all links and buttons and fields on all modals and
+   pages so they have appropriate space in between and are not too close to one
+   another. continue to scale down text / details where is makes sense".
+
+   Two instructions that pull opposite ways, and they resolve into one rule:
+   the TYPE keeps coming down, the AIR between things goes up. A row of small
+   text links set 6px apart reads as one grey smear and is genuinely hard to
+   hit; the same links at 11.5px set 12px apart read as three separate offers.
+   Density comes from smaller type, not from crowding.
+
+   Written as one block at the end rather than as edits scattered through the
+   file, so the whole audit can be read — or reverted — in one place.
+
+   THE STANDARD, applied below:
+     · a row of independent controls (buttons, text links)      12px
+     · an input paired with the button that acts on it           8px
+     · chips and pills, which are read as a set, not chosen from 7px
+     · a field and the next field                               18px
+     · a control and the thing it opens onto                    at least 18px
+   --------------------------------------------------------------------- */
+
+/* Rows of independent controls. Each of these is a set of separate offers,
+   and each was set tighter than the space between the words inside them. */
+/* These used to raise five rows above the defaults one at a time. The defaults
+   are the tokens now, so only the margins are left. */
+.export-actions{margin-bottom:20px}
+.trash-actions{padding:0 12px 14px}
+.addrefs-source{gap:8px}
+.mb-sec-edit{gap:8px}
+
+/* An input and the button that acts on it are ONE control in two parts, so
+   they stay closer than two buttons would — but 6px read as touching at these
+   type sizes, and the button's own border made it worse. */
+.mb-newboard,.lists-add,.ph-url,.img-capform,.note-reply-form{gap:8px}
+
+/* Chips are read as a set and chosen from rarely; they get less air than
+   buttons but more than they had, because at 5px the gaps disappeared into
+   the chip padding and the row read as one long bar. */
+.lists-chips,.note-chips,.sum-facts,.siblings,.dev-links .v{gap:7px}
+
+/* Fields. The label sits tight to its own input; the gap that matters is the
+   one to the NEXT field, which is what tells you where one answer ends. */
+.field{margin-bottom:18px}
+.row3{gap:16px}
+.field-hint{margin-top:6px}
+
+/* Modals. The body had the same padding as the head, so the first field sat
+   as close to the rule above it as the title did — and on a long form the
+   last control sat on the bottom edge. */
+.modal-body{padding:20px 20px 22px}
+.modal-head{padding:14px 20px}
+
+/* The scale-down half of the instruction, where it makes sense: the smallest
+   supporting text on the busiest surfaces. Nothing that is a heading, a name
+   or a number somebody reads off the screen to a factory. */
+.export-said{font-size:var(--t-meta)}
+.field label{font-size:var(--t-micro)}
+
+/* Pull from WIP -------------------------------------------------------------
+   The sheet beside the style, one row per field. Three columns of text and a
+   verb: what it says now, what the sheet says, and Use. The current value is
+   muted and the sheet's value is at full ink, because the eye should land on
+   the thing being proposed and then check it against the thing being replaced,
+   not the other way round.
+
+   "replace" is the only word in here that is coloured. Filling an empty field
+   is free; overwriting something a person typed is the decision worth half a
+   second, and the colour buys exactly that half second. */
+.wip{margin-top:14px}
+.wip-open{margin-bottom:0}
+.wip-body{margin-top:12px;border-top:1px solid var(--hair);padding-top:12px;
+  display:flex;flex-direction:column;gap:10px}
+.wip-src{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin:0}
+.wip-note{font-size:var(--t-sm);line-height:1.5;color:var(--muted);margin:0}
+.wip-row{display:grid;grid-template-columns:minmax(88px,.8fr) 1fr 1.2fr auto;gap:12px;
+  align-items:baseline;padding:8px 0;border-bottom:1px solid var(--hair)}
+.wip-row:last-of-type{border-bottom:none}
+.wip-f{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);
+  display:flex;flex-direction:column;gap:4px}
+.wip-kind{font-style:normal;font-size:var(--t-micro);letter-spacing:.14em;color:var(--faint)}
+.wip-kind.replace{color:var(--danger)}
+.wip-now{font-size:var(--t-sm);color:var(--muted);word-break:break-word}
+.wip-new{font-size:var(--t-body);color:var(--ink);word-break:break-word;
+  display:flex;flex-direction:column;gap:3px}
+.wip-from{font-style:normal;font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.wip-done{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.wip-rounds{padding-top:6px;display:flex;flex-direction:column;gap:6px}
+.wip-rounds ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.wip-rounds li{font-size:var(--t-sm);color:var(--muted)}
+.wip-rounds li b{font-weight:var(--w-cap);color:var(--ink)}
+.wip-paste{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.wip-paste label{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.wip-paste textarea{width:100%;font-family:inherit;resize:vertical}
+.wip-foot{display:flex;gap:var(--sp-ctl);flex-wrap:wrap;padding-top:2px}
+@media (max-width:720px){
+  .wip-row{grid-template-columns:1fr auto;gap:6px}
+  .wip-now,.wip-new{grid-column:1 / -1}
+}
+
+/* Archived work at a factory ------------------------------------------------
+   Below the live rows, dimmed, and labelled. The factory still has the sample,
+   so it is not hidden; it is not work, so it does not sit in the list you read
+   down on a call and it carries no chase colour. */
+.fx-none{font-size:var(--t-sm);color:var(--faint);padding:14px 2px}
+.fx-row.archived{opacity:.62}
+.fx-row.archived .fx-name a{color:var(--muted)}
+.fx-arch{display:inline-block;margin-left:9px;font-size:var(--t-micro);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint);border:1px solid var(--hair);padding:2px 6px;
+  line-height:1;padding-top:.28em}
+
+/* The rating dot in the factory list ----------------------------------------
+   The name row becomes a row so the dot sits in front of the name rather than
+   above it — .fx-name is a column (name over style number) and a bare child
+   would have stacked. align-items:baseline would drop the dot to the text
+   baseline; centre is what makes a round mark look level beside a cap height. */
+.fx-nameline{display:flex;align-items:center;gap:7px;min-width:0}
+.fx-nameline a{min-width:0;overflow-wrap:anywhere}
+.fx-nameline .sib-dot{flex:0 0 auto}
+/* Dimmed with the rest of the row on an archived style. The verdict still
+   stands; it is just not something anybody is acting on. */
+.fx-row.archived .fx-nameline .sib-dot{opacity:.75}
+
+/* The factory panel, rebuilt ------------------------------------------------
+   Tess, 2026-08-07: the dates were two bare labels at the far right of a row
+   with nothing saying which round they belonged to.
+
+   Three ideas in this layout. The summary strip carries the four numbers you
+   want before speaking to a factory. The rows are grouped by what can be done
+   about them rather than listed flat. And the dates are one sentence that names
+   its own round, so nothing has to be aligned or inferred across a row. */
+.fx-stats{display:flex;flex-wrap:wrap;gap:28px;padding:14px 0 18px;
+  border-bottom:1px solid var(--hair);margin-bottom:6px}
+.fx-stat{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fx-stat .v{font-size:var(--t-lead);font-weight:var(--w-title);color:var(--ink);line-height:1.1}
+.fx-stat .v.late{color:var(--danger)}
+.fx-stat .k{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.13em;color:var(--faint)}
+.fx-stat .quality{display:flex;align-items:center;gap:12px}
+.fx-stat .q{display:inline-flex;align-items:center;gap:5px}
+
+.fx-sec{margin-top:22px}
+.fx-sec:first-of-type{margin-top:8px}
+.fx-sec-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);
+  padding-bottom:6px;border-bottom:1px solid var(--hair)}
+.fx-sec-head .c{font-size:var(--t-micro);letter-spacing:.1em;color:var(--faint)}
+/* The rule the section is judged by, said once at the top rather than repeated
+   on every row that breaks it. */
+.fx-sec-note{margin-left:auto;text-transform:none;letter-spacing:0;font-size:var(--t-sm);color:var(--faint)}
+
+/* Four columns: who, where in the process, when — as a sentence — and how long.
+   The sentence column takes the slack, because it is the one being read. */
+.fx-row{display:grid;grid-template-columns:minmax(180px,1.3fr) minmax(110px,.7fr) minmax(220px,1.6fr) minmax(120px,auto);
+  gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--hair)}
+.fx-row:last-child{border-bottom:none}
+.fx-sub{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:2px}
+.fx-rounds{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.fx-where{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.fx-round{font-size:var(--t-sm);color:var(--ink)}
+/* The round, then both dates with their labels written out. Wrapping is by
+   pair, so a narrow column breaks between "requested" and "received" rather
+   than in the middle of either. */
+.fx-when{font-size:var(--t-sm);color:var(--ink);line-height:1.5;
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px}
+.fx-when-pair{white-space:nowrap}
+.fx-when-pair .l{color:var(--faint)}
+.fx-dur{display:flex;align-items:baseline;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.fx-days{font-size:var(--t-sm);font-weight:var(--w-cap);color:var(--ink);white-space:nowrap}
+/* A finished round is a fact, not a warning — it recedes. An open one that has
+   passed this factory's own average is the only red on the page. */
+.fx-days.done{font-weight:var(--w-body);color:var(--faint)}
+.fx-days.late{color:var(--danger)}
+.fx-row.late .fx-nameline a{color:var(--ink)}
+.fx-none{font-size:var(--t-sm);color:var(--faint);padding:14px 2px}
+
+@media (max-width:900px){
+  .fx-row{grid-template-columns:1fr auto;gap:6px 12px}
+  .fx-where{grid-column:1 / -1}
+  .fx-when{grid-column:1 / -1}
+  .fx-dur{grid-column:1 / -1;justify-content:flex-start}
+  .fx-stats{gap:20px}
+}
+
+/* The fitting date, under the fitting status it belongs to ------------------
+   Always present rather than revealed by choosing "Fitting scheduled": a field
+   that unmounts stops posting, and a field that stops posting blanks its column
+   on the next save. Quiet until it matters, which is enough. */
+.field-sub{display:block;margin-top:8px}
+.field-sub > span{display:block;font-size:var(--t-micro);font-weight:var(--w-cap);
+  text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:5px}
+
+/* The rating dot beside a style's name ---------------------------------------
+   Bigger than the one on a card, because it sits against display type and a 6px
+   dot next to 19px letters reads as dust on the screen. Nudged up off the
+   baseline so it centres on the cap height rather than sitting under it. */
+.sib-dot.title{width:9px;height:9px;margin-right:12px;vertical-align:.16em}

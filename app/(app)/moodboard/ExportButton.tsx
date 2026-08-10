@@ -65,7 +65,7 @@ export default function ExportButton({ name }: { name: string }) {
   }
 
   return (
-    <button className="btn ghost sm" onClick={exportPng} disabled={busy}>
+    <button className="btn link" onClick={exportPng} disabled={busy}>
       {busy ? "Exporting…" : "Export PNG"}
     </button>
   );

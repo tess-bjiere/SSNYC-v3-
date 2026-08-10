@@ -311,3 +311,72 @@ export async function addRefsToBoard(boardId: string, refIds: string[], sectionT
   revalidatePath("/moodboard");
   revalidatePath("/library");
 }
+
+
+/**
+ * Put styles in development onto a board.
+ *
+ * Tess, 2026-08-06: "You should be able to add styles in development to
+ * moodboards."
+ *
+ * A board is where a season is argued out, and half of what belongs in that
+ * argument is already being made — you cannot judge a new reference against a
+ * collection whose own styles are not on the wall beside it. Until now a board
+ * could only hold references, so the only way to show a style was to find a
+ * photograph of it and re-upload it as a reference, which produced a second
+ * copy of the same garment that then aged separately.
+ *
+ * A style tile carries `style_id` and an empty `ref_id`; nothing else about the
+ * board changes, and the picture is read live from the style's cover, so a
+ * style that gets better photographs next week gets them here too. Exactly like
+ * addRefsToBoard, this writes an id onto a board and touches no style at all:
+ * removing the tile removes the tile.
+ */
+export async function addStylesToBoard(
+  boardId: string,
+  styleIds: string[],
+  sectionTid?: string | null
+) {
+  await requireUser();
+  if (!styleIds.length) return;
+  const supabase = await createClient();
+  const { data: board } = await supabase
+    .from("moodboards")
+    .select("items")
+    .eq("id", boardId)
+    .maybeSingle();
+
+  const items: MBItem[] = (board?.items as MBItem[]) ?? [];
+  const maxY = items.reduce((m, i) => Math.max(m, i.y ?? 0), 0);
+  const maxZ = items.reduce((m, i) => Math.max(m, i.z ?? 0), 0);
+
+  let y = maxY + 220;
+  let x = 60;
+  let z = maxZ + 1;
+  const additions: MBImageItem[] = styleIds.map((style_id, idx) => {
+    const item: MBImageItem = {
+      iid: crypto.randomUUID(),
+      ref_id: "",
+      style_id,
+      x,
+      y,
+      z: z++,
+      w: 180,
+    };
+    x += 200;
+    if ((idx + 1) % 5 === 0) {
+      x = 60;
+      y += 260;
+    }
+    return item;
+  });
+
+  const next = insertItems(items, additions, sectionTid);
+
+  await supabase
+    .from("moodboards")
+    .update({ items: next, updated_at: new Date().toISOString() })
+    .eq("id", boardId);
+
+  revalidatePath("/moodboard");
+}

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/access";
 import { buildBrief, type VariationRequest, type VariationStyle } from "@/lib/variations";
 import { generateVariation, isImageGenConfigured } from "@/lib/imagegen";
+import { duplicateDraft, type DuplicateSeed } from "@/lib/clone";
 
 // AI variations, the two things that leave the browser (P5).
 //
@@ -96,6 +97,78 @@ export async function recordVariation(
 
   revalidatePath(`/styles/${styleId}`);
   return { ok: true, message: "Saved to this style's versions." };
+}
+
+/**
+ * Keep a variation as a NEW STYLE rather than as a version of this one.
+ *
+ * Tess, 2026-08-05: "create a new style or add alternate options to the
+ * existing style profile". Two outcomes, and which one is right is a judgement
+ * only the designer can make — a colourway is an option on this style, a
+ * re-length is often a different garment with its own rounds and its own
+ * number. Guessing would be worse than asking, so the box asks.
+ *
+ * The new style is built by the same duplicateDraft the "Duplicate + edit"
+ * button uses (lib/clone.ts, tested), with two differences that are the whole
+ * point of coming through this door: the variation goes on as the cover image,
+ * and the name says what was changed rather than naming a factory.
+ *
+ * The generated picture becomes the new style's cover and its first version.
+ * It does NOT go into a photography slot: those are photographs of a real
+ * sample, and a render is not one.
+ */
+export async function recordVariationAsStyle(
+  styleId: string,
+  req: VariationRequest,
+  imageUrl: string | null
+): Promise<VariationActionResult & { id?: string }> {
+  const supabase = await createClient();
+  const user = await requireUser();
+
+  const { data: src } = await supabase.from("styles").select("*").eq("id", styleId).maybeSingle();
+  if (!src) return { ok: false, message: "That style no longer exists." };
+
+  const brief = buildBrief(src as VariationStyle, req);
+  if (!brief.ready) return { ok: false, message: "Choose what you're changing and say what to." };
+
+  const image = (imageUrl ?? "").trim() || null;
+  const base = duplicateDraft(src as DuplicateSeed, {
+    // "Cropped Rib Tank — Colour: bone" is already the title of the brief, and
+    // it is exactly what this new style is.
+    name: brief.title,
+  });
+
+  const { data: made, error } = await supabase
+    .from("styles")
+    .insert({
+      ...base,
+      // A variation is not the same garment on a purchase order, so it does not
+      // inherit the number — unlike a factory duplicate, which must.
+      style_no: null,
+      // It has not been made yet, whatever the original's status is.
+      status: "development",
+      cover_image: image ?? base.cover_image,
+      created_by: user?.email ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !made) return { ok: false, message: error?.message ?? "Could not create the style." };
+
+  await supabase.from("style_versions").insert({
+    style_id: made.id,
+    version_no: 1,
+    changes: brief.versionNote,
+    season: (src as { season?: string | null }).season ?? null,
+    image,
+    is_ai_generated: true,
+    notes: brief.prompt,
+    created_by: user?.email ?? null,
+  });
+
+  revalidatePath("/development");
+  revalidatePath(`/styles/${styleId}`);
+  return { ok: true, id: made.id as string, message: "Made a new style from this variation." };
 }
 
 export async function imageModelConnected(): Promise<boolean> {

@@ -147,7 +147,9 @@ export default function UploadModal({
   onToast: (m: string) => void;
 }) {
   const FIELDS = kind === "editorial" ? EDITORIAL_FIELDS : REFERENCE_FIELDS;
-  const noun = kind === "editorial" ? "editorial image" : "reference";
+  // The `kind` value is the stored `references.type` and does NOT change with
+  // the rename — only the word a person reads does.
+  const noun = kind === "editorial" ? "campaign image" : "reference";
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<Picked[]>([]);
@@ -319,7 +321,7 @@ export default function UploadModal({
         </div>
 
         <div className="up-foot">
-          <button className="btn ghost sm" onClick={onClose} disabled={pending}>Cancel</button>
+          <button className="btn link" onClick={onClose} disabled={pending}>Cancel</button>
           <button className="btn sm" onClick={save} disabled={pending || picked.length === 0}>
             {pending ? progress || "Uploading…" : bulk ? `Add ${picked.length}` : `Add ${noun}`}
           </button>

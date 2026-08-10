@@ -20,46 +20,336 @@ export type PhotoSlot = {
   label: string;
   /** The one instruction that makes this shot match every other style's. */
   hint: string;
+  /**
+   * Shootable, named and stored like any other slot — but not counted.
+   *
+   * An optional slot never appears on the shot list, never holds a style back
+   * from "Complete", and never turns the photography page amber. It exists for
+   * the shot that is worth having a proper named place for and is not worth
+   * chasing every style for. See photoProgress.
+   */
+  optional?: boolean;
+  /**
+   * The family this shot belongs to — "model", "flat", "detail".
+   *
+   * Only optional slots use it, and only for one purpose: an empty optional
+   * slot is offered one family at a time, so eleven cards (six of them blank)
+   * never appear on a round that has two photographs on it. See visibleSlots.
+   */
+  group?: string;
+  /**
+   * Slots that appear and disappear together. Defaults to the slot's own id.
+   *
+   * A second lay flat is a FRONT AND A BACK — offering the front on its own
+   * and only revealing the back once the front is up would produce a lay flat
+   * with no reverse, which is the one thing a lay flat is for. So the pair
+   * shares a unit and is offered as a pair. A second detail has no such
+   * partner and is its own unit.
+   */
+  unit?: string;
+  /**
+   * Kept so what was shot into it still shows, never offered again.
+   *
+   * The house rule everywhere in this tool is that nothing is deleted, only
+   * stopped being read. Taking a slot out of this list entirely would satisfy
+   * "remove it from the screen" and would also make normalizePhotos drop the
+   * key on read — so a photograph already filed there would silently stop
+   * existing, which is the one outcome that is never acceptable.
+   *
+   * A retired slot therefore stays in the standard, stays readable, stays
+   * writable, and stays out of REQUIRED_SLOTS — visibleSlots simply never
+   * offers an empty one. It appears only where it already holds a picture.
+   */
+  retired?: boolean;
 };
 
+// The shoot list. This is the standard, it is what /photography counts, and it
+// is what the export prints. Adding to it changes what every style in the
+// studio is measured against, so it is a deliberate act.
+//
+// It grew on 2026-08-05 (Tess: "add model side shot and additional detail
+// shot"). Two shots, added two different ways, and the difference is the whole
+// argument:
+//
+//   Model — side   part of the standard. Three views of a garment on a body is
+//                  the set; two is a gap. Every style shot before today will
+//                  now read one short, which is correct and is the shot list
+//                  doing its job — it is telling the truth about what exists.
+//
+//   Detail 2       optional. "Additional" was the word, and a second detail is
+//                  by nature the shot that some garments need and most do not.
+//                  Making it count would have marked every simple style
+//                  incomplete forever over a photograph nobody wanted, and a
+//                  list that cries wolf stops being read.
+//
+// Flipping either one is a single word here — nothing else in the app decides
+// what counts.
+//
+// It grew again the same day (Tess: "have 4 detail shots and 2 then 2 layflat
+// shots"). Read as: room for four details, and the lay flats as two pairs —
+// four in all. "2 then 2" is a pair and then another pair, because a lay flat
+// is always a front and a back, and two loose extra flats would be the only
+// unpaired flats in the tool.
+//
+// Everything added here is optional. The standard a style is measured against
+// did not change: one detail and one pair of flats is still what a style owes.
+// Making four details compulsory would mark every simple garment permanently
+// incomplete, and a shot list that cries wolf stops being read. What these
+// slots buy is a NAMED, ordered place for the extra shots — so the fourth
+// detail of a jacket is in the same position on every jacket, instead of being
+// the ninth thing in a gallery pile.
+//
+// And they do not all show at once. An empty optional slot is offered one at a
+// time per family, so a round with two photographs on it shows one spare detail
+// card and one spare pair of flats — not six blank cards. See visibleSlots.
+//
+// The second pair of flats came back off the same day (Tess, 2026-08-05:
+// "second layflat options should just be detial shots"). In practice a garment
+// only lies flat one way that is worth photographing; what people were actually
+// reaching for the spare flat cards to hold was another close-up. So the two
+// extra named places moved to where they were being used: the detail family
+// goes to six, and the flats go back to one front and one back.
+//
+// The pair is retired rather than deleted (see `retired` on PhotoSlot). Any
+// round that already has a second lay flat on it still shows it, still reads
+// it, still exports it — it is simply never offered as an empty card again. A
+// photograph that exists is never hidden, which is the rule the whole grid runs
+// on and the reason nothing had to be migrated to make this change.
 export const PHOTO_SLOTS: readonly PhotoSlot[] = [
   {
     id: "model_front",
     label: "Model — front",
     hint: "Full length against the white wall. Tripod at chest height, model's feet on the tape mark.",
+    group: "model",
   },
   {
     id: "model_back",
     label: "Model — back",
     hint: "Same distance, same height, same crop as the front. Do not move the tripod between the two.",
+    group: "model",
+  },
+  {
+    id: "model_side",
+    label: "Model — side",
+    hint: "Quarter turn from the front, same distance and height as the other two. Arms down, hands still.",
+    group: "model",
   },
   {
     id: "flat_front",
     label: "Lay flat — front",
     hint: "Garment flat on white, shot from directly above, sleeves and hem squared.",
+    group: "flat",
+    unit: "flat1",
   },
   {
     id: "flat_back",
     label: "Lay flat — back",
     hint: "Same framing as the flat front so the pair can be shown side by side.",
+    group: "flat",
+    unit: "flat1",
+  },
+  {
+    id: "flat2_front",
+    label: "Second lay flat — front",
+    hint: "The other way this garment lies — open, styled, or the second colourway. Same height and framing as the first flat.",
+    group: "flat",
+    unit: "flat2",
+    optional: true,
+    // Retired, not removed — it stays here so a round that already has one
+    // keeps showing it. It sits in its original position in the order so that
+    // where it does appear, it appears next to the flat it belongs with.
+    retired: true,
+  },
+  {
+    id: "flat2_back",
+    label: "Second lay flat — back",
+    hint: "The back of the second flat, framed exactly like its front.",
+    group: "flat",
+    unit: "flat2",
+    optional: true,
+    retired: true,
   },
   {
     id: "detail",
     label: "Detail",
     hint: "Whatever the factory has to match — trim, hardware, a stitch, a finish.",
+    group: "detail",
+  },
+  {
+    id: "detail_2",
+    label: "Detail 2",
+    hint: "The second thing worth a close-up — a lining, a label, a closure. Only where there is one.",
+    group: "detail",
+    optional: true,
+  },
+  {
+    id: "detail_3",
+    label: "Detail 3",
+    hint: "A third close-up — a pocket bag, a vent, a zip pull. Same light as the others.",
+    group: "detail",
+    optional: true,
+  },
+  {
+    id: "detail_4",
+    label: "Detail 4",
+    hint: "A fourth close-up — a cuff, a seam finish, a hem. Same light as the others.",
+    group: "detail",
+    optional: true,
+  },
+  // The two places the second lay flat used to occupy, moved to the family
+  // they were being used for (Tess, 2026-08-05: "second layflat options should
+  // just be detial shots"). Same number of named places on the round as
+  // yesterday — they just point at close-ups now instead of at a flat nobody
+  // was shooting.
+  {
+    id: "detail_5",
+    label: "Detail 5",
+    hint: "A fifth close-up — hardware, a branded tape, an inside finish.",
+    group: "detail",
+    optional: true,
+  },
+  {
+    id: "detail_6",
+    label: "Detail 6",
+    hint: "A sixth close-up — hardware, a branded tape, an inside finish.",
+    group: "detail",
+    optional: true,
+  },
+  // Two more (Tess, 2026-08-06: "add slot for 2 more detial shots in sample
+  // images"). Optional, like every detail after the first, so no style in the
+  // studio is suddenly two shots short of the standard for having been
+  // photographed yesterday. visibleSlots still offers exactly one empty detail
+  // card at a time, so the round does not grow eight blank boxes — it grows one
+  // more place to put a close-up each time the last one is filled.
+  {
+    id: "detail_7",
+    label: "Detail 7",
+    hint: "A seventh close-up — a drawcord, an eyelet, a bar tack.",
+    group: "detail",
+    optional: true,
+  },
+  {
+    id: "detail_8",
+    label: "Detail 8",
+    hint: "The eighth and last named detail. Anything beyond this belongs in the images below.",
+    group: "detail",
+    optional: true,
   },
 ] as const;
 
+// Slots that are NOT part of the shoot.
+//
+// A sketch is an input to development, not an output of a photo session — it
+// exists before the garment does. It lives in the same styles.photos map
+// because that is where a single image keyed by a name belongs, and putting it
+// anywhere else would have cost a column for one URL. But it is kept out of
+// PHOTO_SLOTS so it never appears on the shot list, never counts against
+// "3 of 5 shot", and never turns the photography page amber for a style that
+// has simply not been drawn.
+//
+// The sketch became a PAIR on 2026-08-05 (Tess: "You should be able to add
+// front and back images"). Every other view of a garment in this tool is a
+// front and a back — the flats are, the model shots are — and the drawing was
+// the one thing that could only be seen from one side, which meant a back-neck
+// detail or a back yoke had nowhere to live but the gallery pile.
+//
+// The front keeps the id "sketch" rather than becoming "sketch_front". It is
+// worth an inconsistency in the id list: every sketch already drawn is stored
+// under that key, and renaming it would have meant either a data migration or a
+// silent disappearance. The label carries the change; the data does not move.
+export const DESIGN_SLOTS: readonly PhotoSlot[] = [
+  // "Front" and "Back", not "Sketch — front" and "Sketch — back": the section
+  // these two cards sit in is called Sketch (Tess, 2026-08-05: "change design
+  // to sketch"), and a card that repeats its own section header three times on
+  // one screen is noise. The full names still exist where they have to stand
+  // alone — the caption on the profile picture, in lib/styleCover.ts.
+  {
+    id: "sketch",
+    label: "Front",
+    hint: "The flat, the croquis, the drawing the tech pack was built from.",
+  },
+  {
+    id: "sketch_back",
+    label: "Back",
+    hint: "The back view of the same drawing — yoke, seams, whatever the front cannot show.",
+  },
+] as const;
+
+/** Every slot the map may legitimately hold, shoot and design together. */
+export const ALL_SLOTS: readonly PhotoSlot[] = [...PHOTO_SLOTS, ...DESIGN_SLOTS];
+
+/**
+ * The shots that count — the shoot list minus anything marked optional.
+ *
+ * This is what progress is measured against and what the photography rollout
+ * charts. An optional slot is still shot, still stored and still shown on the
+ * style; it simply is not something a style can be behind on.
+ */
+export const REQUIRED_SLOTS: readonly PhotoSlot[] = PHOTO_SLOTS.filter((s) => !s.optional);
+
 export type PhotoMap = Record<string, string>;
 
-const SLOT_IDS: readonly string[] = PHOTO_SLOTS.map((s) => s.id);
+/** Slots that appear and disappear together. Its own id unless it says otherwise. */
+function unitOf(slot: PhotoSlot): string {
+  return slot.unit ?? slot.id;
+}
+
+/**
+ * The cards actually worth putting on the screen, in standard order.
+ *
+ * Every required slot, always — an empty required card IS the shot list, and
+ * hiding it would be hiding the work. Every optional slot that holds a
+ * photograph, because a picture that exists is never hidden. And then exactly
+ * ONE empty optional unit per family: the next place to put a detail, the next
+ * pair of flats.
+ *
+ * The alternative was showing all eleven, and a round with two photographs on
+ * it would have been nine blank boxes — which reads as nine things somebody
+ * forgot rather than nine things nobody needs. This way the grid grows as it is
+ * used: fill the second detail and the third appears, fill the third and the
+ * fourth appears, and there is never more than one spare of anything.
+ *
+ * A list with no optional slots in it comes back untouched, so the design
+ * slots and the filed view pass straight through.
+ */
+export function visibleSlots(slots: readonly PhotoSlot[], photos: PhotoMap): PhotoSlot[] {
+  // A unit counts as used the moment any one of its slots holds a picture: a
+  // second lay flat with only a front on it is still in play, and hiding its
+  // back would leave the pair permanently half-shot.
+  const used = new Set<string>();
+  for (const s of slots) if (photos[s.id]) used.add(unitOf(s));
+
+  // The first unused optional unit in each family — the one open offer.
+  //
+  // A retired unit is never the offer, and is never allowed to be the reason a
+  // family has no offer: it is skipped here entirely, so the next live unit
+  // behind it takes the place. What it does NOT lose is the line above — if it
+  // holds a picture it is in `used`, and `used` always shows.
+  const offered = new Map<string, string>();
+  for (const s of slots) {
+    if (!s.optional || s.retired) continue;
+    const u = unitOf(s);
+    if (used.has(u)) continue;
+    const family = s.group ?? u;
+    if (!offered.has(family)) offered.set(family, u);
+  }
+
+  return slots.filter((s) => {
+    if (!s.optional) return true;
+    const u = unitOf(s);
+    return used.has(u) || offered.get(s.group ?? u) === u;
+  });
+}
+
+const SHOOT_IDS: readonly string[] = REQUIRED_SLOTS.map((s) => s.id);
+const SLOT_IDS: readonly string[] = ALL_SLOTS.map((s) => s.id);
 
 export function isPhotoSlot(id: string): boolean {
   return SLOT_IDS.includes(id);
 }
 
 export function photoSlot(id: string): PhotoSlot | null {
-  return PHOTO_SLOTS.find((s) => s.id === id) ?? null;
+  return ALL_SLOTS.find((s) => s.id === id) ?? null;
 }
 
 /**
@@ -105,9 +395,12 @@ export type PhotoProgress = {
   complete: boolean;
 };
 
+// Progress is measured against the required shots only. A style with no sketch
+// is not an unfinished shoot, and neither is one without a second detail —
+// see the optional flag on PhotoSlot.
 export function photoProgress(photos: PhotoMap): PhotoProgress {
-  const missing = SLOT_IDS.filter((id) => !photos[id]);
-  const total = SLOT_IDS.length;
+  const missing = SHOOT_IDS.filter((id) => !photos[id]);
+  const total = SHOOT_IDS.length;
   return {
     filled: total - missing.length,
     total,
@@ -116,10 +409,46 @@ export function photoProgress(photos: PhotoMap): PhotoProgress {
   };
 }
 
-/** "3 of 5 shot" / "Complete" — the one-line summary for the section header. */
+/**
+ * Set or clear one slot in the RAW stored jsonb, returning a new raw object.
+ *
+ * This is what the server action writes through, and it is deliberately not
+ * withPhoto. withPhoto operates on a normalised map, and a normalised map has
+ * already dropped every key the slot list does not define — so writing one back
+ * would silently delete the gallery, and any key a later version of this file
+ * adds, every time somebody replaced a single photograph. The module header
+ * promises normalizePhotos "drops unknown keys on read but never writes"; this
+ * function is what makes that true on the write side too.
+ *
+ * An unknown slot id is still refused, so a hand-made form post cannot invent
+ * a key — but an unknown key already in the map is left exactly where it is.
+ */
+export function writePhotos(
+  raw: unknown,
+  slotId: string,
+  url: string | null | undefined
+): Record<string, unknown> {
+  const base: Record<string, unknown> =
+    raw && typeof raw === "object" && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
+  if (!isPhotoSlot(slotId)) return base;
+  const clean = (url ?? "").trim();
+  if (clean) base[slotId] = clean;
+  else delete base[slotId];
+  return base;
+}
+
+/**
+ * "3 of 5 shot" / "" — the one-line summary for the section header.
+ *
+ * A finished round says nothing (Tess, 2026-08-06: "remove complete", on the
+ * "SAMPLE IMAGES  COMPLETE" heading). The label exists to say what is still
+ * missing; once nothing is, the word is a badge for having done the ordinary
+ * thing, and every finished style carried one at the top of its biggest
+ * section. The empty string is what the header already renders as nothing.
+ */
 export function photoProgressLabel(photos: PhotoMap): string {
   const p = photoProgress(photos);
-  if (p.complete) return "Complete";
+  if (p.complete) return "";
   if (p.filled === 0) return `Not shot — ${p.total} slots`;
   return `${p.filled} of ${p.total} shot`;
 }

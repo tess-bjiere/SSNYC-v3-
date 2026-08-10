@@ -12,6 +12,7 @@ import {
   removeImage,
   toSections,
   itemKind,
+  imageKey,
   type MBItem,
   type MBImageItem,
   type MBDividerItem,
@@ -303,4 +304,69 @@ test("a legacy board with no gi at all still renders and survives an edit", () =
   assert.deepEqual(ids(after), ids(legacy));
   // No dividers anywhere, so nothing gets filed into a phantom section.
   assert.ok(after.every((i) => typeof i.gi === "undefined"));
+});
+
+// --- Styles on a board (Tess, 2026-08-06: "You should be able to add styles in
+// development to moodboards"). ------------------------------------------------
+
+const styleTile = (iid: string, styleId: string, gi?: number): MBImageItem => ({
+  iid,
+  ref_id: "",
+  style_id: styleId,
+  x: 60,
+  y: 60,
+  z: z++,
+  w: 180,
+  ...(gi === undefined ? {} : { gi }),
+});
+
+test("a style tile and a reference tile can never collide in the dedupe", () => {
+  // Same underlying uuid on both, which is the case the prefix exists for.
+  const same = "0000-0000";
+  assert.notEqual(
+    imageKey({ ...img("a"), ref_id: same }),
+    imageKey(styleTile("b", same))
+  );
+});
+
+test("a tile pointing at nothing is left alone rather than collapsed", () => {
+  const orphan = { ...img("a"), ref_id: "" };
+  assert.equal(imageKey(orphan), "");
+  const kept = toSections([orphan, { ...img("b"), ref_id: "" }]).sections[0].images;
+  assert.equal(kept.length, 2);
+});
+
+test("the same style placed twice shows once, like a reference", () => {
+  const secs = toSections([
+    styleTile("t1", "s1", 0),
+    styleTile("t2", "s1", 1),
+    styleTile("t3", "s2", 2),
+  ]).sections;
+  assert.deepEqual(
+    secs[0].images.map((i) => i.iid),
+    ["t1", "t3"]
+  );
+});
+
+test("styles and references live side by side in one section", () => {
+  const secs = toSections([
+    div("d1", "Outerwear", 0),
+    img("r1", 1),
+    styleTile("t1", "s1", 2),
+  ]).sections;
+  assert.equal(secs.length, 1);
+  assert.deepEqual(
+    secs[0].images.map((i) => i.iid),
+    ["r1", "t1"]
+  );
+});
+
+test("inserting a style into a section does not disturb the references in it", () => {
+  const before: MBItem[] = [div("d1", "Outerwear", 0), img("r1", 1), img("r2", 2)];
+  const after = insertItems(before, [styleTile("t1", "s1")], "d1");
+  const secs = toSections(after).sections;
+  assert.deepEqual(
+    secs[0].images.map((i) => i.iid),
+    ["r1", "r2", "t1"]
+  );
 });

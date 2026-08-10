@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/access";
 import { mailConfigured, readPrefs } from "@/app/actions/notify";
@@ -35,16 +34,14 @@ export default async function NotificationsPage() {
         </div>
       )}
 
+      {/* One line, not two paragraphs. Which styles you hear about is worth
+          saying once because it is not visible anywhere else; "back to
+          Development" is what the nav is for. */}
       <p className="muted-line">
-        You&rsquo;ll hear about styles you created and styles you&rsquo;ve commented on. You are
-        never emailed about your own actions.
+        Styles you created or commented on. Never your own actions.
       </p>
 
       <PrefsForm initial={mine} />
-
-      <p className="muted-line">
-        Prefer a different mix? <Link href="/development">Back to Development</Link>
-      </p>
     </div>
   );
 }

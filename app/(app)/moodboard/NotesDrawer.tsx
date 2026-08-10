@@ -89,7 +89,7 @@ export default function NotesDrawer({
                       <textarea className="textarea" name="text" defaultValue={n.text} style={{ minHeight: 70 }} />
                       <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                         <button className="btn sm" type="submit">Save</button>
-                        <button className="btn ghost sm" type="button" onClick={() => setEditing(null)}>
+                        <button className="btn link" type="button" onClick={() => setEditing(null)}>
                           Cancel
                         </button>
                       </div>

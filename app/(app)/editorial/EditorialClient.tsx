@@ -1,5 +1,6 @@
 "use client";
 
+import Select from "@/app/components/Select";
 import { useMemo, useState } from "react";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
@@ -119,17 +120,20 @@ export default function EditorialClient({
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title serif">Editorial</h1>
-        <span className="count">
-          {list.length} / {refs.length}
-        </span>
+        <h1 className="page-title display">Campaign</h1>
         <div className="spacer" />
-        <select className="select lib-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="newest">Newest</option>
-          <option value="designer">Designer A–Z</option>
-          <option value="photographer">Photographer</option>
-          <option value="model">Model</option>
-        </select>
+        <Select
+          className="select lib-sort"
+          aria-label="Sort"
+          value={sort}
+          onChange={setSort}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "designer", label: "Designer A–Z" },
+            { value: "photographer", label: "Photographer" },
+            { value: "model", label: "Model" },
+          ]}
+        />
         <div className="dens" title="Image size">
           {([["sm", 4, "Smaller"], ["md", 3, "Medium"], ["lg", 2, "Larger"]] as const).map(([k, n, label]) => (
             <button key={k} className={"dens-btn" + (size === k ? " active" : "")} onClick={() => setSize(k)} title={label}>
@@ -143,29 +147,27 @@ export default function EditorialClient({
       <div className="lib-bar">
         <div className="lib-filters" style={{ margin: 0 }}>
           {FACETS.map((f) => (
-            <select
+            <Select
               key={f.key}
               className="select"
+              aria-label={f.label}
               value={sel[f.key] || ""}
-              onChange={(e) => setSel((s) => ({ ...s, [f.key]: e.target.value }))}
-            >
-              <option value="">{f.label}</option>
-              {(options[f.key] ?? []).map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSel((s) => ({ ...s, [f.key]: v }))}
+              options={[
+                { value: "", label: f.label },
+                ...(options[f.key] ?? []).map((v) => ({ value: v, label: v })),
+              ]}
+            />
           ))}
           {activeFilters > 0 && (
-            <button className="btn ghost sm" onClick={() => { setSel({}); setQ(""); }}>
+            <button className="btn link" onClick={() => { setSel({}); setQ(""); }}>
               Clear ({activeFilters})
             </button>
           )}
         </div>
         <input
           className="input lib-search"
-          placeholder="Search editorial by designer, photographer, model, location, year…"
+          placeholder="Search campaign by designer, photographer, model, location, year…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -174,8 +176,8 @@ export default function EditorialClient({
       {list.length === 0 ? (
         <div className="empty">
           {refs.length === 0
-            ? "No editorial images yet. Use + Add to upload the first one."
-            : "No editorial images match those filters."}
+            ? "No campaign images yet. Use + Add to upload the first one."
+            : "No campaign images match those filters."}
         </div>
       ) : (
         <div className="grid" style={{ gridTemplateColumns: `repeat(auto-fill,minmax(${SIZE_MIN[size]}px,1fr))` }}>

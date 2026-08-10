@@ -23,6 +23,12 @@ export default async function SetupPage() {
     anonCanReadPrivateTable: await anonCanReadPrivateTable(),
     hasMailer: Boolean(process.env.RESEND_API_KEY && process.env.NOTIFY_FROM),
     hasImagegen: Boolean(process.env.IMAGE_API_KEY && process.env.IMAGE_API_URL),
+    // Read individually rather than as a pair, so the page can tell "neither"
+    // apart from "one of the two", which is the state that actually confuses
+    // people: the dashboard shows a Google variable and the app says there is
+    // none.
+    hasWipEmail: Boolean((process.env.GOOGLE_SA_EMAIL ?? "").trim()),
+    hasWipKey: Boolean((process.env.GOOGLE_SA_PRIVATE_KEY ?? "").trim()),
   });
 
   const summary = summarize(checks);
@@ -41,7 +47,7 @@ export default async function SetupPage() {
           marginBottom: 22,
         }}
       >
-        <h1 className="serif" style={{ fontSize: 24, margin: 0 }}>
+        <h1 className="display" style={{ fontSize: "var(--t-display)", margin: 0 }}>
           Setup
         </h1>
         <span className="count">{summary.headline}</span>
@@ -106,7 +112,7 @@ function Row({ check }: { check: Check }) {
       </span>
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 14 }}>{check.title}</span>
+          <span style={{ fontSize: "var(--t-body)", fontWeight: "var(--w-title)" }}>{check.title}</span>
           <span
             className="badge"
             style={{ color: dot.color, borderColor: dot.color }}

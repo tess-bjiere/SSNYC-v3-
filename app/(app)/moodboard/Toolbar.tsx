@@ -1,5 +1,6 @@
 "use client";
 
+import Select from "@/app/components/Select";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createBoard, addDivider, archiveBoard } from "@/app/actions/moodboards";
@@ -60,19 +61,13 @@ export default function Toolbar({
 
   return (
     <div className="mb-toolbar">
-      <select
+      <Select
         className="select mb-boardsel"
+        aria-label="Board"
         value={currentId}
-        onChange={(e) =>
-          router.push(`/moodboard?board=${e.target.value}${showingArchived ? "&archived=1" : ""}`)
-        }
-      >
-        {boards.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
+        onChange={(v) => router.push(`/moodboard?board=${v}${showingArchived ? "&archived=1" : ""}`)}
+        options={boards.map((b) => ({ value: b.id, label: b.name }))}
+      />
 
       {!showingArchived && (
         <form action={createBoard} className="mb-newboard">
@@ -97,7 +92,7 @@ export default function Toolbar({
         ))}
       </div>
 
-      <button className="btn ghost sm" onClick={share}>
+      <button className="btn link" onClick={share}>
         {copied ? "Copied ✓" : "Share link"}
       </button>
 
@@ -112,9 +107,9 @@ export default function Toolbar({
       )}
 
       {showingArchived ? (
-        <a className="btn ghost sm" href="/moodboard">← Active boards</a>
+        <a className="btn link" href="/moodboard">← Active boards</a>
       ) : archivedCount > 0 ? (
-        <a className="btn ghost sm" href="/moodboard?archived=1">Archived · {archivedCount}</a>
+        <a className="btn link" href="/moodboard?archived=1">Archived · {archivedCount}</a>
       ) : null}
     </div>
   );

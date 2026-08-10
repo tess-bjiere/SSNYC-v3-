@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, DEV_BYPASS } from "@/lib/access";
 import { refThumb, type Reference } from "@/lib/types";
+import { styleCoverUrl } from "@/lib/styleCover";
 import { toSections, itemKind, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
 import AddRefs from "./AddRefs";
 import NotesDrawer from "./NotesDrawer";
@@ -68,6 +69,34 @@ export default async function MoodboardPage({
     }
   }
 
+  // Styles placed on this board (Tess, 2026-08-06: "You should be able to add
+  // styles in development to moodboards"). Same shape as the reference lookup
+  // above and the same rule: one query for the whole board, never one per tile.
+  const styleTileIds = Array.from(
+    new Set(imageItems.map((i) => (i.style_id ?? "").trim()).filter(Boolean))
+  );
+  let styleTileMap: Record<string, { id: string; name: string; src: string }> = {};
+  if (styleTileIds.length) {
+    const { data: rows } = await supabase
+      .from("styles")
+      .select("id,name,cover_image,photos,deleted_at")
+      .in("id", styleTileIds);
+    styleTileMap = Object.fromEntries(
+      (rows ?? [])
+        // A style in the trash stops being read, exactly as everywhere else —
+        // the tile stays on the board, so restoring the style brings it back.
+        .filter((r) => !r.deleted_at)
+        .map((r) => [
+          r.id as string,
+          {
+            id: r.id as string,
+            name: (r.name as string) || "Untitled",
+            src: styleCoverUrl(r) ?? "",
+          },
+        ])
+    );
+  }
+
   const { data: libData } = await supabase
     .from("references")
     .select("*")
@@ -75,11 +104,27 @@ export default async function MoodboardPage({
     .order("created_at", { ascending: false });
   const library = (libData ?? []) as Reference[];
 
+  // Everything that could be put on a board from the development side. Archived
+  // styles are included on purpose — last season's coat is exactly the thing
+  // you pin up beside this season's, and a board is a place to argue, not a
+  // work queue.
+  const { data: devData } = await supabase
+    .from("styles")
+    .select("id,name,season,status,cover_image,photos")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  const devStyles = (devData ?? []).map((r) => ({
+    id: r.id as string,
+    name: (r.name as string) || "Untitled",
+    season: (r.season as string) || "",
+    status: (r.status as string) || "",
+    src: styleCoverUrl(r) ?? "",
+  }));
+
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title serif">Moodboard</h1>
-        {current && <span className="count">{shownImageCount} images</span>}
+        <h1 className="page-title display">Moodboard</h1>
         {showingArchived && <span className="badge archived">Archived view</span>}
       </div>
 
@@ -108,6 +153,21 @@ export default async function MoodboardPage({
                 label: s.label,
                 images: s.images
                   .map((img) => {
+                    // A style tile shows the style's own cover and wears its
+                    // name in the "in development" tag, which is both true and
+                    // the shortcut to the profile. It has no reference behind
+                    // it, so clicking the picture opens nothing — the tag is
+                    // the way in.
+                    const styleTile = img.style_id ? styleTileMap[img.style_id] : undefined;
+                    if (styleTile) {
+                      return {
+                        iid: img.iid,
+                        src: styleTile.src,
+                        title: styleTile.name,
+                        ref: null,
+                        dev: [{ id: styleTile.id, name: styleTile.name }],
+                      };
+                    }
                     const ref = refMap[img.ref_id];
                     return {
                       iid: img.iid,
@@ -126,6 +186,7 @@ export default async function MoodboardPage({
           <AddRefs
             boardId={current.id}
             library={library}
+            styles={devStyles}
             sections={sections
               .filter((s) => s.tid)
               .map((s) => ({ tid: s.tid as string, label: s.label || "Untitled section" }))}

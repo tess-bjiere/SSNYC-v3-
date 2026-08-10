@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import Select from "@/app/components/Select";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { addRefsToBoard } from "@/app/actions/moodboards";
@@ -79,6 +80,34 @@ export default function LibraryClient({
     setTimeout(() => setToast(null), 1800);
   }
 
+  // Deep link: /library?ref=<id> opens that reference's card straight away.
+  //
+  // This is what the "Reference(s)" strip on a style profile links to (Tess,
+  // 2026-08-05: "These should link to editable view of product from library").
+  // The reference used to link to /r/<id>, which is the read-only page built
+  // for sending outside the studio — you could look but not correct.
+  //
+  // Read off window.location rather than useSearchParams on purpose: this is a
+  // one-shot instruction, not state the component tracks, and useSearchParams
+  // would drag a Suspense boundary in around the whole library grid for a
+  // question asked exactly once on mount.
+  //
+  // The query string is then wiped with replaceState, so closing the card
+  // leaves you in the library rather than one refresh away from it opening
+  // again, and a back-navigation does not re-summon a modal you just shut.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("ref");
+    if (!id) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    const hit = refs.find((r) => r.id === id);
+    if (hit) setDetail(hit);
+    // A linked reference can be in the Trash, in which case it is not in the
+    // grid at all. Silence would read as a broken link, so say what happened.
+    else flashToast("That reference is in the Trash.");
+    // Mount only — a later change to `refs` is a re-render, not a new request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Values actually in use on a reference, per field. These are what keep a
   // removed-but-still-tagged option reachable in the filters.
   const inUse = useMemo(() => {
@@ -151,17 +180,24 @@ export default function LibraryClient({
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title serif">Library</h1>
-        <span className="count">
-          {list.length} / {refs.length}
-        </span>
+        {/* "References", matching the tab (Tess, 2026-08-06: "change library to
+            references"). The page heading follows the navigation, because a
+            tab that says one word and a heading that says another reads as two
+            different places. The route is still /library. */}
+        <h1 className="page-title display">References</h1>
         <div className="spacer" />
-        <select className="select lib-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="newest">Newest</option>
-          <option value="designer">Designer A–Z</option>
-          <option value="category">Category</option>
-          <option value="garment">Garment</option>
-        </select>
+        <Select
+          className="select lib-sort"
+          aria-label="Sort"
+          value={sort}
+          onChange={setSort}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "designer", label: "Designer A–Z" },
+            { value: "category", label: "Category" },
+            { value: "garment", label: "Garment" },
+          ]}
+        />
         <div className="dens" title="Image size">
           {([["sm", 4, "Smaller"], ["md", 3, "Medium"], ["lg", 2, "Larger"]] as const).map(([k, n, label]) => (
             <button key={k} className={"dens-btn" + (size === k ? " active" : "")} onClick={() => setSize(k)} title={label}>
@@ -189,17 +225,20 @@ export default function LibraryClient({
 
       <div className="lib-filters">
         {FACETS.map((f) => (
-          <select key={f.key} className="select" value={sel[f.key] || ""} onChange={(e) => setSel((s) => ({ ...s, [f.key]: e.target.value }))}>
-            <option value="">{f.label}</option>
-            {(options[f.key] ?? []).map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
+          <Select
+            key={f.key}
+            className="select"
+            aria-label={f.label}
+            value={sel[f.key] || ""}
+            onChange={(v) => setSel((s) => ({ ...s, [f.key]: v }))}
+            options={[
+              { value: "", label: f.label },
+              ...(options[f.key] ?? []).map((v) => ({ value: v, label: v })),
+            ]}
+          />
         ))}
         {activeFilters > 0 && (
-          <button className="btn ghost sm" onClick={() => { setSel({}); setQ(""); }}>
+          <button className="btn link" onClick={() => { setSel({}); setQ(""); }}>
             Clear ({activeFilters})
           </button>
         )}

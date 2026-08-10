@@ -42,6 +42,9 @@ export async function stylesForReference(referenceId: string): Promise<LinkedSty
     .from("styles")
     .select("id,name,status,style_no")
     .in("id", ids)
+    // The join row survives a trip to the Trash — nothing is deleted — so the
+    // filter belongs here rather than on the link.
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   return (data ?? []) as LinkedStyle[];
@@ -52,7 +55,7 @@ export async function stylesForReference(referenceId: string): Promise<LinkedSty
 export async function searchStyles(q: string): Promise<LinkedStyle[]> {
   await requireUser();
   const supabase = await createClient();
-  let query = supabase.from("styles").select("id,name,status,style_no");
+  let query = supabase.from("styles").select("id,name,status,style_no").is("deleted_at", null);
   const term = (q ?? "").trim();
   if (term) {
     // Escape the PostgREST pattern separators so a comma or a paren in the
@@ -62,6 +65,68 @@ export async function searchStyles(q: string): Promise<LinkedStyle[]> {
   }
   const { data } = await query.order("updated_at", { ascending: false }).limit(12);
   return (data ?? []) as LinkedStyle[];
+}
+
+// The other direction: references a style profile can be linked to.
+//
+// Until now linking only ever happened from the reference side — you opened
+// something in the Library or on a board and chose "Develop this". The join
+// table has always been many-to-many (its primary key is the pair), so a style
+// could always carry several references; there was simply no way to say so from
+// the style. Tess, 2026-08-04: "you should be able to link multiple products in
+// library to single style in development." It could. It just had no button.
+export type LinkableReference = {
+  id: string;
+  designer: string | null;
+  year: string | null;
+  season: string | null;
+  garment: string | null;
+  image_url: string | null;
+  image: string | null;
+  thumb_url: string | null;
+  thumb: string | null;
+};
+
+const REF_COLS = "id,designer,year,season,garment,image_url,image,thumb_url,thumb";
+
+/**
+ * References the "Link a reference" picker offers.
+ *
+ * Trashed references are excluded — you should not be able to start a new
+ * dependency on something already on its way out. A reference trashed *after*
+ * it was linked keeps its place on the profile, marked "In Trash", because
+ * removing it would erase where the style came from. Provenance survives the
+ * bin; new links do not start in it.
+ *
+ * `exclude` is the set already on this style, filtered here rather than in the
+ * UI so the picker never offers a no-op.
+ */
+export async function searchReferences(
+  q: string,
+  exclude: readonly string[] = []
+): Promise<LinkableReference[]> {
+  await requireUser();
+  const supabase = await createClient();
+
+  let query = supabase.from("references").select(REF_COLS).is("deleted_at", null);
+
+  const term = (q ?? "").trim();
+  if (term) {
+    // Same escaping as searchStyles: strip the characters PostgREST uses to
+    // separate filter terms so a comma or a paren cannot break out of the `or`.
+    const safe = term.replace(/[,()*]/g, " ").trim();
+    if (safe) {
+      query = query.or(
+        `designer.ilike.%${safe}%,garment.ilike.%${safe}%,season.ilike.%${safe}%,year.ilike.%${safe}%`
+      );
+    }
+  }
+
+  // Over-fetch a little so the exclusions below cannot empty the list.
+  const { data } = await query.order("created_at", { ascending: false }).limit(24);
+
+  const skip = new Set(exclude);
+  return ((data ?? []) as LinkableReference[]).filter((r) => !skip.has(r.id)).slice(0, 12);
 }
 
 export type LinkResult = { ok: boolean; error?: string; styles?: LinkedStyle[] };

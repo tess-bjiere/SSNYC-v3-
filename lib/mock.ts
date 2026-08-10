@@ -61,6 +61,15 @@ export const mockStyles: Style[] = [
   name: s[0] as string,
   category: null,
   garment: s[3] as string,
+  fabric: (["Butter Rib", "Cotton Twill", "Poplin", "French Terry", "Silk", "Nylon"] as string[])[i % 6],
+  colors: (["Black / Bone", "Olive", "Washed Indigo / Chalk", "Sage", "Ecru", "Black"] as string[])[i % 6],
+  material: i < 2 ? (["100% cotton", "98% cotton / 2% elastane"] as string[])[i] : null,
+  // The spec fields, filled on the first two so DEMO mode shows what a fully
+  // specified style looks like and what a half-specified one looks like.
+  blank_style: i === 0 ? "IND4000 + F102 - Black" : null,
+  hs_code: i < 2 ? "6109.10.00" : null,
+  country_of_origin: i < 2 ? (["Portugal", "Vietnam"] as string[])[i] : null,
+  weight_lbs: i < 2 ? [0.42, 1.1][i] : null,
   designer: "In-house",
   brand: "SOUS SOUS",
   status: s[2] as Style["status"],
@@ -70,12 +79,25 @@ export const mockStyles: Style[] = [
   factory: (s[4] as string) || null,
   cover_image: ph(tones[i % tones.length]),
   tech_pack_url: "https://example.com/techpack",
+  wip_url: "https://example.com/wip",
   notes: i === 0 ? "Repurpose of SS26 tank — new washed-pastel colorway." : null,
   fit_notes: i === 0 ? "Runs long through the body — the block still needs 1cm off the front rise." : null,
-  photos: null,
+  // The first two styles are drawn, so MOCK mode exercises the profile-picture
+  // resolution in lib/styleCover.ts rather than only its cover_image fallback:
+  // one with a front/back pair, one with a front alone, and the rest still
+  // falling through to the inherited cover. All three states on one grid.
+  photos: (i === 0
+    ? { sketch: ph(tones[(i + 3) % tones.length]), sketch_back: ph(tones[(i + 4) % tones.length]) }
+    : i === 1
+      ? { sketch: ph(tones[(i + 3) % tones.length]) }
+      : null) as Record<string, string> | null,
   created_by: "tess@theloyalist.com",
   created_at: "2026-07-10",
   updated_at: "2026-07-20",
+  // Nothing is on the Library shelf in the demo data either: it fills by
+  // submission, not by status. See app/(app)/style-library/page.tsx.
+  library_at: null,
+  deleted_at: null,
 }));
 
 // Every style's rounds in one list, for the views that read across styles rather
@@ -96,17 +118,20 @@ export function mockStyleBundle(id: string): {
   return {
     style,
     versions: [
-      { id: "v2", style_id: style.id, version_no: 2, changes: "New colorway — sage", season: "SS27", image: null, is_ai_generated: true, notes: null, created_by: "tess@theloyalist.com", created_at: "2026-07-18" },
-      { id: "v1", style_id: style.id, version_no: 1, changes: "Original — washed indigo", season: "SS26", image: null, is_ai_generated: false, notes: null, created_by: "tess@theloyalist.com", created_at: "2026-05-02" },
+      { id: "v2", style_id: style.id, version_no: 2, changes: "New colorway — sage", season: "SS27", image: null, is_ai_generated: true, notes: null, spawned_style_id: null, deleted_at: null, created_by: "tess@theloyalist.com", created_at: "2026-07-18" },
+      { id: "v1", style_id: style.id, version_no: 1, changes: "Original — washed indigo", season: "SS26", image: null, is_ai_generated: false, notes: null, spawned_style_id: null, deleted_at: null, created_by: "tess@theloyalist.com", created_at: "2026-05-02" },
     ],
     samples: [
-      { id: "s1", style_id: style.id, round: "proto1", factory: style.factory, submitted_date: "2026-06-01", received_date: "2026-06-12", status: "fit off — lengthen body", comments: null, fit_notes: "Body 2cm long, shoulder sitting wide.", material_supplier: "Toyoshima", material_ordered_date: "2026-05-02", material_eta_date: "2026-05-20", material_received_date: "2026-05-26", created_at: "2026-06-01" },
-      { id: "s2", style_id: style.id, round: "proto2", factory: style.factory, submitted_date: "2026-06-20", received_date: "2026-07-01", status: "fit approved", comments: null, fit_notes: "Body corrected. Shoulder still 0.5cm wide but wearable.", material_supplier: "Toyoshima", material_ordered_date: "2026-06-02", material_eta_date: "2026-06-14", material_received_date: "2026-06-16", created_at: "2026-06-20" },
-      { id: "s3", style_id: style.id, round: "sms", factory: style.factory, submitted_date: "2026-07-05", received_date: null, status: "in progress", comments: null, fit_notes: null, material_supplier: "Toyoshima", material_ordered_date: "2026-06-25", material_eta_date: "2026-07-02", material_received_date: null, created_at: "2026-07-05" },
+      { id: "s1", style_id: style.id, contact_name: "Ana Ferreira", contact_email: "ana@toyoshima.example", round: "proto1", factory: style.factory, submitted_date: "2026-06-01", received_date: "2026-06-12", status: "notes sent to factory", fitting_date: null, location: "office", tracking_number: null, rating: "workable", comments: null, fit_notes: "Body 2cm long, shoulder sitting wide.", material_supplier: "Toyoshima", material_type: "Cotton jersey", material_contents: "94% cotton, 6% elastane", material_notes: "Dye lot 4412. Two weeks from order to door, consistently.", eta_date: null, photos: null, material_ordered_date: "2026-05-02", material_eta_date: "2026-05-20", material_received_date: "2026-05-26", created_at: "2026-06-01" },
+      { id: "s2", style_id: style.id, contact_name: "Ana Ferreira", contact_email: "ana@toyoshima.example", round: "proto2", factory: style.factory, submitted_date: "2026-06-20", received_date: "2026-07-01", status: "with designer", fitting_date: null, location: "photographer", tracking_number: null, rating: "good", comments: null, fit_notes: "Body corrected. Shoulder still 0.5cm wide but wearable.", material_supplier: "Toyoshima", material_type: "Cotton jersey", material_contents: "94% cotton, 6% elastane", material_notes: null, eta_date: null, photos: null, material_ordered_date: "2026-06-02", material_eta_date: "2026-06-14", material_received_date: "2026-06-16", created_at: "2026-06-20" },
+      { id: "s3", style_id: style.id, contact_name: "Marta Reis", contact_email: null, round: "sms", factory: style.factory, submitted_date: "2026-07-05", received_date: null, status: "fitting scheduled", fitting_date: "2026-08-12", location: "factory", tracking_number: null, rating: null, comments: null, fit_notes: null, material_supplier: "Toyoshima", material_type: "Cotton jersey", material_contents: "94% cotton, 6% elastane", material_notes: null, eta_date: "2026-07-28", photos: null, material_ordered_date: "2026-06-25", material_eta_date: "2026-07-02", material_received_date: null, created_at: "2026-07-05" },
     ],
     comments: [
-      { id: "c1", style_id: style.id, version_id: null, author: "kara@theloyalist.com", body: "Neckline needs to come up 1cm on the next proto.", status: "received", created_at: "2026-07-02" },
-      { id: "c2", style_id: style.id, version_id: null, author: "tess@theloyalist.com", body: "Agreed — flagged to the factory.", status: "open", created_at: "2026-07-03" },
+      // c1 is filed against the 2nd proto, c2 replies to it. A reply carries no
+      // scope of its own — it inherits the root's — so c2's null is correct and
+      // it still reads under the 2nd proto. See lib/commentTree.ts.
+      { id: "c1", style_id: style.id, version_id: null, parent_id: null, sample_id: "s2", author: "kara@theloyalist.com", body: "Neckline needs to come up 1cm on the next proto.", status: "received", created_at: "2026-07-02" },
+      { id: "c2", style_id: style.id, version_id: null, parent_id: "c1", sample_id: null, author: "tess@theloyalist.com", body: "Agreed — flagged to the factory. Tech pack: https://drive.google.com/drive/folders/ssync-demo", status: "open", created_at: "2026-07-03" },
     ],
   };
 }

@@ -21,6 +21,7 @@ function seed(over: Partial<ReferenceSeed> = {}): ReferenceSeed {
     season: "Fall/Winter",
     category: "Outerwear",
     garment: "Coat",
+    fabric: "Wool",
     color: "Black",
     image_url: "https://example.test/full.jpg",
     image: null,
@@ -77,6 +78,9 @@ test("the draft carries the garment fields and the cover image", () => {
   assert.equal(d.name, "Coat");
   assert.equal(d.category, "Outerwear");
   assert.equal(d.garment, "Coat");
+  // The library records what a reference was made in; a style developed from a
+  // wool coat starts in wool rather than starting blank.
+  assert.equal(d.fabric, "Wool");
   assert.equal(d.season, "Fall/Winter");
   assert.equal(d.cover_image, "https://example.test/full.jpg");
   assert.equal(d.status, "development");

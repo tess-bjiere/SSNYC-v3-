@@ -1,8 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import Select from "@/app/components/Select";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Style } from "@/lib/types";
+import { styleStatusLabel, type Style } from "@/lib/types";
+import {
+  DEV_SORTS,
+  DEFAULT_DEV_SORT,
+  sortStyles,
+  thumbLine,
+  type DevSummary,
+} from "@/lib/devSort";
+import {
+  NO_FILTERS,
+  anyFilter,
+  facetOptions,
+  findStyles,
+  resultLabel,
+  type StyleFilters,
+} from "@/lib/styleFilter";
+import { styleCoverUrl } from "@/lib/styleCover";
 
 // The Development tabs.
 //
@@ -11,31 +28,161 @@ import type { Style } from "@/lib/types";
 // remaking, and it can be sitting in production, archived, or anywhere else at
 // the same time. So the tab filters on the flag, not the status, and the status
 // badge stays on the card to say where each one currently is (P3 #43).
-type TabKey = Style["status"] | "evergreen";
+//
+// The refinement added two things on top of that (P3 refinements):
+//
+//   an order you choose
+//       The grid was ordered by updated_at and nothing else, which answers only
+//       "what did somebody touch?". The four orders in lib/devSort.ts are the
+//       four questions people actually arrive with. Nothing is ever filtered
+//       out by a sort — a grid that silently drops rows is how work goes
+//       missing — so "Needs attention" puts the calm styles at the bottom
+//       rather than hiding them.
+//
+//   a round and an ETA on the thumbnail
+//       The line Xander and the C-level read without opening anything: which
+//       round this style is on, and when the sample lands. Both come from the
+//       same summary the sort reads, so the card and the order cannot disagree.
+//
+// SEARCH AND FILTERS (Tess, 2026-08-05: "you should be able to sort and filter
+// with logical options" and "add search functionality to styles").
+//
+// Sorting rearranges; searching and filtering HIDE. That is a real difference
+// and this file is careful about it, because the rule stated above — nothing is
+// dropped quietly — still holds. Three things keep it honest:
+//
+//   Every hidden row was hidden by something a person typed or chose. There is
+//   no default filter and no clever "probably not relevant" pass.
+//
+//   Whatever is in force stays on screen while it is in force, next to a Clear
+//   that puts everything back in one click.
+//
+//   The count line says both numbers — "3 of 41 styles" — so the size of what is
+//   being hidden is never a thing you have to work out.
+//
+// The filter options are built from the styles that exist, not from a fixed
+// list, so there is never an option that returns nothing. See lib/styleFilter.ts.
+//
+// SEARCH CUTS ACROSS THE TABS, on purpose. Somebody typing "anorak" is looking
+// for the anorak, and does not necessarily know whether it was archived last
+// week. Searching inside the current tab would answer "no" to a question whose
+// true answer is "yes, in Archived". So while there is a query, the tab strip
+// reports how many matches sit in each tab and the grid says where they are.
+// "evergreen" and "seasonal" are not statuses — they are the two halves of the
+// evergreen flag, and the Style Library is organised by them rather than by
+// stage. "all" is the Library's default: what has been made, in one grid.
+export type TabKey = Style["status"] | "evergreen" | "seasonal" | "all";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "inspo", label: "Inspo" },
-  { key: "development", label: "Development" },
+// Inspo was the first tab (Tess, 2026-08-06: "remove inspo from development").
+// It named the stage before this tool starts — an idea with no style number is a
+// reference, and references have their own half of the app. See lib/types.ts.
+const DEFAULT_TABS: { key: TabKey; label: string }[] = [
+  // Tess, 2026-08-06: "in development tab, call development Sampling in the
+  // menu next to production". The KEY stays "development" — it is the stored
+  // styles.status value and renaming it would need a migration and would break
+  // every row already written. Only the word a person reads changes, and it
+  // changes to the truer one: this tab is where styles sit while samples are
+  // going back and forth with the factory.
+  { key: "development", label: "Sampling" },
   { key: "production", label: "Production" },
   { key: "archived", label: "Archived" },
   { key: "evergreen", label: "Evergreen" },
 ];
 
+const TAB_STATUSES: readonly string[] = ["development", "production", "archived"];
+
 function inTab(s: Style, tab: TabKey): boolean {
-  return tab === "evergreen" ? s.evergreen : s.status === tab;
+  if (tab === "all") return true;
+  if (tab === "seasonal") return !s.evergreen;
+  if (tab === "evergreen") return s.evergreen;
+  // A status no tab claims — "inspo" on a row written before it was retired, or
+  // anything typed straight into the database — is shown under Development
+  // rather than dropped. A style must never be invisible in every tab.
+  if (tab === "development" && !TAB_STATUSES.includes(s.status)) return true;
+  return s.status === tab;
 }
 
 function StatusBadge({ s }: { s: Style["status"] }) {
   const cls = s === "development" ? "dev" : s === "production" ? "prod" : s;
-  return <span className={"badge " + cls}>{s === "development" ? "In development" : s}</span>;
+  return <span className={"badge " + cls}>{s === "development" ? "In development" : styleStatusLabel(s)}</span>;
 }
 
-export default function DevTabs({ styles }: { styles: Style[] }) {
-  const [tab, setTab] = useState<TabKey>("development");
+// The Style Library renders this same component with a different tab strip
+// (2026-08-06). Deliberately not a copy: the card, the search, the facets, the
+// sort and the counts are the studio's grid, and a second implementation of it
+// would drift the first time one of them was improved. Everything below is
+// unchanged for Development, which passes no tabs at all.
+export default function DevTabs({
+  styles,
+  summaries,
+  tabs = DEFAULT_TABS,
+  initialTab = "development",
+  note,
+}: {
+  styles: Style[];
+  summaries: Record<string, DevSummary>;
+  tabs?: { key: TabKey; label: string }[];
+  initialTab?: TabKey;
+  /** A line above the grid, shown on every tab. Used by the Style Library. */
+  note?: React.ReactNode;
+}) {
+  const TABS = tabs;
+  const [tab, setTab] = useState<TabKey>(initialTab);
+  const [sort, setSort] = useState<string>(DEFAULT_DEV_SORT);
+  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<StyleFilters>(NO_FILTERS);
+
+  // Search and filters apply to every style before the tab does, so the tab
+  // counts below report matches rather than totals — otherwise a tab would
+  // promise eleven styles and then show two.
+  const matching = useMemo(() => findStyles(styles, query, filters), [styles, query, filters]);
+
   const counts = Object.fromEntries(
-    TABS.map((t) => [t.key, styles.filter((s) => inTab(s, t.key)).length])
+    TABS.map((t) => [t.key, matching.filter((s) => inTab(s, t.key)).length])
   ) as Record<TabKey, number>;
-  const shown = styles.filter((s) => inTab(s, tab));
+
+  // The options are the values that actually exist across the whole set — not
+  // the filtered set, which would make a filter remove its own way back.
+  const seasons = useMemo(() => facetOptions(styles, "season"), [styles]);
+  const factories = useMemo(() => facetOptions(styles, "factory"), [styles]);
+  const categories = useMemo(() => facetOptions(styles, "category"), [styles]);
+
+  const map = new Map(Object.entries(summaries));
+  const shown = sortStyles(matching.filter((s) => inTab(s, tab)), map, sort);
+  const sortHint = DEV_SORTS.find((s) => s.id === sort)?.hint ?? "";
+
+  const narrowed = anyFilter(filters, query);
+  const inThisTab = styles.filter((s) => inTab(s, tab)).length;
+  // Matches sitting in the other tabs — the answer to "it is not here, is it
+  // anywhere?", which is the question a search is usually really asking.
+  const elsewhere = matching.length - shown.length;
+
+  function set(field: keyof StyleFilters, value: string) {
+    setFilters((f) => ({ ...f, [field]: value }));
+  }
+
+  function clearAll() {
+    setQuery("");
+    setFilters(NO_FILTERS);
+  }
+
+  function facetSelect(field: keyof StyleFilters, label: string, options: { value: string; count: number }[]) {
+    if (options.length === 0) return null;
+    return (
+      <Select
+        className={"select sm" + (filters[field] ? " on" : "")}
+        value={filters[field]}
+        aria-label={label}
+        onChange={(v) => set(field, v)}
+        options={[
+          // "Any" rather than a blank line: an unset filter is no opinion, and
+          // it should read as one.
+          { value: "", label: `${label}: any` },
+          ...options.map((o) => ({ value: o.value, label: `${o.value} (${o.count})` })),
+        ]}
+      />
+    );
+  }
 
   return (
     <>
@@ -52,6 +199,55 @@ export default function DevTabs({ styles }: { styles: Style[] }) {
         ))}
       </div>
 
+      <div className="sortbar">
+        {/* Search first, and widest — it is the control people reach for
+            before they know which tab the thing is in. */}
+        <input
+          className="input sm findbox"
+          type="search"
+          value={query}
+          placeholder="Search styles — name, number, fabric, colour, factory…"
+          aria-label="Search styles"
+          onChange={(e) => setQuery(e.target.value)}
+        />
+
+        <label htmlFor="devsort">Sort</label>
+        <Select
+          id="devsort"
+          className="select sm"
+          aria-label="Sort"
+          value={sort}
+          onChange={setSort}
+          options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
+        />
+
+        {facetSelect("season", "Season", seasons)}
+        {facetSelect("factory", "Factory", factories)}
+        {facetSelect("category", "Category", categories)}
+
+        {/* Only when something is actually in force, so it is never a button
+            that does nothing. */}
+        {narrowed && (
+          <button type="button" className="btn link" onClick={clearAll}>
+            Clear
+          </button>
+        )}
+
+        {/* Both numbers, always, so nothing is hidden quietly. */}
+        <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
+      </div>
+
+      {/* The other half of the answer when a search finds nothing here: it may
+          well have found something in Archived. */}
+      {narrowed && elsewhere > 0 && (
+        <div className="tab-note">
+          {elsewhere} more match{elsewhere === 1 ? "" : "es"} in the other tabs — the counts above say
+          where.
+        </div>
+      )}
+
+      {note && <div className="tab-note">{note}</div>}
+
       {tab === "evergreen" && shown.length > 0 && (
         <div className="tab-note">
           Blocks the studio remakes. Open one and choose <strong>Repurpose</strong> to copy it into
@@ -59,7 +255,28 @@ export default function DevTabs({ styles }: { styles: Style[] }) {
         </div>
       )}
 
-      {shown.length === 0 ? (
+      {shown.length === 0 && narrowed ? (
+        <div className="empty">
+          {elsewhere > 0 ? (
+            <>
+              Nothing matches in {TABS.find((t) => t.key === tab)?.label}, but {elsewhere} style
+              {elsewhere === 1 ? "" : "s"} elsewhere do. Try another tab, or{" "}
+              <button type="button" className="linkish" onClick={clearAll}>
+                clear the search
+              </button>
+              .
+            </>
+          ) : (
+            <>
+              Nothing matches. Try fewer words, or{" "}
+              <button type="button" className="linkish" onClick={clearAll}>
+                clear the search
+              </button>
+              .
+            </>
+          )}
+        </div>
+      ) : shown.length === 0 ? (
         <div className="empty">
           {tab === "evergreen" ? (
             <>
@@ -72,24 +289,82 @@ export default function DevTabs({ styles }: { styles: Style[] }) {
         </div>
       ) : (
         <div className="grid">
-          {shown.map((s) => (
-            <Link className="card" key={s.id} href={`/styles/${s.id}`}>
-              <div className="imgwrap">
-                {s.cover_image ? <img src={s.cover_image} alt={s.name} loading="lazy" /> : null}
-              </div>
-              <div className="meta">
-                <div className="d">{s.name}</div>
-                <div className="s">
-                  {[s.style_no, s.garment, s.factory].filter(Boolean).join(" · ") || "—"}
+          {shown.map((s) => {
+            const sum = summaries[s.id] ?? null;
+            const line = thumbLine(sum);
+            const thumb = styleCoverUrl(s);
+            return (
+              <Link className="card" key={s.id} href={`/styles/${s.id}`}>
+                <div className="imgwrap">
+                  {/* The style's own face — sketch, then lay flat, then model
+                      shot, then the inherited cover image. Two styles developed
+                      from the same library reference used to be identical in
+                      this grid. See lib/styleCover.ts. */}
+                  {thumb ? <img src={thumb} alt={s.name} loading="lazy" /> : null}
+                  {/* The one thing worth saying over the picture. Late beats
+                      everything else; otherwise it is the promised date. */}
+                  {sum && sum.etaState !== "none" && sum.etaState !== "landed" && (
+                    <span className={"card-eta " + sum.etaState}>{sum.etaLabel}</span>
+                  )}
                 </div>
-                <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <StatusBadge s={s.status} />
-                  {s.evergreen && <span className="badge ever">Evergreen</span>}
-                  {tab === "evergreen" && s.season && <span className="badge">{s.season}</span>}
+                <div className="meta">
+                  <div className="d">{s.name}</div>
+                  <div className="s">
+                    {[s.style_no, s.garment].filter(Boolean).join(" · ") || "—"}
+                  </div>
+                  {/* The factory on its own line (Tess, 2026-08-05: "factory
+                      should be listed small on thumbnial"). It was third in the
+                      run-on above, where it read as another attribute of the
+                      garment; it is the answer to a different question — who is
+                      making this — and it is the one people scan the grid for
+                      when a factory is running late. Small and quiet, because
+                      the style is still the subject of the card. */}
+                  {s.factory && <div className="card-factory">{s.factory}</div>}
+
+                  {/* Round and ETA, in the order they are asked about: what is
+                      it on, and when does it land — led by a dot for how that
+                      round came out (Tess, 2026-08-06: "have rating (green,
+                      yellow, red) of most recent sample on thumbnail").
+
+                      The round name says how far along a style is and says
+                      nothing about whether what arrived was any good, which is
+                      the difference between a 3rd proto because the first two
+                      were poor and a 3rd proto because the studio kept adding
+                      colourways. The same three colours, and the same dot, as
+                      the "Also in development with" pills — one mark meaning
+                      one thing everywhere it appears, so it needs no key.
+
+                      Unrated draws nothing. Not a grey dot: any mark on a card
+                      is read as a judgement, and "nobody has looked yet" is not
+                      one. The title carries the word, because a colour on its
+                      own is not readable to everyone. */}
+                  {line && (
+                    <div className="card-round">
+                      {sum?.rating && (
+                        <span
+                          className={"sib-dot " + sum.rating}
+                          title={`Came back ${sum.rating}`}
+                          aria-label={`Latest round rated ${sum.rating}`}
+                        />
+                      )}
+                      {line}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <StatusBadge s={s.status} />
+                    {s.evergreen && <span className="badge ever">Evergreen</span>}
+                    {tab === "evergreen" && s.season && <span className="badge">{s.season}</span>}
+                    {sum?.readyForFitting && <span className="badge fit">Ready for fitting</span>}
+                    {/* Only the reasons the round line does not already give. */}
+                    {sum && sum.attention > 0 && sum.etaState !== "late" && !sum.readyForFitting && sum.attentionLabel && (
+                      <span className="badge warn">{sum.attentionLabel}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </>

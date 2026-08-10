@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createPublicReadClient } from "@/lib/supabase/public";
 import { refThumb, type Reference } from "@/lib/types";
+import { styleCoverUrl } from "@/lib/styleCover";
 import { toSections, itemKind, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
 import NotesDrawer from "@/app/(app)/moodboard/NotesDrawer";
 
@@ -29,11 +30,31 @@ export default async function SharedBoard({ params }: { params: Promise<{ id: st
     refMap = Object.fromEntries((refs ?? []).map((r) => [r.id, r as Reference]));
   }
 
+  // Styles pinned to the board show here too, as pictures and nothing else.
+  // A shared board is seen by people outside the studio, so a style tile is its
+  // cover photograph without its name, its season or its status — the board is
+  // the argument, not the development log.
+  const styleTileIds = Array.from(
+    new Set(imageItems.map((i) => (i.style_id ?? "").trim()).filter(Boolean))
+  );
+  let styleSrc: Record<string, string> = {};
+  if (styleTileIds.length) {
+    const { data: rows } = await supabase
+      .from("styles")
+      .select("id,cover_image,photos,deleted_at")
+      .in("id", styleTileIds);
+    styleSrc = Object.fromEntries(
+      (rows ?? [])
+        .filter((r) => !r.deleted_at)
+        .map((r) => [r.id as string, styleCoverUrl(r) ?? ""])
+    );
+  }
+
   return (
     <div className="wrap" style={{ paddingTop: 24, paddingBottom: 80 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, borderBottom: "1px solid var(--line)", paddingBottom: 16, marginBottom: 24 }}>
         <span className="brand">SSYNC</span>
-        <h1 className="serif" style={{ fontSize: 24, margin: 0 }}>{board.name}</h1>
+        <h1 className="display" style={{ fontSize: "var(--t-display)", margin: 0 }}>{board.name}</h1>
         <span className="count">Shared board · view only</span>
       </div>
 
@@ -45,7 +66,7 @@ export default async function SharedBoard({ params }: { params: Promise<{ id: st
           <div className="mb-row">
             {s.images.map((img) => {
               const ref = refMap[img.ref_id];
-              const src = ref ? refThumb(ref) : "";
+              const src = img.style_id ? styleSrc[img.style_id] || "" : ref ? refThumb(ref) : "";
               if (!src) return null;
               return (
                 <div className="mb-tile" key={img.iid} style={{ cursor: "default" }}>

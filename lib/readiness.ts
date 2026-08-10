@@ -59,6 +59,14 @@ export interface ReadinessInput {
   hasMailer: boolean;
   /** Whether image generation is configured (key and endpoint both). */
   hasImagegen: boolean;
+  /** Whether GOOGLE_SA_EMAIL is present. */
+  hasWipEmail: boolean;
+  /**
+   * Whether GOOGLE_SA_PRIVATE_KEY is present. Separate from the address on
+   * purpose: half a credential is the state worth naming, because it is the one
+   * that looks configured from the dashboard and fails from the app.
+   */
+  hasWipKey: boolean;
 }
 
 const GATE = "Before the team gets in";
@@ -249,6 +257,50 @@ export function readiness(input: ReadinessInput): Check[] {
           blocking: false,
         }
   );
+
+  // 8. Reading the WIP sheet from Drive. Same shape as the two above — built,
+  //    shipped, waiting on a credential, and falling back to something that
+  //    works rather than to an error. The extra state here is the half-set one:
+  //    an address with no key, or a key with no address, reads as "set up" in
+  //    the Vercel dashboard and reads as "not set up" from inside the app, and
+  //    the only place those two views get reconciled is here.
+  if (input.hasWipEmail && input.hasWipKey) {
+    checks.push({
+      id: "wip",
+      title: "Pull from WIP",
+      state: "ready",
+      detail:
+        "Configured. Pull from WIP on a style profile reads the brand's sheet live from Drive.",
+      action:
+        "If it says the sheet has not been shared, share the file with the service-account address as a Viewer. Being configured and having permission are two different things.",
+      blocking: false,
+    });
+  } else if (input.hasWipEmail || input.hasWipKey) {
+    checks.push({
+      id: "wip",
+      title: "Pull from WIP",
+      state: "blocked",
+      detail: input.hasWipEmail
+        ? "Half set. GOOGLE_SA_EMAIL is there and GOOGLE_SA_PRIVATE_KEY is not, so nothing can be signed and the panel reports itself as not set up."
+        : "Half set. GOOGLE_SA_PRIVATE_KEY is there and GOOGLE_SA_EMAIL is not, so there is nobody to sign as and the panel reports itself as not set up.",
+      action:
+        "Add the missing one. The key is the whole private_key string out of the service account's JSON, on one line, with its \\n sequences left as the two characters backslash and n.",
+      where: "Vercel → Settings → Environment Variables (then redeploy)",
+      blocking: false,
+    });
+  } else {
+    checks.push({
+      id: "wip",
+      title: "Pull from WIP",
+      state: "manual",
+      detail:
+        "Not configured. The panel still opens and still reads rows — pasted in rather than fetched — so the feature works without this; only the fetch is missing.",
+      action:
+        "Create a Google Cloud service account with the Drive API enabled, share the WIP file with its address as a Viewer, and set GOOGLE_SA_EMAIL and GOOGLE_SA_PRIVATE_KEY. Then redeploy: environment variables are read at boot, so a variable added to a running deployment does nothing until the next one.",
+      where: "Vercel → Settings → Environment Variables",
+      blocking: false,
+    });
+  }
 
   return checks;
 }

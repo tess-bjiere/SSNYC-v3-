@@ -4,7 +4,27 @@
 export type MBImageItem = {
   kind?: null | undefined; // image items have no `kind`
   iid: string;
+  /**
+   * The library reference this tile shows, or "" when the tile is a style.
+   *
+   * Kept required and kept first because every tile written by the original
+   * tool has one, and nothing about those rows changes.
+   */
   ref_id: string;
+  /**
+   * A style in development, shown by its cover photograph (Tess, 2026-08-06:
+   * "You should be able to add styles in development to moodboards").
+   *
+   * Added 2026-08-06 and optional forever: a tile has EITHER a ref_id or a
+   * style_id, and every tile that existed before this line has a ref_id. No
+   * migration, no backfill, no schema change — items is jsonb and an absent key
+   * already means "not a style", which is true of all of them.
+   *
+   * The board still owns nothing: this is an id pointing at the styles table,
+   * exactly as ref_id points at references, so removing the tile removes the
+   * tile and the style is untouched.
+   */
+  style_id?: string | null;
   x: number;
   y: number;
   z: number;
@@ -134,6 +154,20 @@ export function insertItems(
   return [...notes, ...renumbered, ...loose];
 }
 
+/**
+ * What a tile points at, prefixed so a style and a reference can never collide.
+ *
+ * A tile with neither returns "" and is treated as unique — a tile pointing at
+ * nothing is already broken, and collapsing all of them into one would hide how
+ * many there are.
+ */
+export function imageKey(im: MBImageItem): string {
+  const style = typeof im.style_id === "string" ? im.style_id.trim() : "";
+  if (style) return "style:" + style;
+  const ref = typeof im.ref_id === "string" ? im.ref_id.trim() : "";
+  return ref ? "ref:" + ref : "";
+}
+
 // Remove a single image from a board. Only the one tile with this `iid` goes —
 // the same reference placed elsewhere on the board is untouched, dividers and
 // notes are untouched, and the surviving items keep their existing `gi`s so
@@ -192,23 +226,19 @@ export function toSections(items: MBItem[]): { sections: Section[]; notes: MBTex
     }
   }
 
-  // De-duplicate images by reference (same ref placed multiple times) across the board,
-  // keeping the first occurrence — removes the duplicate pile at the bottom.
+  // De-duplicate images by what they point at (same thing placed multiple
+  // times) across the board, keeping the first occurrence — removes the
+  // duplicate pile at the bottom.
   const seen = new Set<string>();
-  for (const s of sections) {
-    s.images = s.images.filter((im) => {
-      if (!im.ref_id) return true;
-      if (seen.has(im.ref_id)) return false;
-      seen.add(im.ref_id);
-      return true;
-    });
-  }
-  const freshUnsectioned = unsectioned.filter((im) => {
-    if (!im.ref_id) return true;
-    if (seen.has(im.ref_id)) return false;
-    seen.add(im.ref_id);
+  const fresh = (im: MBImageItem) => {
+    const key = imageKey(im);
+    if (!key) return true;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
-  });
+  };
+  for (const s of sections) s.images = s.images.filter(fresh);
+  const freshUnsectioned = unsectioned.filter(fresh);
 
   // Keep sections that have images OR a real divider label (so empty named sections
   // still show and can receive images), then append any leftover unsectioned images.

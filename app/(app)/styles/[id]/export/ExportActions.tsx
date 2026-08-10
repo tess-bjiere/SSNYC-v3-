@@ -2,9 +2,22 @@
 
 import { useState } from "react";
 
-// The three ways this document leaves the app (P4).
+// The ways this document leaves the app (P4).
 //
-// "Copy for Google Docs" puts the rendered HTML on the clipboard, so a paste
+// Two of them, down from three. "Save as document" downloaded the page as a
+// Word-compatible file and it has been removed (Tess, 2026-08-07: "remove save
+// as document when you export history"), following the same removal from the
+// round export. What it produced was HTML wearing a .doc extension, and the
+// fonts it landed with were never going to be the app's — the reader's machine
+// decides that, not us. The copy carries the same headings, rules and tables
+// into a Doc in one paste, and the print is a better PDF than Word would make
+// of it.
+//
+// lib/docExport.ts is left in place. Nothing calls it now, and it is the whole
+// of the work if a real .docx is ever wanted; deleting it would mean writing it
+// again.
+//
+// "Copy" puts the rendered HTML on the clipboard, so a paste
 // into Docs arrives with its headings and layout instead of as one grey wall of
 // text. The page is deliberately black-on-white for exactly this reason: Docs
 // keeps pasted colours, and cream text on a dark page would paste invisible.
@@ -17,11 +30,10 @@ import { useState } from "react";
 export default function ExportActions({
   targetId,
   text,
-  filename,
 }: {
   targetId: string;
+  /** Plain-text form of the same document, for the clipboard fallback. */
   text: string;
-  filename: string;
 }) {
   const [said, setSaid] = useState<string | null>(null);
 
@@ -63,25 +75,15 @@ export default function ExportActions({
     }
   }
 
-  function download() {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="export-actions no-print">
+      {/* The solid button now that it leads the row — it was always the one
+          to press when the destination is a Doc. */}
       <button className="btn sm" type="button" onClick={copyRich}>
-        Copy for Google Docs
+        Copy
       </button>
-      <button className="btn ghost sm" type="button" onClick={() => window.print()}>
+      <button className="btn link" type="button" onClick={() => window.print()}>
         Print / Save as PDF
-      </button>
-      <button className="btn ghost sm" type="button" onClick={download}>
-        Download .txt
       </button>
       {said && <span className="export-said">{said}</span>}
     </div>

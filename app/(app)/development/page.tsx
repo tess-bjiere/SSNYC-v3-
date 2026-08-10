@@ -1,37 +1,24 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import type { Style } from "@/lib/types";
-import { MOCK, mockStyles } from "@/lib/mock";
 import DevTabs from "./DevTabs";
+import { loadStudioStyles } from "./loadStudioStyles";
 
 export const dynamic = "force-dynamic";
 
+// Work in progress. What has already been made lives in the Style Library
+// (/style-library) — same rows, same cards, read for a different question.
 export default async function DevelopmentPage() {
-  let styles: Style[] = [];
-  if (MOCK) {
-    styles = mockStyles;
-  } else {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("styles")
-      .select("*")
-      .order("updated_at", { ascending: false });
-    styles = (data ?? []) as Style[];
-  }
+  const { styles, gridStyles, summaryMap } = await loadStudioStyles();
 
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title serif">Development</h1>
-        <span className="count">
-          {styles.length} {styles.length === 1 ? "style" : "styles"}
-        </span>
+        <h1 className="page-title display">Development</h1>
         <div className="spacer" />
         <Link href="/styles/new" className="btn sm">
           + New Style
         </Link>
       </div>
-      <DevTabs styles={styles} />
+      <DevTabs styles={gridStyles} summaries={summaryMap} />
     </div>
   );
 }

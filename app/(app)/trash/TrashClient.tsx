@@ -2,8 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
+import { refThumb, extraImageUrls, type Reference, type Style } from "@/lib/types";
 import { restoreReference, purgeReference } from "@/app/actions/references";
+import { restoreStyle } from "@/app/actions/styles";
+import { styleCoverUrl } from "@/lib/styleCover";
 import DetailModal from "@/app/(app)/library/DetailModal";
 
 function whenDeleted(iso: string | null): string {
@@ -20,9 +22,18 @@ function whenDeleted(iso: string | null): string {
 
 export default function TrashClient({
   refs,
+  styles,
   boardNames,
 }: {
   refs: Reference[];
+  /**
+   * Styles in the Trash (Tess, 2026-08-05: "you should be able to delete a
+   * style and have it sent to the trash"). They sit in their own block above
+   * the references rather than mixed in with them, because they are not the
+   * same kind of thing and they do not offer the same buttons: a reference can
+   * be destroyed, a style can only be put back.
+   */
+  styles: Style[];
   boardNames: Record<string, string[]>;
 }) {
   const router = useRouter();
@@ -52,6 +63,16 @@ export default function TrashClient({
     );
   }, [refs, q]);
 
+  function putStyleBack(st: Style) {
+    setBusy(st.id);
+    start(async () => {
+      await restoreStyle(st.id);
+      setBusy(null);
+      flashToast(`“${st.name}” is back in Development`);
+      router.refresh();
+    });
+  }
+
   function restore(r: Reference) {
     setArmed(null);
     setBusy(r.id);
@@ -77,11 +98,7 @@ export default function TrashClient({
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title serif">Trash</h1>
-        <span className="count">
-          {list.length}
-          {list.length !== refs.length ? ` / ${refs.length}` : ""}
-        </span>
+        <h1 className="page-title display">Trash</h1>
         <div className="spacer" />
         {refs.length > 0 && (
           <input
@@ -93,6 +110,44 @@ export default function TrashClient({
         )}
       </div>
 
+      {styles.length > 0 && (
+        <section className="trash-styles">
+          <h2 className="trash-h">
+            Styles <span className="count">{styles.length}</span>
+          </h2>
+          <p className="trash-note">
+            A style in the Trash keeps everything — its sample rounds, its photographs, its
+            comments, its versions and its library links are all exactly where they were. It has
+            only stopped appearing in Development, Sample Images and Factories. Restore puts it back
+            untouched. There is no permanent delete for a style.
+          </p>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))" }}>
+            {styles.map((st) => {
+              const src = styleCoverUrl(st);
+              const sub = [st.style_no, st.factory, st.season].filter(Boolean).join(" · ");
+              const working = busy === st.id && pending;
+              return (
+                <div className={"card lib-card trash-card" + (working ? " working" : "")} key={st.id}>
+                  <div className="imgwrap">
+                    {src ? <img src={src} alt={st.name} loading="lazy" /> : null}
+                  </div>
+                  <div className="meta">
+                    <div className="d">{st.name}</div>
+                    {sub && <div className="s">{sub}</div>}
+                    <div className="s trash-when">{whenDeleted(st.deleted_at)}</div>
+                  </div>
+                  <div className="trash-actions">
+                    <button className="btn ghost sm" disabled={working} onClick={() => putStyleBack(st)}>
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <p className="trash-note">
         Deleting a reference in the Library moves it here — nothing is lost, and Restore puts it back
         exactly as it was, moodboard placements included. Deleting it from the Trash removes the
@@ -100,7 +155,9 @@ export default function TrashClient({
       </p>
 
       {refs.length === 0 ? (
-        <div className="empty">The Trash is empty.</div>
+        <div className="empty">
+          {styles.length === 0 ? "The Trash is empty." : "No references in the Trash."}
+        </div>
       ) : list.length === 0 ? (
         <div className="empty">Nothing in the Trash matches that search.</div>
       ) : (

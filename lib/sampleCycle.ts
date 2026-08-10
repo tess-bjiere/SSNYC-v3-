@@ -25,7 +25,12 @@ export type SampleLike = {
   fit_notes?: string | null;
   submitted_date?: string | null;
   received_date?: string | null;
+  /** When the sample itself is expected back from the factory. */
+  eta_date?: string | null;
   material_supplier?: string | null;
+  material_type?: string | null;
+  material_contents?: string | null;
+  material_notes?: string | null;
   material_ordered_date?: string | null;
   material_eta_date?: string | null;
   material_received_date?: string | null;
@@ -170,6 +175,30 @@ export function sortSamples<T extends SampleLike & { created_at?: string | null 
     .map((x) => x.row);
 }
 
+/**
+ * The round the style is actually on — the last one in cycle order.
+ *
+ * Tess, 2026-08-05: "when someone opens the profile the latest sample round
+ * should be showing. all other rounds would be viewable on clicking into
+ * previous samples."
+ *
+ * "Latest" is the furthest through the cycle, not the most recently typed. A
+ * PPS logged on Monday and a 1st proto backfilled on Tuesday are not in
+ * question: the style is on the PPS. That is why this reads the tail of
+ * sortSamples rather than sorting by created_at — the cycle is the order the
+ * studio thinks in, and it is already the order the cards are drawn in.
+ *
+ * Returns null for a style with no rounds, which is a real state — a style in
+ * Inspo has never been sampled and should not be shown an empty round card.
+ */
+export function latestSample<T extends SampleLike & { created_at?: string | null }>(
+  rows: readonly T[],
+  order: readonly string[]
+): T | null {
+  const sorted = sortSamples(rows, order);
+  return sorted.length ? sorted[sorted.length - 1] : null;
+}
+
 export type SampleState = "planned" | "material" | "at_factory" | "received";
 
 /**
@@ -203,12 +232,20 @@ export const SAMPLE_STATE_LABELS: Record<SampleState, string> = {
  */
 export type TimelineStep = { key: string; label: string; date: string };
 export function sampleTimeline(s: SampleLike): TimelineStep[] {
+  const landed = dayNumber(s.received_date) !== null;
   const steps: [string, string, string | null | undefined][] = [
+    // The three material dates are no longer offered as inputs — materials are
+    // described in words now. They stay in the timeline because rounds logged
+    // before that change still hold them, and a date somebody typed should not
+    // disappear from the screen because the form moved on.
     ["ordered", "Material ordered", s.material_ordered_date],
     ["eta", "Material due", s.material_eta_date],
     ["material_in", "Material in", s.material_received_date],
-    ["submitted", "Submitted", s.submitted_date],
-    ["received", "Received", s.received_date],
+    ["submitted", "Sample requested", s.submitted_date],
+    // Once the sample is in, its ETA is history and showing it next to the real
+    // arrival date only invites the question "so which is it?".
+    ["eta_sample", "Sample due", landed ? null : s.eta_date],
+    ["received", "Sample received", s.received_date],
   ];
   const out: TimelineStep[] = [];
   for (const [key, label, date] of steps) {
@@ -216,4 +253,73 @@ export function sampleTimeline(s: SampleLike): TimelineStep[] {
     out.push({ key, label, date: shortDate(date) });
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// The sample's own ETA (P3 refinements)
+//
+// Distinct from materialStatus, which is about fabric reaching the factory.
+// This is the question Xander and the C-level actually ask — "when is it
+// landing?" — and it is the one thing from the sample rounds that earns space on
+// a thumbnail.
+// ---------------------------------------------------------------------------
+
+export type EtaState =
+  | "none" // no ETA recorded, and it hasn't arrived
+  | "due" // expected, still in the future
+  | "late" // expected date has passed and it isn't here
+  | "landed"; // received; the ETA is history
+
+export type EtaStatus = {
+  state: EtaState;
+  /** Days late when "late", days remaining when "due". Null otherwise. */
+  days: number | null;
+  label: string;
+};
+
+/** Where the sample itself has got to, relative to when it was promised. */
+export function sampleEta(s: SampleLike, today: string): EtaStatus {
+  if (dayNumber(s.received_date) !== null) {
+    return { state: "landed", days: null, label: `In ${shortDate(s.received_date)}` };
+  }
+
+  const eta = dayNumber(s.eta_date);
+  if (eta === null) return { state: "none", days: null, label: "" };
+
+  const now = dayNumber(today);
+  if (now === null) return { state: "due", days: null, label: `ETA ${shortDate(s.eta_date)}` };
+
+  const delta = now - eta;
+  if (delta > 0) {
+    return { state: "late", days: delta, label: `${delta} day${delta === 1 ? "" : "s"} overdue` };
+  }
+  // Math.abs for the same reason as materialStatus: -0 formats as "-0".
+  return { state: "due", days: Math.abs(delta), label: `ETA ${shortDate(s.eta_date)}` };
+}
+
+/**
+ * The material, in one line: what it is, what it is made of, who supplies it.
+ * Blank when nothing has been said, so the caller can skip the row entirely
+ * rather than print a heading over three dashes.
+ */
+export function materialSummary(s: SampleLike): string {
+  return [s.material_type, s.material_contents, s.material_supplier]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/**
+ * Whether this round still carries any of the four retired material dates.
+ *
+ * The columns were kept and the inputs were removed, which is the right way
+ * round — but it means a round can hold a date that no form will ever show
+ * again. This is how the card knows to print them as history instead.
+ */
+export function hasLegacyMaterialDates(s: SampleLike): boolean {
+  return (
+    dayNumber(s.material_ordered_date) !== null ||
+    dayNumber(s.material_eta_date) !== null ||
+    dayNumber(s.material_received_date) !== null
+  );
 }

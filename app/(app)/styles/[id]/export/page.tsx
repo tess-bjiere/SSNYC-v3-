@@ -8,11 +8,11 @@ import {
   type StyleSample,
   type StyleComment,
 } from "@/lib/types";
-import { sortSamples } from "@/lib/sampleCycle";
+import { sortSamples, latestSample } from "@/lib/sampleCycle";
 import { normalizePhotos, PHOTO_SLOTS } from "@/lib/photoSlots";
+import { withRoundPhotos } from "@/lib/styleCover";
 import {
   buildStyleDoc,
-  exportFilename,
   isEmptySection,
   renderDocText,
   type ExportInput,
@@ -45,9 +45,24 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
       // Oldest-first at the query, not just at the sort: rows written in one
       // transaction share a `created_at`, and a tie there falls back to the
       // order they arrived in — so the order they arrive in has to be right.
-      supabase.from("style_versions").select("*").eq("style_id", id).order("created_at", { ascending: true }).order("version_no", { ascending: true }),
+      supabase
+        .from("style_versions")
+        .select("*")
+        .eq("style_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .order("version_no", { ascending: true }),
       supabase.from("style_samples").select("*").eq("style_id", id),
-      supabase.from("style_comments").select("*").eq("style_id", id).order("created_at", { ascending: true }).order("id", { ascending: true }),
+      // Withdrawn comments are not exported at all — not even to their own
+      // author. An export is a document that leaves the building, and a
+      // sentence somebody took back has no business in it.
+      supabase
+        .from("style_comments")
+        .select("*")
+        .eq("style_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true }),
       supabase.from("style_references").select("reference_id,created_at").eq("style_id", id).order("created_at", { ascending: true }),
     ]);
 
@@ -73,15 +88,33 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
       }));
   }
 
-  const photos = normalizePhotos(st.photos);
+  // Cycle order, not row order — the same rule the profile follows.
+  const rounds = sortSamples((samples ?? []) as StyleSample[], SAMPLE_ROUNDS);
+
+  // The shot list on the printed record is the newest photography there is:
+  // the style's own map with the latest round's laid over it (Tess,
+  // 2026-08-05: photography moved onto the rounds). An export that read only
+  // styles.photos would print "—" beside every slot for a garment shot on the
+  // PPS, and this is the page that gets sent to people who were not in the
+  // room. Anything shot before the move is still in the merged map and still
+  // prints. See lib/styleCover.ts.
+  const photos = normalizePhotos(
+    withRoundPhotos(st, latestSample(rounds, SAMPLE_ROUNDS)?.photos).photos
+  );
   const generatedOn = studioToday();
 
   const doc = buildStyleDoc({
     style: st,
     references: refs,
-    // Cycle order, not row order — the same rule the profile follows.
-    samples: sortSamples((samples ?? []) as StyleSample[], SAMPLE_ROUNDS),
-    photos: PHOTO_SLOTS.map((slot) => ({ label: slot.label, url: photos[slot.id] ?? null })),
+    samples: rounds,
+    // An optional slot only appears in the export if it was actually shot.
+    // The export prints "Shot" or "Not shot yet" against every line, and
+    // printing "Detail 2 — Not shot yet" on a garment that needs one detail
+    // would put a gap on the page that is not a gap.
+    photos: PHOTO_SLOTS.filter((slot) => !slot.optional || photos[slot.id]).map((slot) => ({
+      label: slot.label,
+      url: photos[slot.id] ?? null,
+    })),
     versions: (versions ?? []) as StyleVersion[],
     comments: (comments ?? []) as StyleComment[],
     generatedOn,
@@ -97,7 +130,7 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
         </Link>
       </div>
 
-      <ExportActions targetId="style-doc" text={text} filename={exportFilename(doc, generatedOn)} />
+      <ExportActions targetId="style-doc" text={text} />
 
       <article id="style-doc" className="paper">
         <h1>{doc.title}</h1>

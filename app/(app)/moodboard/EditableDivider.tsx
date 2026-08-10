@@ -29,9 +29,9 @@ export default function EditableDivider({
           <input className="input" name="text" defaultValue={label || ""} autoFocus autoComplete="off" />
           <button className="btn sm" type="submit">Save</button>
         </form>
-        <button className="btn ghost sm" type="button" onClick={() => setEditing(false)}>Cancel</button>
+        <button className="btn link" type="button" onClick={() => setEditing(false)}>Cancel</button>
         <form action={deleteDivider.bind(null, boardId, tid!)}>
-          <button className="btn ghost sm" type="submit" title="Delete this section header">Delete</button>
+          <button className="btn link danger" type="submit" title="Delete this section header">Delete</button>
         </form>
       </div>
     );

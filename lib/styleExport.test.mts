@@ -15,6 +15,7 @@ const STYLE = {
   style_no: "SS-1042",
   category: "Tops",
   garment: "Tank",
+  fabric: "Butter rib",
   designer: "In-house",
   season: "SS27",
   factory: "Sunrise Mills",
@@ -71,9 +72,9 @@ test("every section is present even when there is nothing in it", () => {
   assert.deepEqual(titles, [
     "Details",
     "Fit",
-    "Developed from",
-    "Sample cycle",
-    "Photography",
+    "Reference(s)",
+    "Sample rounds",
+    "Sample images",
     "Versions",
     "Comments & feedback",
   ]);
@@ -97,6 +98,11 @@ test("blank fields are left out of a row list rather than printed as dashes", ()
   assert.equal(details.rows.length, 0);
   const filled = buildStyleDoc(FULL).sections[0];
   assert.ok(filled.rows.some((r) => r.label === "Style no." && r.value === "SS-1042"));
+  // Fabric is a detail of the style, not of a sample round (Tess, 2026-08-05).
+  // An exported document that omits it is missing the first thing a factory
+  // asks about.
+  assert.ok(filled.rows.some((r) => r.label === "Fabric" && r.value === "Butter rib"));
+  assert.equal(buildStyleDoc(BARE).sections[0].rows.some((r) => r.label === "Fabric"), false);
   // Not evergreen means the line is absent, not "No" — a document should not
   // assert things that were never decided.
   const notEver = buildStyleDoc({ style: { ...STYLE, evergreen: false }, generatedOn: "2026-08-04" });
@@ -132,7 +138,7 @@ test("a round prints both legs of the wait and what was said about it", () => {
   assert.deepEqual(labels, [
     "Material supplier",
     "Material ordered",
-    "Submitted to factory",
+    "Sample requested",
     "Received back",
   ]);
   assert.deepEqual(proto1.notes, [
@@ -232,7 +238,7 @@ test("nothing in the document is invented from the clock", () => {
 
 test("the text rendering carries every heading and every round", () => {
   const text = renderDocText(buildStyleDoc(FULL));
-  for (const heading of ["DETAILS", "FIT", "DEVELOPED FROM", "SAMPLE CYCLE", "PHOTOGRAPHY", "VERSIONS", "COMMENTS & FEEDBACK"]) {
+  for (const heading of ["DETAILS", "FIT", "REFERENCE(S)", "SAMPLE ROUNDS", "SAMPLE IMAGES", "VERSIONS", "COMMENTS & FEEDBACK"]) {
     assert.ok(text.includes(heading), `${heading} missing`);
   }
   assert.ok(text.includes("proto1 — Sunrise Mills · received"));

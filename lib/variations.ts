@@ -45,11 +45,16 @@ export type VariationAxis = {
 };
 
 /**
- * Four axes, and only four.
+ * Six axes, and only six.
+ *
+ * Tess, 2026-08-05, naming them: "color, print, details, trim, embroidery,
+ * length". Embroidery and length were added to the original four on that line.
  *
  * A free-text "change anything" box produces a different garment; these are the
- * four changes that are actually made to a block between seasons, and naming
- * them is what lets each one carry its own hold list.
+ * changes that are actually made to a block between seasons, and naming them is
+ * what lets each one carry its own hold list. Length is the interesting one: it
+ * is the only axis that is ALLOWED to move the proportion, so it has to say so
+ * explicitly, because every other axis is holding proportion still.
  */
 export const VARIATION_AXES: readonly VariationAxis[] = [
   {
@@ -89,11 +94,37 @@ export const VARIATION_AXES: readonly VariationAxis[] = [
     id: "detail",
     label: "Detail",
     ask: "Detail change",
-    placeholder: "patch pocket instead of welt · crop 2in shorter",
+    placeholder: "patch pocket instead of welt · concealed placket",
     instruction: (v) => `Change one construction detail: ${v}.`,
     keeps: [
       "every other detail untouched — one change only, so the two images can be compared",
-      "the overall length and proportion unless the change is itself a length",
+      "the overall length and proportion — if the length is what is changing, use the Length axis",
+    ],
+  },
+  {
+    id: "embroidery",
+    label: "Embroidery",
+    ask: "Embroidery — what, and where",
+    placeholder: "chainstitch logo, left chest · tonal floral at the cuff",
+    instruction: (v) => `Add embroidery to the garment: ${v}.`,
+    keeps: [
+      "the embroidery at the scale it would actually be stitched, and only where it was asked for",
+      "the cloth reading as cloth under it — stitch sitting on the surface, not printed into it",
+      "every seam, trim and detail exactly as they are",
+    ],
+  },
+  {
+    id: "length",
+    label: "Length",
+    ask: "New length",
+    placeholder: "2in shorter at the hem · full length · cropped to the waist",
+    instruction: (v) => `Change the length: ${v}.`,
+    keeps: [
+      // The one axis that is allowed to move the proportion, so it has to say
+      // what it is still holding — otherwise the model redraws the garment.
+      "everything above the hem exactly as it is — the same shoulder, sleeve, cut and volume",
+      "the hem finished the same way it is now, at the new length",
+      "the same body, pose, crop and camera height, so the two lengths can be compared",
     ],
   },
 ];
@@ -124,6 +155,16 @@ export type VariationRequest = {
   value: string;
   /** Anything else worth saying, optional. */
   extra?: string;
+  /**
+   * The image the variation is drawn FROM.
+   *
+   * Tess, 2026-08-05: "allow the user to edit the existing sketch or model
+   * images". It used to be the cover image and nothing else, which meant a
+   * studio that had shot a proto could not vary the photograph, and a style
+   * whose cover is a flat could not vary the sketch. Left empty it still falls
+   * back to the cover image, so nothing that worked before stopped working.
+   */
+  source?: string | null;
 };
 
 export type VariationBrief = {
@@ -182,13 +223,18 @@ export function describeGarment(style: VariationStyle): string {
  * put next to the original. That is worth saying out loud rather than letting
  * someone find out after the render.
  */
-function warningsFor(style: VariationStyle, axis: VariationAxis | null, value: string): string[] {
+function warningsFor(
+  style: VariationStyle,
+  axis: VariationAxis | null,
+  value: string,
+  source: string | null
+): string[] {
   const w: string[] = [];
   if (!axis) w.push("Pick what you are changing first.");
   if (!clean(value)) w.push(`Say what the ${axis ? axis.label.toLowerCase() : "change"} should be.`);
-  if (!clean(style.cover_image))
+  if (!source)
     w.push(
-      "This style has no cover image, so anything generated is drawn from the description alone — it will not match the real garment. Add a cover image first if the result has to be comparable."
+      "There is no picture to work from, so anything generated is drawn from the description alone — it will not match the real garment. Pick a sketch or a photograph first if the result has to be comparable."
     );
   if (!clean(style.garment) && !clean(style.category))
     w.push("No garment or category recorded, so the description is vague. Fill those in on the profile for a tighter brief.");
@@ -200,7 +246,8 @@ export function buildBrief(style: VariationStyle, req: VariationRequest): Variat
   const value = clean(req.value);
   const extra = clean(req.extra);
   const garment = describeGarment(style);
-  const source = clean(style.cover_image) || null;
+  // What was picked, else the cover image, else nothing.
+  const source = clean(req.source) || clean(style.cover_image) || null;
 
   const hold = [...ALWAYS_HOLD, ...(axis ? axis.keeps : [])];
 
@@ -227,7 +274,7 @@ export function buildBrief(style: VariationStyle, req: VariationRequest): Variat
     prompt: lines.join("\n"),
     hold,
     source,
-    warnings: warningsFor(style, axis, value),
+    warnings: warningsFor(style, axis, value, source),
     ready: Boolean(axis && value),
     versionNote: axis && value ? `AI variation — ${axis.label.toLowerCase()}: ${value}` : "AI variation",
   };

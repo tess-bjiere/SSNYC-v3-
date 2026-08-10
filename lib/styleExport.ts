@@ -20,7 +20,7 @@
 //     because on screen you want the latest news; a history is read forward.
 //
 // Nothing here reaches for the clock: `generatedOn` is passed in, decided once
-// on the server in the studio's timezone, the same way the sample cycle does it.
+// on the server in the studio's timezone, the same way the sample rounds do it.
 // ---------------------------------------------------------------------------
 
 export type ExportStyle = {
@@ -28,6 +28,8 @@ export type ExportStyle = {
   style_no?: string | null;
   category?: string | null;
   garment?: string | null;
+  fabric?: string | null;
+  colors?: string | null;
   designer?: string | null;
   brand?: string | null;
   season?: string | null;
@@ -59,6 +61,7 @@ export type ExportSample = {
   material_received_date?: string | null;
   submitted_date?: string | null;
   received_date?: string | null;
+  location?: string | null;
   fit_notes?: string | null;
   comments?: string | null;
 };
@@ -206,8 +209,9 @@ function sampleEntry(s: ExportSample): DocEntry {
       ["Material ordered", s.material_ordered_date],
       ["Material ETA", s.material_eta_date],
       ["Material received", s.material_received_date],
-      ["Submitted to factory", s.submitted_date],
+      ["Sample requested", s.submitted_date],
       ["Received back", s.received_date],
+      ["Current location", s.location],
     ]),
     notes: notes([
       ["Fit", s.fit_notes],
@@ -229,12 +233,16 @@ export function buildStyleDoc(input: ExportInput): StyleDoc {
 
   const details = section("Details", "No details recorded.", {
     rows: rows([
+      // Same order the page reads in: which style, what garment, what it is
+      // made of, who is making it, where it stands, where the paperwork is.
       ["Style no.", st.style_no],
+      ["Season", st.season],
       ["Category", st.category],
       ["Garment", st.garment],
+      ["Fabric", st.fabric],
+      ["Color(s)", st.colors],
       ["Designer", st.designer],
       ["Brand", st.brand],
-      ["Season", st.season],
       ["Factory", st.factory],
       ["Status", st.status],
       ["Evergreen", st.evergreen ? "Yes" : null],
@@ -252,16 +260,19 @@ export function buildStyleDoc(input: ExportInput): StyleDoc {
   );
 
   const developedFrom = section(
-    "Developed from",
+    // Renamed on 2026-08-05 (Tess: "change developed from to reference(s)").
+    // The variable keeps its old name so the diff stays about the words on the
+    // page; the heading is what people read.
+    "Reference(s)",
     "No library references linked to this style.",
     { rows: refs.map((r, i) => ({ label: `Reference ${i + 1}`, value: referenceLabel(r) })) }
   );
 
-  const cycle = section("Sample cycle", "No sample rounds logged yet.", {
+  const cycle = section("Sample rounds", "No sample rounds logged yet.", {
     entries: samples.map(sampleEntry),
   });
 
-  const photography = section("Photography", "No photography standard applied.", {
+  const photography = section("Sample images", "No sample images filed.", {
     // Unshot slots are listed too — on the profile an empty slot is visible as a
     // gap, and in a document the gap has to be spelled out or it disappears.
     rows: photos.map((p) => ({ label: p.label, value: t(p.url) ? "Shot" : "Not shot yet" })),

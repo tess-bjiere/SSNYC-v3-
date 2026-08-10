@@ -8,3 +8,14 @@
 npm-debug.log*
 .vercel
 next-env.d.ts
+
+# Cowork sync transfer artifact — not part of the app
+.ssync-sync.tgz
+
+# The same, from restore and backup passes.
+.restore.tgz
+.ssync-back.tgz
+.ssync-restore.tgz
+
+# Local holding pen for backup snapshots and stale lockfiles — not the app.
+/_to_delete

@@ -10,6 +10,7 @@ import {
   type RolloutSummary,
   type RolloutView,
 } from "@/lib/photoRollout";
+import { styleCoverUrl } from "@/lib/styleCover";
 
 // The shot list (P5 — photography standard rollout).
 //
@@ -25,9 +26,16 @@ import {
 
 type Slot = { id: string; label: string; hint?: string };
 
+// Two views, not three (Tess, 2026-08-06: "remove complete"). Complete was a
+// list of the styles there is nothing to do about, which is the one list a shot
+// list does not need — and it made "All" look like a third thing rather than
+// the whole. What is left is the work and everything. How much is finished is
+// still on the bar above, as a number, where it belongs.
+//
+// filterRollout still understands "complete" and is still tested for it; it is
+// simply not offered here. Nothing was deleted to make this change.
 const VIEWS: { key: RolloutView; label: string }[] = [
   { key: "todo", label: "To shoot" },
-  { key: "complete", label: "Complete" },
   { key: "all", label: "All" },
 ];
 
@@ -39,10 +47,14 @@ function StatusBadge({ s }: { s?: string | null }) {
 
 function Row({ row }: { row: RolloutRow }) {
   const st = row.style;
+  const thumb = styleCoverUrl(st);
   return (
     <div className={"ph-row" + (row.complete ? " done" : "")}>
       <Link href={`/styles/${st.id}#photography`} className="ph-thumb" title={st.name}>
-        {st.cover_image ? <img src={st.cover_image} alt="" loading="lazy" /> : <span className="ph-nothumb" />}
+        {/* The sketch, if there is one — on a shot list, the drawing is far
+            more use than the reference photograph the style came from, because
+            the drawing is what the shoot has to match. See lib/styleCover.ts. */}
+        {thumb ? <img src={thumb} alt="" loading="lazy" /> : <span className="ph-nothumb" />}
       </Link>
 
       <div className="ph-id">
@@ -163,11 +175,9 @@ export default function Photography({
         <div className="empty">
           {view === "todo"
             ? rows.length === 0
-              ? "No styles yet. Photography slots appear here as soon as there are styles to shoot."
+              ? "No styles yet. Sample image slots appear here as soon as there are styles to shoot."
               : "Nothing left to shoot. Every style that isn't archived has all five slots."
-            : view === "complete"
-              ? "No style has all five slots yet."
-              : "No styles yet."}
+            : "No styles yet."}
         </div>
       ) : (
         <div className="ph-list">

@@ -233,7 +233,7 @@ export default function DetailModal({
             {editing ? (
               <>
                 <div className="detail-head">
-                  <h2 className="serif">Edit reference</h2>
+                  <h2 className="display">Edit reference</h2>
                 </div>
                 <div className="detail-edit">
                   {EDIT_FIELDS.map((f) => (
@@ -258,13 +258,13 @@ export default function DetailModal({
                 </div>
                 <div className="detail-actions">
                   <button className="btn" disabled={pending} onClick={save}>{pending ? "Saving…" : "Save"}</button>
-                  <button className="btn ghost" disabled={pending} onClick={() => setEditing(false)}>Cancel</button>
+                  <button className="btn link" disabled={pending} onClick={() => setEditing(false)}>Cancel</button>
                 </div>
               </>
             ) : (
               <>
                 <div className="detail-head">
-                  <h2 className="serif">{cur.designer || "Reference"}</h2>
+                  <h2 className="display">{cur.designer || "Reference"}</h2>
                   {cur.year && <div className="yr">{cur.year}</div>}
                 </div>
 
@@ -296,7 +296,6 @@ export default function DetailModal({
                 {actions !== "read-only" && (
                   <div className="detail-actions">
                     <button className="btn ghost" onClick={beginEdit}>Edit</button>
-                    <button className="btn ghost" onClick={share}>Share</button>
                     {canDevelop && (
                       <button
                         className={"btn" + (devOpen ? "" : " ghost")}
@@ -392,14 +391,32 @@ export default function DetailModal({
                     <span>Move this reference to Trash?</span>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button className="btn danger sm" disabled={pending} onClick={del}>{pending ? "…" : "Delete"}</button>
-                      <button className="btn ghost sm" disabled={pending} onClick={() => setConfirmDel(false)}>Cancel</button>
+                      <button className="btn link" disabled={pending} onClick={() => setConfirmDel(false)}>Cancel</button>
                     </div>
                   </div>
                 )}
 
-                {cur.link && (
+                {/* Share sits with View product, not in the button row (Tess,
+                    2026-08-07: "move share down next to view product").
+
+                    The row above is what you DO to a reference — edit it,
+                    develop it, shelve it, delete it. These two are ways OUT of
+                    it: one opens the thing somewhere else, one hands somebody
+                    else a way in. A text link among four boxed buttons was also
+                    the odd one out visually, which is usually the sign it is
+                    the odd one out in meaning.
+
+                    Rendered whenever there is either of them, so a reference
+                    with no product link still has somewhere for Share to
+                    live. */}
+                {(cur.link || actions !== "read-only") && (
                   <div className="view-product">
-                    <a href={cur.link} target="_blank" rel="noreferrer">View product ↗</a>
+                    {cur.link && (
+                      <a href={cur.link} target="_blank" rel="noreferrer">View product ↗</a>
+                    )}
+                    {actions !== "read-only" && (
+                      <button className="btn link" onClick={share}>Share</button>
+                    )}
                   </div>
                 )}
 

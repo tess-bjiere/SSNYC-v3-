@@ -24,7 +24,8 @@ export default async function FactoriesPage() {
   } else {
     const supabase = await createClient();
     const [{ data: st }, { data: sm }] = await Promise.all([
-      supabase.from("styles").select("*"),
+      // Nothing in the Trash is at a factory.
+      supabase.from("styles").select("*").is("deleted_at", null),
       supabase.from("style_samples").select("*"),
     ]);
     styles = (st ?? []) as Style[];
@@ -38,10 +39,7 @@ export default async function FactoriesPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title serif">Factories</h1>
-        <span className="count">
-          {groups.length} {groups.length === 1 ? "factory" : "factories"}
-        </span>
+        <h1 className="page-title display">Factories</h1>
       </div>
       <Factories groups={groups} today={studioToday()} />
     </div>

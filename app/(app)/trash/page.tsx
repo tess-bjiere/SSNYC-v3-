@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { type Reference } from "@/lib/types";
+import { type Reference, type Style } from "@/lib/types";
 import { itemKind, type MBItem, type MBImageItem, type Moodboard } from "@/lib/moodboard";
 import TrashClient from "./TrashClient";
 
@@ -11,9 +11,18 @@ export const dynamic = "force-dynamic";
 // thrown away.
 export default async function TrashPage() {
   const supabase = await createClient();
-  const [{ data }, { data: boardsData }] = await Promise.all([
+  const [{ data }, { data: styleData }, { data: boardsData }] = await Promise.all([
     supabase
       .from("references")
+      .select("*")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false }),
+    // Styles work the same way as of 2026-08-05 — deleting one writes a
+    // timestamp and nothing else. Most recently thrown away first, because the
+    // thing somebody comes here to undo is almost always the last thing they
+    // did.
+    supabase
+      .from("styles")
       .select("*")
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false }),
@@ -21,6 +30,7 @@ export default async function TrashPage() {
   ]);
 
   const refs = (data ?? []) as Reference[];
+  const styles = (styleData ?? []) as Style[];
 
   // A trashed reference can still be placed on boards. Those tiles simply stop
   // rendering while it sits in the Trash and come back on restore — but a purge
@@ -35,5 +45,5 @@ export default async function TrashPage() {
     }
   }
 
-  return <TrashClient refs={refs} boardNames={boardNames} />;
+  return <TrashClient refs={refs} styles={styles} boardNames={boardNames} />;
 }

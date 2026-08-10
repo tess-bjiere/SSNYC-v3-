@@ -21,6 +21,7 @@ export type ReferenceSeed = {
   season?: string | null;
   category?: string | null;
   garment?: string | null;
+  fabric?: string | null;
   color?: string | null;
   image_url?: string | null;
   image?: string | null;
@@ -32,6 +33,7 @@ export type StyleDraft = {
   name: string;
   category: string | null;
   garment: string | null;
+  fabric: string | null;
   season: string | null;
   cover_image: string | null;
   notes: string | null;
@@ -86,6 +88,10 @@ export function styleDraftFromReference(r: ReferenceSeed): StyleDraft {
     name: draftName(r),
     category: t(r.category),
     garment: t(r.garment),
+    // The library has always recorded what a reference was made in. A style
+    // developed from a silk slip starts in silk rather than starting blank —
+    // and it is editable the moment it is wrong.
+    fabric: t(r.fabric),
     season: t(r.season),
     cover_image: coverImage(r),
     notes: sourceNote(r),

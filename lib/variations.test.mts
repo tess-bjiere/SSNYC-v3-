@@ -23,9 +23,51 @@ function style(over: Partial<VariationStyle> = {}): VariationStyle {
   };
 }
 
-test("the four axes are the four axes, each with its own hold list", () => {
-  assert.deepEqual(VARIATION_AXES.map((a) => a.id), ["recolor", "print", "trim", "detail"]);
+test("the six axes are the six Tess named, each with its own hold list", () => {
+  assert.deepEqual(VARIATION_AXES.map((a) => a.id), [
+    "recolor",
+    "print",
+    "trim",
+    "detail",
+    "embroidery",
+    "length",
+  ]);
   for (const a of VARIATION_AXES) assert.ok(a.keeps.length > 0, `${a.id} holds nothing`);
+});
+
+test("length is the one axis allowed to move the proportion, and says what it still holds", () => {
+  const b = buildBrief(style(), { axisId: "length", value: "2in shorter at the hem" });
+  assert.equal(b.ready, true);
+  assert.ok(/length/i.test(b.prompt));
+  // It must still pin everything above the hem, or the model redraws the garment.
+  assert.ok(b.hold.some((h) => /above the hem/i.test(h)));
+});
+
+test("embroidery is added to the garment, not printed into it", () => {
+  const b = buildBrief(style(), { axisId: "embroidery", value: "chainstitch logo, left chest" });
+  assert.equal(b.ready, true);
+  assert.ok(/embroidery/i.test(b.prompt));
+  assert.ok(b.hold.some((h) => /not printed into it/i.test(h)));
+});
+
+test("the variation can be drawn from a chosen picture instead of the cover", () => {
+  const b = buildBrief(style(), { axisId: "recolor", value: "bone", source: "https://img/sketch.png" });
+  assert.equal(b.source, "https://img/sketch.png");
+  assert.ok(briefText(b).includes("https://img/sketch.png"));
+  // Nothing chosen still means the cover image, exactly as before.
+  assert.equal(buildBrief(style(), { axisId: "recolor", value: "bone" }).source, "https://img/tank.jpg");
+  assert.equal(
+    buildBrief(style(), { axisId: "recolor", value: "bone", source: "   " }).source,
+    "https://img/tank.jpg"
+  );
+  // And a picked photograph is enough on a style with no cover at all.
+  const c = buildBrief(style({ cover_image: null }), {
+    axisId: "recolor",
+    value: "bone",
+    source: "https://img/proto.jpg",
+  });
+  assert.equal(c.source, "https://img/proto.jpg");
+  assert.equal(c.warnings.length, 0);
 });
 
 test("an axis that does not exist is null, not a crash", () => {
@@ -99,10 +141,10 @@ test("no axis chosen is not ready either", () => {
   assert.ok(b.warnings.some((w) => /pick what you are changing/i.test(w)));
 });
 
-test("a style with no cover image warns that the result will not match the garment", () => {
+test("nothing to work from warns that the result will not match the garment", () => {
   const b = buildBrief(style({ cover_image: null }), { axisId: "recolor", value: "bone" });
   assert.equal(b.source, null);
-  assert.ok(b.warnings.some((w) => /no cover image/i.test(w)));
+  assert.ok(b.warnings.some((w) => /no picture to work from/i.test(w)));
   // Still buildable — the warning is a caution, not a refusal.
   assert.equal(b.ready, true);
 });
