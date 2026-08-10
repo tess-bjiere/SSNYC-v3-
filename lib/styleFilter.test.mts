@@ -170,3 +170,57 @@ test("the grid can always say how much it is hiding", () => {
   assert.equal(resultLabel(41, 0), "Nothing matches — 41 styles hidden");
   assert.equal(resultLabel(0, 0), "No styles");
 });
+
+// The filter set generalised from three named columns to a field list
+// (Tess, 2026-08-09: "missing filter options"). These pin that a field added to
+// FILTER_FIELDS works everywhere with no other change, and that the derived
+// rating filter narrows without ever being searched.
+
+test("filters generalise past the original three — designer and brand narrow too", () => {
+  assert.deepEqual(applyFilters(STYLES, { ...NO_FILTERS, designer: "Lorny" }).map((s) => s.id), ["b"]);
+  assert.deepEqual(applyFilters(STYLES, { ...NO_FILTERS, brand: "the loyalist" }).map((s) => s.id), ["a"]);
+  // Case-insensitive, the same as the original three.
+  assert.deepEqual(applyFilters(STYLES, { ...NO_FILTERS, designer: "lorny" }).map((s) => s.id), ["b"]);
+  // A set designer AND a set season still AND together — an added field is not
+  // a special case, it is just another clause.
+  assert.deepEqual(
+    applyFilters(STYLES, { ...NO_FILTERS, designer: "Test", season: "SS27" }).map((s) => s.id),
+    ["a"]
+  );
+  assert.equal(anyFilter({ ...NO_FILTERS, designer: "Lorny" }), true);
+});
+
+test("facetOptions works for the added fields", () => {
+  // Both designers appear once, so alphabetical breaks the tie: Lorny before Test.
+  assert.deepEqual(facetOptions(STYLES, "designer"), [
+    { value: "Lorny", count: 1 },
+    { value: "Test", count: 1 },
+  ]);
+  assert.deepEqual(facetOptions(STYLES, "brand"), [{ value: "The Loyalist", count: 1 }]);
+});
+
+test("rating is a filter-only field — it narrows but is never searched", () => {
+  // Folded in from the round summary before filtering; not a stored column. The
+  // 'x' row is rated poor but not named it, which is what separates the filter
+  // from the search.
+  const rated: SearchableStyle[] = [
+    { id: "g", name: "Good one", rating: "good" },
+    { id: "w", name: "Workable one", rating: "workable" },
+    { id: "p", name: "Poor one", rating: "poor" },
+    { id: "u", name: "Unrated one" },
+    { id: "x", name: "Zeta", rating: "poor" },
+  ];
+  // The filter catches every poor-rated row regardless of its name.
+  assert.deepEqual(applyFilters(rated, { ...NO_FILTERS, rating: "poor" }).map((s) => s.id), ["p", "x"]);
+  // Empty rating is "no opinion", never "the unrated ones".
+  assert.deepEqual(applyFilters(rated, NO_FILTERS).map((s) => s.id), ["g", "w", "p", "u", "x"]);
+  // Search does NOT read rating: "poor" finds the one literally named it, not
+  // the one merely rated it.
+  assert.deepEqual(searchStyles(rated, "poor").map((s) => s.id), ["p"]);
+  // Facet counts are real: poor is carried twice.
+  assert.deepEqual(facetOptions(rated, "rating"), [
+    { value: "poor", count: 2 },
+    { value: "good", count: 1 },
+    { value: "workable", count: 1 },
+  ]);
+});

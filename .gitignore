@@ -8,6 +8,7 @@
 npm-debug.log*
 .vercel
 next-env.d.ts
+tsconfig.tsbuildinfo
 
 # Cowork sync transfer artifact — not part of the app
 .ssync-sync.tgz

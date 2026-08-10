@@ -41,9 +41,11 @@ const sum = (st: DevStyleLike, rows: DevSampleLike[]) => summarize(st, rows, ORD
 // The sort list itself
 // ---------------------------------------------------------------------------
 
-test("the four sorts are the four questions, each with an id, a label and a hint", () => {
-  assert.equal(DEV_SORTS.length, 4);
-  assert.deepEqual(DEV_SORT_IDS, ["recent", "attention", "final", "fitting"]);
+test("the sorts are the four workflow questions plus two plain orders, each with an id, a label and a hint", () => {
+  // Four orders about where a style is in the cycle, then az/newest about where
+  // it is in a list (Tess, 2026-08-09: "sort options wrong/short").
+  assert.equal(DEV_SORTS.length, 6);
+  assert.deepEqual(DEV_SORT_IDS, ["recent", "attention", "final", "fitting", "az", "newest"]);
   for (const s of DEV_SORTS) {
     assert.ok(s.label.length > 0);
     assert.ok(s.hint.length > 0);
@@ -339,6 +341,34 @@ test("an unknown sort id falls back to recent rather than randomising the grid",
   assert.deepEqual(
     sortStyles(GRID, MAP, "whatever").map((s) => s.id),
     sortStyles(GRID, MAP, "recent").map((s) => s.id)
+  );
+});
+
+test("A–Z orders by name, needs no summary, and puts the unnamed last", () => {
+  // The point of az and newest is that they read the row, not the summary — a
+  // style with no rounds logged still sorts. The empty Map proves it.
+  const styles: DevStyleLike[] = [
+    style({ id: "b", name: "Beta" }),
+    style({ id: "a", name: "alpha" }), // lower-case, still ahead of Beta
+    style({ id: "z", name: "Zeta" }),
+    style({ id: "n", name: "" }), // no name sorts last, not first
+  ];
+  assert.deepEqual(
+    sortStyles(styles, new Map(), "az").map((s) => s.id),
+    ["a", "b", "z", "n"]
+  );
+});
+
+test("Newly added orders by created_at, newest first, undated last", () => {
+  const styles: DevStyleLike[] = [
+    style({ id: "old", created_at: "2026-01-01" }),
+    style({ id: "new", created_at: "2026-08-01" }),
+    style({ id: "mid", created_at: "2026-05-01" }),
+    style({ id: "none", created_at: null }),
+  ];
+  assert.deepEqual(
+    sortStyles(styles, new Map(), "newest").map((s) => s.id),
+    ["new", "mid", "old", "none"]
   );
 });
 

@@ -46,16 +46,46 @@ export type SearchableStyle = {
   designer?: string | null;
   brand?: string | null;
   notes?: string | null;
+  // How the current round came back — "good" | "workable" | "poor", or "" for
+  // unrated (Tess, 2026-08-09: "missing filter options"). Not a stored style
+  // column: the grid augments each row with the rating off its DevSummary before
+  // filtering, so filtering by rating and the dot on the card read the same
+  // fact. Deliberately absent from the search haystack below — a rating is a
+  // thing you filter to, not a word you go looking for.
+  rating?: string | null;
 };
 
-/** The three things a person filters by, each empty for "no opinion". */
-export type StyleFilters = {
-  season: string;
-  factory: string;
-  category: string;
-};
+/**
+ * The fields a person filters by, each empty for "no opinion".
+ *
+ * Was three (season, factory, category). Tess, 2026-08-09: "missing filter
+ * options". Designer and brand are the other two facts a style already carries
+ * that somebody narrows by; rating is the studio's traffic light, folded in
+ * from the round summary. The set is a list rather than three named fields so
+ * adding the next one is one entry here and nothing else — applyFilters,
+ * anyFilter and the facets all read the list.
+ */
+export type FilterField = "season" | "factory" | "category" | "designer" | "brand" | "rating";
 
-export const NO_FILTERS: StyleFilters = { season: "", factory: "", category: "" };
+export const FILTER_FIELDS: readonly FilterField[] = [
+  "season",
+  "factory",
+  "category",
+  "designer",
+  "brand",
+  "rating",
+];
+
+export type StyleFilters = Record<FilterField, string>;
+
+export const NO_FILTERS: StyleFilters = {
+  season: "",
+  factory: "",
+  category: "",
+  designer: "",
+  brand: "",
+  rating: "",
+};
 
 /** One value a filter can take, with how many styles carry it. */
 export type FacetOption = {
@@ -155,7 +185,7 @@ export function searchStyles<T extends SearchableStyle>(
  */
 export function facetOptions(
   styles: readonly SearchableStyle[],
-  field: "season" | "factory" | "category"
+  field: FilterField
 ): FacetOption[] {
   const counts = new Map<string, { value: string; count: number }>();
   for (const s of styles) {
@@ -175,27 +205,25 @@ export function facetOptions(
 
 /** Is any filter actually in force? */
 export function anyFilter(f: StyleFilters, query?: string | null): boolean {
-  return Boolean(text(f.season) || text(f.factory) || text(f.category) || searchTerms(query).length);
+  return Boolean(FILTER_FIELDS.some((k) => text(f[k])) || searchTerms(query).length);
 }
 
 /**
  * Apply the chosen filters. Case-insensitive, for the same reason facets are
  * grouped that way. An empty filter is no opinion, never "styles with no season".
+ *
+ * Reads FILTER_FIELDS rather than three named columns, so every filter — the
+ * original three and the ones added since — is ANDed the same way: a style has
+ * to answer to all the filters that are set, and a filter that is not set is
+ * skipped rather than treated as "must be blank".
  */
 export function applyFilters<T extends SearchableStyle>(
   styles: readonly T[],
   f: StyleFilters
 ): T[] {
-  const season = fold(f.season);
-  const factory = fold(f.factory);
-  const category = fold(f.category);
-  if (!season && !factory && !category) return styles.slice();
-  return styles.filter(
-    (s) =>
-      (!season || fold(s.season) === season) &&
-      (!factory || fold(s.factory) === factory) &&
-      (!category || fold(s.category) === category)
-  );
+  const active = FILTER_FIELDS.map((k) => [k, fold(f[k])] as const).filter(([, v]) => v);
+  if (active.length === 0) return styles.slice();
+  return styles.filter((s) => active.every(([k, v]) => fold(s[k]) === v));
 }
 
 /** Search and filter together, in that order. Search is the coarser sieve. */

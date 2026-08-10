@@ -82,6 +82,24 @@ function text(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+/** Case-insensitive A→Z, empty last. The comparator for the "A–Z" order. */
+function cmpTextAsc(a: string | null | undefined, b: string | null | undefined): number {
+  const x = text(a).toLowerCase();
+  const y = text(b).toLowerCase();
+  if (x === y) return 0;
+  if (!x) return 1;
+  if (!y) return -1;
+  return x < y ? -1 : 1;
+}
+
+/** Later stamp first, empty last. The comparator for the "Newly added" order. */
+function cmpStampDesc(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return a < b ? 1 : -1;
+}
+
 // ---------------------------------------------------------------------------
 // The sorts
 // ---------------------------------------------------------------------------
@@ -113,6 +131,22 @@ export const DEV_SORTS: readonly DevSort[] = [
     id: "fitting",
     label: "Ready for fitting",
     hint: "Samples that have landed and have no fit notes yet.",
+  },
+  // Two plain orders (Tess, 2026-08-09: "sort options wrong/short"). The four
+  // above answer a question about where a style is in the cycle; these two
+  // answer "where is it in a list" — the order you want when you already know
+  // the name, or when you are looking at what just got created. They read the
+  // style row directly and need no summary, so a style with no rounds logged
+  // still sorts correctly under them.
+  {
+    id: "az",
+    label: "A–Z",
+    hint: "By name, A to Z.",
+  },
+  {
+    id: "newest",
+    label: "Newly added",
+    hint: "Most recently created first.",
   },
 ] as const;
 
@@ -387,6 +421,18 @@ export function sortStyles<S extends DevStyleLike>(
   }));
 
   scored.sort((a, b) => {
+    // The two plain orders read the row, not the summary, so they order every
+    // style the same whether or not it has rounds. Empty names and undated rows
+    // sort last rather than jumping to the top.
+    if (id === "az") {
+      const d = cmpTextAsc(a.style.name, b.style.name);
+      return d !== 0 ? d : a.i - b.i;
+    }
+    if (id === "newest") {
+      const d = cmpStampDesc(text(a.style.created_at), text(b.style.created_at));
+      return d !== 0 ? d : a.i - b.i;
+    }
+
     if (a.s && !b.s) return -1;
     if (!a.s && b.s) return 1;
 

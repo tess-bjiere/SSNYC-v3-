@@ -1459,13 +1459,23 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .badge.sm{font-size:var(--t-micro);padding:2px 5px;letter-spacing:.1em}
 
 /* The development grid: an order you choose, a round on the thumbnail --------- */
-.sortbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px}
+/* Two lines, not one (Tess, 2026-08-09: "layout is cramped/awkward"). Search
+   owns the first line; sort, the filters and the count share the second. The
+   old single wrapping row put the search box shoulder to shoulder with up to
+   six selects, which is what read as crowded. */
+.sortbar{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin:-8px 0 18px}
 .sortbar label{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint)}
-.sortbar .select{width:auto;min-width:170px}
+/* The controls line. Wraps on its own when the filters outrun the width, so a
+   narrow window stacks the selects rather than shoving the count off the edge. */
+.sortbar-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sortbar .select{width:auto;min-width:150px}
+/* Sort is the one control that is always present and always first; give it a
+   little more room than the facets so its longer labels do not truncate. */
+.sortbar-row > .sel:first-child .select{min-width:168px}
 .sortbar .h{font-size:var(--t-meta);color:var(--faint);margin-left:auto;text-align:right}
-/* Search leads the bar and takes the slack, because it is the control people
-   reach for before they know which tab the thing is in. */
-.findbox{flex:1 1 260px;min-width:200px;max-width:420px}
+/* Search now takes the whole first line — it is the control people reach for
+   before they know which tab the thing is in, and it no longer has to share. */
+.findbox{width:100%;max-width:none}
 /* A filter that is in force has to look different from one that is not — the
    whole safety of hiding rows is that you can see what did the hiding. */
 .sortbar .select.on{border-color:var(--ink);color:var(--ink)}

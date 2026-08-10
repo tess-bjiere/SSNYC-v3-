@@ -3,7 +3,7 @@
 import Select from "@/app/components/Select";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { styleStatusLabel, type Style } from "@/lib/types";
+import { styleStatusLabel, sampleRatingLabel, SAMPLE_RATINGS, type Style } from "@/lib/types";
 import {
   DEV_SORTS,
   DEFAULT_DEV_SORT,
@@ -132,10 +132,21 @@ export default function DevTabs({
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<StyleFilters>(NO_FILTERS);
 
+  // Each style carried alongside its current-round rating, so the grid can
+  // filter by the same traffic light the card shows (Tess, 2026-08-09). The
+  // rating is not a stored column on a style — it is the verdict on the round
+  // the style is on — so it is folded in here from the summary rather than read
+  // off the row. Everything downstream works on these augmented rows; they are a
+  // superset of Style, so the card, the tab test and the sort are unchanged.
+  const rows = useMemo(
+    () => styles.map((s) => ({ ...s, rating: summaries[s.id]?.rating ?? "" })),
+    [styles, summaries]
+  );
+
   // Search and filters apply to every style before the tab does, so the tab
   // counts below report matches rather than totals — otherwise a tab would
   // promise eleven styles and then show two.
-  const matching = useMemo(() => findStyles(styles, query, filters), [styles, query, filters]);
+  const matching = useMemo(() => findStyles(rows, query, filters), [rows, query, filters]);
 
   const counts = Object.fromEntries(
     TABS.map((t) => [t.key, matching.filter((s) => inTab(s, t.key)).length])
@@ -143,16 +154,26 @@ export default function DevTabs({
 
   // The options are the values that actually exist across the whole set — not
   // the filtered set, which would make a filter remove its own way back.
-  const seasons = useMemo(() => facetOptions(styles, "season"), [styles]);
-  const factories = useMemo(() => facetOptions(styles, "factory"), [styles]);
-  const categories = useMemo(() => facetOptions(styles, "category"), [styles]);
+  const seasons = useMemo(() => facetOptions(rows, "season"), [rows]);
+  const factories = useMemo(() => facetOptions(rows, "factory"), [rows]);
+  const categories = useMemo(() => facetOptions(rows, "category"), [rows]);
+  const brands = useMemo(() => facetOptions(rows, "brand"), [rows]);
+  // Rating reads as a scale, not a tally, so it is ordered good → workable →
+  // poor rather than commonest-first like the others.
+  const ratings = useMemo(() => {
+    const rank = (v: string) => {
+      const i = (SAMPLE_RATINGS as readonly string[]).indexOf(v);
+      return i === -1 ? SAMPLE_RATINGS.length : i;
+    };
+    return facetOptions(rows, "rating").sort((a, b) => rank(a.value) - rank(b.value));
+  }, [rows]);
 
   const map = new Map(Object.entries(summaries));
   const shown = sortStyles(matching.filter((s) => inTab(s, tab)), map, sort);
   const sortHint = DEV_SORTS.find((s) => s.id === sort)?.hint ?? "";
 
   const narrowed = anyFilter(filters, query);
-  const inThisTab = styles.filter((s) => inTab(s, tab)).length;
+  const inThisTab = rows.filter((s) => inTab(s, tab)).length;
   // Matches sitting in the other tabs — the answer to "it is not here, is it
   // anywhere?", which is the question a search is usually really asking.
   const elsewhere = matching.length - shown.length;
@@ -166,8 +187,22 @@ export default function DevTabs({
     setFilters(NO_FILTERS);
   }
 
-  function facetSelect(field: keyof StyleFilters, label: string, options: { value: string; count: number }[]) {
-    if (options.length === 0) return null;
+  function facetSelect(
+    field: keyof StyleFilters,
+    label: string,
+    options: { value: string; count: number }[],
+    // The fewest options worth showing the control for. Two by default — a
+    // select that can only say "any" or the single value it has narrows nothing,
+    // and hiding it is what keeps the bar from filling with dead controls
+    // (Tess, 2026-08-09). Season passes 1: it is a primary planning axis Tess
+    // wants listed even before a second season exists (Tess, 2026-08-09: "list
+    // season instead of designer").
+    minOptions = 2,
+    // How the stored value reads in the menu. Rating is stored lowercase and
+    // shows title-cased; everything else shows exactly as it is on the row.
+    format: (v: string) => string = (v) => v
+  ) {
+    if (options.length < minOptions) return null;
     return (
       <Select
         className={"select sm" + (filters[field] ? " on" : "")}
@@ -178,7 +213,7 @@ export default function DevTabs({
           // "Any" rather than a blank line: an unset filter is no opinion, and
           // it should read as one.
           { value: "", label: `${label}: any` },
-          ...options.map((o) => ({ value: o.value, label: `${o.value} (${o.count})` })),
+          ...options.map((o) => ({ value: o.value, label: `${format(o.value)} (${o.count})` })),
         ]}
       />
     );
@@ -200,8 +235,10 @@ export default function DevTabs({
       </div>
 
       <div className="sortbar">
-        {/* Search first, and widest — it is the control people reach for
-            before they know which tab the thing is in. */}
+        {/* Search gets its own line and the full width — it is the control
+            people reach for before they know which tab the thing is in, and
+            crowding it against the selects was what made the bar feel tight
+            (Tess, 2026-08-09: "layout is cramped/awkward"). */}
         <input
           className="input sm findbox"
           type="search"
@@ -211,30 +248,41 @@ export default function DevTabs({
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        <label htmlFor="devsort">Sort</label>
-        <Select
-          id="devsort"
-          className="select sm"
-          aria-label="Sort"
-          value={sort}
-          onChange={setSort}
-          options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
-        />
+        {/* Sort and the filters share the second line. The sort control needs no
+            "Sort" label (Tess, 2026-08-09) — it reads "Recent updates",
+            "A–Z" and so on, which already say what it does; the word above it
+            was furniture. */}
+        <div className="sortbar-row">
+          <Select
+            id="devsort"
+            className="select sm"
+            aria-label="Sort order"
+            value={sort}
+            onChange={setSort}
+            options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
+          />
 
-        {facetSelect("season", "Season", seasons)}
-        {facetSelect("factory", "Factory", factories)}
-        {facetSelect("category", "Category", categories)}
+          {/* Season leads and always lists (min 1). Designer is deliberately
+              not here — Tess, 2026-08-09: "list season instead of designer". The
+              field still exists in the filter engine, it just has no control on
+              this bar. Brand self-hides until a second brand exists. */}
+          {facetSelect("season", "Season", seasons, 1)}
+          {facetSelect("factory", "Factory", factories)}
+          {facetSelect("category", "Category", categories)}
+          {facetSelect("brand", "Brand", brands)}
+          {facetSelect("rating", "Rating", ratings, 2, sampleRatingLabel)}
 
-        {/* Only when something is actually in force, so it is never a button
-            that does nothing. */}
-        {narrowed && (
-          <button type="button" className="btn link" onClick={clearAll}>
-            Clear
-          </button>
-        )}
+          {/* Only when something is actually in force, so it is never a button
+              that does nothing. */}
+          {narrowed && (
+            <button type="button" className="btn link" onClick={clearAll}>
+              Clear
+            </button>
+          )}
 
-        {/* Both numbers, always, so nothing is hidden quietly. */}
-        <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
+          {/* Both numbers, always, so nothing is hidden quietly. */}
+          <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
+        </div>
       </div>
 
       {/* The other half of the answer when a search finds nothing here: it may
