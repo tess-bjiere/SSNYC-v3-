@@ -134,12 +134,22 @@ export const PHOTO_SLOTS: readonly PhotoSlot[] = [
     hint: "Quarter turn from the front, same distance and height as the other two. Arms down, hands still.",
     group: "model",
   },
+  // The lay flats are retired (Tess, 2026-08-10: "remove layflat options for
+  // sample images, it should be 3 model shots (front, back, side) and 3 detail
+  // shots"). Retired, not deleted, and for the reason the whole file runs on: a
+  // style already shot with a lay flat on it still shows it, still reads it,
+  // still exports it — the slot is simply never offered as an empty card again,
+  // and it no longer counts against the shoot. Nothing was migrated. The `flat`
+  // family in lib/styleCover.ts is left alone so an old style whose only picture
+  // is a lay flat still has a face.
   {
     id: "flat_front",
     label: "Lay flat — front",
     hint: "Garment flat on white, shot from directly above, sleeves and hem squared.",
     group: "flat",
     unit: "flat1",
+    optional: true,
+    retired: true,
   },
   {
     id: "flat_back",
@@ -147,6 +157,8 @@ export const PHOTO_SLOTS: readonly PhotoSlot[] = [
     hint: "Same framing as the flat front so the pair can be shown side by side.",
     group: "flat",
     unit: "flat1",
+    optional: true,
+    retired: true,
   },
   {
     id: "flat2_front",
@@ -189,24 +201,27 @@ export const PHOTO_SLOTS: readonly PhotoSlot[] = [
     group: "detail",
     optional: true,
   },
+  // Details 4 through 8 are retired (Tess, 2026-08-10: "3 detail shots"). The
+  // named places stop at three — Detail, Detail 2, Detail 3 — so an empty
+  // fourth detail card is never offered again. Retired, not deleted: a round
+  // that already has a fourth, fifth or sixth close-up on it keeps showing it,
+  // exactly like the lay flats above. Anything beyond three now lives in the
+  // gallery pile below the slots rather than in a named box.
   {
     id: "detail_4",
     label: "Detail 4",
     hint: "A fourth close-up — a cuff, a seam finish, a hem. Same light as the others.",
     group: "detail",
     optional: true,
+    retired: true,
   },
-  // The two places the second lay flat used to occupy, moved to the family
-  // they were being used for (Tess, 2026-08-05: "second layflat options should
-  // just be detial shots"). Same number of named places on the round as
-  // yesterday — they just point at close-ups now instead of at a flat nobody
-  // was shooting.
   {
     id: "detail_5",
     label: "Detail 5",
     hint: "A fifth close-up — hardware, a branded tape, an inside finish.",
     group: "detail",
     optional: true,
+    retired: true,
   },
   {
     id: "detail_6",
@@ -214,19 +229,15 @@ export const PHOTO_SLOTS: readonly PhotoSlot[] = [
     hint: "A sixth close-up — hardware, a branded tape, an inside finish.",
     group: "detail",
     optional: true,
+    retired: true,
   },
-  // Two more (Tess, 2026-08-06: "add slot for 2 more detial shots in sample
-  // images"). Optional, like every detail after the first, so no style in the
-  // studio is suddenly two shots short of the standard for having been
-  // photographed yesterday. visibleSlots still offers exactly one empty detail
-  // card at a time, so the round does not grow eight blank boxes — it grows one
-  // more place to put a close-up each time the last one is filled.
   {
     id: "detail_7",
     label: "Detail 7",
     hint: "A seventh close-up — a drawcord, an eyelet, a bar tack.",
     group: "detail",
     optional: true,
+    retired: true,
   },
   {
     id: "detail_8",
@@ -234,6 +245,7 @@ export const PHOTO_SLOTS: readonly PhotoSlot[] = [
     hint: "The eighth and last named detail. Anything beyond this belongs in the images below.",
     group: "detail",
     optional: true,
+    retired: true,
   },
 ] as const;
 

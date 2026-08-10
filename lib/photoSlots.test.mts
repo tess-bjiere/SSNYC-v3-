@@ -260,37 +260,35 @@ test("writePhotos copes with whatever jsonb hands back", () => {
 // grew without the shot list growing: nothing a style is measured against
 // changed, and the extra cards only appear as they are used.
 
-test("there is a named place for eight details and one pair of lay flats", () => {
-  // Tess, 2026-08-05: "second layflat options should just be detial shots".
-  // Two more added 2026-08-06: "add slot for 2 more detial shots in sample
-  // images" — spare like all the rest, so the standard is unmoved.
-  const ids = PHOTO_SLOTS.map((s) => s.id);
-  for (const id of [
+test("the offered places are three model shots and three details; flats are retired", () => {
+  // Tess, 2026-08-10: "remove layflat options ... 3 model shots (front, back,
+  // side) and 3 detail shots". Retired slots stay in the list so a photo
+  // already filed under one still shows; they are simply never offered again.
+  const live = PHOTO_SLOTS.filter((s) => !s.retired).map((s) => s.id);
+  assert.deepEqual(live, [
+    "model_front",
+    "model_back",
+    "model_side",
     "detail",
     "detail_2",
     "detail_3",
-    "detail_4",
-    "detail_5",
-    "detail_6",
-    "detail_7",
-    "detail_8",
-  ])
+  ]);
+  // The lay flats and details 4-8 are still DEFINED — retired, not deleted — so
+  // a round that already holds one of them is unaffected.
+  const ids = PHOTO_SLOTS.map((s) => s.id);
+  for (const id of ["flat_front", "flat_back", "detail_4", "detail_8"]) {
     assert.ok(ids.includes(id), id);
-  assert.equal(PHOTO_SLOTS.filter((s) => s.group === "detail").length, 8);
-  // The second pair is still defined — retired, not deleted — so a round that
-  // already has one is unaffected. What changed is that it is never offered.
-  const liveFlats = PHOTO_SLOTS.filter((s) => s.group === "flat" && !s.retired);
-  assert.deepEqual(liveFlats.map((s) => s.id), ["flat_front", "flat_back"]);
+    assert.equal(PHOTO_SLOTS.find((s) => s.id === id)?.retired, true, id);
+  }
 });
 
-test("growing the standard did not grow what a style is measured against", () => {
-  // One detail, one pair of flats, three model shots. Everything added is spare.
+test("the required standard is three model shots and one detail", () => {
+  // Three model views and one detail. The two more details are spare, and the
+  // flats no longer count at all.
   assert.deepEqual(REQUIRED_SLOTS.map((s) => s.id), [
     "model_front",
     "model_back",
     "model_side",
-    "flat_front",
-    "flat_back",
     "detail",
   ]);
   const shot: Record<string, string> = {};
@@ -299,56 +297,43 @@ test("growing the standard did not grow what a style is measured against", () =>
   assert.equal(photoProgressLabel(shot), "");
 });
 
-test("an empty round offers one spare detail and no spare flats", () => {
+test("an empty round offers three model shots, one detail and one spare — no flats", () => {
   const ids = visibleSlots(PHOTO_SLOTS, {}).map((s) => s.id);
   assert.deepEqual(ids, [
     "model_front",
     "model_back",
     "model_side",
-    "flat_front",
-    "flat_back",
     "detail",
     "detail_2",
   ]);
-  // Seven cards, not fifteen — nothing beyond the next spare detail is offered,
-  // and the retired second lay flat is not offered at all.
-  for (const id of [
-    "flat2_front",
-    "flat2_back",
-    "detail_3",
-    "detail_4",
-    "detail_5",
-    "detail_6",
-    "detail_7",
-    "detail_8",
-  ])
+  // Nothing beyond the next spare detail, and no lay flats at all.
+  for (const id of ["flat_front", "flat_back", "detail_3", "detail_4"])
     assert.ok(!ids.includes(id), id);
 });
 
-test("filling a spare detail offers the next one, and only the next one", () => {
+test("details stop at three, and a retired slot with a photo still shows", () => {
+  // Fill the first spare: the second is offered, but never a fourth.
   const one = visibleSlots(PHOTO_SLOTS, { detail_2: "https://x/d2.jpg" }).map((s) => s.id);
   assert.ok(one.includes("detail_2"));
-  assert.ok(one.includes("detail_3"));
-  assert.ok(!one.includes("detail_4"));
+  assert.ok(one.includes("detail_3")); // the one open offer
+  assert.ok(!one.includes("detail_4")); // retired, never offered
 
+  // Both live spares filled — there is no further offer. Detail stops at three.
   const two = visibleSlots(PHOTO_SLOTS, {
     detail_2: "https://x/d2.jpg",
     detail_3: "https://x/d3.jpg",
   }).map((s) => s.id);
-  assert.ok(two.includes("detail_4"));
-  assert.ok(!two.includes("detail_5"));
+  assert.ok(two.includes("detail_3"));
+  assert.ok(!two.includes("detail_4"));
 
-  // Filling every live spare shows everything except the retired pair.
-  const all = visibleSlots(PHOTO_SLOTS, {
-    detail_2: "https://x/d2.jpg",
-    detail_3: "https://x/d3.jpg",
-    detail_4: "https://x/d4.jpg",
-    detail_5: "https://x/d5.jpg",
-    detail_6: "https://x/d6.jpg",
-    detail_7: "https://x/d7.jpg",
-  }).map((s) => s.id);
-  assert.ok(all.includes("detail_8"));
-  assert.equal(all.length, PHOTO_SLOTS.length - 2);
+  // A retired detail that already holds a picture still shows — nothing is lost.
+  assert.ok(
+    visibleSlots(PHOTO_SLOTS, { detail_5: "https://x/d5.jpg" }).map((s) => s.id).includes("detail_5")
+  );
+  // And a lay flat shot before the retirement still shows on its round.
+  assert.ok(
+    visibleSlots(PHOTO_SLOTS, { flat_front: "https://x/f.jpg" }).map((s) => s.id).includes("flat_front")
+  );
 });
 
 test("a second lay flat already shot still shows, and is never offered again", () => {
