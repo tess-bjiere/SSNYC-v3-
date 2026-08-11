@@ -376,7 +376,11 @@ body.notes-open .wrap{padding-right:378px}
 /* md is the default. .sm and .lg are the only other two, and they are the
    control scale — see :root. A button that needs a padding of its own is a
    button that has found a fifth size, and there is not one. */
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--btnfg);border:1px solid var(--accent);border-radius:0;padding:var(--ctl-y-md) var(--ctl-x-md);font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em;cursor:pointer}
+/* One caps spec for every button and the caps dropdowns: t-meta / 500 / .12em,
+   the size the primary "+ New Style" button already shows (Tess, 2026-08-11:
+   "same size, weight and tracking as the new style button"). .btn.lg keeps its
+   own larger size below — it is the rare page-level action, deliberately apart. */
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--btnfg);border:1px solid var(--accent);border-radius:0;padding:var(--ctl-y-md) var(--ctl-x-md);font-family:inherit;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em;cursor:pointer}
 .btn:hover{opacity:.9}
 .btn.ghost{background:none;color:var(--ink);border-color:var(--line)}
 .btn.ghost:hover{border-color:var(--ink)}
@@ -399,7 +403,7 @@ body.notes-open .wrap{padding-right:378px}
    they now match the library tabs. If the longer labels (Sampling, Production,
    Evergreen) read as blocks again, revert this one line to text-transform:none
    — the active tab is still carried by ink + the rule under it, not the caps. */
-.tab{padding:var(--ctl-y-md) 2px;margin-right:22px;font-size:var(--t-sm);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.11em;color:var(--faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
+.tab{padding:var(--ctl-y-md) 2px;margin-right:22px;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
 .tab:hover{color:var(--ink)}
 .tab.active{color:var(--ink);border-color:var(--ink)}
 .tab .n{margin-left:7px;font-size:var(--t-micro);font-weight:var(--w-body);color:var(--faint)}
@@ -501,7 +505,7 @@ body.notes-open .wrap{padding-right:378px}
 .detail-row .k{width:118px;flex-shrink:0;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding-top:3px}
 .detail-row .v{flex:1;font-size:var(--t-body);line-height:1.5;white-space:pre-wrap}
 .detail-actions{display:flex;flex-wrap:wrap;gap:var(--sp-ctl);margin-top:24px}
-.detail-actions .btn{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta);letter-spacing:0}
+.detail-actions .btn{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta)}
 .btn.danger{background:none;color:var(--danger);border-color:var(--danger)}
 .btn.danger:hover{background:var(--danger);color:var(--btnfg)}
 .detail-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--danger);font-size:var(--t-body)}
@@ -519,7 +523,7 @@ body.notes-open .wrap{padding-right:378px}
 /* Library filter bar */
 .lib-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
 .lib-tabs{display:flex;border:1px solid var(--line)}
-.lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:var(--ctl-y-md) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.11em}
+.lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:var(--ctl-y-md) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em}
 .lib-tab:last-child{border-right:none}
 .lib-tab:hover{color:var(--ink)}
 /* The chosen tab is marked by a quiet raised fill and ink text, not the loud
@@ -539,7 +543,11 @@ body.notes-open .wrap{padding-right:378px}
    "NEWEST" in the reference). The data filters (designer, colour, factory,
    season) are deliberately left in natural case: a proper noun or a colour name
    reads badly shouted (Tess, 2026-08-11: "rework buttons and icons ..."). */
-.lib-sort, #devsort{text-transform:uppercase;letter-spacing:.1em;font-weight:var(--w-mid)}
+/* The sort dropdown matches the buttons beside it exactly — same size (t-sm,
+   not the larger t-body the other selects use), weight and .12em tracking as
+   the primary button (Tess, 2026-08-11: "same size, weight and tracking as the
+   new style button"). */
+.lib-sort, #devsort{text-transform:uppercase;letter-spacing:.12em;font-weight:var(--w-mid);font-size:var(--t-meta)}
 .lib-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
 .lib-filters .select{width:auto;min-width:120px;padding:var(--ctl-y-md) var(--ctl-chev-md) var(--ctl-y-md) var(--ctl-x-md);font-size:var(--t-body)}
 
@@ -2179,11 +2187,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    tier it lands on. */
 .btn.link.sm{font-size:var(--t-meta)}
 .btn.link.lg{font-size:var(--t-body)}
-/* The outlined tier reads one step above the text tier and one below solid. */
-/* Nothing of its own to say any more: .sm is .sm whatever tier it is in. Kept
-   as a no-op rather than deleted so a stray .ghost.sm in the markup still
-   reads as deliberate. */
-.btn.ghost.sm{letter-spacing:0}
+/* .btn.ghost.sm used to carry letter-spacing:0 as a no-op, from when .btn had
+   no tracking. The base now sets .12em (the caps control spec), so that override
+   was zeroing the tracking on ghost-sm buttons like Sign out — removed so they
+   inherit the one spec (Tess, 2026-08-11: match the new style button). */
 
 /* --- Air between a control and whatever it opens onto --------------------
    The Edit details button was landing directly on the SAMPLE ROUNDS rule, so
