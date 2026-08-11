@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
 
 const BUCKET = "references";
 
@@ -80,6 +81,8 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
   const supabase = await createClient();
   const user = await requireUser();
   const createdBy = user?.name || user?.email || null;
+  // A reference is uploaded into the brand you are looking at (multi-brand).
+  const brand = await activeBrand();
 
   const errors: string[] = [];
   let count = 0;
@@ -124,6 +127,7 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
         image_url: url,
         thumb_url: thumbUrl,
         type: kind,
+        brand,
         created_by: createdBy,
       });
       if (insErr) {

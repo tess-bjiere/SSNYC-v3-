@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import BrandSwitcher from "./BrandSwitcher";
 
 // The top row, in two named halves.
 //
@@ -92,7 +93,7 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
   },
 ];
 
-export default function Nav({ email }: { email: string }) {
+export default function Nav({ email, brand }: { email: string; brand: string }) {
   const pathname = usePathname();
   return (
     <nav className="nav">
@@ -127,6 +128,10 @@ export default function Nav({ email }: { email: string }) {
         ))}
       </div>
       <div className="nav-right">
+        {/* Which brand the team is looking at (multi-brand, Tess 2026-08-11).
+            Everything on the page is scoped to it. A talent has no switcher —
+            they see only their own brand (phase 2). */}
+        <BrandSwitcher active={brand} />
         {/* + New Style used to sit here (Tess, 2026-08-06: "dont have new style
             in upper navigation -- it's confusing"). It was the only ACTION in a
             row of destinations — everything else in this bar takes you

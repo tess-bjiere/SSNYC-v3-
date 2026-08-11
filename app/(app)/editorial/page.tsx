@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { type Reference } from "@/lib/types";
 import { type ListsSetting } from "@/lib/lists";
 import EditorialClient from "./EditorialClient";
@@ -7,10 +8,12 @@ export const dynamic = "force-dynamic";
 
 export default async function EditorialPage() {
   const supabase = await createClient();
+  const brand = await activeBrand();
   const [{ data }, { data: settingsData }] = await Promise.all([
     supabase
       .from("references")
       .select("*")
+      .eq("brand", brand)
       .is("deleted_at", null)
       // Editorial images share the references table with the library; `type` is
       // the only thing telling them apart. This is the mirror of the filter on

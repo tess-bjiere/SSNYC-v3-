@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, DEV_BYPASS, DEV_BYPASS_REFUSED } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
 import Nav from "./Nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  const brand = await activeBrand();
 
   return (
     <>
-      <Nav email={user.email} />
+      <Nav email={user.email} brand={brand} />
       {DEV_BYPASS && (
         <div className="wrap" style={{ paddingTop: 12 }}>
           <div className="notice">

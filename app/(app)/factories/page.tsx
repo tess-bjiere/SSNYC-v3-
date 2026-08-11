@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { SAMPLE_ROUNDS, type Style, type StyleSample } from "@/lib/types";
 import { sortSamples } from "@/lib/sampleCycle";
 import { groupByFactory } from "@/lib/factories";
@@ -23,9 +24,10 @@ export default async function FactoriesPage() {
     samples = mockSamples();
   } else {
     const supabase = await createClient();
+    const brand = await activeBrand();
     const [{ data: st }, { data: sm }] = await Promise.all([
       // Nothing in the Trash is at a factory.
-      supabase.from("styles").select("*").is("deleted_at", null),
+      supabase.from("styles").select("*").eq("brand", brand).is("deleted_at", null),
       supabase.from("style_samples").select("*"),
     ]);
     styles = (st ?? []) as Style[];

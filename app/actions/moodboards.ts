@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEV_BYPASS, requireUser } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
 import { applyReorder, insertItems, removeImage } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
 
@@ -12,9 +13,11 @@ export async function createBoard(form: FormData) {
   if (!name) return;
   const supabase = await createClient();
   const user = await requireUser();
+  // Born into the brand you are looking at (multi-brand phase 1).
+  const brand = await activeBrand();
   const { data } = await supabase
     .from("moodboards")
-    .insert({ name, items: [], created_by: user?.email ?? null })
+    .insert({ name, items: [], brand, created_by: user?.email ?? null })
     .select("id")
     .single();
   revalidatePath("/moodboard");

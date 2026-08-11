@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { SAMPLE_ROUNDS, type Style } from "@/lib/types";
 import { REQUIRED_SLOTS } from "@/lib/photoSlots";
 import { buildRollout, summarize } from "@/lib/photoRollout";
@@ -31,9 +32,10 @@ export default async function PhotographyPage() {
     );
   } else {
     const supabase = await createClient();
+    const brand = await activeBrand();
     const [{ data }, { data: sampleRows }] = await Promise.all([
       // Nothing in the Trash goes on a shot list.
-      supabase.from("styles").select("*").is("deleted_at", null),
+      supabase.from("styles").select("*").eq("brand", brand).is("deleted_at", null),
       supabase.from("style_samples").select("style_id,round,created_at,photos"),
     ]);
     styles = (data ?? []) as Style[];

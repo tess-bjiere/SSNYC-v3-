@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { SAMPLE_ROUNDS, SAMPLE_ROUND_LABELS, type Style, type StyleSample } from "@/lib/types";
 import { summarizeAll, type DevSummary } from "@/lib/devSort";
 import { mergeLatestRoundPhotos } from "@/lib/styleRoundPhotos";
@@ -39,6 +40,10 @@ export async function loadStudioStyles(): Promise<StudioStyles> {
     samples = mockStyles.flatMap((s) => mockStyleBundle(s.id).samples);
   } else {
     const supabase = await createClient();
+    // Only this brand's styles (multi-brand phase 1). The samples are matched to
+    // these styles by id, so a round belonging to another brand's style never
+    // finds a card to land on.
+    const brand = await activeBrand();
     const [{ data: styleRows }, { data: sampleRows }] = await Promise.all([
       // Styles in the Trash are not in development. .is("deleted_at", null)
       // rather than a filter in JS, so a trashed style never crosses the wire
@@ -46,6 +51,7 @@ export async function loadStudioStyles(): Promise<StudioStyles> {
       supabase
         .from("styles")
         .select("*")
+        .eq("brand", brand)
         .is("deleted_at", null)
         .order("updated_at", { ascending: false }),
       // Every round for every style, in one query rather than one per card.

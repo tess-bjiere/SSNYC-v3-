@@ -140,11 +140,10 @@ export default async function FittingDeckPage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="deck-cover-logo" src="/sous-sous-logo.png" alt="SOUS SOUS" />
             <div className="deck-cover-head">
-              {(deck.season || deck.brand) && (
-                <p className="deck-cover-kicker">
-                  {[deck.brand, deck.season].filter(Boolean).join(" · ")}
-                </p>
-              )}
+              {/* The brand is the wordmark above; the kicker carries the season
+                  (multi-brand: brand is a slug now, and the masthead already
+                  names it). */}
+              {deck.season && <p className="deck-cover-kicker">{deck.season}</p>}
               <h1>{deck.title}</h1>
               <p className="deck-sub">{deck.subtitle}</p>
             </div>

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser, DEV_BYPASS } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
 import { refThumb, type Reference } from "@/lib/types";
 import { styleCoverUrl } from "@/lib/styleCover";
 import { toSections, itemKind, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
@@ -20,9 +21,11 @@ export default async function MoodboardPage({
   const user = await getSessionUser();
   const me = user?.name || user?.email || "";
 
+  const brand = await activeBrand();
   const { data: boardsData } = await supabase
     .from("moodboards")
     .select("*")
+    .eq("brand", brand)
     .order("created_at", { ascending: true });
   const allBoards = (boardsData ?? []) as Moodboard[];
 

@@ -1897,6 +1897,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* align-self so the flex column does not stretch the wordmark to full width and
    squash it — it keeps its own aspect at 34px tall (Tess, 2026-08-10). */
 .deck-cover-logo{height:34px;width:auto;display:block;align-self:flex-start}
+
+/* The brand switcher in the nav (multi-brand phase 1) — wide enough that the
+   brand name is not clipped to "SOUS S…". */
+.brand-switcher{min-width:132px}
 .deck-cover-kicker{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.22em;color:#888;margin:0 0 16px}
 .deck-cover h1{font-size:52px;font-weight:500;letter-spacing:.01em;line-height:1.02;margin:0 0 8px}
 .deck .deck-sub{color:#666;font-size:var(--t-body);margin:0}

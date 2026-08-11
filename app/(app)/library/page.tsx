@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { type Reference } from "@/lib/types";
 import { toSections, type MBItem, type Moodboard } from "@/lib/moodboard";
 import { type ListsSetting } from "@/lib/lists";
@@ -8,10 +9,12 @@ export const dynamic = "force-dynamic";
 
 export default async function LibraryPage() {
   const supabase = await createClient();
+  const brand = await activeBrand(); // this brand's references and boards only
   const [{ data }, { data: boardsData }, { data: settingsData }] = await Promise.all([
     supabase
       .from("references")
       .select("*")
+      .eq("brand", brand)
       .is("deleted_at", null)
       // Editorial images live in the same table, told apart by `type`. They have
       // their own view (/editorial) with their own filters, so they are kept out
@@ -20,7 +23,7 @@ export default async function LibraryPage() {
       // references so nothing written before the column existed disappears.
       .or("type.is.null,type.neq.editorial")
       .order("created_at", { ascending: false }),
-    supabase.from("moodboards").select("id,name,archived,items").order("created_at", { ascending: true }),
+    supabase.from("moodboards").select("id,name,archived,items").eq("brand", brand).order("created_at", { ascending: true }),
     supabase.from("settings").select("key,value").in("key", ["lists", "designers"]),
   ]);
 

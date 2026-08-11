@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { requireUser } from "@/lib/access";
 import {
   canDeleteComment,
@@ -79,6 +80,10 @@ export async function createStyle(form: FormData) {
     ? (statusRaw as StyleStatus)
     : "development";
 
+  // The brand is the tenant key now, not a field somebody types: a style is born
+  // into the brand you are looking at (multi-brand phase 1). See lib/brands.ts.
+  const brand = await activeBrand();
+
   const { data, error } = await supabase
     .from("styles")
     .insert({
@@ -94,7 +99,7 @@ export async function createStyle(form: FormData) {
       weight_lbs: n(form, "weight_lbs"),
       colors: s(form, "colors"),
       designer: s(form, "designer"),
-      brand: s(form, "brand"),
+      brand,
       season: s(form, "season"),
       factory: s(form, "factory"),
       cover_image: s(form, "cover_image"),
@@ -140,7 +145,10 @@ export async function updateStyle(id: string, form: FormData) {
     weight_lbs: n(form, "weight_lbs"),
     colors: s(form, "colors"),
     designer: s(form, "designer"),
-    brand: s(form, "brand"),
+    // brand is the tenant key now, not an editable field — the edit form has no
+    // brand input, so writing s(form,"brand") would blank it to null on every
+    // save and drop the style out of every brand's view. It is set once at
+    // creation and left alone (multi-brand phase 1).
     season: s(form, "season"),
     factory: s(form, "factory"),
     tech_pack_url: s(form, "tech_pack_url"),

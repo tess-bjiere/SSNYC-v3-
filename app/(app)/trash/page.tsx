@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
 import { type Reference, type Style } from "@/lib/types";
 import { itemKind, type MBItem, type MBImageItem, type Moodboard } from "@/lib/moodboard";
 import TrashClient from "./TrashClient";
@@ -11,10 +12,12 @@ export const dynamic = "force-dynamic";
 // thrown away.
 export default async function TrashPage() {
   const supabase = await createClient();
+  const brand = await activeBrand(); // only this brand's trash
   const [{ data }, { data: styleData }, { data: boardsData }] = await Promise.all([
     supabase
       .from("references")
       .select("*")
+      .eq("brand", brand)
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false }),
     // Styles work the same way as of 2026-08-05 — deleting one writes a
@@ -24,9 +27,10 @@ export default async function TrashPage() {
     supabase
       .from("styles")
       .select("*")
+      .eq("brand", brand)
       .not("deleted_at", "is", null)
       .order("deleted_at", { ascending: false }),
-    supabase.from("moodboards").select("id,name,archived,items"),
+    supabase.from("moodboards").select("id,name,archived,items").eq("brand", brand),
   ]);
 
   const refs = (data ?? []) as Reference[];
