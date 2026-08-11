@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Select from "@/app/components/Select";
-import { BRANDS } from "@/lib/brands";
+import { type Brand } from "@/lib/brands";
 import { setActiveBrand } from "@/app/actions/brand";
 
 // The brand the team is looking at (multi-brand phase 1, Tess 2026-08-11).
@@ -11,7 +11,7 @@ import { setActiveBrand } from "@/app/actions/brand";
 // Only shown to the team; a talent is pinned to their own brand and never sees
 // this (phase 2). Choosing a brand sets the cookie server-side and refreshes, so
 // every scoped list re-loads for the new brand without a full navigation.
-export default function BrandSwitcher({ active }: { active: string }) {
+export default function BrandSwitcher({ active, brands }: { active: string; brands: Brand[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
@@ -26,7 +26,7 @@ export default function BrandSwitcher({ active }: { active: string }) {
           router.refresh();
         })
       }
-      options={BRANDS.map((b) => ({ value: b.slug, label: b.name }))}
+      options={brands.map((b) => ({ value: b.slug, label: b.name }))}
     />
   );
 }

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireTeam } from "@/lib/access";
 import { normalizeEmail } from "@/lib/authz";
 import { isBrandSlug } from "@/lib/brands";
+import { loadBrandSlugs } from "@/lib/brandsServer";
 
 // Onboarding people (multi-brand phase 3, Tess 2026-08-11).
 //
@@ -26,7 +27,7 @@ export async function addMember(form: FormData) {
   const brand = role === "talent" ? brandRaw : null;
   // A talent must be pinned to a real brand — otherwise they are allowed in but
   // scoped to nothing, which is a support call, not a feature.
-  if (role === "talent" && !isBrandSlug(brand)) return;
+  if (role === "talent" && !isBrandSlug(brand, await loadBrandSlugs())) return;
 
   const supabase = await createClient();
   // Delete-then-insert rather than upsert, so re-adding an address to change its

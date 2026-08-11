@@ -16,6 +16,7 @@ import { withRoundPhotos, styleFaces } from "@/lib/styleCover";
 import { readImages, SHOTS_KEY } from "@/lib/imageList";
 import { linkify } from "@/lib/linkify";
 import { brandName } from "@/lib/brands";
+import { loadBrands } from "@/lib/brandsServer";
 import {
   buildStyleDoc,
   isEmptySection,
@@ -196,8 +197,9 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
   });
 
   const doc = buildStyleDoc({
-    // The stored brand is a slug now (multi-brand); the document shows its name.
-    style: { ...st, brand: brandName(st.brand) },
+    // The stored brand is a slug now (multi-brand); the document shows its name,
+    // resolved against the live list so a god-mode brand names correctly.
+    style: { ...st, brand: brandName(st.brand, await loadBrands()) },
     references: refs,
     samples: exportSamples,
     // An optional slot only appears in the export if it was actually shot.

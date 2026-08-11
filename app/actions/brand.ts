@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { brandOr } from "@/lib/brands";
+import { loadBrandSlugs } from "@/lib/brandsServer";
 import { BRAND_COOKIE } from "@/lib/activeBrand";
 import { requireUser } from "@/lib/access";
 
@@ -17,8 +18,9 @@ export async function setActiveBrand(slug: string) {
   // A talent is pinned to their brand and has no switcher; the endpoint still
   // exists, so it refuses them rather than trusting the UI to hide it.
   if (user.role !== "team") return;
+  const slugs = await loadBrandSlugs();
   const store = await cookies();
-  store.set(BRAND_COOKIE, brandOr(slug), {
+  store.set(BRAND_COOKIE, brandOr(slug, slugs), {
     path: "/",
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 365,

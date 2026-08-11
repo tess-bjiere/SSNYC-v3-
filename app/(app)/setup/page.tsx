@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { DEV_BYPASS, DEV_BYPASS_REFUSED, requireTeam } from "@/lib/access";
+import { DEV_BYPASS, DEV_BYPASS_REFUSED, getSessionUser, requireTeam } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_READ_ELEVATED } from "@/lib/supabase/public";
 import { anonCanReadPrivateTable } from "@/lib/supabase/probe";
 import { readiness, summarize, type Check } from "@/lib/readiness";
+import { loadBrands, checkSuperAdmin } from "@/lib/brandsServer";
 import TalentsAdmin, { type Member } from "./TalentsAdmin";
+import BrandsAdmin from "./BrandsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,13 @@ export default async function SetupPage() {
     .select("email,role,brand")
     .order("created_at", { ascending: true });
   const members = (memberRows ?? []) as Member[];
+
+  // God mode: only a named super-admin sees the Brands admin (Tess, 2026-08-11).
+  const user = await getSessionUser();
+  const superAdmin = checkSuperAdmin(user?.email);
+  // Loaded for everyone — the talents admin needs it to pin a talent to a brand;
+  // only the Brands admin below is super-admin-gated.
+  const brands = await loadBrands();
 
   return (
     <div style={{ paddingTop: 24, paddingBottom: 80 }}>
@@ -95,8 +104,22 @@ export default async function SetupPage() {
           talent here to give them the ideation side of their one brand — References, Moodboard and
           Campaign — and nothing else. They sign in with the same Google login.
         </p>
-        <TalentsAdmin members={members} />
+        <TalentsAdmin members={members} brands={brands} />
       </div>
+
+      {superAdmin && (
+        <div className="section">
+          <h3>Brands</h3>
+          <p className="muted-line" style={{ marginBottom: 14 }}>
+            God mode. Add a brand and it appears in the switcher straight away,
+            empty &mdash; no references, styles or moodboards until the team makes
+            them. Add its talents in <strong>Team &amp; talents</strong> above.
+            The slug (in the URL and on every row) is permanent; only the name can
+            be renamed.
+          </p>
+          <BrandsAdmin brands={brands} />
+        </div>
+      )}
 
       <div className="notice">
         The order matters more than it looks. Preview mode has no Supabase session, so if the

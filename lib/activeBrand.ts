@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { brandOr, isBrandSlug } from "@/lib/brands";
+import { loadBrandSlugs } from "@/lib/brandsServer";
 import { getSessionUser } from "@/lib/access";
 
 // Which brand the current request is scoped to (multi-brand).
@@ -17,9 +18,12 @@ const NO_BRAND = "__none__";
 
 export async function activeBrand(): Promise<string> {
   const user = await getSessionUser();
+  // Validate against the live brand list so a brand added in god mode is a real
+  // scope, not treated as a stale slug and dropped to the default.
+  const slugs = await loadBrandSlugs();
   if (user?.role === "talent") {
-    return isBrandSlug(user.brand) ? (user.brand as string) : NO_BRAND;
+    return isBrandSlug(user.brand, slugs) ? (user.brand as string) : NO_BRAND;
   }
   const store = await cookies();
-  return brandOr(store.get(BRAND_COOKIE)?.value);
+  return brandOr(store.get(BRAND_COOKIE)?.value, slugs);
 }

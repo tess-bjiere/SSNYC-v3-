@@ -2,16 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, DEV_BYPASS, DEV_BYPASS_REFUSED } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
+import { loadBrands } from "@/lib/brandsServer";
 import Nav from "./Nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  const brand = await activeBrand();
+  const [brand, brands] = await Promise.all([activeBrand(), loadBrands()]);
 
   return (
     <>
-      <Nav email={user.email} brand={brand} role={user.role} />
+      <Nav email={user.email} brand={brand} brands={brands} role={user.role} />
       {DEV_BYPASS && (
         <div className="wrap" style={{ paddingTop: 12 }}>
           <div className="notice">

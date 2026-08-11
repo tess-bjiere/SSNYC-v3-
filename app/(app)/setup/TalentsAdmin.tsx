@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Select from "@/app/components/Select";
-import { BRANDS, brandName } from "@/lib/brands";
+import { brandName, type Brand } from "@/lib/brands";
 import { addMember, removeMember } from "@/app/actions/allowlist";
 
 export type Member = { email: string; role: string | null; brand: string | null };
@@ -10,7 +10,8 @@ export type Member = { email: string; role: string | null; brand: string | null 
 // Add and remove the people who are not on the org domain (multi-brand phase 3).
 // A talent is ideation-only and pinned to one brand; a guest can be full team.
 // The org's own @theloyalist.com people are team by domain and are not listed.
-export default function TalentsAdmin({ members }: { members: Member[] }) {
+// `brands` is the live list so a talent can be pinned to a god-mode-added brand.
+export default function TalentsAdmin({ members, brands }: { members: Member[]; brands: Brand[] }) {
   const [role, setRole] = useState("talent");
 
   return (
@@ -29,7 +30,7 @@ export default function TalentsAdmin({ members }: { members: Member[] }) {
                 <tr key={m.email}>
                   <td className="talents-email">{m.email}</td>
                   <td>{isTalent ? "Talent" : "Team"}</td>
-                  <td className="talents-brand">{isTalent ? brandName(m.brand) : "All brands"}</td>
+                  <td className="talents-brand">{isTalent ? brandName(m.brand, brands) : "All brands"}</td>
                   <td className="talents-remove">
                     <RemoveButton email={m.email} />
                   </td>
@@ -65,8 +66,8 @@ export default function TalentsAdmin({ members }: { members: Member[] }) {
             className="select sm"
             name="brand"
             aria-label="Brand"
-            defaultValue={BRANDS[0].slug}
-            options={BRANDS.map((b) => ({ value: b.slug, label: b.name }))}
+            defaultValue={brands[0]?.slug}
+            options={brands.map((b) => ({ value: b.slug, label: b.name }))}
           />
         )}
         <button className="btn sm" type="submit">

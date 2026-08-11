@@ -1,0 +1,32 @@
+// The live brand list, read from the DB (multi-brand god mode, Tess 2026-08-11).
+//
+// lib/brands.ts stays pure and holds the seed + the helpers; this is the server
+// side that reads the `brands` table. cache() memoises it per request so the
+// many callers (layout, activeBrand on every page, the validating actions) share
+// one query. If the table cannot be read it falls back to the seed brands, so
+// the switcher and validation are never empty.
+
+import { cache } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { BRANDS, type Brand } from "@/lib/brands";
+import { isSuperAdmin, parseSuperAdmins } from "@/lib/superAdmins";
+
+export const loadBrands = cache(async (): Promise<Brand[]> => {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("brands").select("slug,name").order("created_at");
+    if (data && data.length) return data as Brand[];
+  } catch {
+    // fall through to the seed
+  }
+  return [...BRANDS];
+});
+
+export async function loadBrandSlugs(): Promise<string[]> {
+  return (await loadBrands()).map((b) => b.slug);
+}
+
+/** Whether an email is a super-admin, reading the env extras at the edge. */
+export function checkSuperAdmin(email: string | null | undefined): boolean {
+  return isSuperAdmin(email, parseSuperAdmins(process.env.SSYNC_SUPER_ADMINS));
+}
