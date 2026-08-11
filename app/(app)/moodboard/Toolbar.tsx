@@ -5,12 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createBoard, addDivider, archiveBoard } from "@/app/actions/moodboards";
 import ExportButton from "./ExportButton";
-
-const SIZES: [string, string][] = [
-  ["sm", "S"],
-  ["md", "M"],
-  ["lg", "L"],
-];
+import SizeToggle from "@/app/components/SizeToggle";
 
 export default function Toolbar({
   boards,
@@ -84,13 +79,7 @@ export default function Toolbar({
 
       <div className="mb-spacer" />
 
-      <div className="mb-sizes" title="Image size">
-        {SIZES.map(([k, l]) => (
-          <button key={k} className={"mb-size" + (size === k ? " active" : "")} onClick={() => choose(k)}>
-            {l}
-          </button>
-        ))}
-      </div>
+      <SizeToggle value={size} onChange={choose} />
 
       <button className="btn link" onClick={share}>
         {copied ? "Copied ✓" : "Share link"}

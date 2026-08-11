@@ -239,6 +239,7 @@ export default function Nav({
                     key={l.href}
                     href={l.href}
                     className={"nav-drawer-link" + (isActive(l.href) ? " active" : "")}
+                    onClick={() => setMenuOpen(false)}
                   >
                     {l.label}
                   </Link>
@@ -250,6 +251,7 @@ export default function Nav({
                 <Link
                   href="/setup"
                   className={"nav-drawer-link" + (isActive("/setup") ? " active" : "")}
+                  onClick={() => setMenuOpen(false)}
                 >
                   Setup
                 </Link>
@@ -257,6 +259,7 @@ export default function Nav({
               <Link
                 href="/notifications"
                 className={"nav-drawer-link who-line" + (isActive("/notifications") ? " active" : "")}
+                onClick={() => setMenuOpen(false)}
               >
                 {email}
               </Link>

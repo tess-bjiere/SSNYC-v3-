@@ -383,6 +383,12 @@ body.notes-open .wrap{padding-right:378px}
 
 /* Grid of cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+/* The References grid takes its column width from the size toggle (.dens-md is
+   the default width above). On desktop the count flexes with the window; on
+   phone and tablet it is pinned so the three steps read as 4 / 2 / 1 columns
+   (Tess, 2026-08-11). */
+.grid.dens-sm{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.grid.dens-lg{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .card{background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;display:block}
 .card .imgwrap{aspect-ratio:3/4;background:#111;overflow:hidden}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
@@ -2757,6 +2763,44 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sel-trigger .sel-label{flex:1 1 auto;min-width:0}
 textarea.input,textarea.select,.textarea{height:auto}
 .btn.link{height:auto}
+
+/* ============================================================================
+   PHONE MODALS (Tess, 2026-08-11: "modal should be full screen. buttons feel
+   messy"). On a phone a centered card left the grid showing at its edges and the
+   action buttons wrapped at ragged widths. So the content modals go full-bleed,
+   and the detail actions stack full-width — one clear tap target per row, the
+   cream "Add to moodboard" reading as primary by weight, not by position.
+   ============================================================================ */
+@media(max-width:600px){
+  .modal-overlay{padding:0}
+  .modal-lg,.modal-up{width:100vw;height:100vh;height:100dvh;max-height:none;border:none}
+  .detail-info{padding:22px 20px}
+  .detail-x{top:14px;right:14px;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+  .detail-actions{flex-direction:column;align-items:stretch;gap:10px}
+  .detail-actions .btn{width:100%;justify-content:center;font-size:var(--t-sm)}
+  .view-product{margin-top:16px}
+}
+
+/* ============================================================================
+   GRID COLUMNS on phone/tablet (Tess, 2026-08-11: "smallest view should be 4
+   columns, mid view should be 2 columns, large view should be 1 column"). The
+   size toggle now means the same thing on both grids. The References grid pins
+   its column count; the Moodboard's tiles flow at fixed widths on desktop, so on
+   these widths its row becomes a grid too, tiles filling the cell at a uniform
+   portrait crop rather than a fixed pixel size.
+   ============================================================================ */
+@media(max-width:900px){
+  .grid.dens-sm{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid.dens-md{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid.dens-lg{grid-template-columns:minmax(0,1fr)}
+
+  .mb-row{display:grid;gap:10px}
+  body.tiles-sm .mb-row{grid-template-columns:repeat(4,minmax(0,1fr))}
+  body.tiles-md .mb-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body.tiles-lg .mb-row{grid-template-columns:minmax(0,1fr)}
+  .mb-tile{width:auto}
+  .mb-tile img{height:auto;aspect-ratio:4/5}
+}
 
 /* ============================================================================
    RESPONSIVE PHASE 4 — the References library on phone/tablet (Tess, 2026-08-11,

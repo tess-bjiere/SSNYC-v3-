@@ -16,6 +16,7 @@ import {
 import UploadModal from "./UploadModal";
 import DetailModal from "./DetailModal";
 import ListsPanel from "./ListsPanel";
+import SizeToggle from "@/app/components/SizeToggle";
 
 const FACETS: { key: keyof Reference; label: string }[] = [
   { key: "designer", label: "Designer" },
@@ -31,23 +32,6 @@ function yearNum(y?: string | null): number | null {
   if (!y) return null;
   const m = y.match(/(\d{4})/);
   return m ? parseInt(m[1], 10) : null;
-}
-
-const SIZE_MIN: Record<string, number> = { sm: 150, md: 190, lg: 250 };
-
-function GridIcon({ n }: { n: number }) {
-  const gap = 1.4;
-  const total = 14;
-  const s = (total - (n - 1) * gap) / n;
-  const cells = [];
-  for (let y = 0; y < n; y++)
-    for (let x = 0; x < n; x++)
-      cells.push(<rect key={`${x}-${y}`} x={x * (s + gap)} y={y * (s + gap)} width={s} height={s} rx={0.5} fill="currentColor" />);
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-      {cells}
-    </svg>
-  );
 }
 
 export default function LibraryClient({
@@ -203,13 +187,7 @@ export default function LibraryClient({
             { value: "garment", label: "Garment" },
           ]}
         />
-        <div className="dens" title="Image size">
-          {([["sm", 4, "Smaller"], ["md", 3, "Medium"], ["lg", 2, "Larger"]] as const).map(([k, n, label]) => (
-            <button key={k} className={"dens-btn" + (size === k ? " active" : "")} onClick={() => setSize(k)} title={label}>
-              <GridIcon n={n} />
-            </button>
-          ))}
-        </div>
+        <SizeToggle value={size} onChange={setSize} />
         {/* Edit the vocabulary every dropdown on this page draws from. */}
         <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
         {/* Deleted references live on in the Trash until someone empties it. */}
@@ -272,7 +250,7 @@ export default function LibraryClient({
       {list.length === 0 ? (
         <div className="empty">No references match those filters.</div>
       ) : (
-        <div className="grid" style={{ gridTemplateColumns: `repeat(auto-fill,minmax(${SIZE_MIN[size]}px,1fr))` }}>
+        <div className={"grid dens-" + size}>
           {list.map((r) => {
             const src = refThumb(r);
             const sub = [r.year && r.year !== "Unknown" ? r.year : null, r.garment, r.color].filter(Boolean).join(" · ");
