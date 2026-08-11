@@ -4,6 +4,7 @@ import { getSessionUser, DEV_BYPASS, DEV_BYPASS_REFUSED } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { loadBrands } from "@/lib/brandsServer";
 import Nav from "./Nav";
+import AppFooter from "./AppFooter";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
@@ -39,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       )}
       <main className="wrap">{children}</main>
+      <AppFooter />
     </>
   );
 }

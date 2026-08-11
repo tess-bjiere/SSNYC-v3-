@@ -2893,3 +2893,38 @@ textarea.input,textarea.select,.textarea{height:auto}
 .mb-toolbar .input,.mb-toolbar .select,.mb-toolbar .sel-trigger,
 .mb-toolbar .btn:not(.link){height:28px}
 .mb-toolbar .mb-boardsel{padding-top:var(--ctl-y-sm);padding-bottom:var(--ctl-y-sm)}
+
+/* ============================================================================
+   Global footer (Tess, 2026-08-11: "add link in footer to google doc where
+   people can leave notes for feedback"). Quiet, on every signed-in page,
+   aligned to the content column. Inert until NEXT_PUBLIC_FEEDBACK_URL is set. */
+.app-footer{max-width:1400px;margin:72px auto 0;padding:22px 26px 44px;
+  border-top:1px solid var(--hair);text-align:center}
+.app-footer a{font-size:var(--t-meta);letter-spacing:.02em;color:var(--faint);text-decoration:none}
+.app-footer a:hover{color:var(--muted)}
+.app-footer a[aria-disabled]{cursor:default}
+
+/* ============================================================================
+   POLISH (Tess, 2026-08-11: "more polished / elevated / less clunky / more app
+   like -- but keep fonts and colors"). Smooth state changes so interactions read
+   as considered rather than instant, a proper keyboard focus ring, a touch of
+   elevation on the cards, and modals that ease in instead of popping. No fonts
+   or colours change — only motion and focus. Reduced-motion is respected.
+   ============================================================================ */
+.btn,.sel-trigger,.input,.select,.tab,.lib-tab,.dens-btn,.nav-link,.nav-drawer-link,
+.toggle,.lib-trash-link,.who,.dev-link,.mb-size,.pin{
+  transition:background-color .15s ease,border-color .15s ease,color .15s ease,
+    outline-color .15s ease,box-shadow .15s ease,opacity .15s ease}
+.card,.lib-card,.mb-tile{transition:outline-color .15s ease,box-shadow .18s ease,transform .18s ease}
+.lib-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+a:focus-visible,button:focus-visible,.sel-trigger:focus-visible,input:focus-visible,
+select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
+  outline:2px solid var(--ink);outline-offset:2px}
+.modal-overlay{animation:ov-in .16s ease}
+.modal{animation:md-in .2s cubic-bezier(.2,.7,.2,1)}
+@keyframes ov-in{from{opacity:0}to{opacity:1}}
+@keyframes md-in{from{opacity:0;transform:translateY(8px) scale(.995)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  *,::before,::after{animation-duration:.01ms!important;transition-duration:.01ms!important;
+    scroll-behavior:auto!important}
+}
