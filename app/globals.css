@@ -2885,3 +2885,11 @@ textarea.input,textarea.select,.textarea{height:auto}
 .lib-tab,.lib-add-desk,.lib-filter-toggle{height:28px}
 .lib-sort,.lib-filters .select{padding-right:var(--ctl-chev-sm);
   background-position:right var(--ctl-x-sm) center}
+
+/* Moodboard toolbar matches the compact 28px of the other sections too (Tess,
+   2026-08-11: "moodboard fields/buttons still feel bigger"). The text links
+   (Share, Export, Archived) stay text; the board select's one-off vertical
+   padding comes in so its label centres at the shorter height. Coarse stays 44. */
+.mb-toolbar .input,.mb-toolbar .select,.mb-toolbar .sel-trigger,
+.mb-toolbar .btn:not(.link){height:28px}
+.mb-toolbar .mb-boardsel{padding-top:var(--ctl-y-sm);padding-bottom:var(--ctl-y-sm)}
