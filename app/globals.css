@@ -331,12 +331,11 @@ body.notes-open .wrap{padding-right:378px}
 }
 
 /* --- Comfortable touch targets on coarse pointers (phones, tablets), without
-   changing the tuned density on a mouse-driven desktop. --- */
+   changing the tuned density on a mouse-driven desktop. One size (44) for every
+   control so they still line up under touch, above their desktop heights. --- */
 @media(pointer:coarse){
-  .btn{min-height:44px}
-  .btn.sm{min-height:40px}
-  .tab,.lib-tab{display:inline-flex;align-items:center;min-height:44px}
-  .sel-trigger,select.select,input.input{min-height:44px}
+  .btn,.btn.sm,.input,.select,.sel-trigger,.tab,.lib-tab{min-height:44px}
+  .tab,.lib-tab{display:inline-flex;align-items:center}
 }
 
 /* Buttons */
@@ -2733,6 +2732,31 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   .mb-toolbar .sel{flex:1 1 100%}
   .mb-toolbar .sel .sel-trigger{width:100%}
 }
+
+/* ============================================================================
+   CONTROL HEIGHTS (Tess, 2026-08-11: "clean up any area where fields and buttons
+   are mismatched in height next to one another on mobile, tablet and desktop").
+
+   Inputs and selects already matched each other (the line-height:1.2 tuning on
+   .sel-trigger). What drifted was buttons vs fields, and a few one-off paddings
+   (the moodboard board select carried 9px, standing ~2px taller than the sm
+   controls beside it). So: one height per size tier, applied to buttons AND
+   fields, with the border inside the height (border-box) so padding no longer
+   decides it. A field and a button side by side are now identical.
+
+   Opting out, on purpose: textareas grow with their content, and .btn.link is
+   underlined text (Share link, Trash), not a boxed control. On a coarse pointer
+   the 44px touch min-height above still wins over these.
+   ============================================================================ */
+.btn,.input,.select,.sel-trigger,.lib-tab{box-sizing:border-box;height:34px}
+.btn.sm,.input.sm,.select.sm,.sel-trigger.sm{height:28px}
+.btn.lg,.input.lg,.select.lg{height:40px}
+/* The custom trigger centres its label in the fixed height (it was top-aligned
+   block before); the label keeps its ellipsis by being allowed to shrink. */
+.sel-trigger{display:flex;align-items:center}
+.sel-trigger .sel-label{flex:1 1 auto;min-width:0}
+textarea.input,textarea.select,.textarea{height:auto}
+.btn.link{height:auto}
 
 /* ============================================================================
    RESPONSIVE PHASE 4 — the References library on phone/tablet (Tess, 2026-08-11,

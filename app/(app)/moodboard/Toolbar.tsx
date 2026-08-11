@@ -72,13 +72,13 @@ export default function Toolbar({
       {!showingArchived && (
         <form action={createBoard} className="mb-newboard">
           <input className="input" name="name" placeholder="New board…" />
-          <button className="btn ghost sm" type="submit">+ Board</button>
+          <button className="btn ghost" type="submit">+ Board</button>
         </form>
       )}
 
       {!showingArchived && currentId && (
         <form action={addDivider.bind(null, currentId)}>
-          <button className="btn ghost sm" type="submit">+ Divider</button>
+          <button className="btn ghost" type="submit">+ Divider</button>
         </form>
       )}
 
@@ -100,7 +100,7 @@ export default function Toolbar({
 
       {currentId && (
         <form action={archiveBoard.bind(null, currentId, !showingArchived)}>
-          <button className="btn ghost sm" type="submit">
+          <button className="btn ghost" type="submit">
             {showingArchived ? "Unarchive" : "Archive"}
           </button>
         </form>

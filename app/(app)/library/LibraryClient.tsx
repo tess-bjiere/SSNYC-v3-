@@ -216,7 +216,7 @@ export default function LibraryClient({
         <Link href="/trash" className="lib-trash-link">Trash</Link>
         {/* The desktop add sits in the head; on a phone it folds into the big
             button below, which is the first thing you can reach. */}
-        <button className="btn sm lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
+        <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
       </div>
 
       {/* Prominent, full-width upload — phone/tablet only. Uploading is the
