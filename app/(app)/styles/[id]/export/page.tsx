@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
 import {
   SAMPLE_ROUNDS,
   sampleRatingLabel,
@@ -77,6 +78,7 @@ function studioToday(): string {
 }
 
 export default async function StyleExport({ params }: { params: Promise<{ id: string }> }) {
+  await requireTeam(); // product side, team only
   const { id } = await params;
   const supabase = await createClient();
 

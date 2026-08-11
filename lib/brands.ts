@@ -13,7 +13,7 @@ export type Brand = { slug: string; name: string };
 
 export const BRANDS: readonly Brand[] = [
   { slug: "sous-sous", name: "SOUS SOUS" },
-  { slug: "renggli", name: "Renggli" },
+  { slug: "renggli", name: "RENGGLI" },
 ] as const;
 
 export const BRAND_SLUGS: readonly string[] = BRANDS.map((b) => b.slug);

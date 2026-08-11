@@ -27,7 +27,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/access";
+import { requireTeam } from "@/lib/access";
 import { pullWip, wipConfigured } from "@/lib/googleDrive";
 import { wipSourceForBrand } from "@/lib/wipSources";
 import {
@@ -131,7 +131,7 @@ function view(
  * does not.
  */
 export async function readWip(styleId: string): Promise<WipView> {
-  await requireUser();
+  await requireTeam();
   const style = await loadStyle(styleId);
   if (!style) return { ...EMPTY, reason: "That style is no longer here." };
 
@@ -167,7 +167,7 @@ export async function readWip(styleId: string): Promise<WipView> {
  * the Drive fetch exists.
  */
 export async function readWipFromText(styleId: string, text: string): Promise<WipView> {
-  await requireUser();
+  await requireTeam();
   const style = await loadStyle(styleId);
   if (!style) return { ...EMPTY, reason: "That style is no longer here." };
 
@@ -207,7 +207,7 @@ export async function readWipFromText(styleId: string, text: string): Promise<Wi
  * status, library_at, deleted_at, anything about ownership.
  */
 export async function applyWipField(styleId: string, field: string, value: string): Promise<void> {
-  await requireUser();
+  await requireTeam();
   const v = (value ?? "").trim();
   if (!WRITABLE.has(field) || !v) return;
 
@@ -231,7 +231,7 @@ export async function applyWipField(styleId: string, field: string, value: strin
  * the field where being wrong is most visible.
  */
 export async function applyWipStatus(styleId: string, status: string): Promise<void> {
-  await requireUser();
+  await requireTeam();
   if (!STYLE_STATUSES.includes(status as StyleStatus)) return;
 
   const supabase = await createClient();

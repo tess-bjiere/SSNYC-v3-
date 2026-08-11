@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { SAMPLE_ROUNDS, type Style, type StyleSample } from "@/lib/types";
 import { sortSamples } from "@/lib/sampleCycle";
@@ -16,6 +17,7 @@ function studioToday(): string {
 }
 
 export default async function FactoriesPage() {
+  await requireTeam(); // product side, team only
   let styles: Style[] = [];
   let samples: StyleSample[] = [];
 

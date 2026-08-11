@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { SAMPLE_ROUNDS, type Style } from "@/lib/types";
 import { REQUIRED_SLOTS } from "@/lib/photoSlots";
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 // first". Same five slots, same stored jsonb — no new table, no new column, and
 // not one write from this page.
 export default async function PhotographyPage() {
+  await requireTeam(); // product side, team only
   let styles: Style[] = [];
   // Only what the merge needs: which style, where in the cycle, and the map.
   let rounds: { style_id: string; round: string | null; created_at: string | null; photos: unknown }[] = [];

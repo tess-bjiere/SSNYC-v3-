@@ -1,10 +1,12 @@
 import Select from "@/app/components/Select";
 import Link from "next/link";
+import { requireTeam } from "@/lib/access";
 import { createStyle } from "@/app/actions/styles";
 import GarmentField from "@/app/components/GarmentField";
 import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES } from "@/lib/types";
 
-export default function NewStylePage() {
+export default async function NewStylePage() {
+  await requireTeam(); // product side, team only
   return (
     <div className="page">
       <div className="page-head">

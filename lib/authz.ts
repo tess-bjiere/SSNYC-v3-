@@ -86,6 +86,73 @@ export function decideAccess(input: {
   return { allowed: false, reason: "not-allowed", email };
 }
 
+// ---------------------------------------------------------------------------
+// Roles (multi-brand phase 2).
+//
+// Access decided who is in; role decides how much. Kept a pure function over the
+// same plain values — email, domain, and the allowlist ROWS (each carrying an
+// optional role and brand) — for the same reason the access rule is: a role that
+// leaks the product side to a brand's talent is a breach, not a bug.
+// ---------------------------------------------------------------------------
+
+export type Role = "team" | "talent";
+
+/** One allowlist row, as the role resolver needs to see it. */
+export type AllowlistEntry = { email: string | null; role?: string | null; brand?: string | null };
+
+export type MemberDecision = {
+  allowed: boolean;
+  role: Role;
+  /** The single brand a talent is pinned to; null for team, who see all brands. */
+  brand: string | null;
+  reason: AccessReason;
+  email: string;
+};
+
+/**
+ * Who is in, and as what.
+ *
+ * Anyone at the org domain is team, all brands — the row-level role never
+ * applies to them, so a talent entry can never accidentally demote a colleague.
+ * An allowlisted address defaults to team as well: an external guest given
+ * access today has full access, and nothing about them changes. A talent is the
+ * new, deliberately narrower thing — role 'talent', pinned to one brand.
+ */
+export function resolveMember(input: {
+  email: string | null | undefined;
+  domain: string;
+  allowlist: readonly AllowlistEntry[];
+}): MemberDecision {
+  const email = normalizeEmail(input.email);
+  if (!email || email.lastIndexOf("@") <= 0) {
+    return { allowed: false, role: "team", brand: null, reason: "no-email", email };
+  }
+
+  if (isOrgEmail(email, input.domain)) {
+    return { allowed: true, role: "team", brand: null, reason: "org-domain", email };
+  }
+
+  for (const entry of input.allowlist) {
+    if (normalizeEmail(entry.email) === email) {
+      const isTalent = (entry.role ?? "").trim().toLowerCase() === "talent";
+      const brand = (entry.brand ?? "").trim();
+      // A talent with no brand set is treated as a talent with no brand — they
+      // are allowed in but pinned to nothing, which the caller renders as an
+      // empty ideation view rather than every brand. Better to show a talent
+      // nothing than the wrong brand's boards.
+      return {
+        allowed: true,
+        role: isTalent ? "talent" : "team",
+        brand: isTalent ? brand || null : null,
+        reason: "allowlist",
+        email,
+      };
+    }
+  }
+
+  return { allowed: false, role: "team", brand: null, reason: "not-allowed", email };
+}
+
 /**
  * May the login bypass be honoured?
  *

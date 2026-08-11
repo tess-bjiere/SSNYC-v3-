@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
-import { requireUser } from "@/lib/access";
+import { requireTeam } from "@/lib/access";
 import {
   canDeleteComment,
   canEditComment,
@@ -68,7 +68,7 @@ function n(form: FormData, key: string): number | null {
 
 export async function createStyle(form: FormData) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const name = s(form, "name");
   if (!name) return;
@@ -120,7 +120,7 @@ export async function createStyle(form: FormData) {
 }
 
 export async function updateStyle(id: string, form: FormData) {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
 
   // An edit form that posts a status the list no longer offers — a legacy
@@ -184,7 +184,7 @@ export async function updateStyle(id: string, form: FormData) {
 
 export async function setStatus(id: string, status: StyleStatus) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   // Read before writing: an email that says "moved to Production" answers less
   // than one that says "moved from Development to Production", and after the
@@ -225,7 +225,7 @@ export async function setStatus(id: string, status: StyleStatus) {
  * about it.
  */
 export async function setEvergreen(id: string, on: boolean) {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
   await supabase
     .from("styles")
@@ -254,7 +254,7 @@ export async function setEvergreen(id: string, on: boolean) {
  * No notify: this is a shelving decision, not a stage change.
  */
 export async function setInLibrary(id: string, on: boolean) {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
   await supabase
     .from("styles")
@@ -290,7 +290,7 @@ export async function setInLibrary(id: string, on: boolean) {
  * loud.
  */
 export async function deleteStyle(id: string) {
-  await requireUser();
+  await requireTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
@@ -307,7 +307,7 @@ export async function deleteStyle(id: string) {
 
 /** Out of the Trash and back onto the boards, exactly as it was. */
 export async function restoreStyle(id: string) {
-  await requireUser();
+  await requireTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase.from("styles").update({ deleted_at: null }).eq("id", id);
@@ -365,7 +365,7 @@ async function nextVersion(
 // ---------------------------------------------------------------------------
 export async function repurposeStyle(styleId: string, form: FormData) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: src } = await supabase.from("styles").select("*").eq("id", styleId).maybeSingle();
   if (!src) return;
@@ -449,7 +449,7 @@ export async function repurposeStyle(styleId: string, form: FormData) {
  */
 export async function duplicateStyle(styleId: string, form: FormData) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: src } = await supabase.from("styles").select("*").eq("id", styleId).maybeSingle();
   if (!src) return;
@@ -512,7 +512,7 @@ export async function duplicateStyle(styleId: string, form: FormData) {
 
 export async function addVersion(styleId: string, form: FormData) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { count } = await supabase
     .from("style_versions")
@@ -534,7 +534,7 @@ export async function addVersion(styleId: string, form: FormData) {
 
 export async function addComment(styleId: string, form: FormData) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
   const body = s(form, "body");
   if (!body) return;
 
@@ -605,7 +605,7 @@ export async function addComment(styleId: string, form: FormData) {
  */
 export async function editComment(styleId: string, commentId: string, form: FormData) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: comment } = await supabase
     .from("style_comments")
@@ -660,7 +660,7 @@ export async function editComment(styleId: string, commentId: string, form: Form
  */
 export async function deleteComment(styleId: string, commentId: string) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: comment } = await supabase
     .from("style_comments")
@@ -681,7 +681,7 @@ export async function deleteComment(styleId: string, commentId: string) {
 /** Put a comment you deleted back into the conversation. One timestamp to null. */
 export async function restoreComment(styleId: string, commentId: string) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: comment } = await supabase
     .from("style_comments")
@@ -698,7 +698,7 @@ export async function restoreComment(styleId: string, commentId: string) {
 // Toggle a comment to "Received" (preserves history, per the team decision).
 export async function markCommentReceived(styleId: string, commentId: string) {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const [{ data: comment }, { data: style }] = await Promise.all([
     supabase.from("style_comments").select("author,body,status").eq("id", commentId).maybeSingle(),
@@ -774,7 +774,7 @@ function sampleFields(form: FormData) {
 }
 
 export async function addSample(styleId: string, form: FormData) {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
   const round = s(form, "round");
   if (!round) return;
@@ -794,7 +794,7 @@ export async function addSample(styleId: string, form: FormData) {
 // only overwritten when the form actually sends one, so a partial post can never
 // blank it — `round` is NOT NULL.
 export async function updateSample(styleId: string, sampleId: string, form: FormData) {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
   const round = s(form, "round");
 
@@ -882,7 +882,7 @@ export async function setStylePhoto(
   slotId: string,
   form: FormData
 ): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   if (!isPhotoSlot(slotId)) return { ok: false, error: "Unknown photo slot." };
 
   const supabase = await createClient();
@@ -906,7 +906,7 @@ export async function setStylePhoto(
 // re-shooting is common, un-deleting is not, and an orphaned object costs a few
 // kilobytes where a wrongly deleted shoot costs a day.
 export async function clearStylePhoto(styleId: string, slotId: string) {
-  await requireUser();
+  await requireTeam();
   if (!isPhotoSlot(slotId)) return;
   const supabase = await createClient();
   const { data: row } = await supabase.from("styles").select("photos").eq("id", styleId).maybeSingle();
@@ -945,7 +945,7 @@ async function readStylePhotos(styleId: string): Promise<unknown | null> {
 }
 
 export async function addStyleImage(styleId: string, form: FormData): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
 
   const got = await resolveImage(supabase, form, `${PHOTO_PREFIX}/${styleId}/gallery`);
@@ -976,7 +976,7 @@ export async function addStyleImage(styleId: string, form: FormData): Promise<Ph
 // and it would just as happily accept the photography slots map.
 
 export async function addStyleColorway(styleId: string, form: FormData): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
 
   const got = await resolveImage(supabase, form, `${PHOTO_PREFIX}/${styleId}/colorways`);
@@ -998,42 +998,42 @@ export async function addStyleColorway(styleId: string, form: FormData): Promise
 }
 
 export async function removeStyleColorway(styleId: string, imageId: string) {
-  await requireUser();
+  await requireTeam();
   const photos = await readStylePhotos(styleId);
   if (photos === null) return;
   await writeStylePhotos(styleId, withImageRemoved(photos, COLORWAYS_KEY, imageId));
 }
 
 export async function captionStyleColorway(styleId: string, imageId: string, form: FormData) {
-  await requireUser();
+  await requireTeam();
   const photos = await readStylePhotos(styleId);
   if (photos === null) return;
   await writeStylePhotos(styleId, withImageCaption(photos, COLORWAYS_KEY, imageId, s(form, "caption") ?? ""));
 }
 
 export async function moveStyleColorway(styleId: string, imageId: string, delta: number) {
-  await requireUser();
+  await requireTeam();
   const photos = await readStylePhotos(styleId);
   if (photos === null) return;
   await writeStylePhotos(styleId, withImageMoved(photos, COLORWAYS_KEY, imageId, delta));
 }
 
 export async function removeStyleImage(styleId: string, imageId: string) {
-  await requireUser();
+  await requireTeam();
   const photos = await readStylePhotos(styleId);
   if (photos === null) return;
   await writeStylePhotos(styleId, withImageRemoved(photos, GALLERY_KEY, imageId));
 }
 
 export async function captionStyleImage(styleId: string, imageId: string, form: FormData) {
-  await requireUser();
+  await requireTeam();
   const photos = await readStylePhotos(styleId);
   if (photos === null) return;
   await writeStylePhotos(styleId, withImageCaption(photos, GALLERY_KEY, imageId, s(form, "caption")));
 }
 
 export async function moveStyleImage(styleId: string, imageId: string, delta: number) {
-  await requireUser();
+  await requireTeam();
   const photos = await readStylePhotos(styleId);
   if (photos === null) return;
   await writeStylePhotos(styleId, withImageMoved(photos, GALLERY_KEY, imageId, delta));
@@ -1098,7 +1098,7 @@ export async function setSamplePhoto(
   slotId: string,
   form: FormData
 ): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   if (!isPhotoSlot(slotId)) return { ok: false, error: "Unknown photo slot." };
 
   const supabase = await createClient();
@@ -1130,7 +1130,7 @@ export async function setSamplePhoto(
 // Clears the slot on the round. As with the style-level version, the uploaded
 // file is left in Storage — re-shooting is common, un-deleting is not.
 export async function clearSamplePhoto(styleId: string, sampleId: string, slotId: string) {
-  await requireUser();
+  await requireTeam();
   if (!isPhotoSlot(slotId)) return;
   const photos = await readSamplePhotos(styleId, sampleId);
   await writeSamplePhotos(styleId, sampleId, writePhotos(photos, slotId, null));
@@ -1141,7 +1141,7 @@ export async function addSampleShot(
   sampleId: string,
   form: FormData
 ): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
 
   const got = await resolveImage(supabase, form, `${PHOTO_PREFIX}/${styleId}/samples/${sampleId}`);
@@ -1161,7 +1161,7 @@ export async function addSampleShot(
 }
 
 export async function removeSampleShot(styleId: string, sampleId: string, imageId: string) {
-  await requireUser();
+  await requireTeam();
   const photos = await readSamplePhotos(styleId, sampleId);
   if (photos === null) return;
   await writeSamplePhotos(styleId, sampleId, withImageRemoved(photos, SHOTS_KEY, imageId));
@@ -1173,7 +1173,7 @@ export async function captionSampleShot(
   imageId: string,
   form: FormData
 ) {
-  await requireUser();
+  await requireTeam();
   const photos = await readSamplePhotos(styleId, sampleId);
   if (photos === null) return;
   await writeSamplePhotos(
@@ -1189,7 +1189,7 @@ export async function moveSampleShot(
   imageId: string,
   delta: number
 ) {
-  await requireUser();
+  await requireTeam();
   const photos = await readSamplePhotos(styleId, sampleId);
   if (photos === null) return;
   await writeSamplePhotos(styleId, sampleId, withImageMoved(photos, SHOTS_KEY, imageId, delta));
@@ -1236,7 +1236,7 @@ export async function setImageCaption(
   url: string,
   form: FormData
 ): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   const photos = await readPhotosFor(styleId, sampleId);
   if (photos === null) return { ok: false, error: "That no longer exists." };
   const err = await writePhotosFor(
@@ -1260,7 +1260,7 @@ export async function saveImagePin(
   url: string,
   pin: { id: string | null; x: number; y: number; text: string }
 ): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   const photos = await readPhotosFor(styleId, sampleId);
   if (photos === null) return { ok: false, error: "That no longer exists." };
   const err = await writePhotosFor(
@@ -1283,7 +1283,7 @@ export async function removeImagePin(
   url: string,
   pinId: string
 ): Promise<PhotoResult> {
-  await requireUser();
+  await requireTeam();
   const photos = await readPhotosFor(styleId, sampleId);
   if (photos === null) return { ok: false, error: "That no longer exists." };
   const err = await writePhotosFor(styleId, sampleId, withImagePinRemoved(photos, url, pinId));

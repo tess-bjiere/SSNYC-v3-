@@ -93,15 +93,30 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
   },
 ];
 
-export default function Nav({ email, brand }: { email: string; brand: string }) {
+export default function Nav({
+  email,
+  brand,
+  role,
+}: {
+  email: string;
+  brand: string;
+  role: "team" | "talent";
+}) {
   const pathname = usePathname();
+  // A talent sees only the ideation half of their brand (multi-brand phase 2):
+  // no product group, no brand switcher, no Setup. The gate is enforced on the
+  // server too — this only keeps a talent from being shown a door they cannot
+  // open. The SSYNC wordmark takes them to References, not Development.
+  const isTeam = role === "team";
+  const groups = isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation");
+  const home = isTeam ? "/development" : "/library";
   return (
     <nav className="nav">
-      <Link href="/development" className="brand">
+      <Link href={home} className="brand">
         SSYNC
       </Link>
       <div className="nav-links">
-        {GROUPS.map((g) => (
+        {groups.map((g) => (
           <Fragment key={g.label}>
             {/* A hairline used to sit between the groups (Tess, 2026-08-06:
                 "remove divider"). The gap does the same work quietly. */}
@@ -131,7 +146,7 @@ export default function Nav({ email, brand }: { email: string; brand: string }) 
         {/* Which brand the team is looking at (multi-brand, Tess 2026-08-11).
             Everything on the page is scoped to it. A talent has no switcher —
             they see only their own brand (phase 2). */}
-        <BrandSwitcher active={brand} />
+        {isTeam && <BrandSwitcher active={brand} />}
         {/* + New Style used to sit here (Tess, 2026-08-06: "dont have new style
             in upper navigation -- it's confusing"). It was the only ACTION in a
             row of destinations — everything else in this bar takes you
@@ -141,10 +156,13 @@ export default function Nav({ email, brand }: { email: string; brand: string }) 
             removed: /styles/new is unchanged and still reachable directly. */}
         {/* Setup is not a feature, so it does not get a tab — but it needs to be
             reachable without remembering a URL, because the things on it are the
-            things standing between this and the team using it. */}
-        <Link href="/setup" className="nav-link" title="Go-live checklist">
-          Setup
-        </Link>
+            things standing between this and the team using it. Team only — Setup
+            is the go-live checklist, not a talent's concern. */}
+        {isTeam && (
+          <Link href="/setup" className="nav-link" title="Go-live checklist">
+            Setup
+          </Link>
+        )}
         {/* Personal settings hang off your own name rather than taking a tab. */}
         <Link href="/notifications" className="who" title="Notification settings">
           {email}

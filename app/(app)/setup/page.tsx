@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DEV_BYPASS, DEV_BYPASS_REFUSED, requireUser } from "@/lib/access";
+import { DEV_BYPASS, DEV_BYPASS_REFUSED, requireTeam } from "@/lib/access";
 import { PUBLIC_READ_ELEVATED } from "@/lib/supabase/public";
 import { anonCanReadPrivateTable } from "@/lib/supabase/probe";
 import { readiness, summarize, type Check } from "@/lib/readiness";
@@ -14,7 +14,7 @@ const DOT: Record<Check["state"], { mark: string; color: string; label: string }
 };
 
 export default async function SetupPage() {
-  await requireUser();
+  await requireTeam(); // the go-live checklist is not a talent's concern
 
   const checks = readiness({
     devBypassActive: DEV_BYPASS,

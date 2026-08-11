@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <>
-      <Nav email={user.email} brand={brand} />
+      <Nav email={user.email} brand={brand} role={user.role} />
       {DEV_BYPASS && (
         <div className="wrap" style={{ paddingTop: 12 }}>
           <div className="notice">

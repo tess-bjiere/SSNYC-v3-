@@ -1,3 +1,4 @@
+import { requireTeam } from "@/lib/access";
 import DevTabs from "../development/DevTabs";
 import { loadStudioStyles } from "../development/loadStudioStyles";
 
@@ -43,6 +44,7 @@ export const dynamic = "force-dynamic";
 // component Development renders, with a different tab strip. A second copy
 // would drift the first time one of them was improved.
 export default async function StyleLibraryPage() {
+  await requireTeam(); // product side, team only
   const { gridStyles, summaryMap } = await loadStudioStyles();
   // Newest submission first: the shelf reads as what was put on it most
   // recently, which is the order somebody who just submitted one expects.

@@ -23,7 +23,7 @@ test("a slug is validated, and a bad one falls back to the default", () => {
 
 test("a slug reads back as its name; an unknown slug reads as itself", () => {
   assert.equal(brandName("sous-sous"), "SOUS SOUS");
-  assert.equal(brandName("renggli"), "Renggli");
+  assert.equal(brandName("renggli"), "RENGGLI");
   assert.equal(brandName("legacy"), "legacy");
   assert.equal(brandName(null), "");
 });

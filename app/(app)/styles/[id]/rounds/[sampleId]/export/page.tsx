@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
 import {
   SAMPLE_ROUND_LABELS,
   sampleLocationLabel,
@@ -54,6 +55,7 @@ export default async function RoundExport({
 }: {
   params: Promise<{ id: string; sampleId: string }>;
 }) {
+  await requireTeam(); // product side, team only
   const { id, sampleId } = await params;
   const supabase = await createClient();
 

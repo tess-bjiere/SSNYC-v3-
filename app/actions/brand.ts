@@ -13,7 +13,10 @@ import { requireUser } from "@/lib/access";
 // team may move between brands. brandOr means a forged slug can only ever land
 // on a real brand, never scope the app to nothing.
 export async function setActiveBrand(slug: string) {
-  await requireUser();
+  const user = await requireUser();
+  // A talent is pinned to their brand and has no switcher; the endpoint still
+  // exists, so it refuses them rather than trusting the UI to hide it.
+  if (user.role !== "team") return;
   const store = await cookies();
   store.set(BRAND_COOKIE, brandOr(slug), {
     path: "/",

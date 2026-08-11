@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/access";
+import { requireTeam } from "@/lib/access";
 import { buildBrief, type VariationRequest, type VariationStyle } from "@/lib/variations";
 import { generateVariation, isImageGenConfigured } from "@/lib/imagegen";
 import { duplicateDraft, type DuplicateSeed } from "@/lib/clone";
@@ -40,7 +40,7 @@ export async function generateVariationImage(
   styleId: string,
   req: VariationRequest
 ): Promise<VariationActionResult> {
-  await requireUser();
+  await requireTeam();
   const style = await loadStyle(styleId);
   if (!style) return { ok: false, message: "That style no longer exists." };
 
@@ -66,7 +66,7 @@ export async function recordVariation(
   imageUrl: string | null
 ): Promise<VariationActionResult> {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const style = await loadStyle(styleId);
   if (!style) return { ok: false, message: "That style no longer exists." };
@@ -123,7 +123,7 @@ export async function recordVariationAsStyle(
   imageUrl: string | null
 ): Promise<VariationActionResult & { id?: string }> {
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: src } = await supabase.from("styles").select("*").eq("id", styleId).maybeSingle();
   if (!src) return { ok: false, message: "That style no longer exists." };
@@ -172,6 +172,6 @@ export async function recordVariationAsStyle(
 }
 
 export async function imageModelConnected(): Promise<boolean> {
-  await requireUser();
+  await requireTeam();
   return isImageGenConfigured();
 }

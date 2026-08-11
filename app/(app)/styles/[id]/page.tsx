@@ -37,7 +37,7 @@ import { sortSamples, latestSample } from "@/lib/sampleCycle";
 import { summarizeStyle, type SummaryRound } from "@/lib/styleSummary";
 import { compareStanding, type StandingSide } from "@/lib/styleStanding";
 import { isImageGenConfigured } from "@/lib/imagegen";
-import { getSessionUser } from "@/lib/access";
+import { getSessionUser, requireTeam } from "@/lib/access";
 import {
   siblingsOf,
   withLatestRounds,
@@ -80,6 +80,7 @@ type LinkedRef = Pick<
 export const dynamic = "force-dynamic";
 
 export default async function StyleProfile({ params }: { params: Promise<{ id: string }> }) {
+  await requireTeam(); // product side, team only
   const { id } = await params;
 
   // Who is reading. Only used to decide whose comments offer an Edit button —

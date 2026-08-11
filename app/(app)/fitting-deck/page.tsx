@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
 import {
   SAMPLE_ROUNDS,
   SAMPLE_ROUND_LABELS,
@@ -66,6 +67,7 @@ export default async function FittingDeckPage({
 }: {
   searchParams: Promise<{ ids?: string }>;
 }) {
+  await requireTeam(); // product side, team only
   const { ids: raw } = await searchParams;
   // Selection order is kept — the deck reads in the order the styles were picked.
   const ids = (raw ?? "").split(",").map((s) => s.trim()).filter(Boolean);

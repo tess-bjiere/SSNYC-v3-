@@ -11,7 +11,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/access";
+import { requireTeam } from "@/lib/access";
 import { styleDraftFromReference } from "@/lib/styleFromRef";
 import type { StyleStatus } from "@/lib/types";
 
@@ -26,7 +26,7 @@ export type LinkedStyle = {
 // Every style being developed from this reference. Read by the detail card when
 // it opens, so "in development" is visible without a click.
 export async function stylesForReference(referenceId: string): Promise<LinkedStyle[]> {
-  await requireUser();
+  await requireTeam();
   if (!referenceId) return [];
   const supabase = await createClient();
 
@@ -53,7 +53,7 @@ export async function stylesForReference(referenceId: string): Promise<LinkedSty
 // Styles the card's "link to an existing style" picker offers. Deliberately a
 // short list: the newest handful, narrowed by whatever has been typed.
 export async function searchStyles(q: string): Promise<LinkedStyle[]> {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
   let query = supabase.from("styles").select("id,name,status,style_no").is("deleted_at", null);
   const term = (q ?? "").trim();
@@ -105,7 +105,7 @@ export async function searchReferences(
   q: string,
   exclude: readonly string[] = []
 ): Promise<LinkableReference[]> {
-  await requireUser();
+  await requireTeam();
   const supabase = await createClient();
 
   let query = supabase.from("references").select(REF_COLS).is("deleted_at", null);
@@ -132,7 +132,7 @@ export async function searchReferences(
 export type LinkResult = { ok: boolean; error?: string; styles?: LinkedStyle[] };
 
 export async function linkReference(styleId: string, referenceId: string): Promise<LinkResult> {
-  await requireUser();
+  await requireTeam();
   if (!styleId || !referenceId) return { ok: false, error: "Nothing to link." };
   const supabase = await createClient();
 
@@ -151,7 +151,7 @@ export async function linkReference(styleId: string, referenceId: string): Promi
 }
 
 export async function unlinkReference(styleId: string, referenceId: string): Promise<LinkResult> {
-  await requireUser();
+  await requireTeam();
   if (!styleId || !referenceId) return { ok: false, error: "Nothing to unlink." };
   const supabase = await createClient();
 
@@ -173,7 +173,7 @@ export async function unlinkReference(styleId: string, referenceId: string): Pro
 // The form-action shape of the same thing, for the "Developed from" block on a
 // server-rendered style profile.
 export async function unlinkReferenceForm(styleId: string, referenceId: string) {
-  await requireUser();
+  await requireTeam();
   await unlinkReference(styleId, referenceId);
 }
 
@@ -188,7 +188,7 @@ export type DevelopResult = { ok: boolean; error?: string; id?: string };
 export async function developFromReference(referenceId: string): Promise<DevelopResult> {
   if (!referenceId) return { ok: false, error: "No reference given." };
   const supabase = await createClient();
-  const user = await requireUser();
+  const user = await requireTeam();
 
   const { data: ref, error: readErr } = await supabase
     .from("references")

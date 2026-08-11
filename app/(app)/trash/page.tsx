@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { type Reference, type Style } from "@/lib/types";
 import { itemKind, type MBItem, type MBImageItem, type Moodboard } from "@/lib/moodboard";
@@ -11,6 +12,9 @@ export const dynamic = "force-dynamic";
 // of that: it shows what is in the Trash and lets it be put back, or finally
 // thrown away.
 export default async function TrashPage() {
+  // Trash spans references and styles; treated as product-side (team only) for
+  // now rather than split — a talent has no Trash link and is redirected here.
+  await requireTeam();
   const supabase = await createClient();
   const brand = await activeBrand(); // only this brand's trash
   const [{ data }, { data: styleData }, { data: boardsData }] = await Promise.all([

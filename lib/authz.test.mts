@@ -6,6 +6,7 @@ import {
   decideAccess,
   isOrgEmail,
   normalizeEmail,
+  resolveMember,
 } from "./authz.ts";
 
 const DOMAIN = "theloyalist.com";
@@ -98,4 +99,58 @@ test("the login bypass is refused on a production deployment whatever the flag s
   // Preview deployments and local work still get it.
   assert.equal(bypassAllowed({ flag: "true", vercelEnv: "preview" }), true);
   assert.equal(bypassAllowed({ flag: "true", vercelEnv: "development" }), true);
+});
+
+// Roles (multi-brand phase 2).
+
+test("the org domain is always team, all brands — a talent row cannot demote them", () => {
+  const m = resolveMember({
+    email: "tess@theloyalist.com",
+    domain: DOMAIN,
+    // Even if someone put her on the allowlist as a Renggli talent, the domain wins.
+    allowlist: [{ email: "tess@theloyalist.com", role: "talent", brand: "renggli" }],
+  });
+  assert.equal(m.allowed, true);
+  assert.equal(m.role, "team");
+  assert.equal(m.brand, null);
+  assert.equal(m.reason, "org-domain");
+});
+
+test("an allowlisted talent is pinned to their one brand", () => {
+  const m = resolveMember({
+    email: "Maya@renggli.example",
+    domain: DOMAIN,
+    allowlist: [{ email: "maya@renggli.example", role: "talent", brand: "renggli" }],
+  });
+  assert.equal(m.allowed, true);
+  assert.equal(m.role, "talent");
+  assert.equal(m.brand, "renggli");
+  assert.equal(m.reason, "allowlist");
+});
+
+test("an allowlisted guest with no role keeps full team access", () => {
+  const m = resolveMember({
+    email: "gabby@gmail.com",
+    domain: DOMAIN,
+    allowlist: [{ email: "gabby@gmail.com" }],
+  });
+  assert.equal(m.allowed, true);
+  assert.equal(m.role, "team");
+  assert.equal(m.brand, null);
+});
+
+test("a talent with no brand is pinned to nothing, never to every brand", () => {
+  const m = resolveMember({
+    email: "x@studio.example",
+    domain: DOMAIN,
+    allowlist: [{ email: "x@studio.example", role: "talent", brand: null }],
+  });
+  assert.equal(m.role, "talent");
+  assert.equal(m.brand, null); // caller shows an empty view, not all brands
+});
+
+test("a stranger is refused, with no role and no brand", () => {
+  const m = resolveMember({ email: "nobody@elsewhere.com", domain: DOMAIN, allowlist: [] });
+  assert.equal(m.allowed, false);
+  assert.equal(m.reason, "not-allowed");
 });
