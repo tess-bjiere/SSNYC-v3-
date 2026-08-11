@@ -126,8 +126,8 @@ export default function NotesDrawer({
 
                   {!readOnly && !isEditing && (
                     <form action={addReply.bind(null, boardId, n.tid)} className="note-reply-form">
-                      <input className="input" name="text" placeholder="Reply…" autoComplete="off" />
-                      <button className="btn ghost" type="submit">Reply</button>
+                      <input className="input sm" name="text" placeholder="Reply…" autoComplete="off" />
+                      <button className="btn ghost sm" type="submit">Reply</button>
                     </form>
                   )}
                 </div>

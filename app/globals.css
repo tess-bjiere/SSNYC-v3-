@@ -532,11 +532,14 @@ body.notes-open .wrap{padding-right:378px}
 .lib-tab.active{background:var(--chip);color:var(--ink)}
 .lib-search{flex:1;min-width:220px}
 .page-head .lib-sort{width:170px;flex:0 0 auto;padding:8px 30px 8px 12px}
-.dens{display:flex;border:1px solid var(--line);flex:0 0 auto}
-.dens-btn{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:7px 9px;cursor:pointer;display:flex;align-items:center;line-height:0}
-.dens-btn:last-child{border-right:none}
+/* Bare icons, no box (Tess, 2026-08-11: "make icons like this without being
+   boxed in"): the outer border and the divider rules are gone, and the chosen
+   density is marked by the icon going to ink rather than by a filled cell. A
+   small gap keeps the three legible without lines between them. */
+.dens{display:flex;flex:0 0 auto;gap:4px}
+.dens-btn{background:none;border:none;color:var(--muted);padding:7px 5px;cursor:pointer;display:flex;align-items:center;line-height:0}
 .dens-btn:hover{color:var(--ink)}
-.dens-btn.active{background:var(--chip);color:var(--ink)}
+.dens-btn.active{color:var(--ink)}
 
 /* The sort control is fixed vocabulary — Newest, Designer A–Z, Recent updates —
    so it takes the same uppercase micro-caps as the buttons beside it (the
