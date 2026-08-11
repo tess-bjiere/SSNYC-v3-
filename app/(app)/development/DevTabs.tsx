@@ -330,8 +330,6 @@ export default function DevTabs({
             ]}
           />
 
-          <SizeToggle value={size} onChange={setSize} />
-
           {/* Season leads and always lists (min 1). Designer is deliberately
               not here — Tess, 2026-08-09: "list season instead of designer". The
               field still exists in the filter engine, it just has no control on
@@ -364,6 +362,14 @@ export default function DevTabs({
 
           {/* Both numbers, always, so nothing is hidden quietly. */}
           <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
+
+          {/* The grid-density toggle is a view control, not a filter, so it sits
+              apart from the filter run at the right edge — the same "toggle at
+              the right" spot the References head puts it — rather than wedged
+              between Status and Season (Tess, 2026-08-11: "the placement of the
+              toggle is not logical at all"). It rides after the hint, which
+              carries margin-left:auto, so the pair floats to the right. */}
+          <SizeToggle value={size} onChange={setSize} />
         </div>
       </div>
 
