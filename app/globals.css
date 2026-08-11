@@ -83,6 +83,10 @@
      what lets the sizes come down at all. */
   --w-cap:600;
   --w-title:600;
+  --w-mid:500;   /* control chrome — buttons, tabs, toggles, sort: uppercase micro-caps
+                    set a touch lighter than the 600 headings so they read as controls,
+                    not shouts (Tess, 2026-08-11: "rework buttons and icons ... to have
+                    this styling", ref ssnyclibrary). */
   --w-body:400;
   --w-thin:300;
 
@@ -372,7 +376,7 @@ body.notes-open .wrap{padding-right:378px}
 /* md is the default. .sm and .lg are the only other two, and they are the
    control scale — see :root. A button that needs a padding of its own is a
    button that has found a fifth size, and there is not one. */
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--btnfg);border:1px solid var(--accent);border-radius:0;padding:var(--ctl-y-md) var(--ctl-x-md);font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-title);text-transform:none;letter-spacing:0;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--btnfg);border:1px solid var(--accent);border-radius:0;padding:var(--ctl-y-md) var(--ctl-x-md);font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em;cursor:pointer}
 .btn:hover{opacity:.9}
 .btn.ghost{background:none;color:var(--ink);border-color:var(--line)}
 .btn.ghost:hover{border-color:var(--ink)}
@@ -388,11 +392,14 @@ body.notes-open .wrap{padding-right:378px}
 
 /* Tabs */
 .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px}
-/* Tabs are words you read to choose between, so they are set like words.
-   Uppercase-tracked they were four grey blocks you had to decode one at a
-   time. The active one is marked by ink and the rule under it, which is
-   plenty — it does not also need to be shouting. */
-.tab{padding:var(--ctl-y-md) 2px;margin-right:22px;font-size:var(--t-sm);font-weight:var(--w-body);text-transform:none;letter-spacing:0;color:var(--faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
+/* These carried a note that tabs read better as words than as "four grey
+   blocks you had to decode one at a time", so they were sentence case. Tess,
+   2026-08-11, then asked for the uppercase micro-caps control language app-wide
+   ("rework buttons and icons ... to have this styling", ref ssnyclibrary), so
+   they now match the library tabs. If the longer labels (Sampling, Production,
+   Evergreen) read as blocks again, revert this one line to text-transform:none
+   — the active tab is still carried by ink + the rule under it, not the caps. */
+.tab{padding:var(--ctl-y-md) 2px;margin-right:22px;font-size:var(--t-sm);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.11em;color:var(--faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
 .tab:hover{color:var(--ink)}
 .tab.active{color:var(--ink);border-color:var(--ink)}
 .tab .n{margin-left:7px;font-size:var(--t-micro);font-weight:var(--w-body);color:var(--faint)}
@@ -512,17 +519,27 @@ body.notes-open .wrap{padding-right:378px}
 /* Library filter bar */
 .lib-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
 .lib-tabs{display:flex;border:1px solid var(--line)}
-.lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:var(--ctl-y-md) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-sm);text-transform:none;letter-spacing:0}
+.lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:var(--ctl-y-md) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-sm);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.11em}
 .lib-tab:last-child{border-right:none}
 .lib-tab:hover{color:var(--ink)}
-.lib-tab.active{background:var(--accent);color:var(--btnfg)}
+/* The chosen tab is marked by a quiet raised fill and ink text, not the loud
+   cream block it used to be — the reference reads the selection off the ink,
+   with the fill only confirming it (Tess, 2026-08-11, ref ssnyclibrary). */
+.lib-tab.active{background:var(--chip);color:var(--ink)}
 .lib-search{flex:1;min-width:220px}
 .page-head .lib-sort{width:170px;flex:0 0 auto;padding:8px 30px 8px 12px}
 .dens{display:flex;border:1px solid var(--line);flex:0 0 auto}
 .dens-btn{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:7px 9px;cursor:pointer;display:flex;align-items:center;line-height:0}
 .dens-btn:last-child{border-right:none}
 .dens-btn:hover{color:var(--ink)}
-.dens-btn.active{background:var(--accent);color:var(--btnfg)}
+.dens-btn.active{background:var(--chip);color:var(--ink)}
+
+/* The sort control is fixed vocabulary — Newest, Designer A–Z, Recent updates —
+   so it takes the same uppercase micro-caps as the buttons beside it (the
+   "NEWEST" in the reference). The data filters (designer, colour, factory,
+   season) are deliberately left in natural case: a proper noun or a colour name
+   reads badly shouted (Tess, 2026-08-11: "rework buttons and icons ..."). */
+.lib-sort, #devsort{text-transform:uppercase;letter-spacing:.1em;font-weight:var(--w-mid)}
 .lib-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
 .lib-filters .select{width:auto;min-width:120px;padding:var(--ctl-y-md) var(--ctl-chev-md) var(--ctl-y-md) var(--ctl-x-md);font-size:var(--t-body)}
 
