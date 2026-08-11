@@ -2733,3 +2733,23 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   .mb-toolbar .sel{flex:1 1 100%}
   .mb-toolbar .sel .sel-trigger{width:100%}
 }
+
+/* ============================================================================
+   RESPONSIVE PHASE 4 — the References library on phone/tablet (Tess, 2026-08-11,
+   referencing ssnyclibrary.tiiny.site: "Should look more like this on mobile and
+   tablet — easy ability to upload, sort, etc").
+
+   Two moves borrowed from that reference, in SSYNC's own type and colour rather
+   than its serif: uploading becomes a big full-width primary button instead of a
+   small link in the head, and the seven filter dropdowns fold behind one "Filter"
+   button so the phone default is search + grid, not a wall of empty selects. Both
+   are phone/tablet only — desktop keeps the head add and the always-open filters.
+   ============================================================================ */
+.lib-add-mobile,.lib-filter-toggle{display:none}
+@media(max-width:900px){
+  .lib-add-mobile{display:flex;width:100%;justify-content:center;margin-bottom:16px}
+  .page-head .lib-add-desk{display:none}
+  .lib-filter-toggle{display:inline-flex;margin-bottom:14px}
+  .lib-filters{display:none;margin-bottom:20px}
+  .lib-filters.open{display:flex}
+}

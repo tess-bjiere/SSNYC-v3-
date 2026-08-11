@@ -66,6 +66,11 @@ export default function LibraryClient({
   const [sel, setSel] = useState<Record<string, string>>({});
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
+  // On a phone the seven filter dropdowns are folded behind one "Filter" button
+  // so the default view is the search + the grid, not a wall of empty selects
+  // (Tess, 2026-08-11, ref ssnyclibrary: "easy ability to upload, sort, etc").
+  // Desktop ignores this — the filters are always shown there.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [detail, setDetail] = useState<Reference | null>(null);
   const [picker, setPicker] = useState<Reference | null>(null);
@@ -209,8 +214,17 @@ export default function LibraryClient({
         <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
         {/* Deleted references live on in the Trash until someone empties it. */}
         <Link href="/trash" className="lib-trash-link">Trash</Link>
-        <button className="btn sm" onClick={() => setUploading(true)}>+ Add</button>
+        {/* The desktop add sits in the head; on a phone it folds into the big
+            button below, which is the first thing you can reach. */}
+        <button className="btn sm lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
       </div>
+
+      {/* Prominent, full-width upload — phone/tablet only. Uploading is the
+          reason most people open this on their phone (a photo just taken), so it
+          is the largest, closest-to-thumb control (Tess, 2026-08-11). */}
+      <button className="btn lib-add-mobile" onClick={() => setUploading(true)}>
+        + Add reference
+      </button>
 
       <div className="lib-bar">
         <div className="lib-tabs">
@@ -223,7 +237,18 @@ export default function LibraryClient({
         <input className="input lib-search" placeholder="Search designer, garment, color, notes…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
-      <div className="lib-filters">
+      {/* Phone/tablet only: the filters start folded behind this. The count
+          rides on the button so you know something is narrowing the grid even
+          while the selects are hidden. */}
+      <button
+        className={"btn ghost sm lib-filter-toggle" + (filtersOpen ? " on" : "")}
+        aria-expanded={filtersOpen}
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        Filter{activeFilters > 0 ? ` (${activeFilters})` : ""}
+      </button>
+
+      <div className={"lib-filters" + (filtersOpen ? " open" : "")}>
         {FACETS.map((f) => (
           <Select
             key={f.key}
