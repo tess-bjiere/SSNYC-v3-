@@ -272,7 +272,15 @@ body.notes-open .wrap{padding-right:378px}
    is now said by colour alone: white for here, faint for elsewhere. Hover lands
    between the two so it still answers "is this clickable" without impersonating
    the page you are already on. */
-.nav-link{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding:calc(4px + .21em) 0 4px;line-height:1}
+/* Tess, 2026-08-11: "it's the vertical alignment". At tablet width a two-word
+   link ("Styles by Factory", "Style Library") was wrapping to two or three
+   lines, which made those items taller than the single-line ones and threw the
+   whole row off its baseline. white-space:nowrap keeps every link on one line so
+   the vertical rhythm holds at any width — the group label already had it. Below
+   the bar's natural width the right-hand items now overflow rather than wrap;
+   the full tablet/mobile treatment (wrapping the bar into rows, or a menu) is a
+   separate pass. */
+.nav-link{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding:calc(4px + .21em) 0 4px;line-height:1;white-space:nowrap}
 .nav-link:hover{color:var(--muted)}
 .nav-link.active{color:var(--ink)}
 .nav-link.active:hover{color:var(--ink)}

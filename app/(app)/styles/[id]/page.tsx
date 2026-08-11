@@ -526,9 +526,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               styleId={st.id}
               list="colorways"
               images={colorways}
-              title="Colourways"
-              hint="The caption is the colour name."
-              addLabel="Add colourways"
+              title="Colorways"
+              hint="The caption is the color name."
+              addLabel="Add colorways"
             />
           </ModalButton>
 

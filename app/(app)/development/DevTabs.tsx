@@ -277,7 +277,7 @@ export default function DevTabs({
           className="input sm findbox"
           type="search"
           value={query}
-          placeholder="Search styles — name, number, fabric, colour, factory…"
+          placeholder="Search styles — name, number, fabric, color, factory…"
           aria-label="Search styles"
           onChange={(e) => setQuery(e.target.value)}
         />

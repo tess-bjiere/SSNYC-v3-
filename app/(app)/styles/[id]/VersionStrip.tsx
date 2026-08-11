@@ -239,7 +239,7 @@ export default function VersionStrip({
                 <input className="input" name="name" placeholder="named for the factory if left blank" />
               </div>
               <div className="field">
-                <label>Colour(s) (optional)</label>
+                <label>Color(s) (optional)</label>
                 <input className="input" name="colors" placeholder="carried over if left blank" />
               </div>
             </div>

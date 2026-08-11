@@ -28,7 +28,7 @@ export default function LoginPage() {
     <div className="login-wrap">
       <div className="login-brand">SSYNC</div>
       <div className="login-sub">
-        SOUS SOUS reference library &amp; style development tool. Sign in with your
+        The Loyalist&apos;s reference library &amp; style development tool. Sign in with your
         theloyalist.com Google account, or a guest account that&apos;s been added to the allowlist.
       </div>
       <button className="btn" onClick={signIn} disabled={busy}>
