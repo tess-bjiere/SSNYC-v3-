@@ -298,8 +298,13 @@ body.notes-open .wrap{padding-right:378px}
    ============================================================================ */
 
 /* --- Nav: hamburger + slide-in drawer (shown below 1200px) --- */
-.nav-burger{display:none;margin-left:auto;flex-direction:column;justify-content:center;
-  gap:4px;width:44px;height:44px;padding:11px;background:none;border:none;cursor:pointer}
+/* margin-right offsets the button's own 11px padding, so the icon's right edge
+   lands on the nav gutter — mirroring the wordmark's left edge — rather than a
+   tap-target's worth of air inside it (Tess, 2026-08-11: "burger feels far from
+   the right"). The 44px hit area is unchanged. */
+.nav-burger{display:none;margin-left:auto;margin-right:-11px;flex-direction:column;
+  justify-content:center;gap:4px;width:44px;height:44px;padding:11px;background:none;
+  border:none;cursor:pointer}
 .nav-burger span{display:block;width:100%;height:1.5px;background:var(--ink)}
 .nav-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
 .nav-drawer{position:fixed;top:0;right:0;bottom:0;width:min(320px,84vw);z-index:41;
@@ -325,9 +330,11 @@ body.notes-open .wrap{padding-right:378px}
   .nav-burger{display:flex}
 }
 
-/* --- Phone: a little more of the narrow screen goes to content --- */
+/* --- Phone: a little more of the narrow screen goes to content, and the nav
+   shares the same 16px gutter so the wordmark lines up with the page below --- */
 @media(max-width:600px){
   .wrap{padding:0 16px}
+  .nav{padding:0 16px}
 }
 
 /* --- Comfortable touch targets on coarse pointers (phones, tablets), without
