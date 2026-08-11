@@ -12,9 +12,11 @@ const TODAY: ReadinessInput = {
   hasImagegen: false,
   hasWipEmail: false,
   hasWipKey: false,
+  backupsConfirmed: false,
 };
 
-// Everything done.
+// Everything the app can configure is done; backups not yet attested, so it is
+// the one thing still left to confirm.
 const LIVE: ReadinessInput = {
   devBypassActive: false,
   devBypassRefused: false,
@@ -24,6 +26,7 @@ const LIVE: ReadinessInput = {
   hasImagegen: true,
   hasWipEmail: true,
   hasWipKey: true,
+  backupsConfirmed: false,
 };
 
 const by = (input: ReadinessInput, id: string) => {
@@ -70,6 +73,19 @@ test("a manual check is counted apart from a failing one", () => {
   assert.equal(by(LIVE, "backups").blocking, true);
   assert.equal(s.outstanding, 0);
   assert.equal(s.toConfirm, 1);
+});
+
+test("confirming backups clears the last manual item", () => {
+  // The app cannot observe the billing tier, so backups is attested with a
+  // flag. Once it is on Pro (Tess, 2026-08-11), the check reads ready and there
+  // is nothing left to confirm.
+  const CONFIRMED = { ...LIVE, backupsConfirmed: true };
+  assert.equal(by(CONFIRMED, "backups").state, "ready");
+  assert.equal(by(CONFIRMED, "backups").blocking, true);
+  const s = summarize(readiness(CONFIRMED));
+  assert.equal(s.outstanding, 0);
+  assert.equal(s.toConfirm, 0);
+  assert.equal(s.clear, true);
 });
 
 test("open policies are reported as blocked and point at the runbook", () => {

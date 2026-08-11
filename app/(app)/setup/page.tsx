@@ -33,6 +33,9 @@ export default async function SetupPage() {
     // none.
     hasWipEmail: Boolean((process.env.GOOGLE_SA_EMAIL ?? "").trim()),
     hasWipKey: Boolean((process.env.GOOGLE_SA_PRIVATE_KEY ?? "").trim()),
+    // The app cannot see the billing tier, so backups are attested with a flag
+    // rather than observed. Set once the project is on Pro (Tess, 2026-08-11).
+    backupsConfirmed: process.env.SUPABASE_BACKUPS_CONFIRMED === "true",
   });
 
   const summary = summarize(checks);

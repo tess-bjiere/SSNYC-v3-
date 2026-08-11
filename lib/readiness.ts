@@ -67,6 +67,13 @@ export interface ReadinessInput {
    * that looks configured from the dashboard and fails from the app.
    */
   hasWipKey: boolean;
+  /**
+   * Whether daily backups have been confirmed on. The app cannot see the
+   * billing tier, so this is the one attestation in the list — a set flag
+   * (SUPABASE_BACKUPS_CONFIRMED), not something observed — flipped on once the
+   * project is on a plan that takes them.
+   */
+  backupsConfirmed: boolean;
 }
 
 const GATE = "Before the team gets in";
@@ -199,18 +206,31 @@ export function readiness(input: ReadinessInput): Check[] {
     });
   }
 
-  // 5. Backups. Nothing in the app can see the billing tier, and the one asset
-  //    here that cannot be rebuilt is the data.
-  checks.push({
-    id: "backups",
-    title: "Daily backups",
-    state: "manual",
-    detail:
-      "Not visible from inside the app. The free tier does not take them, and the references are the one thing here that could not be rebuilt.",
-    action: "Move the project to Pro.",
-    where: "Supabase → Settings → Billing",
-    blocking: true,
-  });
+  // 5. Backups. Nothing in the app can see the billing tier, so this one is an
+  //    attestation rather than an observed check: SUPABASE_BACKUPS_CONFIRMED is
+  //    set once the project is on a plan that takes daily backups. The one asset
+  //    here that cannot be rebuilt is the data, so it still gates go-live.
+  checks.push(
+    input.backupsConfirmed
+      ? {
+          id: "backups",
+          title: "Daily backups",
+          state: "ready",
+          detail:
+            "Confirmed on: the project is on Supabase Pro, which takes a daily backup (Tess, 2026-08-11). The app cannot see billing, so this reads the SUPABASE_BACKUPS_CONFIRMED flag rather than observing the tier.",
+          blocking: true,
+        }
+      : {
+          id: "backups",
+          title: "Daily backups",
+          state: "manual",
+          detail:
+            "Not visible from inside the app. The free tier does not take them, and the references are the one thing here that could not be rebuilt.",
+          action: "Move the project to Pro, then set SUPABASE_BACKUPS_CONFIRMED=true.",
+          where: "Supabase → Settings → Billing",
+          blocking: true,
+        }
+  );
 
   // 6 and 7. Optional. Both are complete builds waiting on a credential, and
   //    both degrade on purpose rather than breaking, so neither gates go-live.
