@@ -113,7 +113,8 @@ export default async function FittingDeckPage({
       };
     });
 
-  const deck = buildFittingDeck(slideInputs, { generatedOn: studioToday() });
+  const generatedOn = studioToday();
+  const deck = buildFittingDeck(slideInputs, { generatedOn });
 
   return (
     <div className="page">
@@ -123,7 +124,7 @@ export default async function FittingDeckPage({
         </Link>
       </div>
 
-      <DeckActions />
+      <DeckActions fileTitle={`SS_Fitting_${generatedOn}`} />
 
       {deck.slides.length === 0 ? (
         <p className="export-note no-print">
