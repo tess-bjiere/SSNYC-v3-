@@ -130,9 +130,14 @@ export default function Nav({
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    // The moodboard's floating Notes tab is a separate fixed element; mark the
+    // body so CSS can pull it behind the open drawer (Tess, 2026-08-11: "notes
+    // is still showing up on top of menu drawer (should be behind)").
+    document.body.classList.add("nav-open");
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      document.body.classList.remove("nav-open");
     };
   }, [menuOpen]);
 

@@ -33,9 +33,11 @@ export default async function SetupPage() {
     // none.
     hasWipEmail: Boolean((process.env.GOOGLE_SA_EMAIL ?? "").trim()),
     hasWipKey: Boolean((process.env.GOOGLE_SA_PRIVATE_KEY ?? "").trim()),
-    // The app cannot see the billing tier, so backups are attested with a flag
-    // rather than observed. Set once the project is on Pro (Tess, 2026-08-11).
-    backupsConfirmed: process.env.SUPABASE_BACKUPS_CONFIRMED === "true",
+    // The app cannot see the billing tier, so backups are attested rather than
+    // observed. This repo's project is on Supabase Pro with daily backups, so it
+    // defaults to confirmed (Tess, 2026-08-11: "default it to confirmed in code
+    // for this repo"); set SUPABASE_BACKUPS_CONFIRMED=false to flip it back.
+    backupsConfirmed: process.env.SUPABASE_BACKUPS_CONFIRMED !== "false",
   });
 
   const summary = summarize(checks);

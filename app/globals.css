@@ -350,11 +350,14 @@ body.notes-open .wrap{padding-right:378px}
   .nav{padding:0 16px}
 }
 
-/* --- Comfortable touch targets on coarse pointers (phones, tablets), without
-   changing the tuned density on a mouse-driven desktop. One size (44) for every
-   control so they still line up under touch, above their desktop heights. --- */
+/* --- Touch targets on coarse pointers (phones, tablets), without changing the
+   tuned density on a mouse-driven desktop. One size for every control so they
+   line up under touch, above their desktop heights but tighter than a full 44
+   so the phone reads like an app, not a stack of blocks (Tess, 2026-08-11:
+   "mobile controls and buttons and links seem like they should be smaller /
+   redesigned to be more app like"). --- */
 @media(pointer:coarse){
-  .btn,.btn.sm,.input,.select,.sel-trigger,.tab,.lib-tab{min-height:44px}
+  .btn,.btn.sm,.input,.select,.sel-trigger,.tab,.lib-tab{min-height:40px}
   .tab,.lib-tab{display:inline-flex;align-items:center}
 }
 
@@ -611,6 +614,9 @@ body.tiles-lg{--tw:240px;--th:320px}
 
 /* Notes drawer (right side, expand/collapse) */
 .notes-tab{position:fixed;top:50%;transform:translateY(-50%);right:0;z-index:29;writing-mode:vertical-rl;background:var(--accent);color:var(--btnfg);border:none;padding:18px 10px;font-size:var(--t-sm);font-weight:var(--w-title);text-transform:none;letter-spacing:.02em;cursor:pointer;box-shadow:-4px 0 18px rgba(0,0,0,.5);border-radius:6px 0 0 6px}
+/* When the nav drawer is open it owns the screen — the Notes tab hides rather
+   than poking through on top of it (Tess, 2026-08-11). */
+body.nav-open .notes-tab{display:none}
 .notes-tab:hover{color:var(--btnfg);padding-right:16px}
 .notes-drawer{position:fixed;top:64px;right:0;height:calc(100vh - 64px);width:340px;background:var(--panel);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .18s ease;z-index:30;display:flex;flex-direction:column}
 .notes-drawer.open{transform:translateX(0);box-shadow:-12px 0 34px rgba(0,0,0,.45)}

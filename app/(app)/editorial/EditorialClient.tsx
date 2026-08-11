@@ -110,7 +110,7 @@ export default function EditorialClient({
         <h1 className="page-title display">Campaign</h1>
         <div className="spacer" />
         <Select
-          className="select lib-sort"
+          className="select sm lib-sort"
           aria-label="Sort"
           value={sort}
           onChange={setSort}
