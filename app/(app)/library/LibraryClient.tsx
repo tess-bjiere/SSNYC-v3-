@@ -176,7 +176,7 @@ export default function LibraryClient({
         <h1 className="page-title display">References</h1>
         <div className="spacer" />
         <Select
-          className="select lib-sort"
+          className="select sm lib-sort"
           aria-label="Sort"
           value={sort}
           onChange={setSort}
