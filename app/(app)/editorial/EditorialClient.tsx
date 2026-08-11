@@ -6,6 +6,7 @@ import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
 import UploadModal from "../library/UploadModal";
 import DetailModal from "../library/DetailModal";
+import SizeToggle from "@/app/components/SizeToggle";
 
 // Editorial images are credited, not specced: who shot it, who is in it, where.
 // The filters follow the original tool — designer, year, model — and the search
@@ -15,23 +16,6 @@ const FACETS: { key: keyof Reference; label: string }[] = [
   { key: "year", label: "Year" },
   { key: "model", label: "Model" },
 ];
-
-const SIZE_MIN: Record<string, number> = { sm: 150, md: 190, lg: 250 };
-
-function GridIcon({ n }: { n: number }) {
-  const gap = 1.4;
-  const total = 14;
-  const s = (total - (n - 1) * gap) / n;
-  const cells = [];
-  for (let y = 0; y < n; y++)
-    for (let x = 0; x < n; x++)
-      cells.push(<rect key={`${x}-${y}`} x={x * (s + gap)} y={y * (s + gap)} width={s} height={s} rx={0.5} fill="currentColor" />);
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-      {cells}
-    </svg>
-  );
-}
 
 export default function EditorialClient({
   refs,
@@ -46,6 +30,9 @@ export default function EditorialClient({
   const [sel, setSel] = useState<Record<string, string>>({});
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
+  // Same phone organisation as the References library (Tess, 2026-08-11):
+  // filters fold behind one button so the default is search + grid.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [detail, setDetail] = useState<Reference | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -118,7 +105,7 @@ export default function EditorialClient({
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
   return (
-    <div className="page">
+    <div className="page lib-page">
       <div className="page-head">
         <h1 className="page-title display">Campaign</h1>
         <div className="spacer" />
@@ -134,43 +121,53 @@ export default function EditorialClient({
             { value: "model", label: "Model" },
           ]}
         />
-        <div className="dens" title="Image size">
-          {([["sm", 4, "Smaller"], ["md", 3, "Medium"], ["lg", 2, "Larger"]] as const).map(([k, n, label]) => (
-            <button key={k} className={"dens-btn" + (size === k ? " active" : "")} onClick={() => setSize(k)} title={label}>
-              <GridIcon n={n} />
-            </button>
-          ))}
+        <div className="lib-head-tools">
+          <SizeToggle value={size} onChange={setSize} />
+          <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
         </div>
-        <button className="btn sm" onClick={() => setUploading(true)}>+ Add</button>
       </div>
 
+      {/* Prominent, full-width upload — phone/tablet only, like the library. */}
+      <button className="btn lib-add-mobile" onClick={() => setUploading(true)}>
+        + Add campaign image
+      </button>
+
       <div className="lib-bar">
-        <div className="lib-filters" style={{ margin: 0 }}>
-          {FACETS.map((f) => (
-            <Select
-              key={f.key}
-              className="select"
-              aria-label={f.label}
-              value={sel[f.key] || ""}
-              onChange={(v) => setSel((s) => ({ ...s, [f.key]: v }))}
-              options={[
-                { value: "", label: f.label },
-                ...(options[f.key] ?? []).map((v) => ({ value: v, label: v })),
-              ]}
-            />
-          ))}
-          {activeFilters > 0 && (
-            <button className="btn link" onClick={() => { setSel({}); setQ(""); }}>
-              Clear ({activeFilters})
-            </button>
-          )}
-        </div>
         <input
           className="input lib-search"
           placeholder="Search campaign by designer, photographer, model, location, year…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+      </div>
+
+      <button
+        className={"btn ghost sm lib-filter-toggle" + (filtersOpen ? " on" : "")}
+        aria-expanded={filtersOpen}
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        Filter{activeFilters > 0 ? ` (${activeFilters})` : ""}
+      </button>
+
+      <div className={"lib-filters" + (filtersOpen ? " open" : "")}>
+        {FACETS.map((f) => (
+          <Select
+            key={f.key}
+            className="select"
+            aria-label={f.label}
+            value={sel[f.key] || ""}
+            onChange={(v) => setSel((s) => ({ ...s, [f.key]: v }))}
+            options={[
+              { value: "", label: f.label },
+              ...(options[f.key] ?? []).map((v) => ({ value: v, label: v })),
+            ]}
+          />
+        ))}
+        {activeFilters > 0 && (
+          <button className="btn link" onClick={() => { setSel({}); setQ(""); }}>
+            Clear ({activeFilters})
+          </button>
+        )}
       </div>
 
       {list.length === 0 ? (
@@ -180,7 +177,7 @@ export default function EditorialClient({
             : "No campaign images match those filters."}
         </div>
       ) : (
-        <div className="grid" style={{ gridTemplateColumns: `repeat(auto-fill,minmax(${SIZE_MIN[size]}px,1fr))` }}>
+        <div className={"grid dens-" + size}>
           {list.map((r) => {
             const src = refThumb(r);
             const sub = [r.year && r.year !== "Unknown" ? r.year : null, r.photographer, r.model]
