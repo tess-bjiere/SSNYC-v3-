@@ -408,7 +408,9 @@ body.notes-open .wrap{padding-right:378px}
 /* Style cards */
 /* xs — the step for a mark you cannot press. */
 .badge{display:inline-block;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.13em;padding:var(--ctl-y-xs) var(--ctl-x-xs);border:1px solid var(--line);color:var(--faint)}
-.badge.dev{color:#e9c46a;border-color:#e9c46a}
+/* Sampling status: white line + text, not gold (Tess, 2026-08-11: "'sampling'
+   box under title should have white line and text instead of yellow"). */
+.badge.dev{color:var(--ink);border-color:var(--ink)}
 .badge.prod{color:#8fbf9f;border-color:#8fbf9f}
 .badge.inspo{color:var(--muted)}
 .badge.archived{opacity:.6}
