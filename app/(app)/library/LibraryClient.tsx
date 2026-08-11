@@ -188,13 +188,13 @@ export default function LibraryClient({
           ]}
         />
         {/* The small tools ride together as one unit so the phone reorder (which
-            flattens the head) can keep them on a single row near the grid. */}
+            flattens the head) can keep them on a single row near the grid. Lists
+            and Trash used to live here; they moved to the footer (Tess,
+            2026-08-11: "lists and trash can be moved to footer") — they are
+            occasional housekeeping, not part of choosing what you are looking
+            at. */}
         <div className="lib-head-tools">
           <SizeToggle value={size} onChange={setSize} />
-          {/* Edit the vocabulary every dropdown on this page draws from. */}
-          <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
-          {/* Deleted references live on in the Trash until someone empties it. */}
-          <Link href="/trash" className="lib-trash-link">Trash</Link>
           {/* The desktop add sits in the head; on a phone it folds into the big
               button below, which is the first thing you can reach. */}
           <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
@@ -268,8 +268,10 @@ export default function LibraryClient({
                 >
                   +
                 </button>
-                {extra > 0 && <span className="card-extra">+{extra}</span>}
-                <div className="imgwrap">{src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}</div>
+                <div className="imgwrap">
+                  {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
+                  {extra > 0 && <span className="card-extra">+{extra}</span>}
+                </div>
                 <div className="meta">
                   <div className="d">{r.designer || "Untitled"}</div>
                   {sub && <div className="s">{sub}</div>}
@@ -279,6 +281,15 @@ export default function LibraryClient({
           })}
         </div>
       )}
+
+      {/* Occasional housekeeping, out of the way at the foot of the library
+          (Tess, 2026-08-11: "lists and trash can be moved to footer"). Lists
+          edits the vocabulary the dropdowns draw from; Trash holds deleted
+          references until someone empties it. */}
+      <div className="lib-footer">
+        <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
+        <Link href="/trash" className="lib-trash-link">Trash</Link>
+      </div>
 
       {/* Board picker — pick a board, then a section within it if it has any */}
       {picker && (

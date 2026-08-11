@@ -398,7 +398,7 @@ body.notes-open .wrap{padding-right:378px}
 .grid.dens-sm{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .grid.dens-lg{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .card{background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;display:block}
-.card .imgwrap{aspect-ratio:3/4;background:#111;overflow:hidden}
+.card .imgwrap{position:relative;aspect-ratio:3/4;background:#111;overflow:hidden}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
 .card .meta{padding:10px 12px 12px}
 .card .d{font-size:var(--t-title);font-weight:var(--w-title);letter-spacing:0;line-height:1.25}
@@ -419,7 +419,10 @@ body.notes-open .wrap{padding-right:378px}
 .card .pin{position:absolute;top:8px;right:8px;z-index:2;width:26px;height:26px;border:1px solid var(--line);background:rgba(20,20,20,.9);color:var(--ink);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .12s}
 .card:hover .pin{opacity:1}
 .card .pin:hover{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
-.card-extra{position:absolute;bottom:52px;right:8px;z-index:2;background:rgba(20,20,20,.85);color:var(--ink);font-size:var(--t-cap);letter-spacing:.06em;padding:2px 6px;border:1px solid var(--line)}
+/* Inside the image box now (Tess, 2026-08-11: "move the box in lower right up so
+   it's not hanging off the bottom of the image — should have same spacing on
+   bottom as it does on right"), so bottom and right are the same 8px inset. */
+.card-extra{position:absolute;bottom:8px;right:8px;z-index:2;background:rgba(20,20,20,.85);color:var(--ink);font-size:var(--t-cap);letter-spacing:.06em;padding:2px 6px;border:1px solid var(--line)}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .modal{background:var(--panel);border:1px solid var(--line);max-height:88vh;overflow:auto;box-shadow:var(--shadow)}
@@ -780,8 +783,8 @@ body.tiles-lg{--tw:240px;--th:320px}
 .trash-card .imgwrap{cursor:pointer;opacity:.72;transition:opacity .12s}
 .trash-card:hover .imgwrap{opacity:1}
 .trash-card.working{opacity:.45;pointer-events:none}
-/* .card-extra is offset from the bottom to sit just above a library card's meta
-   block; a trash card carries an extra row of buttons, so pin it to the top. */
+/* A trash card carries an extra row of buttons under the image, so its badge
+   pins to the top of the image rather than the bottom. */
 .trash-card .card-extra{top:8px;bottom:auto}
 .trash-when{color:var(--muted);opacity:.8}
 .trash-boards{color:#e9c46a}
@@ -2812,9 +2815,15 @@ textarea.input,textarea.select,.textarea{height:auto}
   .mb-tile img{height:auto;aspect-ratio:4/5}
 }
 
-/* Desktop: the small head tools (size toggle, Lists, Trash, the head add) ride
-   as one inline cluster. */
+/* Desktop: the small head tools (size toggle, the head add) ride as one inline
+   cluster. */
 .lib-head-tools{display:flex;align-items:center;gap:var(--sp-ctl)}
+
+/* The library footer — Lists and Trash, occasional housekeeping set apart from
+   the grid by a hairline (Tess, 2026-08-11: "lists and trash can be moved to
+   footer"). */
+.lib-footer{display:flex;justify-content:center;gap:var(--sp-ctl);
+  margin-top:48px;padding-top:22px;border-top:1px solid var(--line)}
 
 /* ============================================================================
    REFERENCES LIBRARY — phone/tablet order (Tess, 2026-08-11: "move add reference
@@ -2841,6 +2850,7 @@ textarea.input,textarea.select,.textarea{height:auto}
   .lib-page .page-head > .sel .sel-trigger{width:100%}
   .lib-page .lib-head-tools{order:8;align-self:flex-start}
   .lib-page .grid,.lib-page .empty{order:9}
+  .lib-page .lib-footer{order:10}
 }
 
 /* ============================================================================
@@ -2862,3 +2872,16 @@ textarea.input,textarea.select,.textarea{height:auto}
   .lib-filters{display:none;margin-bottom:20px}
   .lib-filters.open{display:flex}
 }
+
+/* ============================================================================
+   Ideation controls match the product section (Tess, 2026-08-11: "field and
+   button heights in the ideation section should match back to field and button
+   heights in the product section"). The development bar is the compact 28px
+   size; the References library was 34px, so its head/bar controls come down to
+   28 here. Appended last so it wins over the 34px control-height defaults. On a
+   coarse pointer both sections are 44px already, so this is a desktop match.
+   ============================================================================ */
+.lib-search,.lib-sort,.lib-filters .select,.lib-filters .sel-trigger,
+.lib-tab,.lib-add-desk,.lib-filter-toggle{height:28px}
+.lib-sort,.lib-filters .select{padding-right:var(--ctl-chev-sm);
+  background-position:right var(--ctl-x-sm) center}

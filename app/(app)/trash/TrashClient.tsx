@@ -176,9 +176,9 @@ export default function TrashClient({
                 key={r.id}
                 onMouseLeave={() => setArmed((a) => (a === r.id ? null : a))}
               >
-                {extra > 0 && <span className="card-extra">+{extra}</span>}
                 <div className="imgwrap" onClick={() => setDetail(r)}>
                   {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
+                  {extra > 0 && <span className="card-extra">+{extra}</span>}
                 </div>
                 <div className="meta">
                   <div className="d">{r.designer || "Untitled"}</div>

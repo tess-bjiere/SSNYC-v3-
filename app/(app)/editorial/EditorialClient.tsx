@@ -189,8 +189,10 @@ export default function EditorialClient({
             const extra = extraImageUrls(r).length;
             return (
               <div className="card lib-card" key={r.id} onClick={() => setDetail(r)}>
-                {extra > 0 && <span className="card-extra">+{extra}</span>}
-                <div className="imgwrap">{src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}</div>
+                <div className="imgwrap">
+                  {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
+                  {extra > 0 && <span className="card-extra">+{extra}</span>}
+                </div>
                 <div className="meta">
                   <div className="d">{r.designer || "Untitled"}</div>
                   {sub && <div className="s">{sub}</div>}
