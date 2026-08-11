@@ -111,6 +111,14 @@ export type DevSort = {
   hint: string;
 };
 
+// Tess, 2026-08-11: "These should act more as filter not sort" — "Needs
+// attention" and "Ready for fitting" name a SET of styles you want to see, not
+// an order to see everything in, so they moved out of here into the Status
+// filter on the development bar (DevTabs). It reads the same DevSummary these
+// sorts do (summary.attention, summary.readyForFitting), so the filter and any
+// card badge cannot disagree. The sortStyles cases for them stay for the tests
+// and in case the order is ever wanted again; the dropdown just no longer
+// offers them.
 export const DEV_SORTS: readonly DevSort[] = [
   {
     id: "recent",
@@ -118,26 +126,14 @@ export const DEV_SORTS: readonly DevSort[] = [
     hint: "Last touched first.",
   },
   {
-    id: "attention",
-    label: "Needs attention",
-    hint: "Overdue samples, then arrived-but-unfitted, then nothing logged.",
-  },
-  {
     id: "final",
     label: "Closest to final",
     hint: "Furthest through the sample rounds first.",
   },
-  {
-    id: "fitting",
-    label: "Ready for fitting",
-    hint: "Samples that have landed and have no fit notes yet.",
-  },
-  // Two plain orders (Tess, 2026-08-09: "sort options wrong/short"). The four
-  // above answer a question about where a style is in the cycle; these two
-  // answer "where is it in a list" — the order you want when you already know
-  // the name, or when you are looking at what just got created. They read the
-  // style row directly and need no summary, so a style with no rounds logged
-  // still sorts correctly under them.
+  // Two plain orders (Tess, 2026-08-09: "sort options wrong/short"). "Closest to
+  // final" above answers where a style is in the cycle; these two answer "where
+  // is it in a list" — the order you want when you already know the name, or
+  // when you are looking at what just got created.
   {
     id: "az",
     label: "A–Z",
@@ -420,7 +416,12 @@ export function sortStyles<S extends DevStyleLike>(
   summaries: Map<string, DevSummary>,
   sortId: string
 ): S[] {
-  const id = devSortId(sortId);
+  // sortStyles still understands attention/fitting even though the dropdown no
+  // longer offers them (Tess, 2026-08-11) — devSortId validates URLs against the
+  // dropdown, but the engine handles every id it has logic for, so the ordering
+  // stays valid and tested. Unknown ids still fall back to recent.
+  const KNOWN = ["recent", "attention", "final", "fitting", "az", "newest"];
+  const id = KNOWN.includes(text(sortId)) ? text(sortId) : DEFAULT_DEV_SORT;
 
   const scored = styles.map((style, i) => ({
     style,

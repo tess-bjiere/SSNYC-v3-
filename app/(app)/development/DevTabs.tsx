@@ -137,6 +137,9 @@ export default function DevTabs({
   const [sort, setSort] = useState<string>(DEFAULT_DEV_SORT);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<StyleFilters>(NO_FILTERS);
+  // Status is a filter, not a sort (Tess, 2026-08-11): "" is any; the two values
+  // read the same DevSummary the cards and the old sorts read.
+  const [status, setStatus] = useState("");
   // Multi-select for the fitting deck (Tess, 2026-08-10: "select multiple
   // products to include into a recent beautiful fitting deck"). Off by default,
   // so the grid stays a grid of links; turning it on makes a card a checkbox
@@ -172,7 +175,17 @@ export default function DevTabs({
   // Search and filters apply to every style before the tab does, so the tab
   // counts below report matches rather than totals — otherwise a tab would
   // promise eleven styles and then show two.
-  const matching = useMemo(() => findStyles(rows, query, filters), [rows, query, filters]);
+  const matching = useMemo(() => {
+    const base = findStyles(rows, query, filters);
+    if (!status) return base;
+    // Status reads the summary, which findStyles cannot see, so it is applied
+    // here — before the tab counts, so a status filter narrows them too.
+    return base.filter((s) => {
+      const sum = summaries[s.id];
+      if (!sum) return false;
+      return status === "attention" ? sum.attention > 0 : sum.readyForFitting;
+    });
+  }, [rows, query, filters, status, summaries]);
 
   const counts = Object.fromEntries(
     TABS.map((t) => [t.key, matching.filter((s) => inTab(s, t.key)).length])
@@ -198,7 +211,7 @@ export default function DevTabs({
   const shown = sortStyles(matching.filter((s) => inTab(s, tab)), map, sort);
   const sortHint = DEV_SORTS.find((s) => s.id === sort)?.hint ?? "";
 
-  const narrowed = anyFilter(filters, query);
+  const narrowed = anyFilter(filters, query) || Boolean(status);
   const inThisTab = rows.filter((s) => inTab(s, tab)).length;
   // Matches sitting in the other tabs — the answer to "it is not here, is it
   // anywhere?", which is the question a search is usually really asking.
@@ -211,6 +224,7 @@ export default function DevTabs({
   function clearAll() {
     setQuery("");
     setFilters(NO_FILTERS);
+    setStatus("");
   }
 
   function facetSelect(
@@ -296,6 +310,21 @@ export default function DevTabs({
             options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
           />
 
+          {/* Status filters to a SET rather than reordering everything (Tess,
+              2026-08-11: "these should act more as filter not sort"). It reads
+              the same DevSummary the cards do, so the two cannot disagree. */}
+          <Select
+            className={"select sm" + (status ? " on" : "")}
+            aria-label="Status"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: "", label: "Status: any" },
+              { value: "attention", label: "Needs attention" },
+              { value: "fitting", label: "Ready for fitting" },
+            ]}
+          />
+
           {/* Season leads and always lists (min 1). Designer is deliberately
               not here — Tess, 2026-08-09: "list season instead of designer". The
               field still exists in the filter engine, it just has no control on
@@ -314,14 +343,16 @@ export default function DevTabs({
             </button>
           )}
 
-          {/* Turn the grid into a picker to build a fitting deck. Off shows
-              "Select"; on shows "Done" beside the count in the floating bar. */}
+          {/* Turn the grid into a picker to build a fitting deck. The label
+              says what it is for (Tess, 2026-08-11: "Select should be changed to
+              something like 'select styles for fitting deck'"); on shows "Done"
+              beside the count in the floating bar. */}
           <button
             type="button"
             className={"btn link" + (picking ? " on" : "")}
             onClick={() => (picking ? stopPicking() : setPicking(true))}
           >
-            {picking ? "Done" : "Select"}
+            {picking ? "Done" : "Select for fitting deck"}
           </button>
 
           {/* Both numbers, always, so nothing is hidden quietly. */}

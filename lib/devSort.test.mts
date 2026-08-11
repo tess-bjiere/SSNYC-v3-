@@ -40,11 +40,12 @@ const sum = (st: DevStyleLike, rows: DevSampleLike[]) => summarize(st, rows, ORD
 // The sort list itself
 // ---------------------------------------------------------------------------
 
-test("the sorts are the four workflow questions plus two plain orders, each with an id, a label and a hint", () => {
-  // Four orders about where a style is in the cycle, then az/newest about where
-  // it is in a list (Tess, 2026-08-09: "sort options wrong/short").
-  assert.equal(DEV_SORTS.length, 6);
-  assert.deepEqual(DEV_SORT_IDS, ["recent", "attention", "final", "fitting", "az", "newest"]);
+test("the dropdown offers one cycle order plus two plain orders — attention and fitting are filters now, not sorts", () => {
+  // Tess, 2026-08-11: "these should act more as filter not sort" — "Needs
+  // attention" and "Ready for fitting" moved to the Status filter, so the
+  // dropdown is recent/final plus az/newest.
+  assert.equal(DEV_SORTS.length, 4);
+  assert.deepEqual(DEV_SORT_IDS, ["recent", "final", "az", "newest"]);
   for (const s of DEV_SORTS) {
     assert.ok(s.label.length > 0);
     assert.ok(s.hint.length > 0);
@@ -52,13 +53,17 @@ test("the sorts are the four workflow questions plus two plain orders, each with
   assert.equal(DEFAULT_DEV_SORT, "recent");
 });
 
-test("a sort id from a url is either real or the default — never a throw", () => {
-  assert.equal(devSortId("attention"), "attention");
-  assert.equal(devSortId("  final  "), "final");
+test("a sort id from a url is either a real dropdown sort or the default — never a throw", () => {
+  assert.equal(devSortId("final"), "final");
+  assert.equal(devSortId("  newest  "), "newest");
   assert.equal(devSortId("drop table"), DEFAULT_DEV_SORT);
   assert.equal(devSortId(null), DEFAULT_DEV_SORT);
   assert.equal(devSortId(undefined), DEFAULT_DEV_SORT);
-  assert.equal(devSortLabel("fitting"), "Ready for fitting");
+  // attention/fitting are no longer dropdown sorts, so a stale URL asking for
+  // one lands on the default rather than a missing option.
+  assert.equal(devSortId("attention"), DEFAULT_DEV_SORT);
+  assert.equal(devSortLabel("az"), "A–Z");
+  assert.equal(devSortLabel("fitting"), "Recent updates");
   assert.equal(devSortLabel("nonsense"), "Recent updates");
 });
 

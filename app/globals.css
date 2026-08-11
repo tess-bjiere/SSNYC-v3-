@@ -323,6 +323,7 @@ body.notes-open .wrap{padding-right:378px}
 .nav-drawer-link:hover{color:var(--muted)}
 .nav-drawer-link.active{color:var(--ink)}
 .nav-drawer-link.who-line{text-transform:none;letter-spacing:0;font-size:var(--t-sm)}
+.nav-drawer-who{font-size:var(--t-sm);color:var(--faint)}
 .nav-drawer-foot{margin-top:auto;display:flex;flex-direction:column;align-items:flex-start;
   gap:8px;border-top:1px solid var(--hair);padding-top:14px}
 @media(max-width:1199px){

@@ -256,13 +256,18 @@ export default function Nav({
                   Setup
                 </Link>
               )}
+              {/* The settings were only reachable by knowing to tap your own
+                  email; now they carry their own label (Tess, 2026-08-11:
+                  "surface the existing settings"). The email stays below as
+                  identity. */}
               <Link
                 href="/notifications"
-                className={"nav-drawer-link who-line" + (isActive("/notifications") ? " active" : "")}
+                className={"nav-drawer-link" + (isActive("/notifications") ? " active" : "")}
                 onClick={() => setMenuOpen(false)}
               >
-                {email}
+                Notification settings
               </Link>
+              <div className="nav-drawer-who">{email}</div>
               <form action="/auth/signout" method="post">
                 <button className="btn ghost" type="submit">
                   Sign out
