@@ -133,10 +133,11 @@ export default async function FittingDeckPage({
       ) : (
         <article id="fitting-deck" className="deck">
           <section className="deck-slide deck-cover">
-            {/* The brand mark at the masthead (Tess, 2026-08-10: "include sous
-                sous logo"). A text wordmark for now — a single logo asset can
-                replace it when one is dropped into the project. */}
-            <p className="deck-cover-brand">SOUS SOUS</p>
+            {/* The SOUS SOUS wordmark at the masthead (Tess, 2026-08-10:
+                "here's the logo to use"). Her black wordmark, trimmed of its
+                whitespace; it reads on the white cover. See public/. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="deck-cover-logo" src="/sous-sous-logo.png" alt="SOUS SOUS" />
             <div className="deck-cover-head">
               {(deck.season || deck.brand) && (
                 <p className="deck-cover-kicker">
