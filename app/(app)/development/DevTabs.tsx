@@ -1,6 +1,7 @@
 "use client";
 
 import Select from "@/app/components/Select";
+import SizeToggle from "@/app/components/SizeToggle";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -140,6 +141,10 @@ export default function DevTabs({
   // Status is a filter, not a sort (Tess, 2026-08-11): "" is any; the two values
   // read the same DevSummary the cards and the old sorts read.
   const [status, setStatus] = useState("");
+  // Thumbnail size / column count, the same control the other grids use (Tess,
+  // 2026-08-11: "development view on mobile should allow you to toggle between
+  // multi column views for the style thumbnails"). 4 / 2 / 1 columns on a phone.
+  const [size, setSize] = useState("md");
   // Multi-select for the fitting deck (Tess, 2026-08-10: "select multiple
   // products to include into a recent beautiful fitting deck"). Off by default,
   // so the grid stays a grid of links; turning it on makes a card a checkbox
@@ -325,6 +330,8 @@ export default function DevTabs({
             ]}
           />
 
+          <SizeToggle value={size} onChange={setSize} />
+
           {/* Season leads and always lists (min 1). Designer is deliberately
               not here — Tess, 2026-08-09: "list season instead of designer". The
               field still exists in the filter engine, it just has no control on
@@ -411,7 +418,7 @@ export default function DevTabs({
           )}
         </div>
       ) : (
-        <div className="grid">
+        <div className={"grid dens-" + size}>
           {shown.map((s) => {
             const sum = summaries[s.id] ?? null;
             const roundLabel = sum?.roundLabel ?? "";

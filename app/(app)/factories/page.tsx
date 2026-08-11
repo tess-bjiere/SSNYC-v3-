@@ -43,7 +43,7 @@ export default async function FactoriesPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title display">Factories</h1>
+        <h1 className="page-title display">Styles by Factory</h1>
       </div>
       <Factories groups={groups} today={studioToday()} />
     </div>
