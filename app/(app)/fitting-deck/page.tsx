@@ -133,6 +133,10 @@ export default async function FittingDeckPage({
       ) : (
         <article id="fitting-deck" className="deck">
           <section className="deck-slide deck-cover">
+            {/* The brand mark at the masthead (Tess, 2026-08-10: "include sous
+                sous logo"). A text wordmark for now — a single logo asset can
+                replace it when one is dropped into the project. */}
+            <p className="deck-cover-brand">SOUS SOUS</p>
             <div className="deck-cover-head">
               {(deck.season || deck.brand) && (
                 <p className="deck-cover-kicker">
@@ -184,7 +188,10 @@ export default async function FittingDeckPage({
                           </span>
                           <figcaption>
                             <strong>{im.label}</strong>
-                            {im.note && <span> — {im.note}</span>}
+                            {/* The mark-up note drops onto its own line below the
+                                shot's title (Tess, 2026-08-10), so the title stays
+                                scannable and the fit note reads as the note it is. */}
+                            {im.note && <span className="deck-shot-note">{im.note}</span>}
                           </figcaption>
                         </figure>
                       ))}
