@@ -2,11 +2,13 @@
 // to google doc where people can leave notes for feedback / functionality
 // changes / simplifications"). One muted line, out of the way.
 //
-// The doc URL is read from NEXT_PUBLIC_FEEDBACK_URL so it can be set (or changed)
-// in Vercel without a deploy; until it is set, the line still shows but the link
-// is inert rather than pointing somewhere wrong.
+// Tess's feedback doc (2026-08-11). NEXT_PUBLIC_FEEDBACK_URL still overrides it,
+// so the link can be repointed in Vercel without a deploy.
+const FEEDBACK_DOC =
+  "https://docs.google.com/document/d/1VWdxG98xel5kJa0YqPj4ff3R9R9nLNvgeeWlTJ6KG-c/edit?usp=sharing";
+
 export default function AppFooter() {
-  const url = process.env.NEXT_PUBLIC_FEEDBACK_URL || "";
+  const url = process.env.NEXT_PUBLIC_FEEDBACK_URL || FEEDBACK_DOC;
   return (
     <footer className="app-footer">
       <a
