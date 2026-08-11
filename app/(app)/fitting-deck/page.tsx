@@ -160,46 +160,49 @@ export default async function FittingDeckPage({
 
           {deck.slides.map((slide, i) => (
             <section className="deck-slide" key={i}>
-              <header className="deck-slide-head">
-                <h2>{slide.name}</h2>
-                {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
-              </header>
+              {/* Top group — the title and the shots — so space-between drops the
+                  notes to the foot of the page (Tess, 2026-08-10). */}
+              <div className="deck-slide-top">
+                <header className="deck-slide-head">
+                  <h2>{slide.name}</h2>
+                  {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
+                </header>
+
+                {!slide.empty && slide.images.length > 0 && (
+                  <div className="deck-shots">
+                    {slide.images.map((im) => (
+                      <figure key={im.url}>
+                        <span className="paper-shot-frame">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={im.url} alt={im.label} />
+                          {im.pins.map((pin, pi) => (
+                            <span
+                              className="paper-pin"
+                              key={pi}
+                              style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
+                              aria-hidden="true"
+                            >
+                              {pi + 1}
+                            </span>
+                          ))}
+                        </span>
+                        <figcaption>
+                          <strong>{im.label}</strong>
+                          {/* The mark-up note drops onto its own line below the
+                              shot's title (Tess, 2026-08-10), so the title stays
+                              scannable and the fit note reads as the note it is. */}
+                          {im.note && <span className="deck-shot-note">{im.note}</span>}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {slide.empty ? (
                 <p className="deck-empty">No fitting recorded for this style yet.</p>
               ) : (
-                <>
-                  {slide.images.length > 0 && (
-                    <div className="deck-shots">
-                      {slide.images.map((im) => (
-                        <figure key={im.url}>
-                          <span className="paper-shot-frame">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={im.url} alt={im.label} />
-                            {im.pins.map((pin, pi) => (
-                              <span
-                                className="paper-pin"
-                                key={pi}
-                                style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
-                                aria-hidden="true"
-                              >
-                                {pi + 1}
-                              </span>
-                            ))}
-                          </span>
-                          <figcaption>
-                            <strong>{im.label}</strong>
-                            {/* The mark-up note drops onto its own line below the
-                                shot's title (Tess, 2026-08-10), so the title stays
-                                scannable and the fit note reads as the note it is. */}
-                            {im.note && <span className="deck-shot-note">{im.note}</span>}
-                          </figcaption>
-                        </figure>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="deck-detail">
+                <div className="deck-detail">
                     {slide.fitNotes && (
                       <div className="deck-note">
                         <h3>Fit notes</h3>
@@ -218,8 +221,7 @@ export default async function FittingDeckPage({
                         <p>{slide.material}</p>
                       </div>
                     )}
-                  </div>
-                </>
+                </div>
               )}
             </section>
           ))}

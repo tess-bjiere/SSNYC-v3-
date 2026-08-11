@@ -1882,7 +1882,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    .paper-shot-frame / .paper-pin so a mark-up lands where it was placed. */
 .deck{background:#fff;color:#111;font-family:"Barlow Semi Condensed",Arial,sans-serif;
   max-width:1120px;margin:0 auto 40px;box-shadow:var(--shadow);scroll-snap-type:y proximity}
-.deck-slide{min-height:86vh;display:flex;flex-direction:column;justify-content:center;
+/* space-between so a style slide's notes sit at the foot of the page, under the
+   shots at the top (Tess, 2026-08-10: "fit notes, factory comments and material
+   should sit at bottom"). The cover uses the same to spread wordmark, title and
+   contents top-to-bottom. */
+.deck-slide{min-height:86vh;display:flex;flex-direction:column;justify-content:space-between;
   padding:48px 60px;scroll-snap-align:start}
 .deck-slide + .deck-slide{border-top:1px solid #eee}
 
@@ -1890,7 +1894,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    title, then a numbered contents list of the products (Tess, 2026-08-10: "a
    cover with the season/brand and products included"). */
 .deck-cover{justify-content:space-between}
-.deck-cover-logo{height:34px;width:auto;display:block}
+/* align-self so the flex column does not stretch the wordmark to full width and
+   squash it — it keeps its own aspect at 34px tall (Tess, 2026-08-10). */
+.deck-cover-logo{height:34px;width:auto;display:block;align-self:flex-start}
 .deck-cover-kicker{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.22em;color:#888;margin:0 0 16px}
 .deck-cover h1{font-size:52px;font-weight:500;letter-spacing:.01em;line-height:1.02;margin:0 0 8px}
 .deck .deck-sub{color:#666;font-size:var(--t-body);margin:0}
