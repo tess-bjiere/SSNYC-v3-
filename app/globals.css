@@ -2961,3 +2961,13 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .mb-archive-foot{margin-top:44px;padding-top:20px;border-top:1px solid var(--hair);text-align:center}
 .mb-archive-foot .btn.link{color:var(--faint)}
 .mb-archive-foot .btn.link:hover{color:var(--muted)}
+
+/* Notes drawer on a phone (Tess, 2026-08-11: "notes tap should show up on top of
+   mobile menu in moodboard tab"). The vertical side-tab sat mid-screen and read
+   awkwardly; it becomes a clear pill at the top of the board, on top of the
+   content, and its panel opens full screen over everything. */
+@media(max-width:900px){
+  .notes-tab{top:74px;bottom:auto;right:14px;transform:none;writing-mode:horizontal-tb;
+    padding:8px 15px;border-radius:999px;z-index:29}
+  .notes-drawer{top:0;height:100vh;height:100dvh;width:100%;z-index:45}
+}

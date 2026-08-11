@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isEmailAllowed } from "@/lib/access";
+import { getSessionUser, isEmailAllowed } from "@/lib/access";
 
 // OAuth redirect target: exchanges the code for a session, then enforces the allowlist.
 export async function GET(request: Request) {
@@ -16,7 +16,11 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (await isEmailAllowed(user?.email)) {
-        return NextResponse.redirect(`${origin}/development`);
+        // A talent opens on References, their home; team opens on Development
+        // (Tess, 2026-08-11).
+        const me = await getSessionUser();
+        const home = me?.role === "talent" ? "/library" : "/development";
+        return NextResponse.redirect(`${origin}${home}`);
       }
       // Signed in with Google but not on the allowlist — sign back out.
       await supabase.auth.signOut();
