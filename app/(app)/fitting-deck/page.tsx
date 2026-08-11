@@ -217,7 +217,7 @@ export default async function FittingDeckPage({
                     )}
                     {slide.material && (
                       <div className="deck-note">
-                        <h3>Raw material</h3>
+                        <h3>Material</h3>
                         <p>{slide.material}</p>
                       </div>
                     )}
