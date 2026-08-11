@@ -287,6 +287,58 @@ body.notes-open .wrap{padding-right:378px}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
 .who{font-size:var(--t-cap);color:var(--faint);text-transform:uppercase;letter-spacing:.12em;line-height:1;padding-top:.21em}
 
+/* ============================================================================
+   RESPONSIVE (Tess, 2026-08-11: "plan out how to adjust design to be usable and
+   clean across mobile and tablet"). The app is desktop-first; everything here is
+   a mobile-last override, so the tuned desktop layout is never touched above the
+   breakpoints. Two content breakpoints — 900px (tablet) and 600px (phone) — and
+   the build target is the 360px floor. The nav is the one exception: it flips to
+   a drawer at 1200px, because the full bar's six links plus the switcher, Setup,
+   the email and Sign out cannot fit narrower than that without clipping.
+   ============================================================================ */
+
+/* --- Nav: hamburger + slide-in drawer (shown below 1200px) --- */
+.nav-burger{display:none;margin-left:auto;flex-direction:column;justify-content:center;
+  gap:4px;width:44px;height:44px;padding:11px;background:none;border:none;cursor:pointer}
+.nav-burger span{display:block;width:100%;height:1.5px;background:var(--ink)}
+.nav-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
+.nav-drawer{position:fixed;top:0;right:0;bottom:0;width:min(320px,84vw);z-index:41;
+  background:var(--bg);border-left:1px solid var(--line);padding:16px 22px 24px;
+  overflow-y:auto;display:flex;flex-direction:column;gap:22px}
+.nav-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.nav-drawer-close{width:44px;height:44px;margin-right:-11px;background:none;border:none;
+  color:var(--muted);font-size:24px;line-height:1;cursor:pointer}
+.nav-drawer-close:hover{color:var(--ink)}
+.nav-drawer-brand .brand-switcher{min-width:0;width:100%}
+.nav-drawer-group{display:flex;flex-direction:column}
+.nav-drawer-label{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
+  letter-spacing:.1em;color:var(--pill);margin-bottom:4px}
+.nav-drawer-link{display:flex;align-items:center;min-height:44px;font-size:var(--t-body);
+  text-transform:uppercase;letter-spacing:.1em;color:var(--faint);text-decoration:none}
+.nav-drawer-link:hover{color:var(--muted)}
+.nav-drawer-link.active{color:var(--ink)}
+.nav-drawer-link.who-line{text-transform:none;letter-spacing:0;font-size:var(--t-sm)}
+.nav-drawer-foot{margin-top:auto;display:flex;flex-direction:column;align-items:flex-start;
+  gap:8px;border-top:1px solid var(--hair);padding-top:14px}
+@media(max-width:1199px){
+  .nav-links,.nav-right{display:none}
+  .nav-burger{display:flex}
+}
+
+/* --- Phone: a little more of the narrow screen goes to content --- */
+@media(max-width:600px){
+  .wrap{padding:0 16px}
+}
+
+/* --- Comfortable touch targets on coarse pointers (phones, tablets), without
+   changing the tuned density on a mouse-driven desktop. --- */
+@media(pointer:coarse){
+  .btn{min-height:44px}
+  .btn.sm{min-height:40px}
+  .tab,.lib-tab{display:inline-flex;align-items:center;min-height:44px}
+  .sel-trigger,select.select,input.input{min-height:44px}
+}
+
 /* Buttons */
 /* BUTTONS ARE SENTENCE CASE NOW (Tess, 2026-08-06: "please simplify even
    further to make this as simple and clear and readable as possible … some

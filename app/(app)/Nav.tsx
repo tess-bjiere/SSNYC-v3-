@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BrandSwitcher from "./BrandSwitcher";
@@ -110,6 +110,31 @@ export default function Nav({
   const isTeam = role === "team";
   const groups = isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation");
   const home = isTeam ? "/development" : "/library";
+
+  // Below 1200px the full bar cannot hold six links plus the switcher, Setup,
+  // the email and Sign out without clipping (Tess, 2026-08-11: "plan out how to
+  // adjust design to be usable and clean across mobile and tablet"). So under
+  // that width the whole thing collapses into a hamburger + slide-in drawer, and
+  // the inline bar is CSS-hidden. One mobile pattern for tablet and phone alike.
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // The drawer closes when you arrive somewhere (a tapped link has done its job)
+  // and on Escape, and the page underneath is scroll-locked while it is open so
+  // a swipe moves the drawer's own list rather than the page behind it.
+  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+
   return (
     <nav className="nav">
       <Link href={home} className="brand">
@@ -125,18 +150,15 @@ export default function Nav({
                   itself, read out before the links it labels. */}
               <span className="nav-grouplabel">{g.label}</span>
               <div className="nav-grouplinks">
-                {g.links.map((l) => {
-                  const active = pathname === l.href || pathname.startsWith(l.href + "/");
-                  return (
-                    <Link
-                      key={l.href}
-                      href={l.href}
-                      className={"nav-link" + (active ? " active" : "")}
-                    >
-                      {l.label}
-                    </Link>
-                  );
-                })}
+                {g.links.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={"nav-link" + (isActive(l.href) ? " active" : "")}
+                  >
+                    {l.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </Fragment>
@@ -173,6 +195,80 @@ export default function Nav({
           </button>
         </form>
       </div>
+
+      {/* Hamburger — CSS-shown only below the drawer breakpoint. */}
+      <button
+        type="button"
+        className="nav-burger"
+        aria-label="Menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen(true)}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+
+      {menuOpen && (
+        <>
+          <div className="nav-scrim" onClick={() => setMenuOpen(false)} />
+          <div className="nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation">
+            <div className="nav-drawer-head">
+              <span className="brand">SSYNC</span>
+              <button
+                type="button"
+                className="nav-drawer-close"
+                aria-label="Close menu"
+                onClick={() => setMenuOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+            {/* The switcher first: which brand you are looking at frames
+                everything below it. Talents have no switcher. */}
+            {isTeam && (
+              <div className="nav-drawer-brand">
+                <BrandSwitcher active={brand} />
+              </div>
+            )}
+            {groups.map((g) => (
+              <div className="nav-drawer-group" key={g.label}>
+                <div className="nav-drawer-label">{g.label}</div>
+                {g.links.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={"nav-drawer-link" + (isActive(l.href) ? " active" : "")}
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+            <div className="nav-drawer-foot">
+              {isTeam && (
+                <Link
+                  href="/setup"
+                  className={"nav-drawer-link" + (isActive("/setup") ? " active" : "")}
+                >
+                  Setup
+                </Link>
+              )}
+              <Link
+                href="/notifications"
+                className={"nav-drawer-link who-line" + (isActive("/notifications") ? " active" : "")}
+              >
+                {email}
+              </Link>
+              <form action="/auth/signout" method="post">
+                <button className="btn ghost" type="submit">
+                  Sign out
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
     </nav>
   );
 }
