@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireTeam } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
+import { loadBrands } from "@/lib/brandsServer";
+import { brandName } from "@/lib/brands";
 import {
   SAMPLE_ROUNDS,
   SAMPLE_ROUND_LABELS,
@@ -118,6 +121,14 @@ export default async function FittingDeckPage({
   const generatedOn = studioToday();
   const deck = buildFittingDeck(slideInputs, { generatedOn });
 
+  // The masthead is the active brand's logo now (Tess, 2026-08-11: a brand's
+  // uploaded logo is "used on deck / pdf exports"). SOUS SOUS points at its
+  // existing static wordmark; a brand with no logo yet falls back to its name.
+  const brandSlug = await activeBrand();
+  const brands = await loadBrands();
+  const brandLogo = brands.find((b) => b.slug === brandSlug)?.logo_url || null;
+  const brandLabel = brandName(brandSlug, brands);
+
   return (
     <div className="page">
       <div className="page-head no-print">
@@ -136,11 +147,15 @@ export default async function FittingDeckPage({
       ) : (
         <article id="fitting-deck" className="deck">
           <section className="deck-slide deck-cover">
-            {/* The SOUS SOUS wordmark at the masthead (Tess, 2026-08-10:
-                "here's the logo to use"). Her black wordmark, trimmed of its
-                whitespace; it reads on the white cover. See public/. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="deck-cover-logo" src="/sous-sous-logo.png" alt="SOUS SOUS" />
+            {/* The active brand's logo at the masthead (Tess, 2026-08-11). SOUS
+                SOUS points at its static wordmark; an uploaded logo is a stored
+                URL; a brand with none falls back to its name in type. */}
+            {brandLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="deck-cover-logo" src={brandLogo} alt={brandLabel} />
+            ) : (
+              <div className="deck-cover-wordmark">{brandLabel}</div>
+            )}
             <div className="deck-cover-head">
               {/* The brand is the wordmark above; the kicker carries the season
                   (multi-brand: brand is a slug now, and the masthead already

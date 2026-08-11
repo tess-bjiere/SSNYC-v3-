@@ -1972,7 +1972,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-cover{justify-content:space-between}
 /* align-self so the flex column does not stretch the wordmark to full width and
    squash it — it keeps its own aspect at 34px tall (Tess, 2026-08-10). */
-.deck-cover-logo{height:34px;width:auto;display:block;align-self:flex-start}
+.deck-cover-logo{height:34px;width:auto;max-width:60%;object-fit:contain;display:block;align-self:flex-start}
+/* When a brand has no uploaded logo, its name stands in as the masthead. */
+.deck-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
 
 /* The brand switcher in the nav (multi-brand phase 1) — wide enough that the
    brand name is not clipped to "SOUS S…". */
@@ -1989,6 +1991,14 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .talents-add .select{min-width:180px}
 /* The permanent slug a new brand name will become, shown in the god-mode add form. */
 .brands-slug{color:var(--faint);font-size:var(--t-meta);font-family:var(--mono,inherit);white-space:nowrap}
+/* A brand's logo control in the god-mode Brands admin — thumbnail + upload. */
+.brands-logo{white-space:nowrap}
+.brand-logo-pick{display:inline-flex;align-items:center;gap:10px;cursor:pointer}
+.brand-logo-thumb{height:24px;width:auto;max-width:90px;object-fit:contain;
+  background:var(--field);border:1px solid var(--hair);padding:2px}
+.brand-logo-empty{font-size:var(--t-meta);color:var(--faint)}
+.brand-logo-action{font-size:var(--t-sm);color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.brand-logo-pick:hover .brand-logo-action{color:var(--ink)}
 .deck-cover-kicker{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.22em;color:#888;margin:0 0 16px}
 .deck-cover h1{font-size:52px;font-weight:500;letter-spacing:.01em;line-height:1.02;margin:0 0 8px}
 .deck .deck-sub{color:#666;font-size:var(--t-body);margin:0}

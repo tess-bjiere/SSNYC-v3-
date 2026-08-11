@@ -9,7 +9,7 @@
 // list cannot be read. The slug is the stored key and never changes; the name is
 // what a person reads and can (rename is allowed, the slug is not).
 
-export type Brand = { slug: string; name: string };
+export type Brand = { slug: string; name: string; logo_url?: string | null };
 
 /** The seed brands — every row that existed before this feature belongs to one,
  *  and this is the fallback when the DB list has not been handed in. */

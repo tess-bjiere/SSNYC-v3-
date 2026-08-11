@@ -14,7 +14,7 @@ import { isSuperAdmin, parseSuperAdmins } from "@/lib/superAdmins";
 export const loadBrands = cache(async (): Promise<Brand[]> => {
   try {
     const supabase = await createClient();
-    const { data } = await supabase.from("brands").select("slug,name").order("created_at");
+    const { data } = await supabase.from("brands").select("slug,name,logo_url").order("created_at");
     if (data && data.length) return data as Brand[];
   } catch {
     // fall through to the seed

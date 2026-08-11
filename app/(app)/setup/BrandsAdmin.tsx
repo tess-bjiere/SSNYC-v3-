@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addBrand, renameBrand } from "@/app/actions/brands";
+import { addBrand, renameBrand, setBrandLogo } from "@/app/actions/brands";
 import { toBrandSlug, type Brand } from "@/lib/brands";
 
 // God-mode brand management (Tess, 2026-08-11). Shown only to a super-admin.
@@ -70,6 +70,27 @@ function BrandRow({ brand }: { brand: Brand }) {
         )}
       </td>
       <td className="talents-brand">/{brand.slug}</td>
+      {/* The logo rides onto deck / PDF export covers (Tess, 2026-08-11).
+          Choosing a file uploads it straight away. */}
+      <td className="brands-logo">
+        <form action={setBrandLogo.bind(null, brand.slug)}>
+          <label className="brand-logo-pick">
+            {brand.logo_url ? (
+              <img src={brand.logo_url} alt="" className="brand-logo-thumb" />
+            ) : (
+              <span className="brand-logo-empty">No logo</span>
+            )}
+            <span className="brand-logo-action">{brand.logo_url ? "Replace" : "Upload logo"}</span>
+            <input
+              type="file"
+              name="logo"
+              accept="image/*"
+              hidden
+              onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            />
+          </label>
+        </form>
+      </td>
       <td className="talents-remove">
         {editing ? (
           <>
