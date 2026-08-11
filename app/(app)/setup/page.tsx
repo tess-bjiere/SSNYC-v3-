@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { DEV_BYPASS, DEV_BYPASS_REFUSED, requireTeam } from "@/lib/access";
+import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_READ_ELEVATED } from "@/lib/supabase/public";
 import { anonCanReadPrivateTable } from "@/lib/supabase/probe";
 import { readiness, summarize, type Check } from "@/lib/readiness";
+import TalentsAdmin, { type Member } from "./TalentsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,14 @@ export default async function SetupPage() {
   const summary = summarize(checks);
   const gating = checks.filter((c) => c.blocking);
   const optional = checks.filter((c) => !c.blocking);
+
+  // The people who are not on the org domain — talents and outside guests.
+  const supabase = await createClient();
+  const { data: memberRows } = await supabase
+    .from("app_allowlist")
+    .select("email,role,brand")
+    .order("created_at", { ascending: true });
+  const members = (memberRows ?? []) as Member[];
 
   return (
     <div style={{ paddingTop: 24, paddingBottom: 80 }}>
@@ -76,6 +86,16 @@ export default async function SetupPage() {
         {optional.map((c) => (
           <Row key={c.id} check={c} />
         ))}
+      </div>
+
+      <div className="section">
+        <h3>Team &amp; talents</h3>
+        <p className="muted-line" style={{ marginBottom: 14 }}>
+          Anyone at <strong>@theloyalist.com</strong> is team and sees every brand. Add a brand&rsquo;s
+          talent here to give them the ideation side of their one brand — References, Moodboard and
+          Campaign — and nothing else. They sign in with the same Google login.
+        </p>
+        <TalentsAdmin members={members} />
       </div>
 
       <div className="notice">
