@@ -3,7 +3,7 @@
 import Select from "@/app/components/Select";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createBoard, addDivider, archiveBoard } from "@/app/actions/moodboards";
+import { createBoard, addDivider } from "@/app/actions/moodboards";
 import ExportButton from "./ExportButton";
 import SizeToggle from "@/app/components/SizeToggle";
 
@@ -23,6 +23,11 @@ export default function Toolbar({
   const router = useRouter();
   const [size, setSize] = useState("md");
   const [copied, setCopied] = useState(false);
+  // "+ Board" opens a modal rather than an always-open field (Tess, 2026-08-11:
+  // "+board should pop up a modal for a new board -- we don't need the open field
+  // on the moodboard page at all times"). createBoard redirects to the new board,
+  // so the modal goes away with the navigation.
+  const [newBoardOpen, setNewBoardOpen] = useState(false);
 
   useEffect(() => {
     let s = "md";
@@ -65,10 +70,9 @@ export default function Toolbar({
       />
 
       {!showingArchived && (
-        <form action={createBoard} className="mb-newboard">
-          <input className="input" name="name" placeholder="New board…" />
-          <button className="btn ghost" type="submit">+ Board</button>
-        </form>
+        <button className="btn ghost" type="button" onClick={() => setNewBoardOpen(true)}>
+          + Board
+        </button>
       )}
 
       {!showingArchived && currentId && (
@@ -87,19 +91,33 @@ export default function Toolbar({
 
       {!showingArchived && <ExportButton name={currentName} />}
 
-      {currentId && (
-        <form action={archiveBoard.bind(null, currentId, !showingArchived)}>
-          <button className="btn ghost" type="submit">
-            {showingArchived ? "Unarchive" : "Archive"}
-          </button>
-        </form>
-      )}
-
+      {/* Archive (the action) moved to the foot of the page (Tess, 2026-08-11);
+          this stays the way IN to the archived view. */}
       {showingArchived ? (
         <a className="btn link" href="/moodboard">← Active boards</a>
       ) : archivedCount > 0 ? (
         <a className="btn link" href="/moodboard?archived=1">Archived · {archivedCount}</a>
       ) : null}
+
+      {newBoardOpen && (
+        <div className="modal-overlay" onClick={() => setNewBoardOpen(false)}>
+          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="New board">
+            <div className="modal-head">
+              <span>New board</span>
+              <button className="notes-close" type="button" aria-label="Close" onClick={() => setNewBoardOpen(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <form action={createBoard} className="mb-newboard-form">
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
+                <input className="input" name="name" placeholder="Board name…" autoFocus autoComplete="off" />
+                <button className="btn" type="submit">Create board</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2944,3 +2944,12 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   *,::before,::after{animation-duration:.01ms!important;transition-duration:.01ms!important;
     scroll-behavior:auto!important}
 }
+
+/* New-board modal form + the quiet archive action at the foot of the moodboard
+   (Tess, 2026-08-11: "+board should pop up a modal", "archive button should be on
+   bottom of page / way less prominent"). */
+.mb-newboard-form{display:flex;flex-direction:column;gap:12px}
+.mb-newboard-form .input{width:100%}
+.mb-archive-foot{margin-top:44px;padding-top:20px;border-top:1px solid var(--hair);text-align:center}
+.mb-archive-foot .btn.link{color:var(--faint)}
+.mb-archive-foot .btn.link:hover{color:var(--muted)}

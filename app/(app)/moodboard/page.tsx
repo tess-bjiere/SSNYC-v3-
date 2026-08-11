@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { archiveBoard } from "@/app/actions/moodboards";
 import { getSessionUser, DEV_BYPASS } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { refThumb, type Reference } from "@/lib/types";
@@ -195,6 +196,17 @@ export default async function MoodboardPage({
               .map((s) => ({ tid: s.tid as string, label: s.label || "Untitled section" }))}
           />
           <NotesDrawer boardId={current.id} notes={notes} me={me} canEditAll={DEV_BYPASS} />
+
+          {/* Archiving is a rare, end-of-life act, so it sits quietly at the
+              foot of the page rather than in the toolbar (Tess, 2026-08-11:
+              "archive button should be on bottom of page / way less prominent"). */}
+          <div className="mb-archive-foot">
+            <form action={archiveBoard.bind(null, current.id, !showingArchived)}>
+              <button className="btn link" type="submit">
+                {showingArchived ? "Unarchive this board" : "Archive this board"}
+              </button>
+            </form>
+          </div>
         </>
       )}
     </div>

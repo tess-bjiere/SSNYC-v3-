@@ -32,8 +32,17 @@ export default function NotesDrawer({
   canEditAll: boolean;
   readOnly?: boolean;
 }) {
-  const [open, setOpen] = useState(true);
+  // Starts closed, so a phone lands on the board rather than the notes covering
+  // it (Tess, 2026-08-11: "notes drawer should always be closed when you click
+  // into a page on mobile"). Desktop, where the drawer sits beside the content
+  // rather than over it, opens it on mount. Server + first client render both
+  // render closed, so there is no hydration mismatch.
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 901px)").matches) setOpen(true);
+  }, []);
 
   // Push the page content aside while the drawer is open (instead of covering it).
   useEffect(() => {
