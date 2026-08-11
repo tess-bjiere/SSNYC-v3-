@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isSuperAdmin, parseSuperAdmins } from "./superAdmins.ts";
 
-test("tess is a super-admin by default; nobody else without being named", () => {
+test("tess and lorne are super-admins by default; nobody else without being named", () => {
   assert.equal(isSuperAdmin("tess@theloyalist.com"), true);
+  assert.equal(isSuperAdmin("lorne@theloyalist.com"), true); // Tess, 2026-08-11: "add lorne"
   assert.equal(isSuperAdmin("TESS@THELOYALIST.COM"), true); // case-insensitive
   assert.equal(isSuperAdmin("kara@theloyalist.com"), false); // team is not god mode
   assert.equal(isSuperAdmin(""), false);

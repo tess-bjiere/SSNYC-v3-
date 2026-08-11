@@ -7,7 +7,7 @@
 // space-separated). Pure and dependency-free — the env string is read at the
 // edge and handed in.
 
-const DEFAULT_SUPER_ADMINS = ["tess@theloyalist.com"];
+const DEFAULT_SUPER_ADMINS = ["tess@theloyalist.com", "lorne@theloyalist.com"];
 
 /** Split the SSYNC_SUPER_ADMINS env value into lowercased emails. */
 export function parseSuperAdmins(raw: string | null | undefined): string[] {
