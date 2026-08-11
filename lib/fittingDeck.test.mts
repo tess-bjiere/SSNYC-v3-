@@ -11,6 +11,8 @@ const FULL: DeckSlideInput = {
   styleNo: "SS-100",
   name: "Anorak Jacket",
   garment: "Jacket",
+  season: "SS27",
+  brand: "SOUS SOUS",
   roundLabel: "2nd Proto",
   factory: "All Systems",
   images: [
@@ -56,4 +58,28 @@ test("the deck counts its styles and names the day it was made", () => {
   assert.equal(deck.slides.length, 2);
   // Singular for one.
   assert.equal(buildFittingDeck([FULL], { generatedOn: "2026-08-10" }).subtitle, "1 style · 2026-08-10");
+});
+
+test("the cover carries the season, the brand and the list of products", () => {
+  const deck = buildFittingDeck(
+    [
+      FULL,
+      { styleNo: "SS-101", name: "Cargo Trouser", season: "SS27", brand: "SOUS SOUS", images: [] },
+      { styleNo: "AW-002", name: "Silk Shell", season: "AW27", brand: "SOUS SOUS", images: [] },
+    ],
+    { generatedOn: "2026-08-10" }
+  );
+  // A deck spanning two seasons names both; one brand across all three shows once.
+  assert.equal(deck.season, "SS27 · AW27");
+  assert.equal(deck.brand, "SOUS SOUS");
+  // Every product is on the contents list, in pick order.
+  assert.deepEqual(deck.contents, [
+    { name: "Anorak Jacket", styleNo: "SS-100" },
+    { name: "Cargo Trouser", styleNo: "SS-101" },
+    { name: "Silk Shell", styleNo: "AW-002" },
+  ]);
+  // Nothing to say reads as null rather than an empty line.
+  const bare = buildFittingDeck([{ name: "x", images: [] }], { generatedOn: "2026-08-10" });
+  assert.equal(bare.season, null);
+  assert.equal(bare.brand, null);
 });

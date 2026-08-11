@@ -100,6 +100,8 @@ export default async function FittingDeckPage({
         styleNo: st.style_no,
         name: st.name,
         garment: st.garment,
+        season: st.season,
+        brand: st.brand,
         roundLabel: round ? SAMPLE_ROUND_LABELS[round.round as SampleRound] ?? round.round : null,
         factory: round?.factory ?? st.factory,
         images: modelImages(round),
@@ -130,9 +132,25 @@ export default async function FittingDeckPage({
         </p>
       ) : (
         <article id="fitting-deck" className="deck">
-          <section className="deck-cover">
-            <h1>{deck.title}</h1>
-            <p className="deck-sub">{deck.subtitle}</p>
+          <section className="deck-slide deck-cover">
+            <div className="deck-cover-head">
+              {(deck.season || deck.brand) && (
+                <p className="deck-cover-kicker">
+                  {[deck.brand, deck.season].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              <h1>{deck.title}</h1>
+              <p className="deck-sub">{deck.subtitle}</p>
+            </div>
+            <ol className="deck-contents">
+              {deck.contents.map((c, i) => (
+                <li key={i}>
+                  <span className="deck-contents-no">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="deck-contents-name">{c.name}</span>
+                  {c.styleNo && <span className="deck-contents-sku">{c.styleNo}</span>}
+                </li>
+              ))}
+            </ol>
           </section>
 
           {deck.slides.map((slide, i) => (

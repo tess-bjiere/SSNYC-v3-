@@ -17,6 +17,8 @@ export type DeckSlideInput = {
   styleNo?: string | null;
   name: string;
   garment?: string | null;
+  season?: string | null;
+  brand?: string | null;
   roundLabel?: string | null;
   factory?: string | null;
   images: DeckImage[];
@@ -40,10 +42,19 @@ export type DeckSlide = {
   empty: boolean;
 };
 
+/** One line on the cover's contents list — a product in the deck. */
+export type DeckContentsItem = { name: string; styleNo: string | null };
+
 export type FittingDeck = {
   title: string;
   /** "3 styles · 2026-08-10". */
   subtitle: string;
+  /** The season(s) across the selected styles, joined; null when none say. */
+  season: string | null;
+  /** The brand(s) across the selected styles, joined; null when none say. */
+  brand: string | null;
+  /** The products on the cover, in the order they were picked. */
+  contents: DeckContentsItem[];
   slides: DeckSlide[];
 };
 
@@ -83,15 +94,40 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
   };
 }
 
+/** Distinct non-empty values, in first-seen order. Case-insensitive on the key. */
+function uniq(values: (string | null | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of values) {
+    const s = t(v);
+    if (!s) continue;
+    const key = s.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  return out;
+}
+
 export function buildFittingDeck(
   inputs: DeckSlideInput[],
   opts: { generatedOn: string }
 ): FittingDeck {
   const slides = inputs.map(buildFittingSlide);
   const n = slides.length;
+  // The season and brand are drawn from the styles themselves — usually one of
+  // each across a review, but a deck spanning two seasons says both rather than
+  // picking one (Tess, 2026-08-10: "a cover with the season/brand").
+  const seasons = uniq(inputs.map((i) => i.season));
+  const brands = uniq(inputs.map((i) => i.brand));
   return {
     title: "Fitting review",
     subtitle: `${n} ${n === 1 ? "style" : "styles"} · ${opts.generatedOn}`,
+    season: seasons.length ? seasons.join(" · ") : null,
+    brand: brands.length ? brands.join(" · ") : null,
+    // The products on the cover, in pick order (Tess, 2026-08-10: "products
+    // included"). Every selected style is listed, even one with no fitting yet.
+    contents: inputs.map((i) => ({ name: t(i.name) ?? "Untitled style", styleNo: t(i.styleNo) })),
     slides,
   };
 }
