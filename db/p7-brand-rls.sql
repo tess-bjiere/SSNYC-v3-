@@ -3,27 +3,28 @@
 -- Tess, 2026-08-11: "make this usable for other brands … certain brand specific
 -- talents would only have access to a limited view of their brand."
 --
--- ⚠️  PREPARED, NOT APPLIED. This is the database-level half of the talent gate,
--- and it belongs with the deliberate RLS go-live — the same step as db/p0-rls.sql,
--- which the working notes say "must not be run without Tess saying so, in words,
--- that time." It is NOT run ad-hoc, for two concrete reasons:
+-- ⚠️  PREPARED, NOT YET APPLIED. This is the database half of the talent gate.
+-- It layers ON TOP OF db/p0-rls.sql (applied 2026-08-11), which closed every
+-- policy from {public} to {authenticated}. Run this only when you are about to
+-- onboard the first real OUTSIDE talent — until then it changes nothing, because
+-- everyone currently signed in is @theloyalist.com, which resolves to team and
+-- keeps full access to every brand under the rules below.
 --
---   1. The preview/dev-bypass environment has no real Supabase session, so the
---      moment policies stop being `using (true)` every page there renders empty.
---      It can only be verified once real Google sign-in is confirmed working for
---      everyone — which is exactly the ordering /setup warns about.
---   2. Today's policies are already RLS-on but wide open (`using (true)` for
---      public). p0-rls.sql is what first tightens them to authenticated; this
---      file layers brand-scoping on top of THAT, and must run after it.
+-- THE CORRECTION (2026-08-11): the first draft added brand-scoped policies but
+-- left p0's open "signed-in can read/write …" policies in place. Postgres
+-- OR-combines permissive policies, so the open one would have won and the
+-- scoping would never have bitten. This version DROPS each p0 policy on the
+-- tables it re-governs before creating its own. Verified by impersonating a
+-- talent in a rolled-back transaction: a renggli talent saw only renggli rows,
+-- zero product rows; a @theloyalist.com user saw everything.
 --
--- Until this is applied, the talent gate is app-layer only: a talent's reads and
--- UI are locked to their brand, but a crafted request could still reach another
--- brand's ideation row by id. So do not give real outside talents access before
--- this runs. See lib/access.ts (requireTeam) for the app-layer half.
---
--- The plan below is the design to review and test during that go-live, not a
--- migration to paste blind.
+-- STILL DEFERRED: storage. p0 grants authenticated the references bucket's API,
+-- not scoped by brand. The bucket is also public (images served by URL), so
+-- brand-confidentiality of images is not achievable there regardless; hardening
+-- it is a separate pass to do WITH the first talent onboarding, noted at the end.
 -- ---------------------------------------------------------------------------
+
+begin;
 
 -- Who the request is, from the Google session on the JWT.
 create or replace function public.auth_email() returns text
@@ -31,6 +32,8 @@ create or replace function public.auth_email() returns text
 
 -- Team = the org's own domain, OR an allowlist row that is not a talent. Talent
 -- is the only narrowed role, so everything else the allowlist admits is team.
+-- security definer so it can read app_allowlist regardless of the caller's own
+-- row-level access to it.
 create or replace function public.is_team() returns boolean
   language sql stable security definer set search_path = public as $$
   select
@@ -51,46 +54,50 @@ create or replace function public.my_brand() returns text
   limit 1
 $$;
 
--- The ideation tables: a talent may read and write, but only their brand.
---   using       — team sees all brands; a talent sees only rows whose brand is theirs.
---   with check  — a write can only land a row in the writer's own brand.
--- (Replace the open "team can …" policies from p0-rls.sql for these two tables.)
+-- 1. Ideation tables (references, moodboards): team sees everything; a talent
+--    reads and writes only rows in their own brand. Drop p0's open pair first,
+--    or it OR-combines and defeats the scope.
 do $$
 declare t text;
 begin
   foreach t in array array['references','moodboards'] loop
-    execute format('drop policy if exists "brand read %1$s" on public.%1$s', t);
-    execute format('drop policy if exists "brand write %1$s" on public.%1$s', t);
-    execute format($f$create policy "brand read %1$s" on public.%1$s
+    execute format('drop policy if exists "signed-in can read %1$I"  on public.%1$I', t);
+    execute format('drop policy if exists "signed-in can write %1$I" on public.%1$I', t);
+    execute format('drop policy if exists "brand read %1$I"  on public.%1$I', t);
+    execute format('drop policy if exists "brand write %1$I" on public.%1$I', t);
+    execute format($f$create policy "brand read %1$I" on public.%1$I
         for select to authenticated
         using (public.is_team() or brand = public.my_brand())$f$, t);
-    execute format($f$create policy "brand write %1$s" on public.%1$s
+    execute format($f$create policy "brand write %1$I" on public.%1$I
         for all to authenticated
         using (public.is_team() or brand = public.my_brand())
         with check (public.is_team() or brand = public.my_brand())$f$, t);
   end loop;
 end $$;
 
--- The product tables — styles and everything hanging off them — are team only.
--- A talent has no product side at all, so the policy needs no brand test: it is
--- simply is_team(). style_samples / style_versions / style_comments /
--- style_references gate the same way (they belong to a style, and only team
--- reach a style). settings likewise.
+-- 2. Product tables and settings: team only. A talent has no product side, so no
+--    brand test is needed — is_team() alone. (style_samples/versions/comments/
+--    references hang off a style, which only team can reach.)
 do $$
 declare t text;
 begin
   foreach t in array array[
     'styles','style_samples','style_versions','style_comments','style_references','settings'
   ] loop
-    execute format('drop policy if exists "team only %1$s" on public.%1$s', t);
-    execute format($f$create policy "team only %1$s" on public.%1$s
+    execute format('drop policy if exists "signed-in can read %1$I"  on public.%1$I', t);
+    execute format('drop policy if exists "signed-in can write %1$I" on public.%1$I', t);
+    execute format('drop policy if exists "team only %1$I" on public.%1$I', t);
+    execute format($f$create policy "team only %1$I" on public.%1$I
         for all to authenticated
         using (public.is_team()) with check (public.is_team())$f$, t);
   end loop;
 end $$;
 
--- app_allowlist is the access model itself: readable so is_team()/my_brand() can
--- resolve, writable by team only (that is who manages talents on /setup).
+-- 3. app_allowlist: readable by any signed-in user (the login path reads its own
+--    row as the just-signed-in user, so the read must succeed), writable by team
+--    only (that is who manages talents on /setup).
+drop policy if exists "signed-in can read app_allowlist"  on public.app_allowlist;
+drop policy if exists "signed-in can write app_allowlist" on public.app_allowlist;
 drop policy if exists "read allowlist" on public.app_allowlist;
 drop policy if exists "team writes allowlist" on public.app_allowlist;
 create policy "read allowlist" on public.app_allowlist
@@ -98,7 +105,45 @@ create policy "read allowlist" on public.app_allowlist
 create policy "team writes allowlist" on public.app_allowlist
   for all to authenticated using (public.is_team()) with check (public.is_team());
 
--- Storage (the `references` bucket) still needs its own brand policy pass before
--- talents get in — a scoped read on storage.objects keyed to the path's brand.
--- Left for the go-live once the object paths carry the brand; flagged here so it
--- is not forgotten.
+commit;
+
+--------------------------------------------------------------------------------
+-- STORAGE — the pass to do WITH the first talent onboarding, not before.
+--
+-- p0 left storage.objects on the references bucket open to any authenticated
+-- user for read/insert/update/delete. For a talent that means they could reach
+-- another brand's image objects by API. The bucket is public, so this is not a
+-- confidentiality regression for reads (the URLs are already public); the part
+-- worth closing is cross-brand insert/update/delete. Doing it well needs the
+-- object paths to carry the brand so a policy can key on it. Left as its own
+-- step so it is a deliberate change, not a rider on this one.
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- ROLLBACK — restores the p0 state (every table open to any signed-in user).
+-- Safe at any time; touches no rows. Uncomment and run.
+--------------------------------------------------------------------------------
+/*
+begin;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'references','moodboards','styles','style_samples','style_versions',
+    'style_comments','style_references','settings','app_allowlist'
+  ] loop
+    execute format('drop policy if exists "brand read %1$I"   on public.%1$I', t);
+    execute format('drop policy if exists "brand write %1$I"  on public.%1$I', t);
+    execute format('drop policy if exists "team only %1$I"    on public.%1$I', t);
+    execute format('drop policy if exists "read allowlist"    on public.%1$I', t);
+    execute format('drop policy if exists "team writes allowlist" on public.%1$I', t);
+    execute format($f$create policy "signed-in can read %1$I"  on public.%1$I
+        for select to authenticated using (true)$f$, t);
+    execute format($f$create policy "signed-in can write %1$I" on public.%1$I
+        for all to authenticated using (true) with check (true)$f$, t);
+  end loop;
+end $$;
+
+commit;
+*/
