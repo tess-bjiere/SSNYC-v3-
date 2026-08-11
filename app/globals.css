@@ -2966,6 +2966,9 @@ textarea.input,textarea.select,.textarea{height:auto}
 .app-footer a{font-size:var(--t-meta);letter-spacing:.02em;color:var(--faint);text-decoration:none}
 .app-footer a:hover{color:var(--muted)}
 .app-footer a[aria-disabled]{cursor:default}
+/* Setup · Leave a note — the dot keeps the two footer links apart without a
+   second line (Tess, 2026-08-11: Setup moved to the footer). */
+.app-footer-sep{margin:0 12px;color:var(--faint);opacity:.55;font-size:var(--t-meta)}
 
 /* ============================================================================
    POLISH (Tess, 2026-08-11: "more polished / elevated / less clunky / more app

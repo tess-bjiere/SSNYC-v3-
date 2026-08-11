@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       )}
       <main className="wrap">{children}</main>
-      <AppFooter />
+      <AppFooter isTeam={user.role === "team"} />
     </>
   );
 }

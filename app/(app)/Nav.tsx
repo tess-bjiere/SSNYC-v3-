@@ -179,15 +179,10 @@ export default function Nav({
             /development, beside the count of what is already there, which is
             where you are standing when you decide to add one. Nothing was
             removed: /styles/new is unchanged and still reachable directly. */}
-        {/* Setup is not a feature, so it does not get a tab — but it needs to be
-            reachable without remembering a URL, because the things on it are the
-            things standing between this and the team using it. Team only — Setup
-            is the go-live checklist, not a talent's concern. */}
-        {isTeam && (
-          <Link href="/setup" className="nav-link" title="Go-live checklist">
-            Setup
-          </Link>
-        )}
+        {/* Setup moved to the footer (Tess, 2026-08-11: "move set-up to bottom
+            footer"). It was never a destination like the others — it is the
+            go-live checklist — so it reads better as a quiet footer link than as
+            a tab-height item in the top bar. Team only, there and here. */}
         {/* Personal settings hang off your own name rather than taking a tab. */}
         <Link href="/notifications" className="who" title="Notification settings">
           {email}
@@ -259,15 +254,9 @@ export default function Nav({
                 </div>
               )}
               <div className="nav-drawer-account">
-                {isTeam && (
-                  <Link
-                    href="/setup"
-                    className={"nav-drawer-sub" + (isActive("/setup") ? " active" : "")}
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Setup
-                  </Link>
-                )}
+                {/* Setup moved to the footer (Tess, 2026-08-11) — the footer
+                    shows on every page at both widths, so it is still reachable
+                    on a phone without also sitting in the drawer. */}
                 <Link
                   href="/notifications"
                   className={"nav-drawer-sub" + (isActive("/notifications") ? " active" : "")}
