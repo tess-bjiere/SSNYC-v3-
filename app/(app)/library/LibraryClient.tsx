@@ -167,7 +167,7 @@ export default function LibraryClient({
   }
 
   return (
-    <div className="page">
+    <div className="page lib-page">
       <div className="page-head">
         {/* "References", matching the tab (Tess, 2026-08-06: "change library to
             references"). The page heading follows the navigation, because a
@@ -187,14 +187,18 @@ export default function LibraryClient({
             { value: "garment", label: "Garment" },
           ]}
         />
-        <SizeToggle value={size} onChange={setSize} />
-        {/* Edit the vocabulary every dropdown on this page draws from. */}
-        <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
-        {/* Deleted references live on in the Trash until someone empties it. */}
-        <Link href="/trash" className="lib-trash-link">Trash</Link>
-        {/* The desktop add sits in the head; on a phone it folds into the big
-            button below, which is the first thing you can reach. */}
-        <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
+        {/* The small tools ride together as one unit so the phone reorder (which
+            flattens the head) can keep them on a single row near the grid. */}
+        <div className="lib-head-tools">
+          <SizeToggle value={size} onChange={setSize} />
+          {/* Edit the vocabulary every dropdown on this page draws from. */}
+          <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
+          {/* Deleted references live on in the Trash until someone empties it. */}
+          <Link href="/trash" className="lib-trash-link">Trash</Link>
+          {/* The desktop add sits in the head; on a phone it folds into the big
+              button below, which is the first thing you can reach. */}
+          <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
+        </div>
       </div>
 
       {/* Prominent, full-width upload — phone/tablet only. Uploading is the

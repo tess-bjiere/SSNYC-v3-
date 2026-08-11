@@ -2809,6 +2809,37 @@ textarea.input,textarea.select,.textarea{height:auto}
   .mb-tile img{height:auto;aspect-ratio:4/5}
 }
 
+/* Desktop: the small head tools (size toggle, Lists, Trash, the head add) ride
+   as one inline cluster. */
+.lib-head-tools{display:flex;align-items:center;gap:var(--sp-ctl)}
+
+/* ============================================================================
+   REFERENCES LIBRARY — phone/tablet order (Tess, 2026-08-11: "move add reference
+   button up", "switch place of search bar and sort"). On these widths the head
+   and the tab/search bar are flattened with display:contents, so their pieces
+   resequence into one column WITHOUT moving anything in the DOM — desktop keeps
+   its two-row head untouched. The order is the reference's: title, the big add,
+   search, the tabs, the filter toggle, then sort and the small tools just above
+   the grid. .lib-page's gap sets the vertical rhythm, so the old per-item
+   margins are zeroed here.
+   ============================================================================ */
+@media(max-width:900px){
+  .lib-page{display:flex;flex-direction:column;gap:14px}
+  .lib-page .page-head,.lib-page .lib-bar{display:contents}
+  .lib-page .page-head .spacer{display:none}
+
+  .lib-page .page-title{order:1;margin:0}
+  .lib-page .lib-add-mobile{order:2;margin:0}
+  .lib-page .lib-search{order:3}
+  .lib-page .lib-tabs{order:4;align-self:flex-start}
+  .lib-page .lib-filter-toggle{order:5;margin:0;align-self:flex-start}
+  .lib-page .lib-filters{order:6;margin:0}
+  .lib-page .page-head > .sel{order:7;flex:1 1 auto}
+  .lib-page .page-head > .sel .sel-trigger{width:100%}
+  .lib-page .lib-head-tools{order:8;align-self:flex-start}
+  .lib-page .grid,.lib-page .empty{order:9}
+}
+
 /* ============================================================================
    RESPONSIVE PHASE 4 — the References library on phone/tablet (Tess, 2026-08-11,
    referencing ssnyclibrary.tiiny.site: "Should look more like this on mobile and
