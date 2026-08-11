@@ -227,55 +227,61 @@ export default function Nav({
                 &times;
               </button>
             </div>
-            {/* The switcher first: which brand you are looking at frames
-                everything below it. Talents have no switcher. */}
-            {isTeam && (
-              <div className="nav-drawer-brand">
-                <BrandSwitcher active={brand} brands={brands} />
-              </div>
-            )}
-            {groups.map((g) => (
-              <div className="nav-drawer-group" key={g.label}>
-                <div className="nav-drawer-label">{g.label}</div>
-                {g.links.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className={"nav-drawer-link" + (isActive(l.href) ? " active" : "")}
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            ))}
+            {/* Primary nav — the destinations, grouped Ideation / Product.
+                Reworked so the tiny captions read as headers and the Title-Case
+                rows read as the tappable things (Tess, 2026-08-11: "mobile drawer
+                menu is confusing" -> "rework it more fully"). */}
+            <nav className="nav-drawer-nav">
+              {groups.map((g) => (
+                <div className="nav-drawer-group" key={g.label}>
+                  <div className="nav-drawer-label">{g.label}</div>
+                  {g.links.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className={"nav-drawer-link" + (isActive(l.href) ? " active" : "")}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </nav>
+
+            {/* Settings & account, set apart from the destinations by a rule:
+                which brand you are looking at, then the personal links. */}
             <div className="nav-drawer-foot">
               {isTeam && (
+                <div className="nav-drawer-brand">
+                  <span className="nav-drawer-label">Brand</span>
+                  <BrandSwitcher active={brand} brands={brands} />
+                </div>
+              )}
+              <div className="nav-drawer-account">
+                {isTeam && (
+                  <Link
+                    href="/setup"
+                    className={"nav-drawer-sub" + (isActive("/setup") ? " active" : "")}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Setup
+                  </Link>
+                )}
                 <Link
-                  href="/setup"
-                  className={"nav-drawer-link" + (isActive("/setup") ? " active" : "")}
+                  href="/notifications"
+                  className={"nav-drawer-sub" + (isActive("/notifications") ? " active" : "")}
                   onClick={() => setMenuOpen(false)}
                 >
-                  Setup
+                  Notification settings
                 </Link>
-              )}
-              {/* The settings were only reachable by knowing to tap your own
-                  email; now they carry their own label (Tess, 2026-08-11:
-                  "surface the existing settings"). The email stays below as
-                  identity. */}
-              <Link
-                href="/notifications"
-                className={"nav-drawer-link" + (isActive("/notifications") ? " active" : "")}
-                onClick={() => setMenuOpen(false)}
-              >
-                Notification settings
-              </Link>
-              <div className="nav-drawer-who">{email}</div>
-              <form action="/auth/signout" method="post">
-                <button className="btn ghost" type="submit">
-                  Sign out
-                </button>
-              </form>
+                <div className="nav-drawer-who">{email}</div>
+                <form action="/auth/signout" method="post">
+                  <button className="btn ghost sm" type="submit">
+                    Sign out
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         </>

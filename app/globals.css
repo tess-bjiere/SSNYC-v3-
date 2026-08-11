@@ -309,23 +309,31 @@ body.notes-open .wrap{padding-right:378px}
 .nav-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
 .nav-drawer{position:fixed;top:0;right:0;bottom:0;width:min(320px,84vw);z-index:41;
   background:var(--bg);border-left:1px solid var(--line);padding:16px 22px 24px;
-  overflow-y:auto;display:flex;flex-direction:column;gap:22px}
-.nav-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  overflow-y:auto;display:flex;flex-direction:column}
+.nav-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .nav-drawer-close{width:44px;height:44px;margin-right:-11px;background:none;border:none;
   color:var(--muted);font-size:24px;line-height:1;cursor:pointer}
 .nav-drawer-close:hover{color:var(--ink)}
-.nav-drawer-brand .brand-switcher{min-width:0;width:100%}
+/* Destinations: the primary nav. Title Case rows read as the tappable things;
+   the tiny caption above each group reads as a header, not another link. */
+.nav-drawer-nav{display:flex;flex-direction:column;gap:20px}
 .nav-drawer-group{display:flex;flex-direction:column}
-.nav-drawer-label{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
-  letter-spacing:.1em;color:var(--pill);margin-bottom:4px}
-.nav-drawer-link{display:flex;align-items:center;min-height:44px;font-size:var(--t-body);
-  text-transform:uppercase;letter-spacing:.1em;color:var(--faint);text-decoration:none}
-.nav-drawer-link:hover{color:var(--muted)}
-.nav-drawer-link.active{color:var(--ink)}
-.nav-drawer-link.who-line{text-transform:none;letter-spacing:0;font-size:var(--t-sm)}
+.nav-drawer-label{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;
+  letter-spacing:.18em;color:var(--faint);opacity:.75;margin-bottom:6px}
+.nav-drawer-link{display:flex;align-items:center;min-height:46px;padding:0 12px;margin:0 -12px;
+  border-radius:3px;font-size:var(--t-title);letter-spacing:.01em;color:var(--muted);text-decoration:none}
+.nav-drawer-link:hover{color:var(--ink)}
+.nav-drawer-link.active{color:var(--ink);font-weight:var(--w-title);background:var(--chip)}
+/* Settings & account: set apart below a rule, quieter than the destinations. */
+.nav-drawer-foot{margin-top:auto;display:flex;flex-direction:column;gap:18px;
+  border-top:1px solid var(--hair);padding-top:20px}
+.nav-drawer-brand{display:flex;flex-direction:column;gap:6px}
+.nav-drawer-brand .brand-switcher{min-width:0;width:100%}
+.nav-drawer-account{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.nav-drawer-sub{display:flex;align-items:center;min-height:40px;font-size:var(--t-sm);
+  letter-spacing:.02em;color:var(--faint);text-decoration:none}
+.nav-drawer-sub:hover,.nav-drawer-sub.active{color:var(--ink)}
 .nav-drawer-who{font-size:var(--t-sm);color:var(--faint)}
-.nav-drawer-foot{margin-top:auto;display:flex;flex-direction:column;align-items:flex-start;
-  gap:8px;border-top:1px solid var(--hair);padding-top:14px}
 @media(max-width:1199px){
   .nav-links,.nav-right{display:none}
   .nav-burger{display:flex}
