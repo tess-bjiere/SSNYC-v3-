@@ -2699,3 +2699,37 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    dot next to 19px letters reads as dust on the screen. Nudged up off the
    baseline so it centres on the cap height rather than sitting under it. */
 .sib-dot.title{width:9px;height:9px;margin-right:12px;vertical-align:.16em}
+
+/* ============================================================================
+   RESPONSIVE PHASE 3 — the page-head / toolbar pattern (Tess, 2026-08-11).
+
+   Every list page draws the same head: <h1 class="page-title"> then a
+   <div class="spacer"> then its controls (a sort select, view toggles, a link
+   or two, an action button). On a wide screen the spacer grows and the controls
+   sit at the right. The head never wrapped, so on a narrow screen the controls
+   ran off the right edge and the action button ("+ Add", "+ New Style") clipped.
+
+   Appended at the end of the file on purpose: these override the base .page-head
+   and .spacer rules, and CSS resolves ties by source order, so they must come
+   after them.
+
+   The fix is one rule, so it lands on every page at once: below the point where
+   the fullest head (References: sort + density + Lists + Trash + Add) stops
+   fitting, let the head wrap and turn the spacer into a full-width zero-height
+   line break. The title then owns the first row and every control wraps onto the
+   next, left-aligned, at the touch sizes phase 1 already gave them. On phone the
+   sort select and the board picker go full width so they are easy to hit.
+   ============================================================================ */
+@media(max-width:760px){
+  .page-head{flex-wrap:wrap}
+  .page-head .spacer{flex:0 0 100%;height:0;margin:0}
+}
+@media(max-width:600px){
+  /* Select renders a .sel wrapper (the flex item) around a .sel-trigger button
+     (which carries .lib-sort / .mb-boardsel), so full width has to be set on
+     both: the wrapper takes the row, the trigger fills the wrapper. */
+  .page-head .sel{flex:1 1 100%}
+  .page-head .sel .sel-trigger{width:100%}
+  .mb-toolbar .sel{flex:1 1 100%}
+  .mb-toolbar .sel .sel-trigger{width:100%}
+}
