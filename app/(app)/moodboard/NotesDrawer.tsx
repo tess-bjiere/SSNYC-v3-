@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { MBTextItem } from "@/lib/moodboard";
 import { addNote, addReply, editNote } from "@/app/actions/moodboards";
+import Linked from "@/app/components/Linked";
 
 function fmt(ts?: number) {
   if (!ts) return "";
@@ -104,9 +105,7 @@ export default function NotesDrawer({
                       </div>
                     </form>
                   ) : (
-                    <div className="note-text" style={{ whiteSpace: "pre-wrap" }}>
-                      {n.text}
-                    </div>
+                    <Linked className="note-text" text={n.text} />
                   )}
 
                   {(n.replies ?? []).length > 0 && (
@@ -119,9 +118,7 @@ export default function NotesDrawer({
                               {fmt(r.ts)}
                             </span>
                           </div>
-                          <div className="note-text" style={{ whiteSpace: "pre-wrap" }}>
-                            {r.text}
-                          </div>
+                          <Linked className="note-text" text={r.text} />
                         </div>
                       ))}
                     </div>
@@ -130,7 +127,7 @@ export default function NotesDrawer({
                   {!readOnly && !isEditing && (
                     <form action={addReply.bind(null, boardId, n.tid)} className="note-reply-form">
                       <input className="input" name="text" placeholder="Reply…" autoComplete="off" />
-                      <button className="btn ghost sm" type="submit">Reply</button>
+                      <button className="btn ghost" type="submit">Reply</button>
                     </form>
                   )}
                 </div>

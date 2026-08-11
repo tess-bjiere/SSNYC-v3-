@@ -1676,6 +1676,13 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .linkified{color:inherit;text-decoration:underline;text-underline-offset:2px;
   text-decoration-color:var(--line);word-break:break-word}
 .linkified:hover{text-decoration-color:var(--ink);color:var(--ink)}
+/* Every linkified URL opens off in a new tab, so it carries a small out-arrow
+   to say so (Tess, 2026-08-11: "need them to link out with an arrow").
+   inline-block keeps the link's underline from being drawn through the arrow,
+   and the arrow does not break onto a line of its own. */
+.linkified::after{content:"\2197";display:inline-block;margin-left:.15em;
+  font-size:.82em;line-height:1;text-decoration:none;color:var(--muted)}
+.linkified:hover::after{color:var(--ink)}
 
 /* Comment scope (2026-08-04) ------------------------------------------------
    Tess: "comments should be linked to specific sample or general profile of

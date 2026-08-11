@@ -16,12 +16,19 @@
  *
  *   http:// and https://    the real case
  *   www.something.tld       what people actually paste out of a browser bar
+ *   host.tld/path           a schemeless link that still carries a path
  *   mailto: / bare email    a supplier contact in a note is a link worth having
  *
- * Deliberately NOT matched: bare "domain.com" with no scheme and no www. Too
- * many false positives — "94% cotton, 6% elastane" is fine, but a sentence like
- * "check the sample.it looks short" would turn "sample.it" into a link to Italy.
- * A missed link is an annoyance; a wrong link in a factory note is a phone call.
+ * Bare host with a path IS matched: a schemeless "docs.google.com/deck" fires,
+ * because Tess, 2026-08-11, pastes Google Docs links without the https:// and
+ * they were landing as dead text ("urls dropped into notes dont hyperlink").
+ * The guard is the path — a bare host only counts once a "/" follows the TLD.
+ *
+ * Bare host with NO path is still deliberately NOT matched. "94% cotton, 6%
+ * elastane" is fine, and a sentence like "check the sample.it looks short" must
+ * not turn "sample.it" into a link to Italy. A missed link is an annoyance; a
+ * wrong link in a factory note is a phone call — and requiring the slash keeps
+ * the wrong ones out while catching the real pasted URLs, which carry a path.
  *
  * Trailing punctuation is trimmed off the match rather than swallowed, because
  * people write "see https://x.com/a/b." and the full stop is a full stop. The
@@ -38,7 +45,7 @@ export type LinkSegment =
 // One pass, three alternatives, ordered longest-prefix first so "https://" is
 // never matched as the shorter "www." rule.
 const PATTERN =
-  /(https?:\/\/[^\s<>]+)|(www\.[^\s<>]+)|(mailto:[^\s<>]+)|([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+  /(https?:\/\/[^\s<>]+)|(www\.[^\s<>]+)|(mailto:[^\s<>]+)|([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})|([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\/[^\s<>]*)/g;
 
 /** Punctuation that ends a sentence rather than a URL. */
 const TRAILING = new Set([".", ",", ";", ":", "!", "?", "'", '"', "”", "’", "»"]);
@@ -80,8 +87,10 @@ function trimTrailing(raw: string): string {
 function hrefFor(raw: string): string {
   if (/^https?:\/\//i.test(raw)) return raw;
   if (/^mailto:/i.test(raw)) return raw;
-  if (/^www\./i.test(raw)) return "https://" + raw;
-  return "mailto:" + raw;
+  // No scheme: an "@" makes it an email, anything else is a bare host — www.x
+  // or a schemeless "docs.google.com/deck" — and both want https.
+  if (raw.includes("@")) return "mailto:" + raw;
+  return "https://" + raw;
 }
 
 /**

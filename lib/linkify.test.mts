@@ -92,6 +92,24 @@ test("a bare domain with no scheme and no www is NOT linked", () => {
   assert.equal(rejoin(segs), "check the sample.it looks short");
 });
 
+test("a schemeless host WITH a path is linked and gets https", () => {
+  // Tess, 2026-08-11: pastes Google Docs links without the https://. The path
+  // after the host is what tells them apart from a bare "sample.it".
+  const segs = linkify("Spring colors: docs.google.com/presentation/d/178XEJ4/edit?slide=id.g3f_0_30");
+  assert.equal(links(segs).length, 1);
+  assert.equal(links(segs)[0].href, "https://docs.google.com/presentation/d/178XEJ4/edit?slide=id.g3f_0_30");
+  assert.equal(links(segs)[0].text, "docs.google.com/presentation/d/178XEJ4/edit?slide=id.g3f_0_30");
+  assert.equal(rejoin(segs), "Spring colors: docs.google.com/presentation/d/178XEJ4/edit?slide=id.g3f_0_30");
+});
+
+test("a schemeless host with NO path is still left as text", () => {
+  // The slash is the whole guard — without it, these stay ordinary words.
+  for (const s of ["email me at sample.it today", "it is 94% cotton, 6% elastane", "size 4/6 fits"]) {
+    assert.equal(links(linkify(s)).length, 0, s);
+    assert.equal(rejoin(linkify(s)), s, s);
+  }
+});
+
 test("several links in one note are all found", () => {
   const text = "pack https://a.com/p, board www.b.com/x, and mail sam@c.com";
   const segs = linkify(text);
