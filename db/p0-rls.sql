@@ -1,6 +1,17 @@
 --------------------------------------------------------------------------------
 -- SSYNC v2 — P0 security: close the open database policies
 --
+-- APPLIED 2026-08-11, on Tess's explicit "Run p0-rls.sql". Sections 1-2 went in
+-- as one atomic migration (p0_rls_close_public_policies) after the three go-live
+-- prerequisites read green on /setup and the project was confirmed on Supabase
+-- Pro with a 6-hour-old backup. Verified: all 20 policies now {authenticated};
+-- the anon role reads 0 rows from references/moodboards/styles/app_allowlist;
+-- row counts unchanged (refs 87/85 live, boards 6, settings 3); signed-out
+-- /share/<board> and /r/<ref> still render with images; signed-out /development
+-- redirects to /login. The rollback in section 5 remains valid if ever needed.
+--
+-- The text below is the original pre-flight note, kept verbatim as the record.
+--
 -- READ THIS BEFORE RUNNING ANY OF IT. Nothing here has been applied. It is
 -- written to be reviewed, run deliberately, and rolled back in one paste if it
 -- goes wrong.
