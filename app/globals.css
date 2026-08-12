@@ -626,9 +626,11 @@ body.notes-open .wrap{padding-right:378px}
 .mb-swatches{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
 .mb-palette-empty{font-size:var(--t-meta);color:var(--faint)}
 
-/* Read: a chip over its name and hex. */
+/* Read: a chip over its name and hex. A pattern swatch fills the chip with its
+   uploaded image (Tess, 2026-08-12: "you can upload swatch for pattern"). */
 .mb-swatch{display:flex;flex-direction:column;gap:6px;min-width:0}
-.mb-swatch-chip{display:block;width:56px;height:56px;border:1px solid var(--hair)}
+.mb-swatch-chip{display:block;width:64px;height:64px;border:1px solid var(--hair);
+  background-size:cover;background-position:center}
 /* A name-only swatch (a Pantone typed before its screen colour is picked) shows a
    hatched placeholder rather than an empty box. */
 .mb-swatch-chip.none{background:repeating-linear-gradient(45deg,
@@ -637,17 +639,37 @@ body.notes-open .wrap{padding-right:378px}
 .mb-swatch-name{color:var(--ink)}
 .mb-swatch-hex{color:var(--faint);letter-spacing:.06em;text-transform:uppercase}
 
-/* Edit: colour picker + name field + remove, in a row. */
+/* Edit: colour picker (or pattern preview) + name field + pattern upload +
+   remove, in a row. The colour input's inner swatch is padded equally on all
+   sides (Tess, 2026-08-12: "padding between color and border of swatch should be
+   equal") — the native wrapper's default padding is uneven, so it is set flat. */
 .mb-swatch.editing{flex-direction:row;align-items:center;gap:6px}
-.mb-swatch-color{width:34px;height:34px;padding:0;border:1px solid var(--line);
+.mb-swatch-color{width:40px;height:40px;padding:0;border:1px solid var(--line);
   background:none;cursor:pointer;flex:0 0 auto}
-.mb-swatch-input{width:120px}
+.mb-swatch-color::-webkit-color-swatch-wrapper{padding:3px}
+.mb-swatch-color::-webkit-color-swatch{border:none}
+.mb-swatch-color::-moz-color-swatch{border:none}
+/* A swatch backed by an uploaded pattern shows the image where the picker was,
+   with a corner × to clear it back to a flat colour. */
+.mb-swatch-pattern{position:relative;width:40px;height:40px;border:1px solid var(--line);
+  background-size:cover;background-position:center;flex:0 0 auto}
+.mb-swatch-clear{position:absolute;top:-7px;right:-7px;width:17px;height:17px;border-radius:50%;
+  background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.mb-swatch-clear:hover{color:var(--danger);border-color:var(--danger)}
+.mb-swatch-input{width:150px;max-width:100%}
+.mb-swatch-upload{display:inline-flex;align-items:center;justify-content:center;height:40px;
+  padding:0 9px;border:1px dashed var(--line);color:var(--faint);cursor:pointer;flex:0 0 auto;
+  font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em}
+.mb-swatch-upload:hover{color:var(--ink);border-color:var(--muted)}
+.mb-swatch-upload.busy{opacity:.55;pointer-events:none}
+.mb-swatch-upload input{display:none}
 .mb-swatch-x{background:none;border:none;color:var(--faint);cursor:pointer;
   font-size:18px;line-height:1;padding:2px 4px;flex:0 0 auto}
 .mb-swatch-x:hover{color:var(--danger)}
 .mb-swatch-add{background:none;border:1px dashed var(--line);color:var(--muted);cursor:pointer;
   font-family:inherit;font-size:var(--t-meta);letter-spacing:.08em;text-transform:uppercase;
-  padding:0 14px;height:34px;align-self:center}
+  padding:0 14px;height:40px;align-self:center}
 .mb-swatch-add:hover{color:var(--ink);border-color:var(--muted)}
 
 /* Moodboard sections (matches the original: header + rule, clean image rows) */
@@ -728,6 +750,12 @@ body.nav-open .notes-tab{display:none}
 .note-reply .note-text{font-size:var(--t-sm)}
 .note-edit{margin-left:auto;background:none;border:none;color:var(--muted);font-size:var(--t-sm);text-transform:none;letter-spacing:0;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
 .note-edit:hover{color:var(--ink)}
+/* God-mode delete on a note (Tess, 2026-08-12). Sits after Edit; two-click armed,
+   turning danger-red on the first press. */
+.note-del{background:none;border:none;color:var(--muted);font-size:var(--t-sm);
+  text-transform:none;letter-spacing:0;cursor:pointer;padding:0;margin-left:10px;
+  text-decoration:underline;text-underline-offset:3px}
+.note-del:hover,.note-del.armed{color:var(--danger)}
 .note-edit-form{margin-top:4px;display:flex;flex-direction:column;gap:8px}
 /* Editing your own comment (Tess, 2026-08-05: "make my own comments
    editable"). Save is a real button because it commits; Cancel is quiet

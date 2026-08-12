@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEV_BYPASS, requireUser } from "@/lib/access";
+import { checkSuperAdmin } from "@/lib/brandsServer";
 import { activeBrand } from "@/lib/activeBrand";
+import { REFERENCES_BUCKET } from "@/lib/storage";
 import { applyReorder, insertItems, removeImage } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
 import { normalizePalette, type Palette } from "@/lib/palette";
@@ -102,13 +104,17 @@ export async function addReply(boardId: string, noteTid: string, form: FormData)
   revalidatePath("/moodboard");
 }
 
-// Edit a note's text — only the author may edit (or anyone in preview/bypass mode).
+// Edit a note's text. The author may edit their own; god mode (a named
+// super-admin, or preview/bypass) may edit anyone's (Tess, 2026-08-12: "god mode
+// should be able to edit / delete any notes"). The check re-runs on the server —
+// the client only decides which buttons to show.
 export async function editNote(boardId: string, noteTid: string, text: string) {
   const t = (text || "").trim();
   if (!t) return;
   const supabase = await createClient();
   const user = await requireUser();
   const me = user?.name || user?.email || "";
+  const godMode = DEV_BYPASS || checkSuperAdmin(user?.email);
 
   const { data: board } = await supabase
     .from("moodboards")
@@ -120,11 +126,37 @@ export async function editNote(boardId: string, noteTid: string, text: string) {
   const next = items.map((it) => {
     const n = it as MBTextItem;
     if (n.kind === "text" && n.tid === noteTid) {
-      if (!(DEV_BYPASS || (me && n.by === me))) return it; // not the author
+      if (!(godMode || (me && n.by === me))) return it; // not the author, not god mode
       return { ...n, text: t };
     }
     return it;
   });
+
+  await supabase
+    .from("moodboards")
+    .update({ items: next, updated_at: new Date().toISOString() })
+    .eq("id", boardId);
+  revalidatePath("/moodboard");
+}
+
+// Delete a note outright. God mode only (Tess, 2026-08-12: "god mode should be
+// able to edit / delete any notes") — a named super-admin, or preview/bypass.
+// Deleting the note takes its replies with it, which is the point: the thread is
+// being removed, not pruned. Server-verified, like editNote.
+export async function deleteNote(boardId: string, noteTid: string) {
+  const supabase = await createClient();
+  const user = await requireUser();
+  if (!(DEV_BYPASS || checkSuperAdmin(user?.email))) return; // god mode only
+
+  const { data: board } = await supabase
+    .from("moodboards")
+    .select("items")
+    .eq("id", boardId)
+    .maybeSingle();
+  const items: MBItem[] = (board?.items as MBItem[]) ?? [];
+
+  const next = items.filter((it) => !(it.kind === "text" && (it as MBTextItem).tid === noteTid));
+  if (next.length === items.length) return; // nothing matched — leave the board alone
 
   await supabase
     .from("moodboards")
@@ -400,4 +432,28 @@ export async function saveColorPalette(palette: Palette) {
   const clean = normalizePalette(palette);
   await supabase.from("brands").update({ palette: clean }).eq("slug", brand);
   revalidatePath("/moodboard");
+}
+
+// Upload a pattern / print image for a palette swatch (Tess, 2026-08-12: "you can
+// upload swatch for pattern if needed"). Returns the public URL; the client puts
+// it on the swatch and persists it with the next saveColorPalette — the same
+// two-step the brand-logo uploader uses. requireUser, matching every moodboard
+// edit. Images only; the picker downscales before sending, so these stay small.
+export async function uploadSwatchImage(form: FormData): Promise<string | null> {
+  const supabase = await createClient();
+  await requireUser();
+  const brand = await activeBrand();
+  const file = form.get("image");
+  if (!(file instanceof File) || file.size === 0 || !file.type.startsWith("image/")) return null;
+
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `palette-swatches/${brand}-${crypto.randomUUID()}.${ext}`;
+  const buf = Buffer.from(await file.arrayBuffer());
+  const { error } = await supabase.storage
+    .from(REFERENCES_BUCKET)
+    .upload(path, buf, { contentType: file.type, upsert: false });
+  if (error) return null;
+
+  const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+  return pub?.publicUrl ?? null;
 }

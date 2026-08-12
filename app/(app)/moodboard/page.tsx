@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { archiveBoard } from "@/app/actions/moodboards";
 import { getSessionUser, DEV_BYPASS } from "@/lib/access";
+import { checkSuperAdmin } from "@/lib/brandsServer";
 import { activeBrand } from "@/lib/activeBrand";
 import { refThumb, type Reference } from "@/lib/types";
 import { styleCoverUrl } from "@/lib/styleCover";
@@ -23,6 +24,9 @@ export default async function MoodboardPage({
   const supabase = await createClient();
   const user = await getSessionUser();
   const me = user?.name || user?.email || "";
+  // God mode edits and deletes any note (Tess, 2026-08-12: "god mode should be
+  // able to edit / delete any notes"); preview/bypass counts too, for testing.
+  const godMode = DEV_BYPASS || checkSuperAdmin(user?.email);
 
   const brand = await activeBrand();
   const { data: boardsData } = await supabase
@@ -211,7 +215,7 @@ export default async function MoodboardPage({
               .filter((s) => s.tid)
               .map((s) => ({ tid: s.tid as string, label: s.label || "Untitled section" }))}
           />
-          <NotesDrawer boardId={current.id} notes={notes} me={me} canEditAll={DEV_BYPASS} />
+          <NotesDrawer boardId={current.id} notes={notes} me={me} canEditAll={godMode} canDeleteAll={godMode} />
 
           {/* Archiving is a rare, end-of-life act, so it sits quietly at the
               foot of the page rather than in the toolbar (Tess, 2026-08-11:

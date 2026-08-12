@@ -16,7 +16,11 @@
 // Dependency-free on purpose, like everything in lib/: it declares its own types
 // and imports nothing, so the test runs with no build step.
 
-export type Swatch = { hex: string; name: string };
+// A swatch is a colour chip and a free-text name, and optionally a `image` — an
+// uploaded pattern/print URL that stands in for the flat colour (Tess,
+// 2026-08-12: "you can upload swatch for pattern if needed"). Any one of the
+// three is enough to keep the swatch.
+export type Swatch = { hex: string; name: string; image?: string };
 export type Palette = { seasonal: Swatch[]; evergreen: Swatch[] };
 
 export const PALETTE_GROUPS = [
@@ -49,8 +53,12 @@ export function normalizeSwatch(raw: unknown): Swatch | null {
   const r = raw as Record<string, unknown>;
   const hex = normalizeHex(r.hex);
   const name = typeof r.name === "string" ? r.name.trim().slice(0, 80) : "";
-  if (!hex && !name) return null;
-  return { hex, name };
+  const image =
+    typeof r.image === "string" && r.image.trim() ? r.image.trim().slice(0, 2048) : "";
+  if (!hex && !name && !image) return null;
+  const sw: Swatch = { hex, name };
+  if (image) sw.image = image;
+  return sw;
 }
 
 function normalizeGroup(raw: unknown): Swatch[] {

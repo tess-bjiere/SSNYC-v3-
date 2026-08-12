@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { MBTextItem } from "@/lib/moodboard";
-import { addNote, addReply, editNote } from "@/app/actions/moodboards";
+import { addNote, addReply, editNote, deleteNote } from "@/app/actions/moodboards";
 import Linked from "@/app/components/Linked";
 
 function fmt(ts?: number) {
@@ -25,12 +25,15 @@ export default function NotesDrawer({
   notes,
   me,
   canEditAll,
+  canDeleteAll = false,
   readOnly = false,
 }: {
   boardId: string;
   notes: MBTextItem[];
   me: string;
   canEditAll: boolean;
+  /** God mode: a Delete on every note. Two-click armed, no confirm() dialog. */
+  canDeleteAll?: boolean;
   readOnly?: boolean;
 }) {
   // Starts closed, so a phone lands on the board rather than the notes covering
@@ -40,6 +43,9 @@ export default function NotesDrawer({
   // render closed, so there is no hydration mismatch.
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  // Which note's Delete is armed. The two-click pattern stands in for a confirm()
+  // dialog, which is banned here (it freezes the browser automation).
+  const [armed, setArmed] = useState<string | null>(null);
 
   useEffect(() => {
     if (window.matchMedia("(min-width: 901px)").matches) setOpen(true);
@@ -54,6 +60,11 @@ export default function NotesDrawer({
   async function saveEdit(tid: string, fd: FormData) {
     await editNote(boardId, tid, String(fd.get("text") || ""));
     setEditing(null);
+  }
+
+  async function removeNote(tid: string) {
+    setArmed(null);
+    await deleteNote(boardId, tid);
   }
 
   return (
@@ -90,6 +101,16 @@ export default function NotesDrawer({
                     {!readOnly && canEdit && !isEditing && (
                       <button className="note-edit" onClick={() => setEditing(n.tid)}>
                         Edit
+                      </button>
+                    )}
+                    {!readOnly && canDeleteAll && !isEditing && (
+                      <button
+                        className={"note-del" + (armed === n.tid ? " armed" : "")}
+                        onClick={() => (armed === n.tid ? removeNote(n.tid) : setArmed(n.tid))}
+                        onMouseLeave={() => armed === n.tid && setArmed(null)}
+                        title="God mode: delete this note"
+                      >
+                        {armed === n.tid ? "Delete?" : "Delete"}
                       </button>
                     )}
                   </div>

@@ -21,9 +21,19 @@ test("a swatch survives on a colour alone, a name alone, or both", () => {
   assert.deepEqual(normalizeSwatch({ hex: "#abc", name: " Ruby " }), { hex: "#aabbcc", name: "Ruby" });
 });
 
-test("a swatch with neither a colour nor a name is dropped", () => {
+test("a swatch survives on an uploaded pattern alone, and carries it through", () => {
+  assert.deepEqual(normalizeSwatch({ hex: "", name: "", image: "https://x/p.jpg" }), {
+    hex: "",
+    name: "",
+    image: "https://x/p.jpg",
+  });
+  // No image key when there is no image, so a plain colour swatch stays {hex,name}.
+  assert.deepEqual(normalizeSwatch({ hex: "#ff0000", name: "Red" }), { hex: "#ff0000", name: "Red" });
+});
+
+test("a swatch with neither a colour, a name, nor a pattern is dropped", () => {
   assert.equal(normalizeSwatch({ hex: "", name: "" }), null);
-  assert.equal(normalizeSwatch({ hex: "not-a-colour", name: "   " }), null);
+  assert.equal(normalizeSwatch({ hex: "not-a-colour", name: "   ", image: "" }), null);
   assert.equal(normalizeSwatch("nonsense"), null);
 });
 
