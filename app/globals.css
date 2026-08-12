@@ -953,7 +953,24 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .login-sub{color:var(--faint);font-size:var(--t-sm);max-width:340px;line-height:1.6}
 
 @media(max-width:860px){
-  .profile{grid-template-columns:1fr}
+  /* Rethought for a phone (Tess, 2026-08-11: "sketch should be much smaller with
+     title and style details viewable when you first click in -- rethink
+     organization for mobile"). The identity leads — title, its badges, a much
+     smaller sketch, then the AI summary and the Details — so the name, the
+     drawing and the facts are all on the first screen instead of a full-height
+     cover pushing them down. Status follows; everything else keeps its place
+     below. display:contents flattens the two desktop columns into one flow so
+     the pieces can interleave. */
+  .profile{display:flex;flex-direction:column;gap:18px}
+  .profile-side,.profile-main{display:contents}
+  .profile-side > *,.profile-main > *{order:8;min-width:0}
+  .profile .page-title{order:1}
+  .profile .profile-badges{order:2}
+  .profile .cover{order:3;max-width:200px;align-self:flex-start}
+  .profile .sumbar{order:4}
+  .profile .profile-details{order:5}
+  .profile-side > .section{order:6}
+
   .row,.row3{grid-template-columns:1fr}
 }
 

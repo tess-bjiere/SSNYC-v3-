@@ -345,7 +345,15 @@ export default function CommentsDrawer({
   /** The signed-in person, so their own comments can offer an Edit button. */
   viewerEmail?: string | null;
 }) {
-  const [open, setOpen] = useState(true);
+  // Starts closed so a phone lands on the profile rather than the comments
+  // covering it (Tess, 2026-08-11: "comments drawer closed when you first
+  // open"). Desktop, where the drawer sits beside the content, opens it on
+  // mount. Server + first client render both render closed — no hydration
+  // mismatch — and the desktop open happens a tick later.
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 901px)").matches) setOpen(true);
+  }, []);
   const [scope, setScope] = useState<CommentScope>("all");
   const [replying, setReplying] = useState<string | null>(null);
   // The comment deleted a moment ago, if any. Deliberately session state and

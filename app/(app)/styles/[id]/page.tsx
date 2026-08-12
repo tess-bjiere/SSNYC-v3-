@@ -604,7 +604,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
           />
         </div>
 
-        <div>
+        <div className="profile-main">
           {/* The verdict on the last judged round, beside the name (Tess,
               2026-08-07). The same dot and the same three colours as the
               development cards, the factory list and the sibling pills — one
@@ -624,7 +624,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             )}
             {st.name}
           </h1>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 22 }}>
+          <div className="profile-badges" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 22 }}>
             <span className={"badge " + (st.status === "development" ? "dev" : st.status === "production" ? "prod" : st.status)}>
               {styleStatusLabel(st.status)}
             </span>
@@ -681,7 +681,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
           </section>
 
           {/* Details */}
-          <div className="section">
+          <div className="section profile-details">
             <h3>Details</h3>
             {/* Two columns on a desktop, one on a phone — the rows are short
                 facts and a single file of them pushed Reference(s) and the
