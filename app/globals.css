@@ -1606,7 +1606,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 @media print{
   /* Print the document, not the app around it. */
   body{background:#fff}
-  .nav,.no-print,.notice,.export-actions{display:none !important}
+  .nav,.no-print,.notice,.export-actions,.app-footer{display:none !important}
   .wrap{max-width:none;padding:0}
   .paper{box-shadow:none;margin:0;padding:0;max-width:none}
   .paper section{break-inside:avoid}
@@ -3395,7 +3395,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
    ============================================================================ */
 
 /* --- The index --- */
-.ls-new{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:-6px 0 30px}
+.ls-new{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0 0}
 .ls-new-name{flex:1 1 220px;min-width:0;max-width:340px}
 .ls-new-season{width:150px}
 .ls-group{margin-bottom:30px}
@@ -3537,15 +3537,16 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
    tokens would print as invisible text, so text/borders are set to ink-on-paper.
    min-width holds the desktop landscape layout even when printing from a phone. */
 @media print{
-  @page{size:landscape}
+  @page{size:letter landscape}
   .ls-page{background:#fff;color:#111;min-width:1040px}
 
-  /* Cover page — masthead top, title in the middle, the confidential line pinned
-     to the very bottom (Tess, 2026-08-12: "move confidential text to bottom of
-     page"). Fills the whole page (100vh, border-box so the padding counts) so
-     space-between + margin-top:auto put the footer on the page's bottom edge. */
+  /* Cover page — masthead top, title in the middle, the confidential line at the
+     bottom with breathing room (Tess, 2026-08-12: "confidential should sit on
+     bottom of cover page but have breathing room -- not pushed to 2nd page").
+     90vh, not a full 100vh: a full page overflowed and shoved the footer to a
+     second sheet, so it sits just inside the printable area's bottom instead. */
   .ls-cover{display:flex;flex-direction:column;justify-content:space-between;
-    min-height:100vh;box-sizing:border-box;padding:38px 54px;break-after:page;color:#111}
+    min-height:90vh;box-sizing:border-box;padding:38px 54px;break-after:page;color:#111}
   .ls-cover-logo{height:32px;width:auto;max-width:52%;object-fit:contain;display:block;align-self:flex-start}
   .ls-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
   /* The title block sits in the vertical centre (Tess, 2026-08-12) — logo top,

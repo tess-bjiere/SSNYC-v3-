@@ -5,7 +5,6 @@ import { activeBrand } from "@/lib/activeBrand";
 import { MOCK, mockLinesheets } from "@/lib/mock";
 import { normalizeItems, normalizeKind, LINESHEET_KINDS, type LinesheetKind } from "@/lib/linesheet";
 import { createLinesheet } from "@/app/actions/linesheets";
-import Select from "@/app/components/Select";
 
 export const dynamic = "force-dynamic";
 
@@ -54,40 +53,12 @@ export default async function LinesheetsPage() {
         <h1 className="page-title display">Linesheets</h1>
       </div>
 
-      <form action={createLinesheet} className="ls-new">
-        <input
-          className="input sm ls-new-name"
-          name="name"
-          placeholder="New linesheet name…"
-          autoComplete="off"
-          required
-        />
-        <Select
-          name="kind"
-          defaultValue="seasonal"
-          className="select sm"
-          options={LINESHEET_KINDS.map((k) => ({ value: k.key, label: k.label }))}
-          aria-label="Linesheet kind"
-        />
-        <input
-          className="input sm ls-new-season"
-          name="season"
-          placeholder="Season (optional)"
-          autoComplete="off"
-        />
-        <button className="btn sm" type="submit">
-          + New linesheet
-        </button>
-      </form>
-
       {LINESHEET_KINDS.map((k) => {
         const list = byKind(k.key);
         return (
           <section className="ls-group" key={k.key}>
             <h2>{k.label}</h2>
-            {list.length === 0 ? (
-              <p className="ls-empty">No {k.label.toLowerCase()} linesheets yet.</p>
-            ) : (
+            {list.length > 0 && (
               <div className="ls-list">
                 {list.map((r) => {
                   const count = normalizeItems(r.items).length;
@@ -103,6 +74,30 @@ export default async function LinesheetsPage() {
                 })}
               </div>
             )}
+            {/* Create into this section — the kind is implied by which section you
+                create from, so there is no kind dropdown (Tess, 2026-08-12). Only
+                a seasonal sheet carries a season. */}
+            <form action={createLinesheet} className="ls-new">
+              <input type="hidden" name="kind" value={k.key} />
+              <input
+                className="input sm ls-new-name"
+                name="name"
+                placeholder={`New ${k.label.toLowerCase()} linesheet…`}
+                autoComplete="off"
+                required
+              />
+              {k.key === "seasonal" && (
+                <input
+                  className="input sm ls-new-season"
+                  name="season"
+                  placeholder="Season (optional)"
+                  autoComplete="off"
+                />
+              )}
+              <button className="btn sm" type="submit">
+                + New
+              </button>
+            </form>
           </section>
         );
       })}
