@@ -25,6 +25,11 @@ export type LinesheetItem = {
   price?: string;
   note?: string;
   colorways?: string[];
+  // A per-linesheet colour list (names), edited on the sheet without touching the
+  // style (Tess, 2026-08-12: "add ability to add / remove colors from styles on
+  // line sheet"). Present — even as [] — means "these are the colours for this
+  // style on this sheet"; absent means "fall back to the style's own colours".
+  colors?: string[];
 };
 
 /** A colour on an entry: the colorway image and its name (its caption). */
@@ -42,6 +47,8 @@ export type LinesheetEntry = {
   fabric: string | null;
   /** The free-text colours line, used when there are no colorway images. */
   colors: string | null;
+  /** Per-linesheet colour names; null = show the style's own colours. */
+  colorOverride: string[] | null;
   colorways: LinesheetColor[];
   sketchUrl: string | null;
   backUrl: string | null;
@@ -64,6 +71,7 @@ export type LinesheetEntryInput = {
   price?: string | null;
   fabric?: string | null;
   colors?: string | null;
+  colorOverride?: string[] | null;
   colorways?: LinesheetColor[];
   sketchUrl?: string | null;
   backUrl?: string | null;
@@ -122,22 +130,33 @@ export function pickApprovedStyleId(versions: LinesheetVersion[]): string | null
 
 const UNSORTED_COLOR = "Unsorted";
 
-/** The colour names of an entry, de-duplicated case-insensitively, in order. */
-export function entryColorNames(e: LinesheetEntry): string[] {
+/** De-duplicate names case-insensitively, keeping first-seen order and casing. */
+function dedupeNames(raw: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const n of raw) {
+    const k = n.trim().toLowerCase();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(n.trim());
+  }
+  return out;
+}
+
+/** The style's own colours — colorway captions when there are any, else the
+ *  free-text line split on / and , . Ignores any per-sheet override. */
+export function baseColorNames(e: LinesheetEntry): string[] {
   const fromWays = e.colorways.map((c) => c.name).filter(Boolean);
   const raw = fromWays.length
     ? fromWays
     : (e.colors ?? "").split(/[/,]/).map((s) => s.trim()).filter(Boolean);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const n of raw) {
-    const k = n.toLowerCase();
-    if (!seen.has(k)) {
-      seen.add(k);
-      out.push(n);
-    }
-  }
-  return out;
+  return dedupeNames(raw);
+}
+
+/** The colour names shown for an entry: the per-sheet override when set (even an
+ *  empty one — "no colours here"), otherwise the style's own colours. */
+export function entryColorNames(e: LinesheetEntry): string[] {
+  return e.colorOverride ?? baseColorNames(e);
 }
 
 export type ColorGroup = { color: string; entries: LinesheetEntry[] };
@@ -199,6 +218,8 @@ export function kindLabel(kind: LinesheetKind): string {
 // A generous ceiling so a runaway write cannot bloat a row, well above any real
 // linesheet.
 const MAX_ITEMS = 500;
+// Well above any real colour count on a single style.
+const MAX_COLORS = 24;
 
 /** Read whatever is stored into a clean, de-duplicated, ordered item list. */
 export function normalizeItems(raw: unknown): LinesheetItem[] {
@@ -217,6 +238,13 @@ export function normalizeItems(raw: unknown): LinesheetItem[] {
     if (Array.isArray(r.colorways)) {
       const cw = r.colorways.filter((x): x is string => typeof x === "string" && x.length > 0);
       if (cw.length) item.colorways = cw;
+    }
+    // A present colours key is an override — kept even when empty ("no colours on
+    // this sheet"). Absent means fall back to the style's own colours.
+    if (Array.isArray(r.colors)) {
+      item.colors = dedupeNames(
+        r.colors.filter((x): x is string => typeof x === "string").map((s) => s.slice(0, 40))
+      ).slice(0, MAX_COLORS);
     }
     out.push(item);
     if (out.length >= MAX_ITEMS) break;
@@ -284,6 +312,21 @@ export function setItemField(
   });
 }
 
+/**
+ * Set a style's per-sheet colour list (names), de-duplicated and capped. Always
+ * writes an explicit list — an empty one is the "no colours here" override, which
+ * is why this does not delete the key the way a blank price does.
+ */
+export function setItemColors(
+  items: LinesheetItem[],
+  styleId: string,
+  colors: string[]
+): LinesheetItem[] {
+  const clean = dedupeNames((colors ?? []).map((c) => (typeof c === "string" ? c.slice(0, 40) : "")))
+    .slice(0, MAX_COLORS);
+  return items.map((i) => (i.style_id === styleId ? { ...i, colors: clean } : i));
+}
+
 export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
   const colorways = (input.colorways ?? []).filter((c) => c && t(c.url));
   const sketchUrl = t(input.sketchUrl);
@@ -296,6 +339,7 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
     price: t(input.price),
     fabric: t(input.fabric),
     colors: t(input.colors),
+    colorOverride: input.colorOverride ?? null,
     colorways: colorways.map((c) => ({ url: c.url, name: t(c.name) ?? "" })),
     sketchUrl,
     backUrl: t(input.backUrl),

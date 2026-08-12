@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { sampleRatingLabel } from "@/lib/types";
-import { groupByColor, swatchForColor } from "@/lib/linesheet";
+import { groupByColor, swatchForColor, baseColorNames } from "@/lib/linesheet";
 import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
@@ -13,7 +13,9 @@ import {
   addStylesToLinesheet,
   removeStyleFromLinesheet,
   setLinesheetItem,
+  setLinesheetColors,
   renameLinesheet,
+  reorderLinesheet,
   deleteLinesheet,
 } from "@/app/actions/linesheets";
 
@@ -57,16 +59,20 @@ function RatingDot({ rating }: { rating: string }) {
  * no hex to draw from.
  */
 function Colors({ entry }: { entry: LinesheetEntry }) {
+  // A per-sheet override wins and is drawn as named dots (it has no images);
+  // otherwise the colorway photos, else the style's free-text colours.
   const swatches: { name: string; url: string | null }[] =
-    entry.colorways.length > 0
-      ? entry.colorways.map((c) => ({ name: c.name, url: c.url }))
-      : entry.colors
-        ? entry.colors
-            .split(/[/,]/)
-            .map((s) => s.trim())
-            .filter(Boolean)
-            .map((name) => ({ name, url: null }))
-        : [];
+    entry.colorOverride !== null
+      ? entry.colorOverride.map((name) => ({ name, url: null }))
+      : entry.colorways.length > 0
+        ? entry.colorways.map((c) => ({ name: c.name, url: c.url }))
+        : entry.colors
+          ? entry.colors
+              .split(/[/,]/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .map((name) => ({ name, url: null }))
+          : [];
   if (swatches.length === 0) return null;
   return (
     <div className="ls-colors">
@@ -81,6 +87,75 @@ function Colors({ entry }: { entry: LinesheetEntry }) {
           {s.name && <span className="ls-color-name">{s.name}</span>}
         </span>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Add and remove a style's colours on this sheet, in the detail view (Tess,
+ * 2026-08-12: "add ability to add / remove colors from styles on line sheet in
+ * detail view"). Edits names only — a filled dot when the name is a real CSS
+ * colour, an outlined dot otherwise. The first edit materialises the style's own
+ * colours into the sheet's override, then adds to or removes from that.
+ */
+function ColorsEditor({
+  entry,
+  onSave,
+}: {
+  entry: LinesheetEntry;
+  onSave: (colors: string[]) => void;
+}) {
+  const [adding, setAdding] = useState("");
+  const current = entry.colorOverride ?? baseColorNames(entry);
+
+  function add() {
+    const v = adding.trim();
+    if (!v) return;
+    if (!current.some((c) => c.toLowerCase() === v.toLowerCase())) onSave([...current, v]);
+    setAdding("");
+  }
+  function drop(name: string) {
+    onSave(current.filter((c) => c.toLowerCase() !== name.toLowerCase()));
+  }
+
+  return (
+    <div className="ls-coloredit no-print">
+      <div className="ls-coloredit-chips">
+        {current.map((name, i) => (
+          <span className="ls-coloredit-chip" key={i}>
+            <span className="ls-color-chip" style={{ background: name.toLowerCase() }} aria-hidden="true" />
+            <span className="ls-coloredit-name">{name}</span>
+            <button
+              type="button"
+              className="ls-coloredit-x"
+              onClick={() => drop(name)}
+              title={`Remove ${name}`}
+              aria-label={`Remove ${name}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        {current.length === 0 && <span className="ls-coloredit-empty">No colors</span>}
+      </div>
+      <div className="ls-coloredit-add">
+        <input
+          className="input sm"
+          value={adding}
+          onChange={(e) => setAdding(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Add a color…"
+          aria-label="Add a color"
+        />
+        <button type="button" className="btn link sm" onClick={add} disabled={!adding.trim()}>
+          Add
+        </button>
+      </div>
     </div>
   );
 }
@@ -150,6 +225,72 @@ export default function Linesheet({
   // soft-deletes and redirects to the list.
   const [delArmed, setDelArmed] = useState(false);
 
+  // Drag-to-reorder (Tess, 2026-08-12: "add ability to Reorganize line sheet
+  // order by dragging"). The order lives here as a list of style ids so a drag
+  // reflows the assortment immediately; reorderLinesheet persists it and the
+  // server revalidation re-seeds from the saved items. A small grip handle is the
+  // drag source, so the card stays clickable and the detail view's fields stay
+  // selectable; each card/row is the drop target.
+  const [order, setOrder] = useState<string[]>(() => sheet.entries.map((e) => e.styleId));
+  const [dragId, setDragId] = useState<string | null>(null);
+  const orderRef = useRef(order);
+  orderRef.current = order;
+  useEffect(() => {
+    setOrder(sheet.entries.map((e) => e.styleId));
+  }, [sheet.entries]);
+
+  const byId = useMemo(
+    () => new Map(sheet.entries.map((e) => [e.styleId, e] as const)),
+    [sheet.entries]
+  );
+  const ordered = useMemo(
+    () => order.map((sid) => byId.get(sid)).filter((e): e is LinesheetEntry => Boolean(e)),
+    [order, byId]
+  );
+
+  function reorderTo(targetId: string) {
+    setOrder((prev) => {
+      if (!dragId || dragId === targetId) return prev;
+      const next = prev.filter((x) => x !== dragId);
+      const at = next.indexOf(targetId);
+      if (at < 0) return prev;
+      next.splice(at, 0, dragId);
+      return next;
+    });
+  }
+  async function commitOrder() {
+    const finalOrder = orderRef.current;
+    setDragId(null);
+    await reorderLinesheet(id, finalOrder);
+  }
+  // The grip handle: the one draggable element, so a drag never fights the card's
+  // click or a field's text selection.
+  const dragHandle = (styleId: string) => (
+    <span
+      className="ls-drag no-print"
+      draggable
+      onDragStart={(ev) => {
+        setDragId(styleId);
+        ev.dataTransfer.effectAllowed = "move";
+        ev.dataTransfer.setData("text/plain", styleId); // Firefox needs data to start a drag
+      }}
+      onDragEnd={commitOrder}
+      title="Drag to reorder"
+      aria-label="Drag to reorder"
+    >
+      ⠿
+    </span>
+  );
+  // Drop-target props for a card/row: allow the drop and reflow as the grip passes over.
+  const dropProps = (styleId: string) => ({
+    onDragOver: (ev: React.DragEvent) => {
+      if (dragId) ev.preventDefault();
+    },
+    onDragEnter: () => {
+      if (dragId) reorderTo(styleId);
+    },
+  });
+
   // More than one factory works on this garment → a modal offers the choice.
   const multi = (styleId: string) => (standings[styleId]?.versions.length ?? 1) > 1;
 
@@ -189,12 +330,30 @@ export default function Linesheet({
     await setLinesheetItem(id, styleId, { [field]: value });
   }
 
+  // Per-sheet colour edits, applied optimistically so a chip appears/disappears
+  // at once; the server revalidation re-seeds from the saved items and clears this.
+  const [colorEdits, setColorEdits] = useState<Record<string, string[]>>({});
+  useEffect(() => setColorEdits({}), [sheet.entries]);
+  const withColors = (e: LinesheetEntry): LinesheetEntry =>
+    e.styleId in colorEdits ? { ...e, colorOverride: colorEdits[e.styleId] } : e;
+  async function saveColors(styleId: string, colors: string[]) {
+    setColorEdits((m) => ({ ...m, [styleId]: colors }));
+    await setLinesheetColors(id, styleId, colors);
+  }
+
   const empty = sheet.entries.length === 0;
 
   // One grid card. In a colour group, `swatchUrl` is that colourway's image so a
-  // multi-colour style shows the right colour under each heading.
-  const cell = (e: LinesheetEntry, swatchUrl: string | null = e.sketchUrl) => (
-    <div className="ls-cell" key={e.styleId}>
+  // multi-colour style shows the right colour under each heading. `canDrag` is off
+  // in the colour-grouped view, where a style can sit in several groups and a
+  // single linear order has no meaning.
+  const cell = (e: LinesheetEntry, swatchUrl: string | null = e.sketchUrl, canDrag = true) => (
+    <div
+      className={"ls-cell" + (dragId === e.styleId ? " dragging" : "")}
+      key={e.styleId}
+      {...(canDrag ? dropProps(e.styleId) : {})}
+    >
+      {canDrag && dragHandle(e.styleId)}
       <StyleOpener
         styleId={e.styleId}
         multi={multi(e.styleId)}
@@ -214,7 +373,7 @@ export default function Linesheet({
         </span>
         {e.styleNo && <span className="ls-cardno">{e.styleNo}</span>}
       </StyleOpener>
-      <Colors entry={e} />
+      <Colors entry={withColors(e)} />
       <button
         type="button"
         className={"ls-remove no-print" + (armed === e.styleId ? " armed" : "")}
@@ -346,25 +505,30 @@ export default function Linesheet({
       ) : view === "grid" ? (
         groupColor ? (
           <div className="ls-colorgroups">
-            {groupByColor(sheet.entries).map((g) => (
+            {groupByColor(ordered.map(withColors)).map((g) => (
               <section className="ls-colorgroup" key={g.color}>
                 <h3 className="ls-colorgroup-head">
                   {g.color}
                   <span className="ls-colorgroup-n">{g.entries.length}</span>
                 </h3>
                 <div className="ls-grid">
-                  {g.entries.map((e) => cell(e, swatchForColor(e, g.color)))}
+                  {g.entries.map((e) => cell(e, swatchForColor(e, g.color), false))}
                 </div>
               </section>
             ))}
           </div>
         ) : (
-          <div className="ls-grid">{sheet.entries.map((e) => cell(e))}</div>
+          <div className="ls-grid">{ordered.map((e) => cell(e))}</div>
         )
       ) : (
         <div className="ls-detail">
-          {sheet.entries.map((e) => (
-            <section className="ls-entry" key={e.styleId}>
+          {ordered.map((e) => (
+            <section
+              className={"ls-entry" + (dragId === e.styleId ? " dragging" : "")}
+              key={e.styleId}
+              {...dropProps(e.styleId)}
+            >
+              {dragHandle(e.styleId)}
               <StyleOpener
                 styleId={e.styleId}
                 multi={multi(e.styleId)}
@@ -447,18 +611,27 @@ export default function Linesheet({
                   <div className="ls-fact">
                     <dt>Colors</dt>
                     <dd>
-                      <Colors entry={e} />
+                      <ColorsEditor
+                        entry={withColors(e)}
+                        onSave={(cols) => saveColors(e.styleId, cols)}
+                      />
+                      <div className="ls-field-print">
+                        <Colors entry={withColors(e)} />
+                      </div>
                     </dd>
                   </div>
-                  <div className="ls-fact ls-fact-note">
-                    <dt>Positioning</dt>
+                  <div className={"ls-fact ls-fact-note" + (e.note ? "" : " ls-empty")}>
+                    {/* Renamed from "Positioning" and suppressed in the export when
+                        blank (Tess, 2026-08-12: "change positioning to description
+                        / notes. supress in export if no text added"). */}
+                    <dt>Description / Notes</dt>
                     <dd>
                       <textarea
                         className="textarea ls-field ls-note no-print"
                         defaultValue={e.note ?? ""}
                         placeholder="How this piece sits in the range…"
                         onBlur={(ev) => saveField(e.styleId, "note", ev.target.value)}
-                        aria-label="Positioning note"
+                        aria-label="Description / notes"
                       />
                       {e.note && <p className="ls-field-print">{e.note}</p>}
                     </dd>

@@ -10,8 +10,10 @@ import {
   buildLinesheet,
   buildEntry,
   entryColorNames,
+  baseColorNames,
   groupByColor,
   swatchForColor,
+  setItemColors,
   pickApprovedStyleId,
   type LinesheetItem,
   type LinesheetVersion,
@@ -165,6 +167,42 @@ test("swatchForColor returns that colourway's image, else the sketch", () => {
   });
   assert.equal(swatchForColor(e, "Ecru"), "ecru.jpg");
   assert.equal(swatchForColor(e, "Sage"), "sketch"); // no match → sketch
+});
+
+test("a per-sheet colour override wins over the style's own colours, empty means none", () => {
+  const base = buildEntry({ styleId: "a", name: "x", colors: "Black / Bone" });
+  assert.deepEqual(baseColorNames(base), ["Black", "Bone"]);
+  assert.deepEqual(entryColorNames(base), ["Black", "Bone"]); // no override → the style's
+
+  const overridden = buildEntry({ styleId: "a", name: "x", colors: "Black / Bone", colorOverride: ["Sage", "Ecru"] });
+  assert.deepEqual(entryColorNames(overridden), ["Sage", "Ecru"]);
+  assert.deepEqual(baseColorNames(overridden), ["Black", "Bone"]); // base ignores the override
+
+  // An explicit empty override reads as "no colours on this sheet", not "fall back".
+  const none = buildEntry({ styleId: "a", name: "x", colors: "Black", colorOverride: [] });
+  assert.deepEqual(entryColorNames(none), []);
+});
+
+test("setItemColors writes an explicit list, de-duped and case-folded; [] persists", () => {
+  const items: LinesheetItem[] = [{ style_id: "a", price: "$1" }, { style_id: "b" }];
+  // De-dupes case-insensitively, keeps the price, only touches the target.
+  assert.deepEqual(setItemColors(items, "a", ["Black", "black", " Bone "]), [
+    { style_id: "a", price: "$1", colors: ["Black", "Bone"] },
+    { style_id: "b" },
+  ]);
+  // Removing every colour leaves an explicit [] — the "no colours" override.
+  assert.deepEqual(setItemColors(items, "b", []), [
+    { style_id: "a", price: "$1" },
+    { style_id: "b", colors: [] },
+  ]);
+});
+
+test("normalizeItems keeps a colours override, empty included, and drops it when absent", () => {
+  assert.deepEqual(normalizeItems([{ style_id: "a", colors: ["Sage", "sage", " "] }]), [
+    { style_id: "a", colors: ["Sage"] },
+  ]);
+  assert.deepEqual(normalizeItems([{ style_id: "a", colors: [] }]), [{ style_id: "a", colors: [] }]);
+  assert.deepEqual(normalizeItems([{ style_id: "a" }]), [{ style_id: "a" }]); // no key → no override
 });
 
 test("normalizeKind only ever yields the two kinds", () => {

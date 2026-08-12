@@ -118,6 +118,7 @@ export default async function LinesheetPage({
         note: item.note ?? null,
         fabric: st.fabric,
         colors: st.colors,
+        colorOverride: item.colors ?? null,
         colorways,
         sketchUrl: faces.front?.url ?? faces.back?.url ?? st.cover_image ?? null,
         backUrl: faces.front && faces.back ? faces.back.url : null,

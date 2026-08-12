@@ -130,7 +130,7 @@ export default async function FittingDeckPage({
   const brandLabel = brandName(brandSlug, brands);
 
   return (
-    <div className="page">
+    <div className="page deck-page">
       <div className="page-head no-print">
         <Link href="/development" className="count">
           ← Development

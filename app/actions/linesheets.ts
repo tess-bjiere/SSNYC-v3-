@@ -11,6 +11,7 @@ import {
   removeItem,
   reorderItems,
   setItemField,
+  setItemColors,
   normalizeItems,
   normalizeKind,
   type LinesheetItem,
@@ -122,6 +123,15 @@ export async function setLinesheetItem(
   await requireUser();
   const { supabase, items } = await readItems(id);
   await writeItems(supabase, id, setItemField(items, styleId, patch));
+}
+
+// The style's colours on this sheet — edited here without touching the style row
+// (Tess, 2026-08-12: "add ability to add / remove colors from styles on line
+// sheet in detail view"). Always writes an explicit list; [] means "no colours".
+export async function setLinesheetColors(id: string, styleId: string, colors: string[]) {
+  await requireUser();
+  const { supabase, items } = await readItems(id);
+  await writeItems(supabase, id, setItemColors(items, styleId, colors));
 }
 
 // Delete a linesheet — soft, like everything else in the app: a deleted_at
