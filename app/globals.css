@@ -3108,6 +3108,13 @@ textarea.input,textarea.select,.textarea{height:auto}
   .lib-page .lib-tabs{order:4;flex:0 1 auto;margin:0}
   .lib-page .lib-filter-toggle{order:5;flex:0 0 auto;margin:0 0 0 auto}
 
+  /* A zero-height full-width break between the [tabs … Filter] pair and the
+     [density … Sort] pair, so they read as the reference's two rows rather than
+     collapsing onto one line once the shrunk controls leave room (Tess,
+     2026-08-12). order:5 + DOM-last places it right after the filter; without it
+     Filter can no longer reach the right edge and density crowds up beside it. */
+  .lib-page::after{content:"";order:5;flex-basis:100%;height:0;margin:0}
+
   .lib-page .lib-head-tools{order:6;flex:0 0 auto;margin:0}
   .lib-page .page-head > .sel{order:7;flex:0 0 auto;margin-left:auto;min-width:0}
   .lib-page .page-head > .sel .sel-trigger{width:auto;min-width:150px}
@@ -3158,6 +3165,42 @@ textarea.input,textarea.select,.textarea{height:auto}
 .mb-toolbar .input,.mb-toolbar .select,.mb-toolbar .sel-trigger,
 .mb-toolbar .btn:not(.link){height:28px}
 .mb-toolbar .mb-boardsel{padding-top:var(--ctl-y-sm);padding-bottom:var(--ctl-y-sm)}
+
+/* ============================================================================
+   Top-of-page controls come down to the reference's compact scale on a phone
+   (Tess, 2026-08-12: "Shrink buttons / menu items on current mobile pages to
+   match size of reference design ... reference, campaign and moodboard pages
+   need to scale down elements at top of page").
+
+   Measured against ssnyclibrary.tiiny.site at 375px, its secondary toolbar
+   controls — the Archival/In-market/All tabs, Filter, the Newest sort and the
+   moodboard's board/actions — sit at ~30px tall in the 9px micro size. Ours had
+   been floored to 36px at the 10.5px meta size by the coarse-pointer touch
+   target. This block, appended last and matched in specificity, wins over that
+   floor for these named controls only: the full-width Add button and the search
+   field keep their comfortable height (the reference's Add is actually taller
+   than ours), and the density icons were already 13px, matching the reference,
+   so neither is touched here. */
+@media(max-width:900px){
+  /* Heights. The Filter button needs .btn.sm-level specificity to clear the
+     coarse floor's own .btn.sm rule; the sort trigger and moodboard controls
+     are qualified likewise so nothing slips back to 36. */
+  .lib-tab,
+  .btn.sm.lib-filter-toggle,
+  .sel-trigger.lib-sort,
+  .mb-toolbar .btn,
+  .mb-toolbar .sel-trigger,
+  .mb-toolbar .select{height:30px;min-height:30px}
+  /* The chips and the Filter/Sort/+Board labels read at the reference's micro
+     size; the tabs also tighten horizontally to the reference's snug padding.
+     Sort's font is qualified .select.lib-sort to beat the earlier meta-size
+     rule that pins .select.lib-sort. */
+  .lib-tab,
+  .btn.sm.lib-filter-toggle,
+  .select.lib-sort,
+  .mb-toolbar .btn.ghost{font-size:var(--t-micro)}
+  .lib-tab{padding-inline:var(--ctl-x-sm)}
+}
 
 /* ============================================================================
    Global footer (Tess, 2026-08-11: "add link in footer to google doc where
