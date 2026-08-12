@@ -37,7 +37,10 @@ export default async function SharedReference({ params }: { params: Promise<{ id
   return (
     <div className="wrap" style={{ paddingTop: 24, paddingBottom: 80 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, borderBottom: "1px solid var(--line)", paddingBottom: 16, marginBottom: 24 }}>
-        <span className="brand">SSYNC</span>
+        <span className="brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-logo" src="/ssync-logo.svg" alt="SSYNC" />
+        </span>
         <span className="count">Shared reference · view only</span>
       </div>
 

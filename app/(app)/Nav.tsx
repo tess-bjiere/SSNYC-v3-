@@ -146,7 +146,8 @@ export default function Nav({
   return (
     <nav className="nav">
       <Link href={home} className="brand">
-        SSYNC
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="brand-logo" src="/ssync-logo.svg" alt="SSYNC" />
       </Link>
       <div className="nav-links">
         {groups.map((g) => (
@@ -217,7 +218,10 @@ export default function Nav({
           <div className="nav-scrim" onClick={() => setMenuOpen(false)} />
           <div className="nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation">
             <div className="nav-drawer-head">
-              <span className="brand">SSYNC</span>
+              <span className="brand">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="brand-logo" src="/ssync-logo.svg" alt="SSYNC" />
+              </span>
               <button
                 type="button"
                 className="nav-drawer-close"

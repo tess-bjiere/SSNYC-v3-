@@ -224,6 +224,10 @@ body.notes-open .wrap{padding-right:378px}
    vertically centered in nav bar"). The old padding-top pushed it low, most
    visibly on a phone beside the centred burger. */
 .brand{font-size:18px;letter-spacing:.09em;font-weight:600;line-height:1;display:flex;align-items:center}
+/* The wordmark is an SVG logo now (Tess, 2026-08-12: "replace ssync logo with
+   logo here"). White artwork, so it reads on the dark nav as the text did; sized
+   by height so its own aspect ratio sets the width. */
+.brand-logo{height:19px;width:auto;display:block}
 /* Tess, 2026-08-06: "move those sections to the left close to logo but with
    breathing room" — so the row sits beside the wordmark again rather than
    centred in the bar. It no longer takes the free space (no flex:1); the gap
@@ -1035,6 +1039,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* Login */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:26px;text-align:center;padding:24px}
 .login-brand{font-size:32px;letter-spacing:.09em;font-weight:600}
+.login-logo{height:32px;width:auto;display:block;margin:0 auto}
 .login-sub{color:var(--faint);font-size:var(--t-sm);max-width:340px;line-height:1.6}
 
 @media(max-width:860px){

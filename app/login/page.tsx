@@ -26,7 +26,10 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrap">
-      <div className="login-brand">SSYNC</div>
+      <div className="login-brand">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="login-logo" src="/ssync-logo.svg" alt="SSYNC" />
+      </div>
       <div className="login-sub">
         The Loyalist&apos;s reference library &amp; style development tool. Sign in with your
         theloyalist.com Google account, or a guest account that&apos;s been added to the allowlist.

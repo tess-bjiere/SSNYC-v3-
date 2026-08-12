@@ -53,7 +53,10 @@ export default async function SharedBoard({ params }: { params: Promise<{ id: st
   return (
     <div className="wrap" style={{ paddingTop: 24, paddingBottom: 80 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, borderBottom: "1px solid var(--line)", paddingBottom: 16, marginBottom: 24 }}>
-        <span className="brand">SSYNC</span>
+        <span className="brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="brand-logo" src="/ssync-logo.svg" alt="SSYNC" />
+        </span>
         <h1 className="display" style={{ fontSize: "var(--t-display)", margin: 0 }}>{board.name}</h1>
         <span className="count">Shared board · view only</span>
       </div>
