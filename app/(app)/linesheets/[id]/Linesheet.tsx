@@ -158,11 +158,6 @@ export default function Linesheet({
           <div className="ls-cover-wordmark">{cover.brandLabel}</div>
         )}
         <div className="ls-cover-mid">
-          {(sheet.season || sheet.kindLabel) && (
-            <p className="ls-cover-kicker">
-              {[sheet.season, sheet.kindLabel].filter(Boolean).join(" · ")}
-            </p>
-          )}
           <h1 className="ls-cover-title">{sheet.name}</h1>
           <p className="ls-cover-sub">
             Linesheet · {sheet.count} {sheet.count === 1 ? "style" : "styles"} · {cover.generatedOn}
