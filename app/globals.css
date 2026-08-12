@@ -3556,42 +3556,58 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
    tokens would print as invisible text, so text/borders are set to ink-on-paper.
    min-width holds the desktop landscape layout even when printing from a phone. */
 @media print{
-  @page{size:letter landscape}
-  .ls-page{background:#fff;color:#111;min-width:1040px}
+  /* A real page margin on every sheet — the export was jamming into the top-left
+     corner with none (Tess, 2026-08-12: "very ugly and jumbled ... crammed into a
+     corner. refine to a beautifully designed, thoughtfully spaced report"). Half
+     an inch all round, letter landscape, ink on paper. */
+  @page{size:letter landscape;margin:0.5in}
+  .ls-page{background:#fff;color:#111}
+  /* Never let an open notes drawer shove the printed page aside. */
+  body.notes-open .wrap{padding-right:0}
 
-  /* Cover page — masthead top, title in the middle, the confidential line at the
-     bottom with breathing room (Tess, 2026-08-12: "confidential should sit on
-     bottom of cover page but have breathing room -- not pushed to 2nd page").
-     90vh, not a full 100vh: a full page overflowed and shoved the footer to a
-     second sheet, so it sits just inside the printable area's bottom instead. */
+  /* --- Cover: masthead top, title centred, confidential at the foot. Padding
+     comes from the page margin now, so the content sits inside it cleanly. --- */
   .ls-cover{display:flex;flex-direction:column;justify-content:space-between;
-    min-height:90vh;box-sizing:border-box;padding:38px 54px;break-after:page;color:#111}
-  .ls-cover-logo{height:32px;width:auto;max-width:52%;object-fit:contain;display:block;align-self:flex-start}
-  .ls-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
-  /* The title block sits in the vertical centre (Tess, 2026-08-12) — logo top,
-     title middle, confidential bottom, via space-between on the full-height page.
-     One weight thinner than before, 400 rather than 500. */
-  .ls-cover-title{font-size:54px;font-weight:400;letter-spacing:.01em;line-height:1.02;margin:0 0 6px}
+    min-height:6.8in;box-sizing:border-box;padding:0;break-after:page;color:#111}
+  .ls-cover-logo{height:34px;width:auto;max-width:50%;object-fit:contain;display:block;align-self:flex-start}
+  .ls-cover-wordmark{font-size:28px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
+  .ls-cover-title{font-size:56px;font-weight:400;letter-spacing:.01em;line-height:1.02;margin:0 0 8px}
   .ls-cover-sub{font-size:13px;color:#666;margin:0}
   .ls-cover-foot{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#aaa;margin:0}
 
-  /* Assortment grid — a wider run of tiles for the landscape page. */
-  .ls-grid{grid-template-columns:repeat(4,1fr);gap:16px}
-  .ls-cell{break-inside:avoid}
+  /* --- Assortment grid: four roomy tiles per landscape page. --- */
+  .ls-colorgroups{gap:34px}
+  .ls-colorgroup-head{font-size:12px;letter-spacing:.16em;color:#888;
+    border-color:#e6e6e6;padding-bottom:7px;margin-bottom:18px}
+  .ls-colorgroup-n{color:#aaa}
+  .ls-grid{grid-template-columns:repeat(4,1fr);gap:30px 26px}
+  .ls-cell{break-inside:avoid;gap:9px}
+  .ls-sketch{background:#f6f6f6;border-color:#e2e2e2}
+  .ls-cardname{font-size:15px;color:#111}
+  .ls-price{font-size:13px;color:#555}
+  .ls-cardno{font-size:10px;color:#9a9a9a}
+  .ls-colors-text,.ls-color-name{color:#666}
+  .ls-color-chip{border-color:#ddd}
 
-  /* Detail — one product per landscape page. The cover already broke the page,
-     so the first entry does not break again. */
+  /* --- Detail: one product filling a landscape page — a large drawing on the
+     left, the merchandising facts set beside it and vertically centred, so the
+     page reads as a considered lookbook page, not a cramped block. --- */
   .ls-detail{gap:0}
-  .ls-entry{break-before:page;break-inside:avoid;padding-top:0}
+  .ls-entry{break-before:page;break-inside:avoid;grid-template-columns:1.2fr 1fr;
+    gap:0.6in;align-items:center;align-content:center;min-height:6.8in;padding:0}
   .ls-detail .ls-entry:first-child{break-before:auto}
-  .ls-entry-fig img{max-height:440px}
-
-  /* Ink on paper. */
-  .ls-cardname,.ls-entry-name,.ls-fact dd{color:#111}
-  .ls-cardno,.ls-price,.ls-entry-sub,.ls-fact dt,.ls-color-name,.ls-colors-text{color:#555}
-  .ls-sketch,.ls-entry-fig,.ls-color-chip,.ls-pick-thumb{background:#f4f4f4;border-color:#ddd}
-  .ls-entry-fig{background:none}
+  .ls-entry-fig{background:none;border:none;padding:0;align-items:flex-start;gap:0.18in;min-height:0}
+  .ls-entry-fig img{width:100%;max-height:6in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  .ls-entry-back{max-width:32%}
+  .ls-entry-head{margin-bottom:0}
+  .ls-entry-name{font-size:30px;font-weight:400;color:#111}
+  .ls-entry-sub{font-size:11px;letter-spacing:.14em;color:#9a9a9a;margin-top:7px}
+  .ls-facts{gap:20px;margin-top:24px}
+  .ls-fact dt{font-size:10px;letter-spacing:.16em;color:#9a9a9a;margin-bottom:5px}
+  .ls-fact dd{font-size:14px;color:#111;line-height:1.5}
+  .ls-color-chip{border-color:#ddd}
   /* The editable field is hidden; its saved value prints as text. */
-  .ls-field-print{display:block;font-size:var(--t-body);color:#111;line-height:1.5}
+  .ls-field.no-print{display:none}
+  .ls-field-print{display:block;font-size:14px;color:#111;line-height:1.55}
   .ls-fact-note .ls-field-print{white-space:pre-wrap}
 }
