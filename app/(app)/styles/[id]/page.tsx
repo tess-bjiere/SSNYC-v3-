@@ -432,7 +432,12 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
         {/* The one control on this page that makes something new, at the top
             with the other page-level action rather than at the bottom of the
             identity column. */}
-        <RepurposeButton action={repurposeStyle.bind(null, st.id)} styleName={st.name} />
+        {/* Repurpose, Export CSV and Delete are hidden on a phone (Tess,
+            2026-08-11: "remove repurpose from mobile", "remove delete and export
+            csv from mobile") — they are desk actions. Export history stays. */}
+        <span className="hide-mobile">
+          <RepurposeButton action={repurposeStyle.bind(null, st.id)} styleName={st.name} />
+        </span>
         <Link href={`/styles/${id}/export`} className="btn link">
           Export history
         </Link>
@@ -446,13 +451,19 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             — Product Name, Hs code — so it drops straight in. A plain link,
             not a button, because it is a GET that writes nothing: safe to open
             twice, safe to bookmark, safe to send to somebody. */}
-        <a href={`/styles/${id}/csv`} className="btn link" download>
-          Export CSV
-        </a>
+        <span className="hide-mobile">
+          <a href={`/styles/${id}/csv`} className="btn link" download>
+            Export CSV
+          </a>
+        </span>
         {/* Last in the row and quietest in it, on purpose. Not offered at all
             on a style that is already in the Trash — the banner above has the
             only control that makes sense there. */}
-        {!st.deleted_at && <DeleteStyleButton action={deleteStyle.bind(null, st.id)} />}
+        {!st.deleted_at && (
+          <span className="hide-mobile">
+            <DeleteStyleButton action={deleteStyle.bind(null, st.id)} />
+          </span>
+        )}
       </div>
 
       <div className="profile">
@@ -498,6 +509,10 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               back" links on the picture point at, so those still open exactly
               the two cards that answer them — they just no longer send you
               down the page to do it. */}
+          {/* Hidden on a phone (Tess, 2026-08-11: "we dont need ... sketch
+              option on phone") — editing the sketch and colourways is a desk
+              task; the small cover above still shows the drawing. */}
+          <span className="hide-mobile">
           <ModalButton
             label="Sketch"
             title="Sketch — front and back"
@@ -531,6 +546,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               addLabel="Add colorways"
             />
           </ModalButton>
+          </span>
 
           {/* Quick status control — the same dropdown as everywhere else, and
               evergreen beside it rather than buried in a form.
@@ -579,6 +595,10 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               The narrow column is deliberate too. A version list is scanned,
               not worked in — see .profile-side in globals.css, which drops the
               tiles to two across and stacks the two forms. */}
+          {/* Versions are hidden on a phone (Tess, 2026-08-11: "we dont need
+              versions ... on phone") — duplicating and AI-versioning are desk
+              actions. */}
+          <span className="hide-mobile">
           <VersionStrip
             styleId={st.id}
             versions={vs}
@@ -602,6 +622,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               cover_image: coverUrl,
             }}
           />
+          </span>
         </div>
 
         <div className="profile-main">
@@ -863,6 +884,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               box is wide, the page underneath does not move, and the fields
               are still in the same order as the Details rows above so nobody
               has to hunt for the one they came to change. */}
+          <div className="profile-editdetails">
           <ModalButton label="Edit details" title="Edit details" wide>
             <form action={updateStyle.bind(null, st.id)} style={{ marginTop: 16 }}>
               <div className="field"><label>Name</label><input className="input" name="name" defaultValue={st.name} /></div>
@@ -976,6 +998,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               <ModalCloseOnSave />
             </form>
           </ModalButton>
+          </div>
 
 
 

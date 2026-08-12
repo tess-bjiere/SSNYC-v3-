@@ -1201,8 +1201,8 @@ export default function SampleRounds({
           )}
         </h3>
         {!adding && (
-          <button className="btn sm" type="button" onClick={() => setAdding(true)}>
-            Add sample round
+          <button className="btn ghost sm" type="button" onClick={() => setAdding(true)}>
+            + Add sample round
           </button>
         )}
       </div>
