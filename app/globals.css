@@ -521,6 +521,9 @@ body.notes-open .wrap{padding-right:378px}
    as the more important exit. */
 .view-product{margin-top:20px;display:flex;align-items:baseline;gap:var(--sp-ctl);flex-wrap:wrap}
 .view-product a{font-size:var(--t-sm);text-transform:none;letter-spacing:0;text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
+/* Delete is a way out of the reference, but a destructive one, so it sits at the
+   far right of the footer, quiet until you reach for it (Tess, 2026-08-11). */
+.detail-del{margin-left:auto}
 .detail-savedby{margin-top:14px;font-size:var(--t-meta);color:var(--muted)}
 .detail-edit{max-height:none}
 .detail-edit .field{margin-bottom:12px}

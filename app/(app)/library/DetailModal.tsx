@@ -307,9 +307,6 @@ export default function DetailModal({
                     {actions === "library" && (
                       <button className="btn" onClick={onAdd}>Add to moodboard</button>
                     )}
-                    {(actions === "library" || actions === "editorial") && (
-                      <button className="btn danger" onClick={() => setConfirmDel(true)}>Delete</button>
-                    )}
                   </div>
                 )}
 
@@ -396,19 +393,18 @@ export default function DetailModal({
                   </div>
                 )}
 
-                {/* Share sits with View product, not in the button row (Tess,
-                    2026-08-07: "move share down next to view product").
+                {/* The quiet footer of ways OUT of the reference, kept apart from
+                    the row of boxed actions above so the bottom stops feeling
+                    busy (Tess, 2026-08-11: "clean up buttons and links towards
+                    the bottom so it feels less messy"). View product and Share
+                    sit left (Tess, 2026-08-07: "move share down next to view
+                    product"); Delete is a quiet danger link pushed to the right
+                    — still one click to the confirm, but no longer a loud red
+                    box orphaned on its own line among the primary actions.
 
-                    The row above is what you DO to a reference — edit it,
-                    develop it, shelve it, delete it. These two are ways OUT of
-                    it: one opens the thing somewhere else, one hands somebody
-                    else a way in. A text link among four boxed buttons was also
-                    the odd one out visually, which is usually the sign it is
-                    the odd one out in meaning.
-
-                    Rendered whenever there is either of them, so a reference
-                    with no product link still has somewhere for Share to
-                    live. */}
+                    Rendered whenever there is anything to show, so a reference
+                    with no product link still has somewhere for Share and Delete
+                    to live. */}
                 {(cur.link || actions !== "read-only") && (
                   <div className="view-product">
                     {cur.link && (
@@ -416,6 +412,14 @@ export default function DetailModal({
                     )}
                     {actions !== "read-only" && (
                       <button className="btn link" onClick={share}>Share</button>
+                    )}
+                    {(actions === "library" || actions === "editorial") && (
+                      <button
+                        className="btn link danger detail-del"
+                        onClick={() => { setConfirmDel(true); setDevOpen(false); }}
+                      >
+                        Delete
+                      </button>
                     )}
                   </div>
                 )}
