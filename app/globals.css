@@ -3512,9 +3512,12 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   @page{size:landscape}
   .ls-page{background:#fff;color:#111;min-width:1040px}
 
-  /* Cover page — masthead, title + kicker, a numbered contents list, footer. */
+  /* Cover page — masthead top, title in the middle, the confidential line pinned
+     to the very bottom (Tess, 2026-08-12: "move confidential text to bottom of
+     page"). Fills the whole page (100vh, border-box so the padding counts) so
+     space-between + margin-top:auto put the footer on the page's bottom edge. */
   .ls-cover{display:flex;flex-direction:column;justify-content:space-between;
-    min-height:88vh;padding:38px 54px;break-after:page;color:#111}
+    min-height:100vh;box-sizing:border-box;padding:38px 54px;break-after:page;color:#111}
   .ls-cover-logo{height:32px;width:auto;max-width:52%;object-fit:contain;display:block;align-self:flex-start}
   .ls-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
   .ls-cover-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.24em;color:#8a8a8a;margin:0 0 14px}
@@ -3522,7 +3525,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
      thinner") — 400 rather than 500. */
   .ls-cover-title{font-size:54px;font-weight:400;letter-spacing:.01em;line-height:1.02;margin:0 0 6px}
   .ls-cover-sub{font-size:13px;color:#666;margin:0}
-  .ls-cover-foot{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#aaa;margin:0}
+  .ls-cover-foot{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#aaa;margin:auto 0 0}
 
   /* Assortment grid — a wider run of tiles for the landscape page. */
   .ls-grid{grid-template-columns:repeat(4,1fr);gap:16px}
