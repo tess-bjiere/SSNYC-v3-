@@ -197,7 +197,16 @@ export default function SlotCards({
                     type="button"
                     className="ph-open"
                     title="Open notes and mark-ups"
-                    onClick={() => setNoteOpen(slot.id)}
+                    onClick={() => {
+                      setNoteOpen(slot.id);
+                      // On a phone the notes open as a full modal you page
+                      // through, image and notes together, rather than expanding
+                      // inline (Tess, 2026-08-11: "click ... a sample thumbnail
+                      // ... should open up a modal that shows images and notes
+                      // and allows you to click to next image / note"). Desktop
+                      // keeps the inline view under the picture.
+                      setFull(window.matchMedia("(max-width: 860px)").matches);
+                    }}
                   >
                     <img src={src} alt={slot.label} loading="lazy" />
                   </button>

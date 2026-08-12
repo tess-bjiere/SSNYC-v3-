@@ -1041,9 +1041,14 @@ function RoundCard({
             as links. Comment is already a link, on the left, where the count
             belongs. */}
         <span className="sr-actions">
-          <button type="button" className="btn link" onClick={() => setFull(true)}>
-            Full screen
-          </button>
+          {/* On a phone Full screen is gone (Tess, 2026-08-11: "remove full
+              screen view from sample view on mobile") — tapping a sample
+              thumbnail opens the same paged image-and-notes modal directly. */}
+          <span className="hide-mobile">
+            <button type="button" className="btn link" onClick={() => setFull(true)}>
+              Full screen
+            </button>
+          </span>
           <Link className="btn link" href={`/styles/${styleId}/rounds/${s.id}/export`}>
             Send notes
           </Link>
