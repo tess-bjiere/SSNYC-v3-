@@ -348,16 +348,17 @@ export default function DevTabs({
             </button>
           )}
 
-          {/* Turn the grid into a picker to build a fitting deck. The label
-              says what it is for (Tess, 2026-08-11: "Select should be changed to
-              something like 'select styles for fitting deck'"); on shows "Done"
-              beside the count in the floating bar. */}
+          {/* Turn the grid into a picker to build a deck. Shortened from "Select
+              for fitting deck" (Tess, 2026-08-11: "change this to 'build a
+              deck'") — the action is building the deck, and the word is the same
+              on Development and the Style Library, which share this control. On
+              shows "Done" beside the count in the floating bar. */}
           <button
             type="button"
             className={"btn link" + (picking ? " on" : "")}
             onClick={() => (picking ? stopPicking() : setPicking(true))}
           >
-            {picking ? "Done" : "Select for fitting deck"}
+            {picking ? "Done" : "Build a deck"}
           </button>
 
           {/* Both numbers, always, so nothing is hidden quietly. */}
