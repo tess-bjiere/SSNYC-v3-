@@ -774,6 +774,12 @@ body.nav-open .notes-tab{display:none}
    there) and gone on a phone — used to drop desk-only controls from the mobile
    style profile without touching their desktop placement. */
 .hide-mobile{display:contents}
+/* Title and Export history share a line, name left and the link right (Tess,
+   2026-08-11: "move export history to the same line but on the right of
+   title"). */
+.profile-titlerow{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+.profile-exporthistory{flex:0 0 auto;white-space:nowrap}
+.profile-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
 .profile .cover{position:relative;aspect-ratio:3/4;background:var(--panel);border:1px solid var(--line);overflow:hidden;margin:0}
 .profile .cover img{width:100%;height:100%;object-fit:cover;display:block}
 
@@ -965,10 +971,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      cover pushing them down. Status follows; everything else keeps its place
      below. display:contents flattens the two desktop columns into one flow so
      the pieces can interleave. */
-  .profile{display:flex;flex-direction:column;gap:18px}
+  .profile{display:flex;flex-direction:column;gap:14px}
   .profile-side,.profile-main{display:contents}
   .profile-side > *,.profile-main > *{order:8;min-width:0}
-  .profile .page-title{order:1}
+  /* Sections carry a 38px bottom margin for the desktop column; on a phone the
+     flex gap sets the rhythm, so zero it — that pulls Edit details up under the
+     Details and pushes Status up (Tess, 2026-08-11: "edit details right under
+     the details", "push status up"), instead of 38 + 14 between each. */
+  .profile .section{margin-bottom:0}
+  .profile .profile-badges{margin-bottom:0}
+  .profile .profile-titlerow{order:1}
   .profile .profile-badges{order:2}
   .profile .cover{order:3;max-width:200px;align-self:flex-start}
   .profile .sumbar{order:4}

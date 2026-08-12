@@ -438,9 +438,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
         <span className="hide-mobile">
           <RepurposeButton action={repurposeStyle.bind(null, st.id)} styleName={st.name} />
         </span>
-        <Link href={`/styles/${id}/export`} className="btn link">
-          Export history
-        </Link>
+        {/* Export history now rides on the title line, to the right of the name
+            (Tess, 2026-08-11: "move export history to the same line but on the
+            right of title") — see the .profile-titlerow below. */}
         {/* The details as a spreadsheet row (Tess, 2026-08-07: "have an option
             to export csv of the above info from a style profile").
 
@@ -556,7 +556,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               viewable in the initial details section") — it is a fact about the
               style, like the factory and the fabric, not a thing about its
               status, and one copy of it is enough. */}
-          <div className="section" style={{ marginTop: 18 }}>
+          <div className="section">
             <h3>Status</h3>
             <StatusControl
               styleId={st.id}
@@ -635,17 +635,22 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               mark next to a title is read as a verdict, and "nobody has looked
               yet" is not one. The title attribute carries the word, because a
               colour on its own is not readable to everyone. */}
-          <h1 className="page-title display" style={{ marginBottom: 6 }}>
-            {latestRating && (
-              <span
-                className={"sib-dot title " + latestRating}
-                title={`Last judged round came back ${latestRating}`}
-                aria-label={`Last judged round rated ${latestRating}`}
-              />
-            )}
-            {st.name}
-          </h1>
-          <div className="profile-badges" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 22 }}>
+          <div className="profile-titlerow">
+            <h1 className="page-title display" style={{ marginBottom: 6 }}>
+              {latestRating && (
+                <span
+                  className={"sib-dot title " + latestRating}
+                  title={`Last judged round came back ${latestRating}`}
+                  aria-label={`Last judged round rated ${latestRating}`}
+                />
+              )}
+              {st.name}
+            </h1>
+            <Link href={`/styles/${id}/export`} className="btn link profile-exporthistory">
+              Export history
+            </Link>
+          </div>
+          <div className="profile-badges">
             <span className={"badge " + (st.status === "development" ? "dev" : st.status === "production" ? "prod" : st.status)}>
               {styleStatusLabel(st.status)}
             </span>
