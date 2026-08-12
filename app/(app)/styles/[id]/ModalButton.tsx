@@ -29,6 +29,7 @@ export default function ModalButton({
   title,
   hint,
   wide,
+  link,
   openOnHash,
   children,
 }: {
@@ -39,6 +40,9 @@ export default function ModalButton({
   /** A small line beside the button — a count, a progress note. */
   hint?: string;
   wide?: boolean;
+  /** Render the trigger as a quiet text link rather than an outlined button —
+   *  used for Edit details, which rides on the Details header (Tess, 2026-08-11). */
+  link?: boolean;
   /**
    * A fragment that opens this box, e.g. "sketch" for links pointing at
    * #sketch.
@@ -82,7 +86,11 @@ export default function ModalButton({
   return (
     <>
       <div className="modal-btn-row" id={openOnHash}>
-        <button type="button" className="btn ghost sm" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          className={link ? "btn link" : "btn ghost sm"}
+          onClick={() => setOpen(true)}
+        >
           {label}
         </button>
         {hint && <span className="ph-progress">{hint}</span>}

@@ -1052,7 +1052,9 @@ function RoundCard({
           <Link className="btn link" href={`/styles/${styleId}/rounds/${s.id}/export`}>
             Send notes
           </Link>
-          <button type="button" className="btn ghost sm sr-edit" onClick={() => setOpen((o) => !o)}>
+          {/* A quiet text link on the header row now, not a boxed button (Tess,
+              2026-08-11: "move edit up to first row as a small text link"). */}
+          <button type="button" className="btn link sr-edit" onClick={() => setOpen((o) => !o)}>
             {open ? "Close" : "Edit"}
           </button>
         </span>

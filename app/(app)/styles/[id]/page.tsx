@@ -708,7 +708,15 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
 
           {/* Details */}
           <div className="section profile-details">
-            <h3>Details</h3>
+            {/* On a phone, Edit rides on the Details header as a small link on
+                the right (Tess, 2026-08-11: "put edit details as a small edit
+                link on the same line but on the right of 'detail' header"). It
+                opens the same modal via #editdetails; the boxed button below is
+                hidden on the phone. Desktop keeps the button below Details. */}
+            <div className="profile-details-head">
+              <h3>Details</h3>
+              <a href="#editdetails" className="btn link profile-details-edit">Edit</a>
+            </div>
             {/* Two columns on a desktop, one on a phone — the rows are short
                 facts and a single file of them pushed Reference(s) and the
                 sample rounds off the screen (Tess, 2026-08-05: "Make details 2
@@ -890,7 +898,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               are still in the same order as the Details rows above so nobody
               has to hunt for the one they came to change. */}
           <div className="profile-editdetails">
-          <ModalButton label="Edit details" title="Edit details" wide>
+          <ModalButton label="Edit details" title="Edit details" wide openOnHash="editdetails">
             <form action={updateStyle.bind(null, st.id)} style={{ marginTop: 16 }}>
               <div className="field"><label>Name</label><input className="input" name="name" defaultValue={st.name} /></div>
               {/* Same order as the Details rows above it, three to a line
@@ -1085,8 +1093,11 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
           </details>
 
           {/* Reference(s) — the library references behind this style.
-              Renamed from "Developed from" (Tess, 2026-08-05). */}
-          <details className="section" open={refs.length > 0}>
+              Renamed from "Developed from" (Tess, 2026-08-05). Collapsed by
+              default now (Tess, 2026-08-11: "have reference section collapsed") —
+              the summary line still says how many are linked, and it opens on a
+              tap; it no longer auto-expands and pushes the page down. */}
+          <details className="section">
             <summary className="section-toggle">
               Reference(s){" "}
               <span className="ph-progress">

@@ -105,7 +105,10 @@ export default function CoverFace({
             {i === 0 ? "Back ›" : "‹ Front"}
           </button>
         ) : addHref ? (
-          <a className="cover-flip" href={addHref} onClick={(e) => reveal(e, addHref)}>
+          // Hidden on a phone (Tess, 2026-08-11: "remove add back on sample
+          // sketch on mobile") — adding a back is a desk task; once a back
+          // exists the flip control above lets you switch between the two.
+          <a className="cover-flip cover-addback" href={addHref} onClick={(e) => reveal(e, addHref)}>
             Add back ›
           </a>
         ) : null}
