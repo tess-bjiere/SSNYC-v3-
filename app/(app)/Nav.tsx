@@ -90,6 +90,9 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // in the order the work runs: what is being made, who is making it, and
       // what came out the other end and was kept.
       { href: "/style-library", label: "Style Library" },
+      // Where finished / in-progress styles are assembled into a season or
+      // evergreen linesheet (Tess, 2026-08-12).
+      { href: "/linesheets", label: "Linesheets" },
     ],
   },
 ];

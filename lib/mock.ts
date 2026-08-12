@@ -135,3 +135,62 @@ export function mockStyleBundle(id: string): {
     ],
   };
 }
+
+// Two linesheets for local preview (Tess, 2026-08-12). The linesheets table does
+// not exist in mock mode, so the /linesheets pages read these instead — enough to
+// see the list, the assortment grid and the one-per-page detail render against
+// the real mock styles above.
+export type MockLinesheetRow = {
+  id: string;
+  brand: string;
+  name: string;
+  kind: string;
+  season: string | null;
+  items: { style_id: string; price?: string; note?: string; colorways?: string[] }[];
+  notes: unknown[];
+  archived: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
+export const mockLinesheets: MockLinesheetRow[] = [
+  {
+    id: "linesheet-0",
+    brand: "sous-sous",
+    name: "FW26 Launch",
+    kind: "seasonal",
+    season: "FW26",
+    items: [
+      { style_id: "style-0", price: "$105", note: "Elevated base layer; pairs back to the trouser and the crewneck." },
+      { style_id: "style-1", price: "$185" },
+      { style_id: "style-2" },
+      { style_id: "style-3", price: "$225" },
+    ],
+    notes: [],
+    archived: false,
+    created_by: "tess@theloyalist.com",
+    created_at: "2026-07-01",
+    updated_at: "2026-08-01",
+    deleted_at: null,
+  },
+  {
+    id: "linesheet-1",
+    brand: "sous-sous",
+    name: "Evergreen Core",
+    kind: "evergreen",
+    season: null,
+    items: [{ style_id: "style-4" }, { style_id: "style-5" }],
+    notes: [],
+    archived: false,
+    created_by: "tess@theloyalist.com",
+    created_at: "2026-06-01",
+    updated_at: "2026-07-15",
+    deleted_at: null,
+  },
+];
+
+export function mockLinesheet(id: string): MockLinesheetRow | null {
+  return mockLinesheets.find((l) => l.id === id) ?? null;
+}
