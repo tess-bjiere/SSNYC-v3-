@@ -998,7 +998,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      drop its 16px margin and the flex row-gap to 8 so the button sits just under
      the heading, not 34px below it (Tess, 2026-08-11: "spacing still feels
      wonky"). */
-  .profile .sr-sechead{gap:8px}
+  .profile .sr-sechead{gap:8px;margin-block:16px 10px}
   .profile .sr-sechead h3{flex-basis:100%;margin-bottom:0}
   /* The Edit details button carries 20+38px of "air" for the desktop column,
      which on a phone inflated its wrapper to 94px and read as a big void above
@@ -1037,10 +1037,37 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* A received round needs no "received" badge — the round line already says as
      much (Tess, 2026-08-11: "hide received"). */
   .sr-state.received{display:none}
+  /* The sample-card header, reorganised for a phone (Tess, 2026-08-12: "remove
+     comment icon move edit and send notes up to place where comment icon is
+     currently"). The per-round comment icon goes — the comments are still one
+     tap away from the page-level pill — and Send notes + Edit rise into the gap
+     it leaves at the right end of the name row. The facts (state, rating,
+     factory, ETA) drop to a second line, so the round name and its two actions
+     share one clean top line instead of the actions wrapping underneath a row
+     of chips.
+
+     The ::after is a zero-height flex line-break: it carries order:2 (so it
+     lands right after the actions) and flex-basis:100% (so it fills the line and
+     pushes the order:3 facts onto the row below). Without it margin-left:auto
+     only claims the sliver of space left over once the facts had packed onto row
+     one beside the name. */
+  .profile .sr-head{row-gap:8px}
+  .profile .sr-comments{display:none}
+  .profile .sr-head strong{order:1}
+  .profile .sr-head .sr-actions{order:2;margin-left:auto}
+  .profile .sr-head::after{content:"";order:2;flex-basis:100%;height:0}
+  .profile .sr-head .sr-state,
+  .profile .sr-head .sr-rate,
+  .profile .sr-head .sr-factory,
+  .profile .sr-head .sr-eta{order:3}
   /* The long placeholder instructions are desk detail; a phone shows just the
      Upload control and the slot label (Tess, 2026-08-11: "sample image
      thumbnails look messy -- simplify as much as possible"). */
   .sr-shoot .ph-hint{display:none}
+  /* No "Optional" tag on the detail shots on a phone (Tess, 2026-08-12: "remove
+     optional from detail 2 and 3 shots") — it is desk furniture that only adds
+     noise to the tiles. */
+  .profile .ph-opt{display:none}
 
   /* Desk-only controls hidden on a phone (Tess, 2026-08-11): Repurpose, Export
      CSV, Delete, Versions and the Sketch editor. */

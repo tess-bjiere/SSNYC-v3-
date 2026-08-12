@@ -319,7 +319,14 @@ export default function SlotCards({
                 note={note}
                 position={`${at + 1} of ${shot.length}`}
                 full={full}
-                onFull={setFull}
+                onFull={(v) => {
+                  setFull(v);
+                  // On a phone, Done (exit full) closes back to the thumbnails
+                  // rather than dropping to the inline image below the thumbnail
+                  // (Tess, 2026-08-11: "when you click done on a full size sample
+                  // image, it should go back to just the thumbnails").
+                  if (!v && window.matchMedia("(max-width: 860px)").matches) setNoteOpen(null);
+                }}
                 // No caption on a sample photo — the slot label already says what
                 // the picture is (Tess, 2026-08-11: "remove caption for sample
                 // photos"). Design slots (no sampleId) keep it.
