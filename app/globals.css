@@ -1427,9 +1427,14 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .fx-mat{font-size:var(--t-meta);color:var(--faint);text-align:right}
 .fx-matlabel.late{color:var(--danger)}
 .fx-matlabel.due{color:#c8a06a}
+/* The factory picker is a dropdown on a phone, the button column on desktop
+   (Tess, 2026-08-12). Hidden by default; the media query below swaps them. */
+.fx-picker{display:none}
 @media(max-width:900px){
   .fx{grid-template-columns:1fr}
-  .fx-tabs{flex-direction:row;flex-wrap:wrap}
+  .fx-tabs{display:none}
+  .fx-picker{display:block}
+  .fx-picker .fx-factorysel{width:100%}
   .fx-row{grid-template-columns:1fr 1fr;row-gap:8px}
   .fx-mat{text-align:left}
 }
@@ -3200,6 +3205,23 @@ textarea.input,textarea.select,.textarea{height:auto}
   .select.lib-sort,
   .mb-toolbar .btn.ghost{font-size:var(--t-micro)}
   .lib-tab{padding-inline:var(--ctl-x-sm)}
+
+  /* Development and Style Library ride the same scale (Tess, 2026-08-12: "update
+     buttons on development and style library to match the updates made to sizing
+     on references, campaigns, moodboard"). Both render DevTabs — its .tabs strip
+     and the .sortbar Filter / Sort — so shrinking those covers both pages. */
+  .tab,
+  .btn.sm.dev-filter-toggle,
+  .sortbar .sel-trigger,
+  .sortbar .select{height:30px;min-height:30px}
+  .tab,
+  .btn.sm.dev-filter-toggle,
+  #devsort,
+  .sortbar .sel-trigger,
+  .sortbar .select{font-size:var(--t-micro)}
+  /* .tab is not box-sizing:border-box like the boxed controls; trim its block
+     padding so the underline tab lands at the same 30px, not taller. */
+  .tab{padding-block:0}
 }
 
 /* ============================================================================

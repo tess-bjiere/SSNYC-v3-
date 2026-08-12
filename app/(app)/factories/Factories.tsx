@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Select from "@/app/components/Select";
 import { SAMPLE_ROUND_LABELS, type SampleRound, type Style, type StyleSample } from "@/lib/types";
 import { SAMPLE_STATE_LABELS, materialStatus, sampleState, shortDate } from "@/lib/sampleCycle";
 import {
@@ -204,6 +205,27 @@ export default function Factories({ groups, today }: { groups: Group[]; today: s
 
   return (
     <div className="fx">
+      {/* On a phone the picker is a dropdown, not a wrapping row of chunky
+          buttons (Tess, 2026-08-12: "on styles by factory mobile, change factory
+          buttons to a dropdown selector for factories -- following drop down
+          style selector"). Same app Select as the sort menus; the button-column
+          stays on desktop where the space is there to browse it. Both drive the
+          one `picked` state, so they never disagree. */}
+      <div className="fx-picker">
+        <Select
+          className="select fx-factorysel"
+          value={group.key}
+          onChange={setPicked}
+          aria-label="Choose a factory"
+          options={groups.map((g) => ({
+            value: g.key,
+            label:
+              `${g.name} · ${g.styles.length} ${g.styles.length === 1 ? "style" : "styles"}` +
+              (g.openCount > 0 ? ` · ${g.openCount} out` : ""),
+          }))}
+        />
+      </div>
+
       <div className="fx-tabs">
         {groups.map((g) => (
           <button
