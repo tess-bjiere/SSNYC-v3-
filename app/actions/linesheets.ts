@@ -52,13 +52,13 @@ export async function createLinesheet(form: FormData) {
   const name = (form.get("name") as string)?.trim();
   if (!name) return;
   const kind = normalizeKind(form.get("kind"));
-  const season = ((form.get("season") as string) || "").trim() || null;
+  const subtitle = ((form.get("subtitle") as string) || "").trim() || null;
   const supabase = await createClient();
   const user = await requireUser();
   const brand = await activeBrand();
   const { data } = await supabase
     .from(TABLE)
-    .insert({ name, kind, season, items: [], brand, created_by: user?.email ?? null })
+    .insert({ name, kind, subtitle, items: [], brand, created_by: user?.email ?? null })
     .select("id")
     .single();
   revalidatePath("/linesheets");
@@ -75,14 +75,14 @@ export async function renameLinesheet(id: string, form: FormData) {
   revalidatePath(`/linesheets/${id}`);
 }
 
-export async function setLinesheetKind(id: string, kind: string, season: string | null) {
+export async function setLinesheetKind(id: string, kind: string, subtitle: string | null) {
   await requireUser();
   const supabase = await createClient();
   await supabase
     .from(TABLE)
     .update({
       kind: normalizeKind(kind),
-      season: (season || "").trim() || null,
+      subtitle: (subtitle || "").trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

@@ -3399,11 +3399,10 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 /* --- The index --- */
 .ls-new{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0 0}
 .ls-new-name{flex:1 1 220px;min-width:0;max-width:340px}
-.ls-new-season{width:150px}
-/* The optional season reads as a small subheader, not a full-size prompt (Tess,
-   2026-08-12: "change Season Optional text to small subheader text"). */
-.ls-new-season::placeholder{font-size:var(--t-micro);text-transform:uppercase;
-  letter-spacing:.12em;color:var(--faint)}
+.ls-new-subtitle{width:150px}
+/* The optional subtitle reads as a small subhead — micro size and faint, sentence
+   case (Tess, 2026-08-12: "just cap first letter on small subhead"). */
+.ls-new-subtitle::placeholder{font-size:var(--t-micro);letter-spacing:.04em;color:var(--faint)}
 .ls-group{margin-bottom:30px}
 .ls-group h2{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.14em;
   text-transform:uppercase;color:var(--faint);margin-bottom:12px}

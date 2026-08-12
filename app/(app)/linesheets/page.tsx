@@ -21,7 +21,8 @@ type Row = {
   id: string;
   name: string;
   kind: string;
-  season: string | null;
+  subtitle?: string | null;
+  season?: string | null; // legacy — read as a fallback for the subtitle
   items: unknown;
   updated_at?: string | null;
 };
@@ -62,7 +63,7 @@ export default async function LinesheetsPage() {
               <div className="ls-list">
                 {list.map((r) => {
                   const count = normalizeItems(r.items).length;
-                  const meta = [r.season, `${count} ${count === 1 ? "style" : "styles"}`]
+                  const meta = [r.subtitle ?? r.season, `${count} ${count === 1 ? "style" : "styles"}`]
                     .filter(Boolean)
                     .join(" · ");
                   return (
@@ -87,9 +88,9 @@ export default async function LinesheetsPage() {
                 required
               />
               <input
-                className="input sm ls-new-season"
-                name="season"
-                placeholder="small subhead text"
+                className="input sm ls-new-subtitle"
+                name="subtitle"
+                placeholder="Small subhead text"
                 autoComplete="off"
               />
               <button className="btn sm" type="submit">

@@ -77,7 +77,8 @@ export type Linesheet = {
   name: string;
   kind: LinesheetKind;
   kindLabel: string;
-  season: string | null;
+  /** The optional free-text label under the title (was "season"). */
+  subtitle: string | null;
   entries: LinesheetEntry[];
   count: number;
 };
@@ -310,7 +311,7 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
 }
 
 export function buildLinesheet(
-  opts: { name: string; kind: LinesheetKind; season?: string | null },
+  opts: { name: string; kind: LinesheetKind; subtitle?: string | null },
   inputs: LinesheetEntryInput[]
 ): Linesheet {
   const entries = inputs.map(buildEntry);
@@ -318,7 +319,7 @@ export function buildLinesheet(
     name: t(opts.name) ?? "Untitled linesheet",
     kind: opts.kind,
     kindLabel: kindLabel(opts.kind),
-    season: t(opts.season),
+    subtitle: t(opts.subtitle),
     entries,
     count: entries.length,
   };

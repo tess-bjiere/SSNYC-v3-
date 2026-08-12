@@ -43,7 +43,8 @@ type Row = {
   id: string;
   name: string;
   kind: string;
-  season: string | null;
+  subtitle?: string | null;
+  season?: string | null; // legacy — read as a fallback for the subtitle
   items: unknown;
   notes?: unknown;
 };
@@ -128,7 +129,7 @@ export default async function LinesheetPage({
     .filter((x): x is LinesheetEntryInput => x !== null);
 
   const sheet = buildLinesheet(
-    { name: row.name, kind: normalizeKind(row.kind), season: row.season },
+    { name: row.name, kind: normalizeKind(row.kind), subtitle: row.subtitle ?? row.season },
     inputs
   );
 

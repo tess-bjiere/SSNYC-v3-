@@ -81,14 +81,14 @@ test("setItemField sets a value, and a blank clears the key", () => {
 
 test("buildLinesheet: subtitle, colours fall back to the free-text line, plural count", () => {
   const sheet = buildLinesheet(
-    { name: "FW26 Launch", kind: "seasonal", season: "FW26" },
+    { name: "FW26 Launch", kind: "seasonal", subtitle: "FW26" },
     [
       {
         styleId: "a",
         name: "Cropped Crewneck",
         styleNo: "SS-101",
         garment: "Crewneck",
-        season: "FW26",
+        season: "FW26", // the style's own season, used in the entry line
         price: "$175",
         colors: "black / bone",
         colorways: [], // none → the free-text `colors` line is what a view shows
@@ -99,6 +99,7 @@ test("buildLinesheet: subtitle, colours fall back to the free-text line, plural 
   );
   assert.equal(sheet.count, 1);
   assert.equal(sheet.kindLabel, "Seasonal");
+  assert.equal(sheet.subtitle, "FW26"); // the sheet-level optional label
   const e = sheet.entries[0];
   assert.equal(e.subtitle, "SS-101 · Crewneck · FW26");
   assert.equal(e.price, "$175");

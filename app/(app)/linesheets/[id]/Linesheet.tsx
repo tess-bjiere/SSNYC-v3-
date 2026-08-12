@@ -196,7 +196,7 @@ export default function Linesheet({
           </Link>
           <h1 className="page-title display">{sheet.name}</h1>
           <span className="ls-kind">
-            {[sheet.kindLabel, sheet.season].filter(Boolean).join(" · ")}
+            {[sheet.kindLabel, sheet.subtitle].filter(Boolean).join(" · ")}
           </span>
         </div>
 

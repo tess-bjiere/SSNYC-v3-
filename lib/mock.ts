@@ -148,7 +148,7 @@ export type MockLinesheetRow = {
   brand: string;
   name: string;
   kind: string;
-  season: string | null;
+  subtitle: string | null;
   items: { style_id: string; price?: string; note?: string; colorways?: string[] }[];
   notes: unknown[];
   archived: boolean;
@@ -164,7 +164,7 @@ export const mockLinesheets: MockLinesheetRow[] = [
     brand: "sous-sous",
     name: "FW26 Collection",
     kind: "seasonal",
-    season: "FW26",
+    subtitle: "FW26",
     items: [
       { style_id: "style-0", price: "$105", note: "Elevated base layer; pairs back to the trouser and the crewneck." },
       { style_id: "style-1", price: "$185" },
@@ -193,7 +193,7 @@ export const mockLinesheets: MockLinesheetRow[] = [
     brand: "sous-sous",
     name: "Evergreen Core",
     kind: "evergreen",
-    season: null,
+    subtitle: null,
     items: [{ style_id: "style-4" }, { style_id: "style-5" }],
     notes: [],
     archived: false,
