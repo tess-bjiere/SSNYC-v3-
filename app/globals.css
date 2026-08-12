@@ -219,7 +219,11 @@ body.notes-open .wrap{padding-right:378px}
    em rather than px so it stays true if the wordmark is ever resized. The tabs
    and the group pills below get the same correction at their own size, so the
    whole bar is aligned on the LETTERS rather than on their containers. */
-.brand{font-size:18px;letter-spacing:.09em;font-weight:600;line-height:1;padding-top:.21em}
+/* No padding nudge — the nav is align-items:center and line-height:1, so the
+   wordmark centres on its own (Tess, 2026-08-11: "ssync title should be
+   vertically centered in nav bar"). The old padding-top pushed it low, most
+   visibly on a phone beside the centred burger. */
+.brand{font-size:18px;letter-spacing:.09em;font-weight:600;line-height:1;display:flex;align-items:center}
 /* Tess, 2026-08-06: "move those sections to the left close to logo but with
    breathing room" — so the row sits beside the wordmark again rather than
    centred in the bar. It no longer takes the free space (no flex:1); the gap
