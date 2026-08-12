@@ -405,7 +405,9 @@ body.notes-open .wrap{padding-right:378px}
 /* One weight thinner than the other headings (500, not 600) so the page titles
    read lighter and more considered (Tess, 2026-08-11: "Make header font one
    weight thinner"). */
-.page-title{font-size:var(--t-display);letter-spacing:.01em;font-weight:var(--w-mid);line-height:1.12}
+/* One weight thinner (Tess, 2026-08-12: "make app page headers one weight
+   thinner") — the page titles read at body weight now, 400 not 500. */
+.page-title{font-size:var(--t-display);letter-spacing:.01em;font-weight:var(--w-body);line-height:1.12}
 .count{color:var(--faint);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em}
 .spacer{flex:1}
 
@@ -3398,6 +3400,10 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-new{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0 0}
 .ls-new-name{flex:1 1 220px;min-width:0;max-width:340px}
 .ls-new-season{width:150px}
+/* The optional season reads as a small subheader, not a full-size prompt (Tess,
+   2026-08-12: "change Season Optional text to small subheader text"). */
+.ls-new-season::placeholder{font-size:var(--t-micro);text-transform:uppercase;
+  letter-spacing:.12em;color:var(--faint)}
 .ls-group{margin-bottom:30px}
 .ls-group h2{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.14em;
   text-transform:uppercase;color:var(--faint);margin-bottom:12px}
@@ -3423,6 +3429,8 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-view:last-child{border-right:none}
 .ls-view:hover{color:var(--ink)}
 .ls-view.active{background:var(--chip);color:var(--ink)}
+.ls-delete{color:var(--faint)}
+.ls-delete:hover,.ls-delete.armed{color:var(--danger)}
 
 /* The Group-by-color toggle (Tess: "the option to group by color"). */
 .ls-groupbtn{background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;

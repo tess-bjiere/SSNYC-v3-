@@ -13,6 +13,7 @@ import {
   addStylesToLinesheet,
   removeStyleFromLinesheet,
   setLinesheetItem,
+  deleteLinesheet,
 } from "@/app/actions/linesheets";
 
 // The linesheet, on screen (Tess, 2026-08-12). Two views over the same styles: a
@@ -121,6 +122,9 @@ export default function Linesheet({
   const [armed, setArmed] = useState<string | null>(null);
   const [openStyle, setOpenStyle] = useState<string | null>(null);
   const [groupColor, setGroupColor] = useState(false);
+  // The linesheet's own Delete — two-click armed, no confirm(); the action
+  // soft-deletes and redirects to the list.
+  const [delArmed, setDelArmed] = useState(false);
 
   // More than one factory works on this garment → a modal offers the choice.
   const multi = (styleId: string) => (standings[styleId]?.versions.length ?? 1) > 1;
@@ -235,6 +239,15 @@ export default function Linesheet({
             }}
           >
             Save as PDF
+          </button>
+          <button
+            type="button"
+            className={"btn link ls-delete" + (delArmed ? " armed" : "")}
+            onClick={() => (delArmed ? deleteLinesheet(id) : setDelArmed(true))}
+            onMouseLeave={() => setDelArmed(false)}
+            title="Delete this linesheet"
+          >
+            {delArmed ? "Delete linesheet?" : "Delete"}
           </button>
         </div>
       </div>

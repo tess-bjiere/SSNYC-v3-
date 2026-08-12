@@ -124,6 +124,17 @@ export async function setLinesheetItem(
   await writeItems(supabase, id, setItemField(items, styleId, patch));
 }
 
+// Delete a linesheet — soft, like everything else in the app: a deleted_at
+// timestamp takes it off the list and Restore (setting it back to null) would
+// bring it whole (Tess, 2026-08-12: "add ability to delete a line sheet").
+export async function deleteLinesheet(id: string) {
+  await requireUser();
+  const supabase = await createClient();
+  await supabase.from(TABLE).update({ deleted_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/linesheets");
+  redirect("/linesheets");
+}
+
 export async function archiveLinesheet(id: string, archived: boolean) {
   await requireUser();
   const supabase = await createClient();
