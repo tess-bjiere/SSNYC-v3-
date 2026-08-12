@@ -3494,22 +3494,54 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-picker-empty{padding:20px;color:var(--faint);font-size:var(--t-body)}
 .ls-picker-foot{display:flex;justify-content:flex-end;gap:12px;padding:14px 20px;border-top:1px solid var(--hair)}
 
+/* The cover is print-only — the on-screen sheet is a working editor. */
+.ls-cover{display:none}
+
 @media(max-width:760px){
   .ls-entry{grid-template-columns:1fr;gap:16px}
   .ls-entry-fig img{max-height:44vh}
   .ls-head{align-items:flex-start}
 }
 
-/* --- Print: whiten the sheet, one product per page in Detail --- */
+/* --- Print: a landscape buyer deck — cover page, then the sheet, whitened
+   (Tess, 2026-08-12: "export to landscape view with a cover page as a deck
+   designed as though it's being presented to a buyer or agency"). The dark-theme
+   tokens would print as invisible text, so text/borders are set to ink-on-paper.
+   min-width holds the desktop landscape layout even when printing from a phone. */
 @media print{
-  @page{size:portrait}
-  .ls-page{background:#fff;color:#111}
-  .ls-grid{grid-template-columns:repeat(3,1fr);gap:18px}
+  @page{size:landscape}
+  .ls-page{background:#fff;color:#111;min-width:1040px}
+
+  /* Cover page — masthead, title + kicker, a numbered contents list, footer. */
+  .ls-cover{display:flex;flex-direction:column;justify-content:space-between;
+    min-height:88vh;padding:38px 54px;break-after:page;color:#111}
+  .ls-cover-logo{height:32px;width:auto;max-width:52%;object-fit:contain;display:block;align-self:flex-start}
+  .ls-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
+  .ls-cover-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.24em;color:#8a8a8a;margin:0 0 14px}
+  .ls-cover-title{font-size:54px;font-weight:500;letter-spacing:.01em;line-height:1.02;margin:0 0 6px}
+  .ls-cover-sub{font-size:13px;color:#666;margin:0 0 22px}
+  .ls-cover-contents{list-style:none;margin:0;padding:0;border-top:1px solid #e6e6e6;max-width:62%;
+    columns:2;column-gap:44px}
+  .ls-cover-contents li{display:flex;align-items:baseline;gap:14px;padding:8px 0;
+    border-bottom:1px solid #eee;break-inside:avoid}
+  .ls-cover-no{font-size:11px;color:#b0b0b0;letter-spacing:.08em;width:24px;flex:none}
+  .ls-cover-cname{font-size:15px;font-weight:500;color:#111}
+  .ls-cover-price{margin-left:auto;font-size:12px;color:#666}
+  .ls-cover-sku{font-size:11px;color:#a0a0a0;letter-spacing:.08em;width:70px;text-align:right;flex:none}
+  .ls-cover-foot{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#aaa;margin:0}
+
+  /* Assortment grid — a wider run of tiles for the landscape page. */
+  .ls-grid{grid-template-columns:repeat(4,1fr);gap:16px}
   .ls-cell{break-inside:avoid}
+
+  /* Detail — one product per landscape page. The cover already broke the page,
+     so the first entry does not break again. */
   .ls-detail{gap:0}
   .ls-entry{break-before:page;break-inside:avoid;padding-top:0}
   .ls-detail .ls-entry:first-child{break-before:auto}
-  /* Light on white — the dark-theme tokens would print as invisible text. */
+  .ls-entry-fig img{max-height:440px}
+
+  /* Ink on paper. */
   .ls-cardname,.ls-entry-name,.ls-fact dd{color:#111}
   .ls-cardno,.ls-price,.ls-entry-sub,.ls-fact dt,.ls-color-name,.ls-colors-text{color:#555}
   .ls-sketch,.ls-entry-fig,.ls-color-chip,.ls-pick-thumb{background:#f4f4f4;border-color:#ddd}

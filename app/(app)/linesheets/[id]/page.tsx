@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { requireTeam } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
+import { loadBrands } from "@/lib/brandsServer";
+import { brandName } from "@/lib/brands";
 import { MOCK, mockLinesheet, mockStyles, mockSamples } from "@/lib/mock";
 import {
   SAMPLE_ROUNDS,
@@ -112,6 +114,21 @@ export default async function LinesheetPage({
     inputs
   );
 
+  // The PDF cover is a deck presented to a buyer (Tess, 2026-08-12): the active
+  // brand's logo (or its name as a wordmark), and a date. Same masthead the
+  // fitting deck uses. brandName tolerates an empty brands list, so mock and a
+  // session-less read both fall back to the slug rather than erroring.
+  const brandSlug = await activeBrand();
+  const brands = await loadBrands();
+  const brandLogo = brands.find((b) => b.slug === brandSlug)?.logo_url || null;
+  const brandLabel = brandName(brandSlug, brands);
+  const generatedOn = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "America/New_York",
+  }).format(new Date());
+
   // Compact list for the add-styles picker — every style, flagged if already in.
   const inSheet = new Set(items.map((i) => i.style_id));
   const pickable = allStyles.map((s) => ({
@@ -123,5 +140,12 @@ export default async function LinesheetPage({
     inSheet: inSheet.has(s.id),
   }));
 
-  return <Linesheet id={id} sheet={sheet} pickable={pickable} />;
+  return (
+    <Linesheet
+      id={id}
+      sheet={sheet}
+      pickable={pickable}
+      cover={{ brandLogo, brandLabel, generatedOn }}
+    />
+  );
 }

@@ -61,14 +61,18 @@ function Colors({ entry }: { entry: LinesheetEntry }) {
   return null;
 }
 
+type Cover = { brandLogo: string | null; brandLabel: string; generatedOn: string };
+
 export default function Linesheet({
   id,
   sheet,
   pickable,
+  cover,
 }: {
   id: string;
   sheet: LinesheetModel;
   pickable: Pickable[];
+  cover: Cover;
 }) {
   const [view, setView] = useState<View>("grid");
   const [picking, setPicking] = useState(false);
@@ -141,6 +145,43 @@ export default function Linesheet({
           </button>
         </div>
       </div>
+
+      {/* The PDF cover — print only (Tess, 2026-08-12: "a cover page as a deck
+          designed as though it's being presented to a buyer or agency"). On
+          screen the sheet is a working editor; this appears only in the export,
+          as its first landscape page. */}
+      <section className="ls-cover">
+        {cover.brandLogo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="ls-cover-logo" src={cover.brandLogo} alt={cover.brandLabel} />
+        ) : (
+          <div className="ls-cover-wordmark">{cover.brandLabel}</div>
+        )}
+        <div className="ls-cover-mid">
+          {(sheet.season || sheet.kindLabel) && (
+            <p className="ls-cover-kicker">
+              {[sheet.season, sheet.kindLabel].filter(Boolean).join(" · ")}
+            </p>
+          )}
+          <h1 className="ls-cover-title">{sheet.name}</h1>
+          <p className="ls-cover-sub">
+            Linesheet · {sheet.count} {sheet.count === 1 ? "style" : "styles"} · {cover.generatedOn}
+          </p>
+          {sheet.entries.length > 0 && (
+            <ol className="ls-cover-contents">
+              {sheet.entries.map((e, i) => (
+                <li key={e.styleId}>
+                  <span className="ls-cover-no">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="ls-cover-cname">{e.name}</span>
+                  {e.price && <span className="ls-cover-price">{e.price}</span>}
+                  {e.styleNo && <span className="ls-cover-sku">{e.styleNo}</span>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+        <p className="ls-cover-foot">Confidential · {cover.brandLabel} · theloyalist.com</p>
+      </section>
 
       {empty ? (
         <div className="empty no-print">
