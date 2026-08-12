@@ -167,18 +167,6 @@ export default function Linesheet({
           <p className="ls-cover-sub">
             Linesheet · {sheet.count} {sheet.count === 1 ? "style" : "styles"} · {cover.generatedOn}
           </p>
-          {sheet.entries.length > 0 && (
-            <ol className="ls-cover-contents">
-              {sheet.entries.map((e, i) => (
-                <li key={e.styleId}>
-                  <span className="ls-cover-no">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="ls-cover-cname">{e.name}</span>
-                  {e.price && <span className="ls-cover-price">{e.price}</span>}
-                  {e.styleNo && <span className="ls-cover-sku">{e.styleNo}</span>}
-                </li>
-              ))}
-            </ol>
-          )}
         </div>
         <p className="ls-cover-foot">Confidential · {cover.brandLabel} · theloyalist.com</p>
       </section>

@@ -159,7 +159,7 @@ export const mockLinesheets: MockLinesheetRow[] = [
   {
     id: "linesheet-0",
     brand: "sous-sous",
-    name: "FW26 Launch",
+    name: "FW26 Collection",
     kind: "seasonal",
     season: "FW26",
     items: [

@@ -3518,16 +3518,10 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   .ls-cover-logo{height:32px;width:auto;max-width:52%;object-fit:contain;display:block;align-self:flex-start}
   .ls-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
   .ls-cover-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.24em;color:#8a8a8a;margin:0 0 14px}
-  .ls-cover-title{font-size:54px;font-weight:500;letter-spacing:.01em;line-height:1.02;margin:0 0 6px}
-  .ls-cover-sub{font-size:13px;color:#666;margin:0 0 22px}
-  .ls-cover-contents{list-style:none;margin:0;padding:0;border-top:1px solid #e6e6e6;max-width:62%;
-    columns:2;column-gap:44px}
-  .ls-cover-contents li{display:flex;align-items:baseline;gap:14px;padding:8px 0;
-    border-bottom:1px solid #eee;break-inside:avoid}
-  .ls-cover-no{font-size:11px;color:#b0b0b0;letter-spacing:.08em;width:24px;flex:none}
-  .ls-cover-cname{font-size:15px;font-weight:500;color:#111}
-  .ls-cover-price{margin-left:auto;font-size:12px;color:#666}
-  .ls-cover-sku{font-size:11px;color:#a0a0a0;letter-spacing:.08em;width:70px;text-align:right;flex:none}
+  /* One weight thinner than before (Tess, 2026-08-12: "make big text one weight
+     thinner") — 400 rather than 500. */
+  .ls-cover-title{font-size:54px;font-weight:400;letter-spacing:.01em;line-height:1.02;margin:0 0 6px}
+  .ls-cover-sub{font-size:13px;color:#666;margin:0}
   .ls-cover-foot{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#aaa;margin:0}
 
   /* Assortment grid — a wider run of tiles for the landscape page. */
