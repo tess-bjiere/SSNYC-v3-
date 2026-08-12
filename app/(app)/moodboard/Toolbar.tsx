@@ -85,19 +85,26 @@ export default function Toolbar({
 
       <SizeToggle value={size} onChange={choose} />
 
-      <button className="btn link" onClick={share}>
-        {copied ? "Copied ✓" : "Share link"}
-      </button>
+      {/* The link-actions ride together. On a phone the group wraps to its own
+          row below the board controls — Export PNG then Share link (Tess,
+          2026-08-11: "move share link to row below next to export png") — while
+          the size icons stay up on the row above, at the right. On desktop the
+          wrapper is transparent (display:contents) so they sit inline as before.
+          Archive (the action) moved to the foot of the page; this stays the way
+          IN to the archived view. */}
+      <div className="mb-t-links">
+        {!showingArchived && <ExportButton name={currentName} />}
 
-      {!showingArchived && <ExportButton name={currentName} />}
+        <button className="btn link mb-share" onClick={share}>
+          {copied ? "Copied ✓" : "Share link"}
+        </button>
 
-      {/* Archive (the action) moved to the foot of the page (Tess, 2026-08-11);
-          this stays the way IN to the archived view. */}
-      {showingArchived ? (
-        <a className="btn link" href="/moodboard">← Active boards</a>
-      ) : archivedCount > 0 ? (
-        <a className="btn link" href="/moodboard?archived=1">Archived · {archivedCount}</a>
-      ) : null}
+        {showingArchived ? (
+          <a className="btn link" href="/moodboard">← Active boards</a>
+        ) : archivedCount > 0 ? (
+          <a className="btn link" href="/moodboard?archived=1">Archived · {archivedCount}</a>
+        ) : null}
+      </div>
 
       {newBoardOpen && (
         <div className="modal-overlay" onClick={() => setNewBoardOpen(false)}>

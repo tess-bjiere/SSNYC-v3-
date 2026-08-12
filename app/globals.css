@@ -563,7 +563,12 @@ body.notes-open .wrap{padding-right:378px}
 .lib-filters .select{width:auto;min-width:120px;padding:var(--ctl-y-md) var(--ctl-chev-md) var(--ctl-y-md) var(--ctl-x-md);font-size:var(--t-body)}
 
 /* Moodboard toolbar */
-.mb-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:26px;border-bottom:1px solid var(--line);padding-bottom:16px}
+/* No rule under the toolbar (Tess, 2026-08-11: "remove the divider below export
+   png") — the margin below is enough separation from the boards. */
+.mb-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:26px}
+/* Transparent on desktop so Export/Share/archived sit inline in the bar; on a
+   phone (below) it becomes a full-width row of its own. */
+.mb-t-links{display:contents}
 .mb-toolbar .mb-boardsel{width:230px;flex:0 0 auto;padding:9px 30px 9px 12px}
 .mb-newboard{display:flex;gap:6px}
 .mb-newboard .input{width:130px;padding:var(--ctl-y-sm) var(--ctl-x-sm)}
@@ -2839,6 +2844,18 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   .page-head .sel .sel-trigger{width:100%}
   .mb-toolbar .sel{flex:1 1 100%}
   .mb-toolbar .sel .sel-trigger{width:100%}
+  /* Row 1: the board select (full width). Row 2: + Board and + Divider on the
+     left, the size icons pushed to the right. Row 3: Export PNG with Share link
+     next to it, then the archived link (Tess, 2026-08-11: "move share link to
+     row below next to export png", "move icons to the right"). */
+  .mb-toolbar > .sel{order:1}
+  .mb-toolbar > .mb-spacer{display:none}
+  .mb-toolbar > button.btn.ghost{order:2}
+  .mb-toolbar > form{order:3}
+  .mb-toolbar > .dens{order:4;margin-left:auto}
+  /* flex-basis:100% forces the link group onto its own row below (Export then
+     Share); the icons above stay pinned right by their auto margin. */
+  .mb-toolbar > .mb-t-links{order:5;flex:1 1 100%;display:flex;align-items:center;gap:16px}
 }
 
 /* ============================================================================
@@ -3042,7 +3059,10 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
    awkwardly; it becomes a clear pill at the top of the board, on top of the
    content, and its panel opens full screen over everything. */
 @media(max-width:900px){
-  .notes-tab{top:74px;bottom:auto;right:14px;transform:none;writing-mode:horizontal-tb;
+  /* Sits on the same line as the "Moodboard" title (Tess, 2026-08-11: "adjust
+     notes button to align with mood board title"): 64px sticky nav + the .page's
+     24px top padding puts the title at ~88px, so the pill starts there too. */
+  .notes-tab{top:88px;bottom:auto;right:14px;transform:none;writing-mode:horizontal-tb;
     padding:8px 15px;border-radius:999px;z-index:29}
   .notes-drawer{top:0;height:100vh;height:100dvh;width:100%;z-index:45}
 }
