@@ -320,6 +320,10 @@ export default function SlotCards({
                 position={`${at + 1} of ${shot.length}`}
                 full={full}
                 onFull={setFull}
+                // No caption on a sample photo — the slot label already says what
+                // the picture is (Tess, 2026-08-11: "remove caption for sample
+                // photos"). Design slots (no sampleId) keep it.
+                caption={!sampleId}
                 onPrev={at > 0 ? () => setNoteOpen(shot[at - 1].id) : null}
                 onNext={at >= 0 && at < shot.length - 1 ? () => setNoteOpen(shot[at + 1].id) : null}
                 onClose={() => {

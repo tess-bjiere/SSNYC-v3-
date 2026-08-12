@@ -42,7 +42,7 @@ function GridIcon({ n }: { n: number }) {
         />
       );
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+    <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden>
       {cells}
     </svg>
   );

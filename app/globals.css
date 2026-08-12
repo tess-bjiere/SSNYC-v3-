@@ -361,7 +361,7 @@ body.notes-open .wrap{padding-right:378px}
    "mobile controls and buttons and links seem like they should be smaller /
    redesigned to be more app like"). --- */
 @media(pointer:coarse){
-  .btn,.btn.sm,.input,.select,.sel-trigger,.tab,.lib-tab{min-height:40px}
+  .btn,.btn.sm,.input,.select,.sel-trigger,.tab,.lib-tab{min-height:36px}
   .tab,.lib-tab{display:inline-flex;align-items:center}
 }
 
@@ -1319,6 +1319,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      grids have to stay the same size at every width, not just the widest. */
   .ph-grid,
   .img-tiles{grid-template-columns:repeat(2,1fr)}
+  /* The sample-photo slots shrink to three across on a phone so the upload
+     placeholders are small tiles, not half-screen blocks (Tess, 2026-08-11:
+     "shrink the upload placeholders on mobile in the sample view"). */
+  .sr-shoot .ph-grid{grid-template-columns:repeat(3,1fr)}
   /* The picture and its marks stop being side by side well before the grid
      does: a photograph squeezed into half of a narrow column is not a
      photograph you can point at accurately. */

@@ -283,9 +283,11 @@ export default function ImageNotes({
             that you no longer have to leave it. Exit full size and it is
             back, one press away. */}
         {!full && (
-          <a className="ph-link" href={url} target="_blank" rel="noreferrer">
-            Original file
-          </a>
+          <span className="hide-mobile">
+            <a className="ph-link" href={url} target="_blank" rel="noreferrer">
+              Original file
+            </a>
+          </span>
         )}
         <button
           type="button"
