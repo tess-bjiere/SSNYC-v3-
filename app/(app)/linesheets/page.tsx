@@ -75,8 +75,8 @@ export default async function LinesheetsPage() {
               </div>
             )}
             {/* Create into this section — the kind is implied by which section you
-                create from, so there is no kind dropdown (Tess, 2026-08-12). Only
-                a seasonal sheet carries a season. */}
+                create from, so there is no kind dropdown (Tess, 2026-08-12). The
+                optional subhead field rides on both kinds now. */}
             <form action={createLinesheet} className="ls-new">
               <input type="hidden" name="kind" value={k.key} />
               <input
@@ -86,14 +86,12 @@ export default async function LinesheetsPage() {
                 autoComplete="off"
                 required
               />
-              {k.key === "seasonal" && (
-                <input
-                  className="input sm ls-new-season"
-                  name="season"
-                  placeholder="Season (optional)"
-                  autoComplete="off"
-                />
-              )}
+              <input
+                className="input sm ls-new-season"
+                name="season"
+                placeholder="small subhead text"
+                autoComplete="off"
+              />
               <button className="btn sm" type="submit">
                 + New
               </button>
