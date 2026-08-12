@@ -8,6 +8,7 @@ import { MOCK, mockLinesheet, mockStyles, mockSamples } from "@/lib/mock";
 import {
   SAMPLE_ROUNDS,
   SAMPLE_ROUND_LABELS,
+  isApprovedStatus,
   type SampleRound,
   type Style,
   type StyleSample,
@@ -15,11 +16,16 @@ import {
 import { sortSamples, latestSample } from "@/lib/sampleCycle";
 import { styleCoverUrl, styleFaces } from "@/lib/styleCover";
 import { readImages, COLORWAYS_KEY } from "@/lib/imageList";
+import { siblingsOf, type SiblingStyleLike } from "@/lib/styleSiblings";
+import { latestRating } from "@/lib/factories";
 import {
   normalizeItems,
   normalizeKind,
   buildLinesheet,
+  pickApprovedStyleId,
   type LinesheetEntryInput,
+  type LinesheetStanding,
+  type LinesheetVersion,
 } from "@/lib/linesheet";
 import Linesheet from "./Linesheet";
 
@@ -114,6 +120,36 @@ export default async function LinesheetPage({
     inputs
   );
 
+  // The click-through standing: for each style on the sheet, every factory
+  // working on the same garment (itself + siblings — the same garment at other
+  // factories), with the latest round's rating and whether it is approved (Tess,
+  // 2026-08-12: "a modal that shows the various factories working on the same
+  // style with the rating next to it"). Computed from data already loaded — no
+  // extra query — with siblingsOf (pure) and the samples buckets above.
+  function standingRow(styleId: string, factory: string | null, isSelf: boolean): LinesheetVersion {
+    const rounds = sortSamples(roundsByStyle.get(styleId) ?? [], SAMPLE_ROUNDS);
+    const latest = latestSample(rounds, SAMPLE_ROUNDS);
+    return {
+      styleId,
+      factory,
+      roundLabel: latest ? SAMPLE_ROUND_LABELS[latest.round as SampleRound] ?? latest.round : null,
+      rating: latestRating(rounds),
+      approved: latest ? isApprovedStatus(latest.status) : false,
+      isSelf,
+    };
+  }
+
+  const standings: Record<string, LinesheetStanding> = {};
+  for (const item of items) {
+    const st = byId.get(item.style_id);
+    if (!st) continue;
+    const versions: LinesheetVersion[] = [standingRow(st.id, st.factory, true)];
+    for (const sib of siblingsOf(st as SiblingStyleLike, allStyles as SiblingStyleLike[])) {
+      versions.push(standingRow(sib.id, sib.factory, false));
+    }
+    standings[st.id] = { versions, approvedStyleId: pickApprovedStyleId(versions) };
+  }
+
   // The PDF cover is a deck presented to a buyer (Tess, 2026-08-12): the active
   // brand's logo (or its name as a wordmark), and a date. Same masthead the
   // fitting deck uses. brandName tolerates an empty brands list, so mock and a
@@ -145,6 +181,7 @@ export default async function LinesheetPage({
       id={id}
       sheet={sheet}
       pickable={pickable}
+      standings={standings}
       cover={{ brandLogo, brandLabel, generatedOn }}
     />
   );

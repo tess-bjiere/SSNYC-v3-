@@ -82,6 +82,36 @@ export type Linesheet = {
   count: number;
 };
 
+// The click-through standing of a style: every factory working on the same
+// garment (the style itself plus its siblings — separate profiles of the same
+// garment at other factories), each with its rating and whether its latest round
+// is approved (Tess, 2026-08-12: "a modal that shows the various factories
+// working on the same style with the rating next to it ... click into any
+// version"). Derived server-side from siblings + samples; the shape lives here so
+// the page and the modal agree on it.
+export type LinesheetVersion = {
+  styleId: string;
+  factory: string | null;
+  roundLabel: string | null;
+  rating: string;
+  approved: boolean;
+  isSelf: boolean;
+};
+
+export type LinesheetStanding = {
+  versions: LinesheetVersion[];
+  /** The profile to open for "the approved version", or null when none is approved. */
+  approvedStyleId: string | null;
+};
+
+/** Pick the profile that stands for "approved" — the self style first, else any. */
+export function pickApprovedStyleId(versions: LinesheetVersion[]): string | null {
+  const self = versions.find((v) => v.isSelf && v.approved);
+  if (self) return self.styleId;
+  const any = versions.find((v) => v.approved);
+  return any ? any.styleId : null;
+}
+
 function t(v: unknown): string | null {
   const s = typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
   return s.length ? s : null;

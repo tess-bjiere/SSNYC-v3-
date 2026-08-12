@@ -8,8 +8,19 @@ import {
   reorderItems,
   setItemField,
   buildLinesheet,
+  pickApprovedStyleId,
   type LinesheetItem,
+  type LinesheetVersion,
 } from "./linesheet.ts";
+
+const v = (styleId: string, isSelf: boolean, approved: boolean): LinesheetVersion => ({
+  styleId,
+  factory: null,
+  roundLabel: null,
+  rating: "",
+  approved,
+  isSelf,
+});
 
 // The linesheet's stored order and per-item edits are the thing a future change
 // could quietly break, so these pin the rules rather than the framework.
@@ -100,6 +111,15 @@ test("buildEntry: no sketch and no colorway image reads as empty; name defaults"
   assert.equal(sheet.kindLabel, "Evergreen");
   assert.equal(sheet.entries[0].name, "Untitled style");
   assert.equal(sheet.entries[0].empty, true);
+});
+
+test("pickApprovedStyleId prefers the self style, then any, else null", () => {
+  // Self approved wins even when a sibling is also approved.
+  assert.equal(pickApprovedStyleId([v("self", true, true), v("sib", false, true)]), "self");
+  // Self not approved but a sibling is → the sibling.
+  assert.equal(pickApprovedStyleId([v("self", true, false), v("sib", false, true)]), "sib");
+  // None approved → null.
+  assert.equal(pickApprovedStyleId([v("self", true, false), v("sib", false, false)]), null);
 });
 
 test("normalizeKind only ever yields the two kinds", () => {

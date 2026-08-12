@@ -3494,6 +3494,34 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-picker-empty{padding:20px;color:var(--faint);font-size:var(--t-body)}
 .ls-picker-foot{display:flex;justify-content:flex-end;gap:12px;padding:14px 20px;border-top:1px solid var(--hair)}
 
+/* When a style opens the factories modal instead of linking, the opener is a
+   button — strip the default chrome so it reads exactly like the link did. */
+button.ls-card-style,button.ls-entry-name,button.ls-entry-fig{
+  appearance:none;-webkit-appearance:none;background:none;font-family:inherit;color:inherit;
+  cursor:pointer;text-align:left}
+button.ls-card-style,button.ls-entry-name{border:none;padding:0}
+
+/* --- The factories + ratings modal --- */
+.ls-vmodal{width:min(440px,94vw);padding:0}
+.ls-vmodal-head{display:flex;align-items:baseline;gap:12px;padding:18px 20px;border-bottom:1px solid var(--hair)}
+.ls-vmodal-head strong{font-size:var(--t-title)}
+.ls-vmodal-sub{font-size:var(--t-micro);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.ls-vmodal-list{display:flex;flex-direction:column;padding:6px 8px;max-height:60vh;overflow-y:auto}
+.ls-version{display:flex;align-items:center;gap:12px;padding:10px 12px;text-decoration:none;color:var(--ink)}
+.ls-version:hover{background:var(--chip)}
+.ls-version-fac{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;
+  font-size:var(--t-body);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.08em}
+.ls-version-self{font-size:var(--t-micro);letter-spacing:.1em;color:var(--faint);
+  font-weight:var(--w-body);text-transform:uppercase}
+.ls-version-mid{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.ls-version-round{font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.ls-version-approved{font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;
+  color:#8fbf9f;border:1px solid #8fbf9f;padding:1px 6px}
+.ls-version-go{color:var(--faint);flex:0 0 auto}
+.ls-vmodal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 20px;border-top:1px solid var(--hair)}
+.ls-vmodal-none{font-size:var(--t-meta);color:var(--faint)}
+
 /* The cover is print-only — the on-screen sheet is a working editor. */
 .ls-cover{display:none}
 

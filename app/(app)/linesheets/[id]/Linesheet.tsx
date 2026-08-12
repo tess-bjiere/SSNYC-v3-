@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { sampleRatingLabel } from "@/lib/types";
-import type { Linesheet as LinesheetModel, LinesheetEntry } from "@/lib/linesheet";
+import type {
+  Linesheet as LinesheetModel,
+  LinesheetEntry,
+  LinesheetStanding,
+} from "@/lib/linesheet";
 import {
   addStylesToLinesheet,
   removeStyleFromLinesheet,
@@ -63,20 +67,61 @@ function Colors({ entry }: { entry: LinesheetEntry }) {
 
 type Cover = { brandLogo: string | null; brandLabel: string; generatedOn: string };
 
+/**
+ * Open a style: straight to its profile when only one factory works on it, or a
+ * modal of the factories + ratings when there is more than one (Tess,
+ * 2026-08-12: "it would open the approved version of the style profile -- or a
+ * modal that shows the various factories working on the same style").
+ */
+function StyleOpener({
+  styleId,
+  multi,
+  onOpen,
+  className,
+  title,
+  children,
+}: {
+  styleId: string;
+  multi: boolean;
+  onOpen: (styleId: string) => void;
+  className: string;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  if (multi) {
+    return (
+      <button type="button" className={className} title={title} onClick={() => onOpen(styleId)}>
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Link href={`/styles/${styleId}`} className={className} title={title}>
+      {children}
+    </Link>
+  );
+}
+
 export default function Linesheet({
   id,
   sheet,
   pickable,
+  standings,
   cover,
 }: {
   id: string;
   sheet: LinesheetModel;
   pickable: Pickable[];
+  standings: Record<string, LinesheetStanding>;
   cover: Cover;
 }) {
   const [view, setView] = useState<View>("grid");
   const [picking, setPicking] = useState(false);
   const [armed, setArmed] = useState<string | null>(null);
+  const [openStyle, setOpenStyle] = useState<string | null>(null);
+
+  // More than one factory works on this garment → a modal offers the choice.
+  const multi = (styleId: string) => (standings[styleId]?.versions.length ?? 1) > 1;
 
   // The PDF names itself from the linesheet — the browser suggests document.title
   // as the filename, the same trick the fitting deck uses.
@@ -175,7 +220,13 @@ export default function Linesheet({
         <div className="ls-grid">
           {sheet.entries.map((e) => (
             <div className="ls-cell" key={e.styleId}>
-              <Link href={`/styles/${e.styleId}`} className="ls-card-style" title={e.name}>
+              <StyleOpener
+                styleId={e.styleId}
+                multi={multi(e.styleId)}
+                onOpen={setOpenStyle}
+                className="ls-card-style"
+                title={e.name}
+              >
                 <span className={"ls-sketch" + (e.empty ? " none" : "")}>
                   {e.sketchUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -187,7 +238,7 @@ export default function Linesheet({
                   {e.price && <span className="ls-price">{e.price}</span>}
                 </span>
                 {e.styleNo && <span className="ls-cardno">{e.styleNo}</span>}
-              </Link>
+              </StyleOpener>
               <Colors entry={e} />
               <button
                 type="button"
@@ -205,7 +256,12 @@ export default function Linesheet({
         <div className="ls-detail">
           {sheet.entries.map((e) => (
             <section className="ls-entry" key={e.styleId}>
-              <Link href={`/styles/${e.styleId}`} className={"ls-entry-fig" + (e.empty ? " none" : "")}>
+              <StyleOpener
+                styleId={e.styleId}
+                multi={multi(e.styleId)}
+                onOpen={setOpenStyle}
+                className={"ls-entry-fig" + (e.empty ? " none" : "")}
+              >
                 {e.sketchUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={e.sketchUrl} alt={e.name} />
@@ -214,13 +270,18 @@ export default function Linesheet({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img className="ls-entry-back" src={e.backUrl} alt={`${e.name} — back`} />
                 )}
-              </Link>
+              </StyleOpener>
 
               <div className="ls-entry-info">
                 <header className="ls-entry-head">
-                  <Link href={`/styles/${e.styleId}`} className="ls-entry-name">
+                  <StyleOpener
+                    styleId={e.styleId}
+                    multi={multi(e.styleId)}
+                    onOpen={setOpenStyle}
+                    className="ls-entry-name"
+                  >
                     {e.name}
-                  </Link>
+                  </StyleOpener>
                   {e.subtitle && <p className="ls-entry-sub">{e.subtitle}</p>}
                   <button
                     type="button"
@@ -294,6 +355,73 @@ export default function Linesheet({
           onClose={() => setPicking(false)}
         />
       )}
+
+      {openStyle && standings[openStyle] && (
+        <StyleVersions
+          name={sheet.entries.find((e) => e.styleId === openStyle)?.name ?? "Style"}
+          standing={standings[openStyle]}
+          onClose={() => setOpenStyle(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// The factories modal: every factory working on this garment, its latest round
+// and rating dot, the approved one badged, each a link into that profile — plus a
+// shortcut to the approved profile (Tess, 2026-08-12: "click into any version").
+function StyleVersions({
+  name,
+  standing,
+  onClose,
+}: {
+  name: string;
+  standing: LinesheetStanding;
+  onClose: () => void;
+}) {
+  const n = standing.versions.length;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal ls-vmodal" onClick={(e) => e.stopPropagation()}>
+        <div className="ls-vmodal-head">
+          <strong>{name}</strong>
+          <span className="ls-vmodal-sub">
+            {n} {n === 1 ? "factory" : "factories"}
+          </span>
+        </div>
+
+        <div className="ls-vmodal-list">
+          {standing.versions.map((v) => (
+            <Link key={v.styleId} href={`/styles/${v.styleId}`} className="ls-version">
+              <span className="ls-version-fac">
+                {v.factory || "Unassigned"}
+                {v.isSelf && <span className="ls-version-self">on sheet</span>}
+              </span>
+              <span className="ls-version-mid">
+                {v.rating && <RatingDot rating={v.rating} />}
+                {v.roundLabel && <span className="ls-version-round">{v.roundLabel}</span>}
+                {v.approved && <span className="ls-version-approved">Approved</span>}
+              </span>
+              <span className="ls-version-go" aria-hidden="true">
+                →
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="ls-vmodal-foot">
+          {standing.approvedStyleId ? (
+            <Link href={`/styles/${standing.approvedStyleId}`} className="btn sm">
+              Open approved profile
+            </Link>
+          ) : (
+            <span className="ls-vmodal-none">No round approved yet</span>
+          )}
+          <button type="button" className="btn link" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

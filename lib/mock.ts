@@ -55,6 +55,9 @@ export const mockStyles: Style[] = [
   ["Terry Zip Hoodie", "SS-1039", "production", "Hoodie", "Sunrise Mills", true],
   ["Bias Slip Dress", "SS-1070", "inspo", "Dress", "", false],
   ["Quilted Liner Vest", "SS-1024", "archived", "Vest", "Atlas Garments", false],
+  // A sibling of style-0: the same garment (SS-1042) sampled at a second factory,
+  // so the linesheet's click-through modal has more than one factory to show.
+  ["Cropped Rib Tank", "SS-1042", "development", "Tank", "Atlas Garments", true],
 ].map((s, i) => ({
   id: "style-" + i,
   style_no: s[1] as string,
