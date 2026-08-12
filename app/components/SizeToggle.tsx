@@ -6,27 +6,42 @@
 // icons"). It used to be grid-density icons in one place and text S/M/L in the
 // other; now it is one component, drawn as a density icon in both.
 //
-// Three steps — smaller / medium / larger. On phone and tablet these map to 4,
-// 2 and 1 columns; the icon is a relative density mark, not a literal count.
-
+// Three steps, drawn to match the reference design's column icons exactly (Tess,
+// 2026-08-11: "column icons across app on all breakpoints should all match style
+// of the reference design"): sharp-cornered filled squares on a 16 grid, and
+// ordered larger → smaller left to right (2×2, 3×3, 4×4), the way the reference
+// reads. The values (sm/md/lg) still drive .grid.dens-* — only the order and the
+// glyph changed.
 const STEPS = [
-  ["sm", 4, "Smaller"],
-  ["md", 3, "Medium"],
   ["lg", 2, "Larger"],
+  ["md", 3, "Medium"],
+  ["sm", 4, "Smaller"],
 ] as const;
 
+// Per-grid geometry lifted from the reference SVGs so the marks are identical.
+const GEO: Record<number, { c: number; gap: number; p: number }> = {
+  2: { c: 4.5, gap: 2, p: 2.5 },
+  3: { c: 3, gap: 1.5, p: 2 },
+  4: { c: 2, gap: 1.3, p: 2 },
+};
+
 function GridIcon({ n }: { n: number }) {
-  const gap = 1.4;
-  const total = 14;
-  const s = (total - (n - 1) * gap) / n;
+  const g = GEO[n];
   const cells = [];
   for (let y = 0; y < n; y++)
     for (let x = 0; x < n; x++)
       cells.push(
-        <rect key={`${x}-${y}`} x={x * (s + gap)} y={y * (s + gap)} width={s} height={s} rx={0.5} fill="currentColor" />
+        <rect
+          key={`${x}-${y}`}
+          x={g.p + x * (g.c + g.gap)}
+          y={g.p + y * (g.c + g.gap)}
+          width={g.c}
+          height={g.c}
+          fill="currentColor"
+        />
       );
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+    <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
       {cells}
     </svg>
   );
