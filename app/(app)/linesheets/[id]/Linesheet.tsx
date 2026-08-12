@@ -269,7 +269,7 @@ export default function Linesheet({
             Linesheet · {sheet.count} {sheet.count === 1 ? "style" : "styles"} · {cover.generatedOn}
           </p>
         </div>
-        <p className="ls-cover-foot">Confidential · {cover.brandLabel} · theloyalist.com</p>
+        <p className="ls-cover-foot">Confidential · {cover.brandLabel}</p>
       </section>
 
       {empty ? (
