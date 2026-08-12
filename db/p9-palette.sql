@@ -2,6 +2,8 @@
 -- moodboard -- allows user to fill in seasonal and evergreen color swatches /
 -- pantones for easy reference").
 --
+-- APPLIED 2026-08-12 via the Supabase MCP.
+--
 -- One nullable jsonb column on the existing brands table. The palette is a brand
 -- property, not a board's — "evergreen" colours are the permanent brand set — so
 -- it rides the row the brand already has rather than a new table with its own

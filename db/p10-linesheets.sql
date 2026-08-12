@@ -2,6 +2,8 @@
 -- product side of the app. this is where a user can take a style in progress or
 -- from the style library and add to a linesheet for the season or evergreen").
 --
+-- APPLIED 2026-08-12 via the Supabase MCP.
+--
 -- A linesheet is an ordered set of styles assembled for a season or as evergreen,
 -- viewable as an assortment grid or one product per page and exported to PDF.
 -- Modelled on moodboards: one row per linesheet, the ordered contents in a jsonb
