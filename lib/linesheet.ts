@@ -112,6 +112,71 @@ export function pickApprovedStyleId(versions: LinesheetVersion[]): string | null
   return any ? any.styleId : null;
 }
 
+// Grouping the assortment by colour (Tess: "would want the option to group by
+// color and or show multiple colors as well"). There is no hex on a style, so a
+// colour is a name — the colorway captions when there are any, otherwise the
+// free-text `colors` line split on / and , . A style with several colours lands
+// in each of their groups, which is also how "show multiple colors" reads on the
+// page: the same style appears once per colour, under its own swatch.
+
+const UNSORTED_COLOR = "Unsorted";
+
+/** The colour names of an entry, de-duplicated case-insensitively, in order. */
+export function entryColorNames(e: LinesheetEntry): string[] {
+  const fromWays = e.colorways.map((c) => c.name).filter(Boolean);
+  const raw = fromWays.length
+    ? fromWays
+    : (e.colors ?? "").split(/[/,]/).map((s) => s.trim()).filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const n of raw) {
+    const k = n.toLowerCase();
+    if (!seen.has(k)) {
+      seen.add(k);
+      out.push(n);
+    }
+  }
+  return out;
+}
+
+export type ColorGroup = { color: string; entries: LinesheetEntry[] };
+
+/**
+ * Group entries by colour name, in first-seen order, with any colourless style
+ * gathered under "Unsorted" at the end. A multi-colour style appears in each of
+ * its groups.
+ */
+export function groupByColor(entries: LinesheetEntry[]): ColorGroup[] {
+  const groups = new Map<string, ColorGroup>();
+  const order: string[] = [];
+  const add = (key: string, display: string, e: LinesheetEntry) => {
+    let g = groups.get(key);
+    if (!g) {
+      g = { color: display, entries: [] };
+      groups.set(key, g);
+      order.push(key);
+    }
+    g.entries.push(e);
+  };
+  for (const e of entries) {
+    const names = entryColorNames(e);
+    if (names.length) for (const n of names) add(n.toLowerCase(), n, e);
+    else add(UNSORTED_COLOR.toLowerCase(), UNSORTED_COLOR, e);
+  }
+  // Unsorted trails the real colours.
+  return order
+    .map((k) => groups.get(k) as ColorGroup)
+    .sort((a, b) =>
+      a.color === UNSORTED_COLOR ? 1 : b.color === UNSORTED_COLOR ? -1 : 0
+    );
+}
+
+/** The image to show for a style within a colour group — that colourway, else its sketch. */
+export function swatchForColor(e: LinesheetEntry, color: string): string | null {
+  const hit = e.colorways.find((c) => c.name.toLowerCase() === color.toLowerCase());
+  return hit?.url ?? e.sketchUrl;
+}
+
 function t(v: unknown): string | null {
   const s = typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
   return s.length ? s : null;

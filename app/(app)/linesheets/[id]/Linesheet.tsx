@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { sampleRatingLabel } from "@/lib/types";
+import { groupByColor, swatchForColor } from "@/lib/linesheet";
 import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
@@ -119,6 +120,7 @@ export default function Linesheet({
   const [picking, setPicking] = useState(false);
   const [armed, setArmed] = useState<string | null>(null);
   const [openStyle, setOpenStyle] = useState<string | null>(null);
+  const [groupColor, setGroupColor] = useState(false);
 
   // More than one factory works on this garment → a modal offers the choice.
   const multi = (styleId: string) => (standings[styleId]?.versions.length ?? 1) > 1;
@@ -144,6 +146,42 @@ export default function Linesheet({
   }
 
   const empty = sheet.entries.length === 0;
+
+  // One grid card. In a colour group, `swatchUrl` is that colourway's image so a
+  // multi-colour style shows the right colour under each heading.
+  const cell = (e: LinesheetEntry, swatchUrl: string | null = e.sketchUrl) => (
+    <div className="ls-cell" key={e.styleId}>
+      <StyleOpener
+        styleId={e.styleId}
+        multi={multi(e.styleId)}
+        onOpen={setOpenStyle}
+        className="ls-card-style"
+        title={e.name}
+      >
+        <span className={"ls-sketch" + (swatchUrl ? "" : " none")}>
+          {swatchUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={swatchUrl} alt={e.name} />
+          )}
+        </span>
+        <span className="ls-cardname">
+          {e.name}
+          {e.price && <span className="ls-price">{e.price}</span>}
+        </span>
+        {e.styleNo && <span className="ls-cardno">{e.styleNo}</span>}
+      </StyleOpener>
+      <Colors entry={e} />
+      <button
+        type="button"
+        className={"ls-remove no-print" + (armed === e.styleId ? " armed" : "")}
+        onClick={() => (armed === e.styleId ? remove(e.styleId) : setArmed(e.styleId))}
+        onMouseLeave={() => armed === e.styleId && setArmed(null)}
+        title="Remove from linesheet"
+      >
+        {armed === e.styleId ? "Remove?" : "×"}
+      </button>
+    </div>
+  );
 
   return (
     <div className="page ls-page">
@@ -175,6 +213,16 @@ export default function Linesheet({
               Detail
             </button>
           </div>
+          {view === "grid" && (
+            <button
+              type="button"
+              className={"ls-groupbtn" + (groupColor ? " active" : "")}
+              onClick={() => setGroupColor((g) => !g)}
+              title="Group the assortment by colour"
+            >
+              Group by color
+            </button>
+          )}
           <button type="button" className="btn ghost sm" onClick={() => setPicking(true)}>
             + Add styles
           </button>
@@ -217,41 +265,23 @@ export default function Linesheet({
           Style Library onto this linesheet.
         </div>
       ) : view === "grid" ? (
-        <div className="ls-grid">
-          {sheet.entries.map((e) => (
-            <div className="ls-cell" key={e.styleId}>
-              <StyleOpener
-                styleId={e.styleId}
-                multi={multi(e.styleId)}
-                onOpen={setOpenStyle}
-                className="ls-card-style"
-                title={e.name}
-              >
-                <span className={"ls-sketch" + (e.empty ? " none" : "")}>
-                  {e.sketchUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={e.sketchUrl} alt={e.name} />
-                  )}
-                </span>
-                <span className="ls-cardname">
-                  {e.name}
-                  {e.price && <span className="ls-price">{e.price}</span>}
-                </span>
-                {e.styleNo && <span className="ls-cardno">{e.styleNo}</span>}
-              </StyleOpener>
-              <Colors entry={e} />
-              <button
-                type="button"
-                className={"ls-remove no-print" + (armed === e.styleId ? " armed" : "")}
-                onClick={() => (armed === e.styleId ? remove(e.styleId) : setArmed(e.styleId))}
-                onMouseLeave={() => armed === e.styleId && setArmed(null)}
-                title="Remove from linesheet"
-              >
-                {armed === e.styleId ? "Remove?" : "×"}
-              </button>
-            </div>
-          ))}
-        </div>
+        groupColor ? (
+          <div className="ls-colorgroups">
+            {groupByColor(sheet.entries).map((g) => (
+              <section className="ls-colorgroup" key={g.color}>
+                <h3 className="ls-colorgroup-head">
+                  {g.color}
+                  <span className="ls-colorgroup-n">{g.entries.length}</span>
+                </h3>
+                <div className="ls-grid">
+                  {g.entries.map((e) => cell(e, swatchForColor(e, g.color)))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="ls-grid">{sheet.entries.map((e) => cell(e))}</div>
+        )
       ) : (
         <div className="ls-detail">
           {sheet.entries.map((e) => (

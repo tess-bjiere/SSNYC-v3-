@@ -3424,7 +3424,19 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-view:hover{color:var(--ink)}
 .ls-view.active{background:var(--chip);color:var(--ink)}
 
-/* --- Grid (assortment-at-a-glance) --- */
+/* The Group-by-color toggle (Tess: "the option to group by color"). */
+.ls-groupbtn{background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;
+  font-family:inherit;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;
+  letter-spacing:.12em;padding:var(--ctl-y-sm) var(--ctl-x-md)}
+.ls-groupbtn:hover{color:var(--ink)}
+.ls-groupbtn.active{background:var(--chip);color:var(--ink)}
+
+/* --- Grid (assortment-at-a-glance), and its colour groups --- */
+.ls-colorgroups{display:flex;flex-direction:column;gap:34px}
+.ls-colorgroup-head{display:flex;align-items:baseline;gap:10px;font-size:var(--t-cap);
+  font-weight:var(--w-cap);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:16px}
+.ls-colorgroup-n{font-size:var(--t-micro);color:var(--faint);letter-spacing:.1em}
 .ls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:22px 20px}
 .ls-cell{position:relative;display:flex;flex-direction:column;gap:6px}
 .ls-card-style{display:flex;flex-direction:column;gap:6px;text-decoration:none;min-width:0}

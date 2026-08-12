@@ -8,6 +8,10 @@ import {
   reorderItems,
   setItemField,
   buildLinesheet,
+  buildEntry,
+  entryColorNames,
+  groupByColor,
+  swatchForColor,
   pickApprovedStyleId,
   type LinesheetItem,
   type LinesheetVersion,
@@ -120,6 +124,46 @@ test("pickApprovedStyleId prefers the self style, then any, else null", () => {
   assert.equal(pickApprovedStyleId([v("self", true, false), v("sib", false, true)]), "sib");
   // None approved → null.
   assert.equal(pickApprovedStyleId([v("self", true, false), v("sib", false, false)]), null);
+});
+
+test("entryColorNames prefers colorway captions, else splits the free-text line", () => {
+  assert.deepEqual(
+    entryColorNames(buildEntry({ styleId: "a", name: "x", colorways: [{ url: "u1", name: "Ecru" }, { url: "u2", name: "Sage" }] })),
+    ["Ecru", "Sage"]
+  );
+  // no colorways → split the free-text colours line, de-dup case-insensitively
+  assert.deepEqual(
+    entryColorNames(buildEntry({ styleId: "a", name: "x", colors: "Black / Bone, black" })),
+    ["Black", "Bone"]
+  );
+});
+
+test("groupByColor puts a multi-colour style in each group, Unsorted last", () => {
+  const entries = [
+    buildEntry({ styleId: "a", name: "Tank", colors: "Black / Bone" }),
+    buildEntry({ styleId: "b", name: "Trouser", colors: "Black" }),
+    buildEntry({ styleId: "c", name: "Shirt", colors: "" }), // no colour → Unsorted
+  ];
+  const groups = groupByColor(entries);
+  assert.deepEqual(
+    groups.map((g) => [g.color, g.entries.map((e) => e.styleId)]),
+    [
+      ["Black", ["a", "b"]],
+      ["Bone", ["a"]],
+      ["Unsorted", ["c"]],
+    ]
+  );
+});
+
+test("swatchForColor returns that colourway's image, else the sketch", () => {
+  const e = buildEntry({
+    styleId: "a",
+    name: "x",
+    sketchUrl: "sketch",
+    colorways: [{ url: "ecru.jpg", name: "Ecru" }],
+  });
+  assert.equal(swatchForColor(e, "Ecru"), "ecru.jpg");
+  assert.equal(swatchForColor(e, "Sage"), "sketch"); // no match → sketch
 });
 
 test("normalizeKind only ever yields the two kinds", () => {
