@@ -988,9 +988,18 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      lower half stops looking loose (Tess, 2026-08-11: "this is very very
      messy"). */
   .profile .siblings-section,.profile .sr-shoot,.profile .sr-block{margin-bottom:0}
-  /* Sample-rounds heading and its Add button stack instead of the title
-     wrapping in beside the button. */
-  .profile .sr-sechead h3{flex-basis:100%}
+  /* Sample-rounds heading and its Add button stack instead of the title wrapping
+     in beside the button — tightly: the h3 already carries a rule under it, so
+     drop its 16px margin and the flex row-gap to 8 so the button sits just under
+     the heading, not 34px below it (Tess, 2026-08-11: "spacing still feels
+     wonky"). */
+  .profile .sr-sechead{gap:8px}
+  .profile .sr-sechead h3{flex-basis:100%;margin-bottom:0}
+  /* The Edit details button carries 20+38px of "air" for the desktop column,
+     which on a phone inflated its wrapper to 94px and read as a big void above
+     Status (Tess, 2026-08-11: "spacing still feels wonky"). The flex gap already
+     spaces it, so zero the margin. */
+  .profile .modal-btn-row{margin:0}
   .profile .profile-titlerow{order:1}
   .profile .profile-badges{order:2}
   .profile .cover{order:3;max-width:200px;align-self:flex-start}
