@@ -101,7 +101,7 @@ test("buildLinesheet: subtitle, colours fall back to the free-text line, plural 
   assert.equal(sheet.kindLabel, "Seasonal");
   assert.equal(sheet.subtitle, "FW26"); // the sheet-level optional label
   const e = sheet.entries[0];
-  assert.equal(e.subtitle, "SS-101 · Crewneck · FW26");
+  assert.equal(e.subtitle, "Crewneck · FW26"); // style no is no longer in the subtitle
   assert.equal(e.price, "$175");
   assert.equal(e.colors, "black / bone");
   assert.deepEqual(e.colorways, []);

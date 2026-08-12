@@ -3417,12 +3417,26 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 /* --- The sheet toolbar --- */
 .ls-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
   gap:16px;margin-bottom:24px}
-.ls-head-title{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ls-head-title{display:flex;flex-direction:column;gap:8px;min-width:0}
 .ls-head-title .page-title{margin:0}
+/* The name edits in place (Tess, 2026-08-12: "you should be able to edit
+   linesheet name"): the title reads as text, hints on hover, and swaps to an
+   input styled to sit exactly where the title was so nothing shifts. */
+.ls-name{cursor:text}
+.ls-name:hover{color:var(--muted)}
+.ls-name-edit{margin:0;padding:0;border:none;border-bottom:1px solid var(--line);
+  background:none;color:var(--ink);line-height:1.12;max-width:100%;border-radius:0}
+.ls-name-edit:focus{outline:none;border-bottom-color:var(--ink)}
 .ls-kind{font-size:var(--t-micro);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
 .ls-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.ls-viewtoggle{display:flex;border:1px solid var(--line)}
-.ls-view{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);
+/* The segmented toggle and the Group button sit next to .btn.sm (Add styles,
+   Save as PDF). A .btn's single text run takes the font's normal line-height as
+   its flex-item height, so a .btn.sm lands at 28px; a plain button only gets its
+   12.5px glyph box and came out shorter (Tess, 2026-08-12: "toggle / buttons are
+   mismatched in sizing"). Pin both to 28 so the whole toolbar lines up. */
+.ls-viewtoggle{display:flex;min-height:28px;border:1px solid var(--line)}
+.ls-view{display:inline-flex;align-items:center;background:none;border:none;
+  border-right:1px solid var(--line);color:var(--muted);
   padding:var(--ctl-y-sm) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-meta);
   font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em}
 .ls-view:last-child{border-right:none}
@@ -3432,8 +3446,9 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-delete:hover,.ls-delete.armed{color:var(--danger)}
 
 /* The Group-by-color toggle (Tess: "the option to group by color"). */
-.ls-groupbtn{background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;
-  font-family:inherit;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;
+.ls-groupbtn{display:inline-flex;align-items:center;min-height:28px;background:none;
+  border:1px solid var(--line);color:var(--muted);cursor:pointer;font-family:inherit;
+  font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;
   letter-spacing:.12em;padding:var(--ctl-y-sm) var(--ctl-x-md)}
 .ls-groupbtn:hover{color:var(--ink)}
 .ls-groupbtn.active{background:var(--chip);color:var(--ink)}
@@ -3570,6 +3585,14 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      trailing sheet, and its 24px head nudged the cover down. */
   .ls-page{background:#fff;color:#111;padding:0}
   body.notes-open .wrap{padding-right:0}
+  /* Print the fills. A "Save as PDF" with Background graphics off drops every
+     background colour, so the colour dots came out blank (Tess, 2026-08-12: "black
+     dot showing up blank"). This forces the swatches — and every designed fill —
+     to print. */
+  .ls-page,.ls-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* The style number is on screen for the merchandiser but not in the export
+     (Tess, 2026-08-12: "linesheet export doesnt need style number"). */
+  .ls-cardno,.ls-eno{display:none}
 
   /* --- Cover: masthead top, title in the middle, confidential at the foot; its
      own generous inset so nothing touches the paper edge. --- */

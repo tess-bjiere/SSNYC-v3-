@@ -13,6 +13,7 @@ import {
   addStylesToLinesheet,
   removeStyleFromLinesheet,
   setLinesheetItem,
+  renameLinesheet,
   deleteLinesheet,
 } from "@/app/actions/linesheets";
 
@@ -135,6 +136,12 @@ export default function Linesheet({
   cover: Cover;
 }) {
   const [view, setView] = useState<View>("grid");
+  // The name is editable in place (Tess, 2026-08-12: "you should be able to edit
+  // linesheet name"). Kept in local state so the header, the PDF filename and the
+  // cover title all track the edit immediately; the server revalidation that
+  // follows the save re-seeds it from the prop.
+  const [name, setName] = useState(sheet.name);
+  const [editingName, setEditingName] = useState(false);
   const [picking, setPicking] = useState(false);
   const [armed, setArmed] = useState<string | null>(null);
   const [openStyle, setOpenStyle] = useState<string | null>(null);
@@ -146,9 +153,12 @@ export default function Linesheet({
   // More than one factory works on this garment → a modal offers the choice.
   const multi = (styleId: string) => (standings[styleId]?.versions.length ?? 1) > 1;
 
+  // Follow the saved name when the server sends fresh props after a rename.
+  useEffect(() => setName(sheet.name), [sheet.name]);
+
   // The PDF names itself from the linesheet — the browser suggests document.title
   // as the filename, the same trick the fitting deck uses.
-  const fileTitle = `${sheet.name} — ${sheet.kindLabel} linesheet`;
+  const fileTitle = `${name} — ${sheet.kindLabel} linesheet`;
   useEffect(() => {
     const previous = document.title;
     document.title = fileTitle;
@@ -156,6 +166,19 @@ export default function Linesheet({
       document.title = previous;
     };
   }, [fileTitle]);
+
+  async function saveName() {
+    setEditingName(false);
+    const next = name.trim();
+    if (!next || next === sheet.name) {
+      setName(sheet.name);
+      return;
+    }
+    setName(next);
+    const fd = new FormData();
+    fd.set("name", next);
+    await renameLinesheet(id, fd);
+  }
 
   async function remove(styleId: string) {
     setArmed(null);
@@ -211,7 +234,33 @@ export default function Linesheet({
           <Link href="/linesheets" className="count">
             ← Linesheets
           </Link>
-          <h1 className="page-title display">{sheet.name}</h1>
+          {editingName ? (
+            <input
+              className="page-title display ls-name-edit"
+              value={name}
+              autoFocus
+              onChange={(e) => setName(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                } else if (e.key === "Escape") {
+                  setName(sheet.name);
+                  setEditingName(false);
+                }
+              }}
+              aria-label="Linesheet name"
+            />
+          ) : (
+            <h1
+              className="page-title display ls-name"
+              onClick={() => setEditingName(true)}
+              title="Rename linesheet"
+            >
+              {name}
+            </h1>
+          )}
           <span className="ls-kind">
             {[sheet.kindLabel, sheet.subtitle].filter(Boolean).join(" · ")}
           </span>
@@ -281,7 +330,7 @@ export default function Linesheet({
           <div className="ls-cover-wordmark">{cover.brandLabel}</div>
         )}
         <div className="ls-cover-mid">
-          <h1 className="ls-cover-title">{sheet.name}</h1>
+          <h1 className="ls-cover-title">{name}</h1>
           <p className="ls-cover-sub">
             Linesheet · {sheet.count} {sheet.count === 1 ? "style" : "styles"} · {cover.generatedOn}
           </p>
@@ -342,7 +391,20 @@ export default function Linesheet({
                   >
                     {e.name}
                   </StyleOpener>
-                  {e.subtitle && <p className="ls-entry-sub">{e.subtitle}</p>}
+                  {(e.styleNo || e.subtitle) && (
+                    <p className="ls-entry-sub">
+                      {/* Style no kept on screen for the merchandiser, dropped from
+                          the export (Tess, 2026-08-12: "export doesnt need style
+                          number"). */}
+                      {e.styleNo && (
+                        <span className="ls-eno">
+                          {e.styleNo}
+                          {e.subtitle ? " · " : ""}
+                        </span>
+                      )}
+                      {e.subtitle}
+                    </p>
+                  )}
                   <button
                     type="button"
                     className={"ls-remove no-print" + (armed === e.styleId ? " armed" : "")}

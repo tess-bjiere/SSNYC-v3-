@@ -36,7 +36,7 @@ export type LinesheetEntry = {
   name: string;
   styleNo: string | null;
   garment: string | null;
-  /** style no · garment · season — the identifying line under the name. */
+  /** garment · season — the line under the name (style no is shown separately). */
   subtitle: string;
   price: string | null;
   fabric: string | null;
@@ -292,7 +292,7 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
     name: t(input.name) ?? "Untitled style",
     styleNo: t(input.styleNo),
     garment: t(input.garment),
-    subtitle: dots([input.styleNo, input.garment, input.season]),
+    subtitle: dots([input.garment, input.season]),
     price: t(input.price),
     fabric: t(input.fabric),
     colors: t(input.colors),
