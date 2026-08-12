@@ -3556,26 +3556,34 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
    tokens would print as invisible text, so text/borders are set to ink-on-paper.
    min-width holds the desktop landscape layout even when printing from a phone. */
 @media print{
-  /* A real page margin on every sheet — the export was jamming into the top-left
-     corner with none (Tess, 2026-08-12: "very ugly and jumbled ... crammed into a
-     corner. refine to a beautifully designed, thoughtfully spaced report"). Half
-     an inch all round, letter landscape, ink on paper. */
-  @page{size:letter landscape;margin:0.5in}
-  .ls-page{background:#fff;color:#111}
-  /* Never let an open notes drawer shove the printed page aside. */
+  /* The margins are the CONTENT's own padding, not @page margins — a print with
+     "Margins: None" (which is what jammed everything into the corner) ignores
+     @page margins entirely, so the fitting deck never relied on them and neither
+     does this now (Tess, 2026-08-12: "still showing up very weird ... a beautiful
+     clean and well designed deck"). Page-fill uses vh, which tracks the real page
+     box whatever the margin setting is. margin:0 makes the page box the full sheet
+     so the content padding is the only inset, the same for a "Default" or a "None"
+     print. */
+  @page{size:letter landscape;margin:0}
+  /* Zero the .page chrome padding (24/80px) — its 80px foot was spilling a blank
+     trailing sheet, and its 24px head nudged the cover down. */
+  .ls-page{background:#fff;color:#111;padding:0}
   body.notes-open .wrap{padding-right:0}
 
-  /* --- Cover: masthead top, title centred, confidential at the foot. Padding
-     comes from the page margin now, so the content sits inside it cleanly. --- */
+  /* --- Cover: masthead top, title in the middle, confidential at the foot; its
+     own generous inset so nothing touches the paper edge. --- */
   .ls-cover{display:flex;flex-direction:column;justify-content:space-between;
-    min-height:6.8in;box-sizing:border-box;padding:0;break-after:page;color:#111}
+    min-height:94vh;box-sizing:border-box;padding:0.55in 0.75in;break-after:page;color:#111}
   .ls-cover-logo{height:34px;width:auto;max-width:50%;object-fit:contain;display:block;align-self:flex-start}
   .ls-cover-wordmark{font-size:28px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
   .ls-cover-title{font-size:56px;font-weight:400;letter-spacing:.01em;line-height:1.02;margin:0 0 8px}
   .ls-cover-sub{font-size:13px;color:#666;margin:0}
   .ls-cover-foot{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#aaa;margin:0}
 
-  /* --- Assortment grid: four roomy tiles per landscape page. --- */
+  /* --- Assortment grid: four roomy tiles per landscape page, inset from the
+     edges. The direct grid and the colour-grouped one each carry the page inset;
+     the inner grid inside a group does not, to avoid doubling it. --- */
+  .ls-page > .ls-grid,.ls-colorgroups{padding:0.5in 0.62in;box-sizing:border-box}
   .ls-colorgroups{gap:34px}
   .ls-colorgroup-head{font-size:12px;letter-spacing:.16em;color:#888;
     border-color:#e6e6e6;padding-bottom:7px;margin-bottom:18px}
@@ -3590,11 +3598,12 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-color-chip{border-color:#ddd}
 
   /* --- Detail: one product filling a landscape page — a large drawing on the
-     left, the merchandising facts set beside it and vertically centred, so the
-     page reads as a considered lookbook page, not a cramped block. --- */
+     left, the merchandising facts beside it, the pair vertically centred, with an
+     even inset all round. --- */
   .ls-detail{gap:0}
   .ls-entry{break-before:page;break-inside:avoid;grid-template-columns:1.2fr 1fr;
-    gap:0.6in;align-items:center;align-content:center;min-height:6.8in;padding:0}
+    gap:0.6in;align-items:center;align-content:center;min-height:94vh;
+    box-sizing:border-box;padding:0.5in 0.75in}
   .ls-detail .ls-entry:first-child{break-before:auto}
   .ls-entry-fig{background:none;border:none;padding:0;align-items:flex-start;gap:0.18in;min-height:0}
   .ls-entry-fig img{width:100%;max-height:6in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
