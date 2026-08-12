@@ -2273,10 +2273,23 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-empty{color:#888;font-style:italic;font-size:var(--t-sm)}
 @media print{
   @page{size:landscape}
-  .deck{box-shadow:none;margin:0;max-width:none;scroll-snap-type:none}
+  /* Export at the desktop size on every device (Tess, 2026-08-12: "when you
+     export deck on mobile -- it should be the same page size / orientation as
+     the desktop version"). A phone prints by laying the page out at its own
+     narrow viewport and scaling that to the paper, so without a floor the deck
+     reflowed to ~375px and came out as a cramped, portrait-feeling strip. The
+     min-width holds the landscape layout the desktop gets — the browser then
+     scales that whole width onto the sheet — so the slide reads the same
+     wherever it is saved. Kept as min-width, not a fixed width, so a wide
+     desktop page still fills the sheet rather than gaining side margins. */
+  .deck{box-shadow:none;margin:0;max-width:none;min-width:960px;scroll-snap-type:none}
   .deck-slide{min-height:auto;justify-content:flex-start;padding:32px 40px;
     break-before:page;break-inside:avoid;border-top:none}
   .deck-cover{break-after:page}
+  /* Height in px, not vh: on a phone's print pass vh resolves against the device
+     viewport, not the page, so the shots would size differently than on desktop.
+     300px matches the ~38vh the desktop landscape page already gives them. */
+  .deck-shots img{max-height:300px}
 }
 .paper-shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
 .paper-shots figure{margin:0;break-inside:avoid}
