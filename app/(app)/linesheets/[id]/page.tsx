@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { requireTeam } from "@/lib/access";
+import { requireTeam, DEV_BYPASS } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
-import { loadBrands } from "@/lib/brandsServer";
+import { loadBrands, checkSuperAdmin } from "@/lib/brandsServer";
 import { brandName } from "@/lib/brands";
+import { normalizeNotes } from "@/lib/notes";
 import { MOCK, mockLinesheet, mockStyles, mockSamples } from "@/lib/mock";
 import {
   SAMPLE_ROUNDS,
@@ -28,6 +29,7 @@ import {
   type LinesheetVersion,
 } from "@/lib/linesheet";
 import Linesheet from "./Linesheet";
+import LinesheetNotes from "./LinesheetNotes";
 
 export const dynamic = "force-dynamic";
 
@@ -37,14 +39,24 @@ export const dynamic = "force-dynamic";
 // picture and colorway resolution (styleCoverUrl / readImages) added here where
 // the impure concerns live.
 
-type Row = { id: string; name: string; kind: string; season: string | null; items: unknown };
+type Row = {
+  id: string;
+  name: string;
+  kind: string;
+  season: string | null;
+  items: unknown;
+  notes?: unknown;
+};
 
 export default async function LinesheetPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireTeam();
+  const user = await requireTeam();
+  const me = user?.name || user?.email || "";
+  // God mode edits/deletes any note (same rule as the moodboard); preview counts.
+  const godMode = DEV_BYPASS || checkSuperAdmin(user?.email);
   const { id } = await params;
 
   // The row, plus every live style + its rounds. The picker needs the full style
@@ -177,12 +189,20 @@ export default async function LinesheetPage({
   }));
 
   return (
-    <Linesheet
-      id={id}
-      sheet={sheet}
-      pickable={pickable}
-      standings={standings}
-      cover={{ brandLogo, brandLabel, generatedOn }}
-    />
+    <>
+      <Linesheet
+        id={id}
+        sheet={sheet}
+        pickable={pickable}
+        standings={standings}
+        cover={{ brandLogo, brandLabel, generatedOn }}
+      />
+      <LinesheetNotes
+        linesheetId={id}
+        notes={normalizeNotes(row.notes)}
+        me={me}
+        canDeleteAll={godMode}
+      />
+    </>
   );
 }

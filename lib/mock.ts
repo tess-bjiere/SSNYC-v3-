@@ -171,7 +171,17 @@ export const mockLinesheets: MockLinesheetRow[] = [
       { style_id: "style-2" },
       { style_id: "style-3", price: "$225" },
     ],
-    notes: [],
+    notes: [
+      {
+        tid: "n1",
+        text: "Push the Terry Zip Hoodie to the front — it's the hero of the story.",
+        by: "tess@theloyalist.com",
+        ts: 1722960000000,
+        replies: [
+          { id: "r1", by: "kara@theloyalist.com", ts: 1722970000000, text: "Agreed. Move the tank down a row." },
+        ],
+      },
+    ],
     archived: false,
     created_by: "tess@theloyalist.com",
     created_at: "2026-07-01",
