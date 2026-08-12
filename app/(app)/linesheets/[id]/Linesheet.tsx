@@ -48,23 +48,40 @@ function RatingDot({ rating }: { rating: string }) {
   );
 }
 
-/** The colours line: the colorway images when there are any, else the free-text line. */
+/**
+ * The colours, each as a round swatch and its name (Tess, 2026-08-12: "include
+ * circles for color swatches"). A colourway swatch is its uploaded image, cropped
+ * to a circle; a free-text colour becomes a filled dot when its name is a real CSS
+ * colour (black, olive…) and a plain outlined dot otherwise, since a style row has
+ * no hex to draw from.
+ */
 function Colors({ entry }: { entry: LinesheetEntry }) {
-  if (entry.colorways.length > 0) {
-    return (
-      <div className="ls-colors">
-        {entry.colorways.map((c, i) => (
-          <span className="ls-color" key={i} title={c.name}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="ls-color-chip" src={c.url} alt={c.name || "colorway"} />
-            {c.name && <span className="ls-color-name">{c.name}</span>}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  if (entry.colors) return <div className="ls-colors-text">{entry.colors}</div>;
-  return null;
+  const swatches: { name: string; url: string | null }[] =
+    entry.colorways.length > 0
+      ? entry.colorways.map((c) => ({ name: c.name, url: c.url }))
+      : entry.colors
+        ? entry.colors
+            .split(/[/,]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .map((name) => ({ name, url: null }))
+        : [];
+  if (swatches.length === 0) return null;
+  return (
+    <div className="ls-colors">
+      {swatches.map((s, i) => (
+        <span className="ls-color" key={i} title={s.name}>
+          {s.url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="ls-color-chip" src={s.url} alt={s.name || "color"} />
+          ) : (
+            <span className="ls-color-chip" style={{ background: s.name.toLowerCase() }} aria-hidden="true" />
+          )}
+          {s.name && <span className="ls-color-name">{s.name}</span>}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 type Cover = { brandLogo: string | null; brandLabel: string; generatedOn: string };
