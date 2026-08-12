@@ -141,6 +141,10 @@ export default function DevTabs({
   // Status is a filter, not a sort (Tess, 2026-08-11): "" is any; the two values
   // read the same DevSummary the cards and the old sorts read.
   const [status, setStatus] = useState("");
+  // On a phone the filter selects fold behind one "Filter" button, the same way
+  // the References library does it (Tess, 2026-08-11: "the fields and buttons
+  // have too many rows and look really messy"). Desktop shows them all inline.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // Thumbnail size / column count, the same control the other grids use (Tess,
   // 2026-08-11: "development view on mobile should allow you to toggle between
   // multi column views for the style thumbnails"). 4 / 2 / 1 columns on a phone.
@@ -217,6 +221,9 @@ export default function DevTabs({
   const sortHint = DEV_SORTS.find((s) => s.id === sort)?.hint ?? "";
 
   const narrowed = anyFilter(filters, query) || Boolean(status);
+  // The filter dropdowns only, for the count on the phone "Filter" button —
+  // search sits on its own line, so it is not part of this tally.
+  const activeFilters = Object.values(filters).filter(Boolean).length + (status ? 1 : 0);
   const inThisTab = rows.filter((s) => inTab(s, tab)).length;
   // Matches sitting in the other tabs — the answer to "it is not here, is it
   // anywhere?", which is the question a search is usually really asking.
@@ -315,38 +322,52 @@ export default function DevTabs({
             options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
           />
 
-          {/* Status filters to a SET rather than reordering everything (Tess,
-              2026-08-11: "these should act more as filter not sort"). It reads
-              the same DevSummary the cards do, so the two cannot disagree. */}
-          <Select
-            className={"select sm" + (status ? " on" : "")}
-            aria-label="Status"
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: "", label: "Status: any" },
-              { value: "attention", label: "Needs attention" },
-              { value: "fitting", label: "Ready for fitting" },
-            ]}
-          />
+          {/* On a phone the filter run folds behind this one button so the bar
+              is Search + Sort + Filter, not a wall of selects (Tess, 2026-08-11:
+              "the fields and buttons have too many rows and look really messy").
+              Hidden on desktop, where .dev-filters shows them inline. */}
+          <button
+            type="button"
+            className={"btn ghost sm dev-filter-toggle" + (filtersOpen ? " on" : "")}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            Filter{activeFilters > 0 ? ` (${activeFilters})` : ""}
+          </button>
 
-          {/* Season leads and always lists (min 1). Designer is deliberately
-              not here — Tess, 2026-08-09: "list season instead of designer". The
-              field still exists in the filter engine, it just has no control on
-              this bar. Brand self-hides until a second brand exists. */}
-          {facetSelect("season", "Season", seasons, 1)}
-          {facetSelect("factory", "Factory", factories)}
-          {facetSelect("category", "Category", categories)}
-          {facetSelect("brand", "Brand", brands)}
-          {facetSelect("rating", "Rating", ratings, 2, sampleRatingLabel)}
+          <div className={"dev-filters" + (filtersOpen ? " open" : "")}>
+            {/* Status filters to a SET rather than reordering everything (Tess,
+                2026-08-11: "these should act more as filter not sort"). It reads
+                the same DevSummary the cards do, so the two cannot disagree. */}
+            <Select
+              className={"select sm" + (status ? " on" : "")}
+              aria-label="Status"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "", label: "Status: any" },
+                { value: "attention", label: "Needs attention" },
+                { value: "fitting", label: "Ready for fitting" },
+              ]}
+            />
 
-          {/* Only when something is actually in force, so it is never a button
-              that does nothing. */}
-          {narrowed && (
-            <button type="button" className="btn link" onClick={clearAll}>
-              Clear
-            </button>
-          )}
+            {/* Season leads and always lists (min 1). Designer is deliberately
+                not here — Tess, 2026-08-09: "list season instead of designer".
+                Brand self-hides until a second brand exists. */}
+            {facetSelect("season", "Season", seasons, 1)}
+            {facetSelect("factory", "Factory", factories)}
+            {facetSelect("category", "Category", categories)}
+            {facetSelect("brand", "Brand", brands)}
+            {facetSelect("rating", "Rating", ratings, 2, sampleRatingLabel)}
+
+            {/* Only when something is actually in force, so it is never a button
+                that does nothing. */}
+            {narrowed && (
+              <button type="button" className="btn link" onClick={clearAll}>
+                Clear
+              </button>
+            )}
+          </div>
 
           {/* Turn the grid into a picker to build a deck. Shortened from "Select
               for fitting deck" (Tess, 2026-08-11: "change this to 'build a

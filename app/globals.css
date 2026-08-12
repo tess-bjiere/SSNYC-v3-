@@ -1634,6 +1634,13 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* A filter that is in force has to look different from one that is not — the
    whole safety of hiding rows is that you can see what did the hiding. */
 .sortbar .select.on{border-color:var(--ink);color:var(--ink)}
+/* Development's filter run folds behind one "Filter" button on a phone (Tess,
+   2026-08-11: "too many rows ... really messy"). On desktop the wrapper is
+   transparent so the selects sit inline in the row exactly as before, and the
+   toggle is hidden. The phone rules below turn the wrapper into a collapsible
+   full-width box and arrange Filter · Sort · icons onto one row. */
+.dev-filters{display:contents}
+.dev-filter-toggle{display:none}
 /* A button that reads as a link, for the one inside a sentence in an empty
    state. Clearing a search is not a form submission and should not look like one. */
 .linkish{background:none;border:none;padding:0;font:inherit;color:var(--ink);
@@ -1683,8 +1690,21 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* The sort hint drops to its own line rather than squeezing the sort buttons
      off the edge — the buttons are the control, the hint is the explanation.
      The search box takes a whole line of its own for the same reason. */
-  .sortbar .h{flex-basis:100%;margin-left:0;text-align:left}
+  .sortbar .h{flex-basis:100%;margin-left:0;text-align:left;order:6}
   .findbox{flex-basis:100%;max-width:none}
+
+  /* Filter · Sort · size-icons on one row; the filter selects drop full-width
+     below only when opened. Search already has its own line above. The sort's
+     flex item is the .sel wrapper (first child), not the #devsort trigger. */
+  .dev-filter-toggle{display:inline-flex;order:1;flex:0 0 auto}
+  .sortbar-row > .sel:first-child{order:2;flex:1 1 auto;min-width:0}
+  .sortbar-row > .sel:first-child .select{width:100%;min-width:0}
+  .sortbar-row > .dens{order:3;flex:0 0 auto}
+  .dev-filters{display:none;order:4;flex:1 1 100%}
+  .dev-filters.open{display:flex;flex-wrap:wrap;gap:8px}
+  .dev-filters .sel{flex:1 1 46%;min-width:0}
+  .dev-filters .select{width:100%;min-width:0}
+  .sortbar-row > .btn.link{order:5}
 }
 
 /* Links inside notes (2026-08-04) -------------------------------------------
