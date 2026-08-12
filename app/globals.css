@@ -226,8 +226,9 @@ body.notes-open .wrap{padding-right:378px}
 .brand{font-size:18px;letter-spacing:.09em;font-weight:600;line-height:1;display:flex;align-items:center}
 /* The wordmark is an SVG logo now (Tess, 2026-08-12: "replace ssync logo with
    logo here"). White artwork, so it reads on the dark nav as the text did; sized
-   by height so its own aspect ratio sets the width. */
-.brand-logo{height:19px;width:auto;display:block}
+   by height so its own aspect ratio sets the width. Dropped 30% from 19px (Tess,
+   2026-08-12: "reduce size of logo by 30% in nav bars"). */
+.brand-logo{height:13.3px;width:auto;display:block}
 /* Tess, 2026-08-06: "move those sections to the left close to logo but with
    breathing room" — so the row sits beside the wordmark again rather than
    centred in the bar. It no longer takes the free space (no flex:1); the gap
