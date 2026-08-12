@@ -27,6 +27,14 @@ export default function AppFooter({ isTeam = false }: { isTeam?: boolean }) {
           </span>
         </>
       )}
+      {/* The guide, for everyone (Tess, 2026-08-12: "in the original ssync we had
+          a guide on how to use. let's do an updated guide for the new tool"). */}
+      <Link href="/guide" title="A quick guide to SSYNC">
+        How to use
+      </Link>
+      <span className="app-footer-sep" aria-hidden="true">
+        ·
+      </span>
       <a
         href={url || "#"}
         target={url ? "_blank" : undefined}
