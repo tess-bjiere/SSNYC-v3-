@@ -73,6 +73,12 @@ export default function DetailModal({
 
   const images = [refImage(cur), ...extraImageUrls(cur)].filter(Boolean);
   const [active, setActive] = useState(images[0] || "");
+  // The image box takes the picture's own shape rather than a fixed square, so a
+  // vertical reference fills it and a wider one expands the modal (Tess,
+  // 2026-08-11). Read the shape off the loaded image; reset to the portrait
+  // default while a newly-picked one loads.
+  const [mainAspect, setMainAspect] = useState<string | undefined>(undefined);
+  useEffect(() => setMainAspect(undefined), [active]);
 
   // --- Develop this ------------------------------------------------------
   // A reference can be developed from the library and from a board — both are
@@ -212,10 +218,21 @@ export default function DetailModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+      <div className="modal modal-lg detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className="detail-grid">
           <div className="detail-imgs">
-            <div className="detail-main">{active ? <img src={active} alt={cur.designer || ""} /> : null}</div>
+            <div className="detail-main" style={{ aspectRatio: mainAspect }}>
+              {active ? (
+                <img
+                  src={active}
+                  alt={cur.designer || ""}
+                  onLoad={(e) => {
+                    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+                    if (w && h) setMainAspect(`${w} / ${h}`);
+                  }}
+                />
+              ) : null}
+            </div>
             {images.length > 1 && (
               <div className="detail-thumbs">
                 {images.map((im, i) => (

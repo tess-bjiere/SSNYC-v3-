@@ -493,10 +493,24 @@ body.notes-open .wrap{padding-right:378px}
 .addrefs-source{display:inline-flex;gap:6px;flex:none}
 .addrefs-target{display:flex;align-items:center;gap:8px;font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
 .addrefs-target .select{width:210px;padding:var(--ctl-y-md) var(--ctl-chev-md) var(--ctl-y-md) var(--ctl-x-md)}
-.detail-grid{display:grid;grid-template-columns:1fr 430px;gap:0}
+/* The image side is built around a vertical reference and grows for a wider one,
+   rather than boxing every image into a fixed square with black fill (Tess,
+   2026-08-11: "built for vertical images and just expand if it's a wider
+   image"). The image column sizes to the picture (auto), and the modal follows —
+   narrow for a portrait, wider for a landscape — so there are no letterbox bars.
+   The 430px info panel is fixed. .detail-modal overrides the shared .modal-lg
+   fixed width; the phone rule further down (width:100vw) still wins. */
+.detail-modal{width:auto;max-width:min(1120px,94vw)}
+.detail-grid{display:grid;grid-template-columns:auto 430px;gap:0}
 .detail-imgs{padding:18px;border-right:1px solid var(--line)}
-.detail-main{background:#111;overflow:hidden}
-.detail-main img{width:100%;display:block;max-height:64vh;object-fit:contain}
+/* The image box takes the picture's own shape via aspect-ratio (set inline from
+   the loaded image; 3/4 is the portrait default until it loads), capped by
+   height and width. Because the shape is definite, the auto grid column sizes to
+   it — so the box IS the image, with no black fill to letterbox into. */
+/* max-width leaves room for the 430px panel + 36px padding, so a landscape image
+   never pushes the modal past 1120px or off a narrower screen (94vw). */
+.detail-main{aspect-ratio:3 / 4;max-height:76vh;max-width:min(654px, calc(94vw - 466px));overflow:hidden;background:var(--panel);margin:0 auto}
+.detail-main img{width:100%;height:100%;object-fit:contain;display:block}
 .detail-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .detail-thumb{width:56px;height:72px;border:1px solid var(--line);padding:0;background:none;cursor:pointer;overflow:hidden}
 .detail-thumb.active{outline:2px solid var(--ink)}
@@ -528,7 +542,15 @@ body.notes-open .wrap{padding-right:378px}
 .detail-edit{max-height:none}
 .detail-edit .field{margin-bottom:12px}
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--btnfg);padding:9px 16px;font-size:var(--t-sm);text-transform:none;letter-spacing:0;z-index:70}
-@media(max-width:760px){.detail-grid{grid-template-columns:1fr}.detail-imgs{border-right:none;border-bottom:1px solid var(--line)}}
+@media(max-width:760px){
+  /* One column, image full-width (the 56vw cap and fixed shape are desktop
+     ideas) and the modal back to full-screen. */
+  .detail-modal{width:100vw}
+  .detail-grid{grid-template-columns:1fr}
+  .detail-imgs{border-right:none;border-bottom:1px solid var(--line)}
+  .detail-main{aspect-ratio:auto;max-width:100%;max-height:none;width:100%}
+  .detail-main img{width:100%;height:auto;max-height:78vh}
+}
 
 /* Library filter bar */
 .lib-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
