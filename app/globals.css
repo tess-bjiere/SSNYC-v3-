@@ -397,7 +397,10 @@ body.notes-open .wrap{padding-right:378px}
 /* Sections */
 .page{padding:24px 0 80px}
 .page-head{display:flex;align-items:center;gap:14px;margin-bottom:26px}
-.page-title{font-size:var(--t-display);letter-spacing:.01em;font-weight:var(--w-title);line-height:1.12}
+/* One weight thinner than the other headings (500, not 600) so the page titles
+   read lighter and more considered (Tess, 2026-08-11: "Make header font one
+   weight thinner"). */
+.page-title{font-size:var(--t-display);letter-spacing:.01em;font-weight:var(--w-mid);line-height:1.12}
 .count{color:var(--faint);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em}
 .spacer{flex:1}
 
@@ -3015,20 +3018,22 @@ textarea.input,textarea.select,.textarea{height:auto}
   .lib-page .page-head,.lib-page .lib-bar{display:contents}
   .lib-page .page-head .spacer{display:none}
 
-  /* Full-width rows: title, the big add, search, and — library only — the tabs,
-     which become a segmented control with each label filling its third. */
+  /* Two clean control rows, laid out like the reference (Tess, 2026-08-11):
+     full-width title / add / search, then [tabs .......... Filter], then
+     [icons .......... Sort]. Each pair is a left item and a right item pushed
+     over with margin-left:auto — the auto margin fills the line, so the next
+     pair wraps cleanly to its own row with nothing jumbled. */
   .lib-page .page-title{order:1;flex:1 1 100%;margin:0}
   .lib-page .lib-add-mobile{order:2;flex:1 1 100%;margin:0}
   .lib-page .lib-search{order:3;flex:1 1 100%}
-  .lib-page .lib-tabs{order:4;flex:1 1 100%;margin:0}
-  .lib-page .lib-tabs .lib-tab{flex:1;justify-content:center}
-  /* Filter, sort and the size icons ride one row instead of three (Tess,
-     2026-08-11: "fewer rows on mobile for filter / sort / search"). Sort grows
-     to fill the middle; the toggle and icons keep their natural width. */
-  .lib-page .lib-filter-toggle{order:5;flex:0 0 auto;margin:0}
-  .lib-page .page-head > .sel{order:6;flex:1 1 auto;min-width:0}
-  .lib-page .page-head > .sel .sel-trigger{width:100%}
-  .lib-page .lib-head-tools{order:7;flex:0 0 auto;margin:0}
+
+  .lib-page .lib-tabs{order:4;flex:0 1 auto;margin:0}
+  .lib-page .lib-filter-toggle{order:5;flex:0 0 auto;margin:0 0 0 auto}
+
+  .lib-page .lib-head-tools{order:6;flex:0 0 auto;margin:0}
+  .lib-page .page-head > .sel{order:7;flex:0 0 auto;margin-left:auto;min-width:0}
+  .lib-page .page-head > .sel .sel-trigger{width:auto;min-width:150px}
+
   /* The expanded filters and everything below drop back to full-width rows. */
   .lib-page .lib-filters{order:8;flex:1 1 100%;margin:0}
   .lib-page .grid,.lib-page .empty{order:9;flex:1 1 100%}

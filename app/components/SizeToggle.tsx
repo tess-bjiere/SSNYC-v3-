@@ -13,16 +13,17 @@
 // reads. The values (sm/md/lg) still drive .grid.dens-* — only the order and the
 // glyph changed.
 const STEPS = [
-  ["lg", 2, "Larger"],
-  ["md", 3, "Medium"],
-  ["sm", 4, "Smaller"],
+  ["lg", 1, "Larger"],
+  ["md", 2, "Medium"],
+  ["sm", 3, "Smaller"],
 ] as const;
 
-// Per-grid geometry lifted from the reference SVGs so the marks are identical.
+// Per-grid geometry: a single square, then 2×2, then 3×3 (Tess, 2026-08-11:
+// "icons should 1x1 -> 2x2 -> 3x3"), in the reference's sharp-square style.
 const GEO: Record<number, { c: number; gap: number; p: number }> = {
+  1: { c: 7, gap: 0, p: 4.5 },
   2: { c: 4.5, gap: 2, p: 2.5 },
   3: { c: 3, gap: 1.5, p: 2 },
-  4: { c: 2, gap: 1.3, p: 2 },
 };
 
 function GridIcon({ n }: { n: number }) {
