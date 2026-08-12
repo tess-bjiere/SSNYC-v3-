@@ -7,6 +7,7 @@ import { DEV_BYPASS, requireUser } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { applyReorder, insertItems, removeImage } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
+import { normalizePalette, type Palette } from "@/lib/palette";
 
 export async function createBoard(form: FormData) {
   const name = (form.get("name") as string)?.trim();
@@ -381,5 +382,22 @@ export async function addStylesToBoard(
     .update({ items: next, updated_at: new Date().toISOString() })
     .eq("id", boardId);
 
+  revalidatePath("/moodboard");
+}
+
+// The moodboard colour palette (Tess, 2026-08-12). Stored per brand on the brands
+// row, so it is the same palette whichever board is open. requireUser, not
+// requireTeam, to match every other moodboard edit — a talent works on their
+// brand's boards, and the palette is part of that.
+//
+// The whole palette is saved at once: it is a handful of swatches, and sending
+// the full set sidesteps any per-swatch ordering or merge question. It is cleaned
+// through normalizePalette on the way in so nothing half-typed reaches the row.
+export async function saveColorPalette(palette: Palette) {
+  const supabase = await createClient();
+  await requireUser();
+  const brand = await activeBrand();
+  const clean = normalizePalette(palette);
+  await supabase.from("brands").update({ palette: clean }).eq("slug", brand);
   revalidatePath("/moodboard");
 }

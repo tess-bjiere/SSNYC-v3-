@@ -5,10 +5,12 @@ import { activeBrand } from "@/lib/activeBrand";
 import { refThumb, type Reference } from "@/lib/types";
 import { styleCoverUrl } from "@/lib/styleCover";
 import { toSections, itemKind, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
+import { normalizePalette } from "@/lib/palette";
 import AddRefs from "./AddRefs";
 import NotesDrawer from "./NotesDrawer";
 import Toolbar from "./Toolbar";
 import Board from "./Board";
+import ColorPalette from "./ColorPalette";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,16 @@ export default async function MoodboardPage({
     .eq("brand", brand)
     .order("created_at", { ascending: true });
   const allBoards = (boardsData ?? []) as Moodboard[];
+
+  // The brand's colour palette (Tess, 2026-08-12). select("*") so a project that
+  // has not run the p9 migration yet reads no palette and shows an empty section,
+  // rather than erroring on an unknown column.
+  const { data: brandRow } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("slug", brand)
+    .maybeSingle();
+  const palette = normalizePalette((brandRow as { palette?: unknown } | null)?.palette);
 
   const activeBoards = allBoards.filter((b) => !b.archived);
   const archivedBoards = allBoards.filter((b) => b.archived);
@@ -139,6 +151,10 @@ export default async function MoodboardPage({
         showingArchived={showingArchived}
         archivedCount={archivedBoards.length}
       />
+
+      {/* Brand-level colour reference, shown whichever board is open (Tess,
+          2026-08-12). Above the boards, out of the export capture below. */}
+      <ColorPalette initial={palette} />
 
       {!current ? (
         <div className="empty">
