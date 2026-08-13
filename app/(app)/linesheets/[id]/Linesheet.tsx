@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { sampleRatingLabel } from "@/lib/types";
 import { groupByColor, swatchForColor, baseColorNames } from "@/lib/linesheet";
+import SizeToggle from "@/app/components/SizeToggle";
 import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
@@ -252,6 +253,9 @@ export default function Linesheet({
   const [armed, setArmed] = useState<string | null>(null);
   const [openStyle, setOpenStyle] = useState<string | null>(null);
   const [groupColor, setGroupColor] = useState(false);
+  // The grid-density toggle (Tess, 2026-08-12: "add options column toggle icons"),
+  // the same SizeToggle the References/Development grids use so the icons match.
+  const [size, setSize] = useState("md");
   // The linesheet's own Delete — two-click armed, no confirm(); the action
   // soft-deletes and redirects to the list.
   const [delArmed, setDelArmed] = useState(false);
@@ -483,6 +487,7 @@ export default function Linesheet({
               Group by color
             </button>
           )}
+          {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
           <button type="button" className="btn ghost sm" onClick={() => setPicking(true)}>
             + Add styles
           </button>
@@ -542,14 +547,14 @@ export default function Linesheet({
                   {g.color}
                   <span className="ls-colorgroup-n">{g.entries.length}</span>
                 </h3>
-                <div className="ls-grid">
+                <div className={"ls-grid dens-" + size}>
                   {g.entries.map((e) => cell(e, swatchForColor(e, g.color), false))}
                 </div>
               </section>
             ))}
           </div>
         ) : (
-          <div className="ls-grid">{ordered.map((e) => cell(e))}</div>
+          <div className={"ls-grid dens-" + size}>{ordered.map((e) => cell(e))}</div>
         )
       ) : (
         <div className="ls-detail">

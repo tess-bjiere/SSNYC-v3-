@@ -182,6 +182,13 @@ Roll back a bad deploy from the **Vercel dashboard → Deployments → (pick the
 good one) → Promote to Production**. Or revert the commit on `main` and let it
 redeploy.
 
+> **To-do — custom domain.** The app currently lives at the default Vercel URL
+> `ssync-two.vercel.app`. We should move it to a proper **SSYNC / The Loyalist**
+> domain (e.g. `ssync.theloyalist.com` or a dedicated `ssync.*`). Set it up in
+> **Vercel → Project → Settings → Domains** (add the domain, then add the DNS
+> record it shows you at the registrar). Nothing in the code needs to change —
+> update any hard-coded links afterwards (search the repo for `ssync-two.vercel.app`).
+
 ---
 
 ## 6. Environment variables & secrets
@@ -359,8 +366,11 @@ look the same — receive input, do the server-side work, return JSON.
 
 ### 8a. AI summaries — Claude (Anthropic API)
 
-Use the official **Anthropic SDK**. This generates the "AI summary" text (e.g. a
-plain-English summary of a style's rounds, a linesheet, a fitting deck).
+Use the official **Anthropic SDK**. This generates the "AI summary" text — a
+plain-English summary of a style. **For now, scope it to the style profile only**
+(Tess, 2026-08-12: "AI summaries should just be on the style profile for now") —
+a "Summarize" button on the style profile that summarizes that style and its
+sample rounds. Other surfaces (linesheets, fitting decks) can come later.
 
 **Setup**
 
@@ -565,16 +575,14 @@ brief are ambiguous:
    build end-to-end — he knows the ingestion path since he develops TL Opps. The
    one thing to settle *with Tess* is which style fields matter and how they map
    to TL Opps's own fields.
-2. **Which content gets AI summaries** — styles, rounds, linesheets, fitting
-   decks? That decides where the "Summarize" button lives and what the prompt is
-   fed.
-3. **Where should the Supabase `service_role` key rotation and the move to
+2. **Where should the Supabase `service_role` key rotation and the move to
    Supabase Pro (for backups) sit on the priority list?** Both are on the
    outstanding list in `/setup` inside the app.
 
 *(Resolved: sketch editor uses OpenAI's GPT Image model — §8b. TL Opps is The
 Loyalist's internal production/brands tool that Lorne develops; SSYNC pushes
-style info out to it, and Lorne owns both ends of that push — §7b.)*
+style info out to it, and Lorne owns both ends of that push — §7b. AI summaries
+live on the style profile only for now — §8a.)*
 
 ---
 

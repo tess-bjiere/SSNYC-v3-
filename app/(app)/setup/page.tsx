@@ -3,7 +3,7 @@ import { DEV_BYPASS, DEV_BYPASS_REFUSED, getSessionUser, requireTeam } from "@/l
 import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_READ_ELEVATED } from "@/lib/supabase/public";
 import { anonCanReadPrivateTable } from "@/lib/supabase/probe";
-import { readiness, summarize, type Check } from "@/lib/readiness";
+import { readiness, type Check } from "@/lib/readiness";
 import { loadBrands, checkSuperAdmin } from "@/lib/brandsServer";
 import TalentsAdmin, { type Member } from "./TalentsAdmin";
 import BrandsAdmin from "./BrandsAdmin";
@@ -40,8 +40,12 @@ export default async function SetupPage() {
     backupsConfirmed: process.env.SUPABASE_BACKUPS_CONFIRMED !== "false",
   });
 
-  const summary = summarize(checks);
-  const gating = checks.filter((c) => c.blocking);
+  // The "Before the team gets in" go-live checklist has been retired — every
+  // gating step (sign-in, bypass off, service-role key, closed RLS, backups) is
+  // done and the team is in (Tess, 2026-08-12: "everything on the before the team
+  // gets in checklist can be removed since they are completed"). readiness() and
+  // its gating checks still exist in lib/readiness.ts if the section is ever
+  // wanted back; the page now shows only the optional, key-gated integrations.
   const optional = checks.filter((c) => !c.blocking);
 
   // The people who are not on the org domain — talents and outside guests.
@@ -71,24 +75,16 @@ export default async function SetupPage() {
           marginBottom: 22,
         }}
       >
-        <h1 className="display" style={{ fontSize: "var(--t-display)", margin: 0 }}>
+        <h1 className="page-title" style={{ margin: 0 }}>
           Setup
         </h1>
-        <span className="count">{summary.headline}</span>
+        <span className="count">Team &amp; integrations</span>
       </div>
 
       <p className="muted-line">
-        Everything left before the team gets in is a setting in the Supabase or Vercel dashboard
-        rather than a change to this repository. This page checks what it can see and says what it
-        cannot — a check the app could not run is never shown as a check that passed.
+        The go-live checklist is done and the team is in. What&rsquo;s left here are the
+        integrations that switch on the moment their key is added, and managing who has access.
       </p>
-
-      <div className="section">
-        <h3>Before the team gets in</h3>
-        {gating.map((c) => (
-          <Row key={c.id} check={c} />
-        ))}
-      </div>
 
       <div className="section">
         <h3>Complete, waiting on a key</h3>
@@ -127,9 +123,8 @@ export default async function SetupPage() {
       )}
 
       <div className="notice">
-        The order matters more than it looks. Preview mode has no Supabase session, so if the
-        database policies are closed before real sign-in is working, every page renders empty and it
-        looks like the deploy broke. Work down the list in the order it is written.{" "}
+        Each of these is built and shipped — it falls back to something useful until its key is set,
+        and starts working the moment the key exists, with no code change.{" "}
         <Link href="/development" style={{ color: "var(--ink)", textDecoration: "underline" }}>
           Back to Development
         </Link>

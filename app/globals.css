@@ -3476,6 +3476,14 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   letter-spacing:.12em;padding:var(--ctl-y-sm) var(--ctl-x-md)}
 .ls-groupbtn:hover{color:var(--ink)}
 .ls-groupbtn.active{background:var(--chip);color:var(--ink)}
+/* On a phone the view toggle and Group button take the app's 36px touch target,
+   the same as .btn / .tab / .lib-tab, so the whole linesheet toolbar reads at one
+   height like every other mobile page (Tess, 2026-08-12: "reflect button sizing
+   of other mobile pages"). Placed after the 28px base rules so it wins the tie
+   inside the media query. */
+@media(pointer:coarse){
+  .ls-viewtoggle,.ls-groupbtn{min-height:36px}
+}
 
 /* --- Grid (assortment-at-a-glance), and its colour groups --- */
 .ls-colorgroups{display:flex;flex-direction:column;gap:34px}
@@ -3484,6 +3492,12 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:16px}
 .ls-colorgroup-n{font-size:var(--t-micro);color:var(--faint);letter-spacing:.1em}
 .ls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:22px 20px}
+/* Grid density, driven by the shared SizeToggle (Tess, 2026-08-12: "add options
+   column toggle icons"): larger cards / fewer per row through to smaller / more.
+   The print block below overrides all three back to the export's 4-up layout. */
+.ls-grid.dens-lg{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.ls-grid.dens-md{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}
+.ls-grid.dens-sm{grid-template-columns:repeat(auto-fill,minmax(144px,1fr))}
 .ls-cell{position:relative;display:flex;flex-direction:column;gap:6px}
 .ls-card-style{display:flex;flex-direction:column;gap:6px;text-decoration:none;min-width:0}
 .ls-sketch{display:block;aspect-ratio:3/4;background:var(--field);border:1px solid var(--hair);
@@ -3619,6 +3633,11 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-entry{grid-template-columns:1fr;gap:16px}
   .ls-entry-fig img{max-height:44vh}
   .ls-head{align-items:flex-start}
+  /* Density on a phone maps straight to the toggle glyph: 1×1 → one column,
+     2×2 → two, 3×3 → three. */
+  .ls-grid.dens-lg{grid-template-columns:minmax(0,1fr)}
+  .ls-grid.dens-md{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ls-grid.dens-sm{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
 /* --- Print: a landscape buyer deck — cover page, then the sheet, whitened
@@ -3667,7 +3686,10 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-colorgroup-head{font-size:12px;letter-spacing:.16em;color:#888;
     border-color:#e6e6e6;padding-bottom:7px;margin-bottom:18px}
   .ls-colorgroup-n{color:#aaa}
-  .ls-grid{grid-template-columns:repeat(4,1fr);gap:30px 26px}
+  /* The export is always 4-up regardless of the on-screen density toggle. Listed
+     after the .ls-grid.dens-* screen rules and at equal specificity, so it wins
+     inside @media print. */
+  .ls-grid,.ls-grid.dens-sm,.ls-grid.dens-md,.ls-grid.dens-lg{grid-template-columns:repeat(4,1fr);gap:30px 26px}
   .ls-cell{break-inside:avoid;gap:9px}
   .ls-sketch{background:#f6f6f6;border-color:#e2e2e2}
   /* A lighter card title in the export (Tess, 2026-08-12). */
