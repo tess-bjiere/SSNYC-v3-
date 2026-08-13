@@ -3696,7 +3696,10 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-cardname{font-size:15px;color:#111;font-weight:var(--w-body)}
   .ls-price{font-size:13px;color:#555}
   .ls-cardno{font-size:10px;color:#9a9a9a}
-  .ls-colors-text,.ls-color-name{color:#666}
+  .ls-colors-text{color:#666}
+  /* The export shows just the colour chips, not their names (Tess, 2026-08-12:
+     "pdfs should only export color chips -- dont need to include color name"). */
+  .ls-color-name{display:none}
   /* An un-named colour (no matching CSS colour) is a light dot on paper, not the
      dark theme token. A real CSS colour overrides this via its inline style. */
   .ls-color-chip{border-color:#ddd;background:#f2f2f2}
@@ -3728,7 +3731,6 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      (Tess, 2026-08-12: "supress in export if no text added"). */
   .ls-fact-note.ls-empty{display:none}
   .ls-color-chip{border-color:#ddd;background:#f2f2f2;width:13px;height:13px}
-  .ls-color-name{font-size:11px}
   /* The editable field is hidden; its saved value prints as text. */
   .ls-field.no-print{display:none}
   .ls-field-print{display:block;font-size:13px;color:#111;line-height:1.45}
