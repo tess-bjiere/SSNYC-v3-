@@ -8,6 +8,7 @@ import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
   LinesheetStanding,
+  LinesheetColorName,
 } from "@/lib/linesheet";
 import {
   addStylesToLinesheet,
@@ -59,19 +60,20 @@ function RatingDot({ rating }: { rating: string }) {
  * no hex to draw from.
  */
 function Colors({ entry }: { entry: LinesheetEntry }) {
-  // A per-sheet override wins and is drawn as named dots (it has no images);
-  // otherwise the colorway photos, else the style's free-text colours.
-  const swatches: { name: string; url: string | null }[] =
+  // A per-sheet override wins and is drawn as named dots filled by its hex (or the
+  // colour word when no hex was picked); otherwise the colorway photos, else the
+  // style's free-text colours.
+  const swatches: { name: string; url: string | null; hex: string | null }[] =
     entry.colorOverride !== null
-      ? entry.colorOverride.map((name) => ({ name, url: null }))
+      ? entry.colorOverride.map((c) => ({ name: c.name, url: null, hex: c.hex }))
       : entry.colorways.length > 0
-        ? entry.colorways.map((c) => ({ name: c.name, url: c.url }))
+        ? entry.colorways.map((c) => ({ name: c.name, url: c.url, hex: null }))
         : entry.colors
           ? entry.colors
               .split(/[/,]/)
               .map((s) => s.trim())
               .filter(Boolean)
-              .map((name) => ({ name, url: null }))
+              .map((name) => ({ name, url: null, hex: null }))
           : [];
   if (swatches.length === 0) return null;
   return (
@@ -82,7 +84,11 @@ function Colors({ entry }: { entry: LinesheetEntry }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img className="ls-color-chip" src={s.url} alt={s.name || "color"} />
           ) : (
-            <span className="ls-color-chip" style={{ background: s.name.toLowerCase() }} aria-hidden="true" />
+            <span
+              className="ls-color-chip"
+              style={{ background: s.hex ?? s.name.toLowerCase() }}
+              aria-hidden="true"
+            />
           )}
           {s.name && <span className="ls-color-name">{s.name}</span>}
         </span>
@@ -103,34 +109,48 @@ function ColorsEditor({
   onSave,
 }: {
   entry: LinesheetEntry;
-  onSave: (colors: string[]) => void;
+  onSave: (colors: LinesheetColorName[]) => void;
 }) {
   const [adding, setAdding] = useState("");
-  const current = entry.colorOverride ?? baseColorNames(entry);
+  // The hex picker (Tess, 2026-08-12: "use hex picker for adding color as well and
+  // give custom name"). A picked hex fills the swatch; if the swatch is left
+  // untouched the colour name resolves on its own (a CSS colour word, else a
+  // neutral dot), so typing "Olive" still works without opening the picker.
+  const [hex, setHex] = useState("#000000");
+  const [picked, setPicked] = useState(false);
+  const current: LinesheetColorName[] =
+    entry.colorOverride ?? baseColorNames(entry).map((name) => ({ name, hex: null }));
 
   function add() {
     const v = adding.trim();
     if (!v) return;
-    if (!current.some((c) => c.toLowerCase() === v.toLowerCase())) onSave([...current, v]);
+    if (!current.some((c) => c.name.toLowerCase() === v.toLowerCase())) {
+      onSave([...current, { name: v, hex: picked ? hex : null }]);
+    }
     setAdding("");
+    setPicked(false);
   }
   function drop(name: string) {
-    onSave(current.filter((c) => c.toLowerCase() !== name.toLowerCase()));
+    onSave(current.filter((c) => c.name.toLowerCase() !== name.toLowerCase()));
   }
 
   return (
     <div className="ls-coloredit no-print">
       <div className="ls-coloredit-chips">
-        {current.map((name, i) => (
+        {current.map((c, i) => (
           <span className="ls-coloredit-chip" key={i}>
-            <span className="ls-color-chip" style={{ background: name.toLowerCase() }} aria-hidden="true" />
-            <span className="ls-coloredit-name">{name}</span>
+            <span
+              className="ls-color-chip"
+              style={{ background: c.hex ?? c.name.toLowerCase() }}
+              aria-hidden="true"
+            />
+            <span className="ls-coloredit-name">{c.name}</span>
             <button
               type="button"
               className="ls-coloredit-x"
-              onClick={() => drop(name)}
-              title={`Remove ${name}`}
-              aria-label={`Remove ${name}`}
+              onClick={() => drop(c.name)}
+              title={`Remove ${c.name}`}
+              aria-label={`Remove ${c.name}`}
             >
               ×
             </button>
@@ -139,6 +159,17 @@ function ColorsEditor({
         {current.length === 0 && <span className="ls-coloredit-empty">No colors</span>}
       </div>
       <div className="ls-coloredit-add">
+        <input
+          type="color"
+          className="ls-hexpick"
+          value={hex}
+          onChange={(e) => {
+            setHex(e.target.value);
+            setPicked(true);
+          }}
+          title="Pick a swatch colour"
+          aria-label="Pick a swatch colour"
+        />
         <input
           className="input sm"
           value={adding}
@@ -149,8 +180,8 @@ function ColorsEditor({
               add();
             }
           }}
-          placeholder="Add a color…"
-          aria-label="Add a color"
+          placeholder="Color name…"
+          aria-label="Color name"
         />
         <button type="button" className="btn link sm" onClick={add} disabled={!adding.trim()}>
           Add
@@ -332,11 +363,11 @@ export default function Linesheet({
 
   // Per-sheet colour edits, applied optimistically so a chip appears/disappears
   // at once; the server revalidation re-seeds from the saved items and clears this.
-  const [colorEdits, setColorEdits] = useState<Record<string, string[]>>({});
+  const [colorEdits, setColorEdits] = useState<Record<string, LinesheetColorName[]>>({});
   useEffect(() => setColorEdits({}), [sheet.entries]);
   const withColors = (e: LinesheetEntry): LinesheetEntry =>
     e.styleId in colorEdits ? { ...e, colorOverride: colorEdits[e.styleId] } : e;
-  async function saveColors(styleId: string, colors: string[]) {
+  async function saveColors(styleId: string, colors: LinesheetColorName[]) {
     setColorEdits((m) => ({ ...m, [styleId]: colors }));
     await setLinesheetColors(id, styleId, colors);
   }

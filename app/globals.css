@@ -3516,6 +3516,11 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-coloredit-empty{font-size:var(--t-meta);color:var(--faint)}
 .ls-coloredit-add{display:flex;align-items:center;gap:8px}
 .ls-coloredit-add .input{width:150px}
+/* The native colour picker as a small square swatch button. */
+.ls-hexpick{width:28px;height:28px;padding:0;border:1px solid var(--line);background:none;
+  cursor:pointer;flex:0 0 auto;border-radius:0}
+.ls-hexpick::-webkit-color-swatch-wrapper{padding:2px}
+.ls-hexpick::-webkit-color-swatch{border:none}
 
 .ls-remove{position:absolute;top:6px;right:6px;background:var(--panel);border:1px solid var(--line);
   color:var(--faint);cursor:pointer;font-size:var(--t-meta);line-height:1;padding:2px 6px;

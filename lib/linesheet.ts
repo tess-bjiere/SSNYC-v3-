@@ -25,15 +25,20 @@ export type LinesheetItem = {
   price?: string;
   note?: string;
   colorways?: string[];
-  // A per-linesheet colour list (names), edited on the sheet without touching the
-  // style (Tess, 2026-08-12: "add ability to add / remove colors from styles on
-  // line sheet"). Present — even as [] — means "these are the colours for this
-  // style on this sheet"; absent means "fall back to the style's own colours".
-  colors?: string[];
+  // A per-linesheet colour list, edited on the sheet without touching the style
+  // (Tess, 2026-08-12: "add ability to add / remove colors from styles on line
+  // sheet" + "use hex picker for adding color as well and give custom name").
+  // Each colour is a custom name with an optional hex swatch. Present — even as []
+  // — means "these are the colours for this style on this sheet"; absent means
+  // "fall back to the style's own colours".
+  colors?: LinesheetColorName[];
 };
 
 /** A colour on an entry: the colorway image and its name (its caption). */
 export type LinesheetColor = { url: string; name: string };
+
+/** A named colour on a linesheet's own colour list, with an optional hex swatch. */
+export type LinesheetColorName = { name: string; hex: string | null };
 
 /** One style, resolved for display. */
 export type LinesheetEntry = {
@@ -47,8 +52,8 @@ export type LinesheetEntry = {
   fabric: string | null;
   /** The free-text colours line, used when there are no colorway images. */
   colors: string | null;
-  /** Per-linesheet colour names; null = show the style's own colours. */
-  colorOverride: string[] | null;
+  /** Per-linesheet colours (name + optional hex); null = show the style's own. */
+  colorOverride: LinesheetColorName[] | null;
   colorways: LinesheetColor[];
   sketchUrl: string | null;
   backUrl: string | null;
@@ -71,7 +76,7 @@ export type LinesheetEntryInput = {
   price?: string | null;
   fabric?: string | null;
   colors?: string | null;
-  colorOverride?: string[] | null;
+  colorOverride?: LinesheetColorName[] | null;
   colorways?: LinesheetColor[];
   sketchUrl?: string | null;
   backUrl?: string | null;
@@ -156,7 +161,42 @@ export function baseColorNames(e: LinesheetEntry): string[] {
 /** The colour names shown for an entry: the per-sheet override when set (even an
  *  empty one — "no colours here"), otherwise the style's own colours. */
 export function entryColorNames(e: LinesheetEntry): string[] {
-  return e.colorOverride ?? baseColorNames(e);
+  return e.colorOverride ? e.colorOverride.map((c) => c.name) : baseColorNames(e);
+}
+
+/** A valid #rgb / #rrggbb string, lower-cased, or null. */
+function cleanHex(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim().toLowerCase();
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(s) ? s : null;
+}
+
+/**
+ * Read a stored/edited colour list into clean {name, hex} entries, de-duplicated
+ * by name (case-insensitive) and capped. Tolerates the earlier plain-string shape
+ * so an older linesheet's colours still load.
+ */
+function normalizeColorList(raw: unknown[]): LinesheetColorName[] {
+  const seen = new Set<string>();
+  const out: LinesheetColorName[] = [];
+  for (const el of raw) {
+    let name = "";
+    let hex: string | null = null;
+    if (typeof el === "string") {
+      name = el.trim();
+    } else if (el && typeof el === "object") {
+      const r = el as Record<string, unknown>;
+      name = typeof r.name === "string" ? r.name.trim() : "";
+      hex = cleanHex(r.hex);
+    }
+    if (!name) continue;
+    const k = name.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ name: name.slice(0, 40), hex });
+    if (out.length >= MAX_COLORS) break;
+  }
+  return out;
 }
 
 export type ColorGroup = { color: string; entries: LinesheetEntry[] };
@@ -242,9 +282,7 @@ export function normalizeItems(raw: unknown): LinesheetItem[] {
     // A present colours key is an override — kept even when empty ("no colours on
     // this sheet"). Absent means fall back to the style's own colours.
     if (Array.isArray(r.colors)) {
-      item.colors = dedupeNames(
-        r.colors.filter((x): x is string => typeof x === "string").map((s) => s.slice(0, 40))
-      ).slice(0, MAX_COLORS);
+      item.colors = normalizeColorList(r.colors);
     }
     out.push(item);
     if (out.length >= MAX_ITEMS) break;
@@ -320,10 +358,9 @@ export function setItemField(
 export function setItemColors(
   items: LinesheetItem[],
   styleId: string,
-  colors: string[]
+  colors: LinesheetColorName[]
 ): LinesheetItem[] {
-  const clean = dedupeNames((colors ?? []).map((c) => (typeof c === "string" ? c.slice(0, 40) : "")))
-    .slice(0, MAX_COLORS);
+  const clean = normalizeColorList(colors ?? []);
   return items.map((i) => (i.style_id === styleId ? { ...i, colors: clean } : i));
 }
 

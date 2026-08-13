@@ -149,7 +149,13 @@ export type MockLinesheetRow = {
   name: string;
   kind: string;
   subtitle: string | null;
-  items: { style_id: string; price?: string; note?: string; colorways?: string[]; colors?: string[] }[];
+  items: {
+    style_id: string;
+    price?: string;
+    note?: string;
+    colorways?: string[];
+    colors?: (string | { name: string; hex?: string })[];
+  }[];
   notes: unknown[];
   archived: boolean;
   created_by: string | null;
@@ -169,7 +175,15 @@ export const mockLinesheets: MockLinesheetRow[] = [
       { style_id: "style-0", price: "$105", note: "Elevated base layer; pairs back to the trouser and the crewneck." },
       { style_id: "style-1", price: "$185" },
       { style_id: "style-2" },
-      { style_id: "style-3", price: "$225", colors: ["Charcoal", "Ecru", "Olive"] },
+      {
+        style_id: "style-3",
+        price: "$225",
+        colors: [
+          { name: "Charcoal", hex: "#3a3a3c" },
+          { name: "Ecru", hex: "#e6e0cf" },
+          "Olive",
+        ],
+      },
     ],
     notes: [
       {

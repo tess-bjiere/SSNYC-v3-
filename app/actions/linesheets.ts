@@ -15,6 +15,7 @@ import {
   normalizeItems,
   normalizeKind,
   type LinesheetItem,
+  type LinesheetColorName,
 } from "@/lib/linesheet";
 import {
   addNote,
@@ -128,7 +129,11 @@ export async function setLinesheetItem(
 // The style's colours on this sheet — edited here without touching the style row
 // (Tess, 2026-08-12: "add ability to add / remove colors from styles on line
 // sheet in detail view"). Always writes an explicit list; [] means "no colours".
-export async function setLinesheetColors(id: string, styleId: string, colors: string[]) {
+export async function setLinesheetColors(
+  id: string,
+  styleId: string,
+  colors: LinesheetColorName[]
+) {
   await requireUser();
   const { supabase, items } = await readItems(id);
   await writeItems(supabase, id, setItemColors(items, styleId, colors));

@@ -57,6 +57,30 @@ export default async function GuidePage() {
             <li>
               <b>Style Library</b> — finished styles, kept to reuse next season.
             </li>
+            <li>
+              <b>Linesheets</b> — assemble styles into a buyer-ready sheet and
+              export it to PDF.
+            </li>
+          </ul>
+
+          <h2>A linesheet</h2>
+          <ul>
+            <li>
+              Start a seasonal or evergreen sheet, then <b>Add styles</b> to pull
+              them in from Development or the Style Library.
+            </li>
+            <li>
+              Two views: <b>Grid</b> (the assortment at a glance) and{" "}
+              <b>Detail</b> (one product a page). Drag the handle to reorder.
+            </li>
+            <li>
+              In Detail, set the retail price, add a description, and add or
+              remove colours — pick a swatch by hex and give it your own name.
+            </li>
+            <li>
+              <b>Group by color</b> to sort the assortment, and{" "}
+              <b>Save as PDF</b> for a landscape deck with a cover page.
+            </li>
           </ul>
 
           <h2>A style</h2>

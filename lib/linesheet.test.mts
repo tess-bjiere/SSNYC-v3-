@@ -174,8 +174,16 @@ test("a per-sheet colour override wins over the style's own colours, empty means
   assert.deepEqual(baseColorNames(base), ["Black", "Bone"]);
   assert.deepEqual(entryColorNames(base), ["Black", "Bone"]); // no override → the style's
 
-  const overridden = buildEntry({ styleId: "a", name: "x", colors: "Black / Bone", colorOverride: ["Sage", "Ecru"] });
-  assert.deepEqual(entryColorNames(overridden), ["Sage", "Ecru"]);
+  const overridden = buildEntry({
+    styleId: "a",
+    name: "x",
+    colors: "Black / Bone",
+    colorOverride: [
+      { name: "Sage", hex: "#8a9a5b" },
+      { name: "Ecru", hex: null },
+    ],
+  });
+  assert.deepEqual(entryColorNames(overridden), ["Sage", "Ecru"]); // names, override-aware
   assert.deepEqual(baseColorNames(overridden), ["Black", "Bone"]); // base ignores the override
 
   // An explicit empty override reads as "no colours on this sheet", not "fall back".
@@ -183,13 +191,20 @@ test("a per-sheet colour override wins over the style's own colours, empty means
   assert.deepEqual(entryColorNames(none), []);
 });
 
-test("setItemColors writes an explicit list, de-duped and case-folded; [] persists", () => {
+test("setItemColors writes explicit {name,hex}, de-duped and case-folded; [] persists", () => {
   const items: LinesheetItem[] = [{ style_id: "a", price: "$1" }, { style_id: "b" }];
-  // De-dupes case-insensitively, keeps the price, only touches the target.
-  assert.deepEqual(setItemColors(items, "a", ["Black", "black", " Bone "]), [
-    { style_id: "a", price: "$1", colors: ["Black", "Bone"] },
-    { style_id: "b" },
-  ]);
+  // De-dupes by name case-insensitively, keeps the picked hex, only touches the target.
+  assert.deepEqual(
+    setItemColors(items, "a", [
+      { name: "Black", hex: "#111111" },
+      { name: "black", hex: "#999999" }, // duplicate name dropped
+      { name: " Bone ", hex: null },
+    ]),
+    [
+      { style_id: "a", price: "$1", colors: [{ name: "Black", hex: "#111111" }, { name: "Bone", hex: null }] },
+      { style_id: "b" },
+    ]
+  );
   // Removing every colour leaves an explicit [] — the "no colours" override.
   assert.deepEqual(setItemColors(items, "b", []), [
     { style_id: "a", price: "$1" },
@@ -197,10 +212,23 @@ test("setItemColors writes an explicit list, de-duped and case-folded; [] persis
   ]);
 });
 
-test("normalizeItems keeps a colours override, empty included, and drops it when absent", () => {
-  assert.deepEqual(normalizeItems([{ style_id: "a", colors: ["Sage", "sage", " "] }]), [
-    { style_id: "a", colors: ["Sage"] },
-  ]);
+test("normalizeItems reads {name,hex} (and legacy strings), validates hex, keeps []", () => {
+  // Tolerates the earlier plain-string shape; a bad hex falls to null.
+  assert.deepEqual(
+    normalizeItems([
+      { style_id: "a", colors: [{ name: "Ink", hex: "#0A0A0A" }, "Sage", { name: "Bad", hex: "nope" }] },
+    ]),
+    [
+      {
+        style_id: "a",
+        colors: [
+          { name: "Ink", hex: "#0a0a0a" }, // lower-cased
+          { name: "Sage", hex: null }, // legacy string
+          { name: "Bad", hex: null }, // invalid hex dropped
+        ],
+      },
+    ]
+  );
   assert.deepEqual(normalizeItems([{ style_id: "a", colors: [] }]), [{ style_id: "a", colors: [] }]);
   assert.deepEqual(normalizeItems([{ style_id: "a" }]), [{ style_id: "a" }]); // no key → no override
 });
