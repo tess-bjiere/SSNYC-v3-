@@ -24,6 +24,8 @@ export type PhotographerMeta = {
   /** Medium — shoots stills, and/or moving image. */
   photo: boolean;
   video: boolean;
+  /** Flagged a favourite from the thumbnail (Tess, 2026-08-17). */
+  starred: boolean;
   /** A brief free-text history — brands, agencies, notable jobs (Tess renamed
    *  this from "clients" to "past work", 2026-08-17). */
   pastWork: string;
@@ -35,6 +37,7 @@ export const EMPTY_META: PhotographerMeta = {
   tier: null,
   photo: false,
   video: false,
+  starred: false,
   pastWork: "",
   notes: "",
 };
@@ -61,6 +64,7 @@ function readOne(raw: unknown): PhotographerMeta {
     tier,
     photo: o.photo === true,
     video: o.video === true,
+    starred: o.starred === true,
     // pastWork replaced the older "clients" field — read either so nothing set
     // before the rename is lost.
     pastWork: str(o.pastWork) || str(o.clients),
@@ -85,7 +89,7 @@ export function readAllPhotographerMeta(settingsValue: unknown): Record<string, 
 
 /** True when a card carries nothing worth storing. */
 export function isEmptyMeta(m: PhotographerMeta): boolean {
-  return !m.tier && !m.photo && !m.video && !m.pastWork.trim() && !m.notes.trim();
+  return !m.tier && !m.photo && !m.video && !m.starred && !m.pastWork.trim() && !m.notes.trim();
 }
 
 /**
@@ -107,6 +111,7 @@ export function withPhotographerMeta(
       tier: merged.tier,
       photo: merged.photo,
       video: merged.video,
+      starred: merged.starred,
       pastWork: merged.pastWork,
       notes: merged.notes,
     };

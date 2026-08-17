@@ -47,6 +47,8 @@ export default function PhotographersClient({
 }) {
   const [q, setQ] = useState("");
   const [tierFilter, setTierFilter] = useState<"" | PhotographerTier>("");
+  const [starredOnly, setStarredOnly] = useState(false);
+  const [, startStar] = useTransition();
   // Geographic filters — each narrows the next (a continent limits its
   // countries, a country its cities).
   const [continentF, setContinentF] = useState("");
@@ -114,6 +116,7 @@ export default function PhotographersClient({
         const { country } = cityPlace(c.city, c.located);
         const people = c.photographers.filter((p) => {
           if (tierFilter && (meta[p.key]?.tier ?? null) !== tierFilter) return false;
+          if (starredOnly && !meta[p.key]?.starred) return false;
           if (!term) return true;
           if (c.city.toLowerCase().includes(term)) return true;
           if (country.toLowerCase().includes(term)) return true;
@@ -128,7 +131,7 @@ export default function PhotographersClient({
         return { ...c, photographers: people, count };
       })
       .filter(Boolean) as typeof cities;
-  }, [cities, term, tierFilter, continentF, countryF, cityF, meta, profileByKey]);
+  }, [cities, term, tierFilter, starredOnly, continentF, countryF, cityF, meta, profileByKey]);
 
   // Nest the filtered cities into continent -> country -> city.
   const continents = useMemo(() => groupByGeo(shownCities, cityGeo), [shownCities]);
@@ -145,6 +148,20 @@ export default function PhotographersClient({
     () => photographers.some((p) => meta[p.key]?.tier),
     [photographers, meta]
   );
+  const hasStarred = useMemo(
+    () => photographers.some((p) => meta[p.key]?.starred),
+    [photographers, meta]
+  );
+
+  // Star / unstar from the thumbnail. Optimistic — the meta updates locally at
+  // once, and the save follows.
+  function toggleStar(key: string) {
+    const next = { ...(meta[key] ?? EMPTY_META), starred: !meta[key]?.starred };
+    setMeta((m) => ({ ...m, [key]: next }));
+    startStar(async () => {
+      await setPhotographerMeta(key, { starred: next.starred });
+    });
+  }
   const openProfile = openKey ? profileByKey.get(openKey) ?? null : null;
   const metaFor = (key: string) => meta[key] ?? EMPTY_META;
 
@@ -170,26 +187,43 @@ export default function PhotographersClient({
     // bare domain of their website.
     const site = p.ids.map((id) => byId.get(id)?.link).find(Boolean) || null;
     const handle = p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
+    const starred = !!meta[p.key]?.starred;
     return (
-      <button
-        type="button"
-        className="pg-card"
-        key={p.key}
-        onClick={() => setOpenKey(p.key)}
-        title={`See ${p.name}'s work`}
-      >
-        <div className={"pg-card-img" + (src ? "" : " empty")}>
-          {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt={p.name} loading="lazy" />
-          ) : (
-            <span className="pg-card-initials">{initials(p.name)}</span>
-          )}
-          {srcs.length > 1 && <span className="pg-card-count">{srcs.length}</span>}
-        </div>
-        <div className="pg-card-name">{p.name}</div>
-        {handle && <div className="pg-card-ig">{handle}</div>}
-      </button>
+      <div className="pg-card" key={p.key}>
+        <button
+          type="button"
+          className="pg-card-open"
+          onClick={() => setOpenKey(p.key)}
+          title={`See ${p.name}'s work`}
+        >
+          <div className={"pg-card-img" + (src ? "" : " empty")}>
+            {src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={src} alt={p.name} loading="lazy" />
+            ) : (
+              <span className="pg-card-initials">{initials(p.name)}</span>
+            )}
+            {srcs.length > 1 && <span className="pg-card-count">{srcs.length}</span>}
+          </div>
+          <div className="pg-card-name">{p.name}</div>
+          {handle && <div className="pg-card-ig">{handle}</div>}
+        </button>
+        {/* Star in the corner of the thumbnail — a team flag (Tess, 2026-08-17).
+            A talent sees a filled star only if it's already set. */}
+        {canEdit ? (
+          <button
+            type="button"
+            className={"pg-star" + (starred ? " on" : "")}
+            aria-pressed={starred}
+            title={starred ? "Unstar" : "Star"}
+            onClick={() => toggleStar(p.key)}
+          >
+            ★
+          </button>
+        ) : starred ? (
+          <span className="pg-star on" aria-hidden="true">★</span>
+        ) : null}
+      </div>
     );
   }
 
@@ -215,22 +249,33 @@ export default function PhotographersClient({
         />
       </div>
 
-      {hasTiers && (
+      {(hasTiers || hasStarred) && (
         <div className="pg-filters">
-          {([["", "All"], ["home", "FRED at home"], ["campaign", "Campaign"]] as [
-            "" | PhotographerTier,
-            string,
-          ][]).map(([val, label]) => (
+          {hasTiers &&
+            ([["", "All"], ["home", "FRED at home"], ["campaign", "Campaign"]] as [
+              "" | PhotographerTier,
+              string,
+            ][]).map(([val, label]) => (
+              <button
+                key={val || "all"}
+                type="button"
+                className={"pg-filter" + (tierFilter === val ? " on" : "")}
+                aria-pressed={tierFilter === val}
+                onClick={() => setTierFilter(val)}
+              >
+                {label}
+              </button>
+            ))}
+          {hasStarred && (
             <button
-              key={val || "all"}
               type="button"
-              className={"pg-filter" + (tierFilter === val ? " on" : "")}
-              aria-pressed={tierFilter === val}
-              onClick={() => setTierFilter(val)}
+              className={"pg-filter pg-filter-star" + (starredOnly ? " on" : "")}
+              aria-pressed={starredOnly}
+              onClick={() => setStarredOnly((v) => !v)}
             >
-              {label}
+              ★ Starred
             </button>
-          ))}
+          )}
         </div>
       )}
 
