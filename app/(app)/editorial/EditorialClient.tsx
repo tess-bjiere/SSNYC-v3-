@@ -13,8 +13,13 @@ import SizeToggle from "@/app/components/SizeToggle";
 // box reaches the credit fields the dropdowns don't cover.
 const FACETS: { key: keyof Reference; label: string }[] = [
   { key: "designer", label: "Designer" },
-  { key: "year", label: "Year" },
+  // Photographer and Location lead the credit filters — finding a photographer,
+  // and seeing who has shot in a city, is most of how Campaign gets used for
+  // FRED's marketing (Tess, 2026-08-17).
+  { key: "photographer", label: "Photographer" },
+  { key: "location", label: "Location" },
   { key: "model", label: "Model" },
+  { key: "year", label: "Year" },
 ];
 
 export default function EditorialClient({
@@ -65,8 +70,10 @@ export default function EditorialClient({
   const options = useMemo(() => {
     return {
       designer: resolveDesigners(designers, inUse.designer),
-      year: inUse.year,
+      photographer: inUse.photographer,
+      location: inUse.location,
       model: inUse.model,
+      year: inUse.year,
     } as Record<string, string[]>;
   }, [designers, inUse]);
 
@@ -101,6 +108,7 @@ export default function EditorialClient({
     out = [...out].sort((a, b) => {
       if (sort === "designer") return (a.designer || "").localeCompare(b.designer || "");
       if (sort === "photographer") return (a.photographer || "").localeCompare(b.photographer || "");
+      if (sort === "location") return (a.location || "").localeCompare(b.location || "");
       if (sort === "model") return (a.model || "").localeCompare(b.model || "");
       return (b.created_at || "").localeCompare(a.created_at || "");
     });
@@ -123,6 +131,7 @@ export default function EditorialClient({
             { value: "newest", label: "Newest" },
             { value: "designer", label: "Designer A–Z" },
             { value: "photographer", label: "Photographer" },
+            { value: "location", label: "Location" },
             { value: "model", label: "Model" },
           ]}
         />
