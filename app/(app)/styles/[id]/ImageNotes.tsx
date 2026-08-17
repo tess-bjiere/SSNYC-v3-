@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { MouseEvent } from "react";
 import type { ImageNote } from "@/lib/imageNotes";
 import {
@@ -106,6 +106,8 @@ export default function ImageNotes({
   full = false,
   onFull,
   caption = true,
+  openPinId = null,
+  onOpenedPin,
 }: {
   styleId: string;
   /** Null when the picture hangs off the style rather than off a round. */
@@ -145,6 +147,17 @@ export default function ImageNotes({
    * fixed slots have no such field, so there the caption belongs here.
    */
   caption?: boolean;
+  /**
+   * Open the viewer straight onto one mark's editor — its text and its reply
+   * thread — instead of the fit-comment list (Tess, 2026-08-17: "you should be
+   * able to reply to fit comments in full screen view as well"). The FullRound
+   * rail passes this so a fit comment in the review is one click from its
+   * replies. Null opens on the list, the way every other caller does.
+   */
+  openPinId?: string | null;
+  /** Told once openPinId has been applied, so the caller can clear it and the
+   *  same mark can be re-opened after the editor is closed. */
+  onOpenedPin?: () => void;
 }) {
   const [pending, start] = useTransition();
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -159,6 +172,27 @@ export default function ImageNotes({
   // The live pin behind the open editor — the draft carries only position and
   // text (what the editor changes), so its thread is read from the note itself.
   const openPin = draft?.id ? note.pins.find((p) => p.id === draft.id) ?? null : null;
+
+  // Read through refs so the "open onto this mark" effect can depend on the id
+  // alone: the pins change as marks are added, and the callback is a fresh inline
+  // arrow each render, but neither should re-fire the effect.
+  const pinsRef = useRef(note.pins);
+  pinsRef.current = note.pins;
+  const onOpenedRef = useRef(onOpenedPin);
+  onOpenedRef.current = onOpenedPin;
+
+  // A caller asked to land on one mark's thread. Open its editor, then tell the
+  // caller so it can clear the request — otherwise re-clicking the same fit
+  // comment after closing would not re-open it (the prop would not change).
+  useEffect(() => {
+    if (!openPinId) return;
+    const p = pinsRef.current.find((x) => x.id === openPinId);
+    if (p) {
+      setDraft({ id: p.id, x: p.x, y: p.y, text: p.text });
+      setError("");
+    }
+    onOpenedRef.current?.();
+  }, [openPinId]);
 
   // While the picture fills the window, the page behind it does not scroll —
   // otherwise a flick of the wheel over the photograph moves the round list

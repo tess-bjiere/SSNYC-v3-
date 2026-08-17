@@ -794,6 +794,11 @@ function FullRound({
 }) {
   /** Which photograph is being marked, by url. Null is the review screen. */
   const [editing, setEditing] = useState<string | null>(null);
+  // Which fit comment to land on when that photograph opens — set when a fit
+  // comment in the rail is clicked, so the viewer opens straight onto its reply
+  // thread rather than the list (Tess, 2026-08-17: "reply to fit comments in
+  // full screen view as well"). Cleared once the viewer has consumed it.
+  const [focusPin, setFocusPin] = useState<string | null>(null);
   const at = editing === null ? -1 : images.findIndex((im) => im.url === editing);
   const open = at >= 0 ? images[at] : null;
 
@@ -884,7 +889,7 @@ function FullRound({
                   <button
                     type="button"
                     className="sr-full-frame"
-                    onClick={() => setEditing(im.url)}
+                    onClick={() => { setEditing(im.url); setFocusPin(null); }}
                     aria-label={`Mark up ${im.label}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -912,8 +917,23 @@ function FullRound({
                       <ol className="sr-full-pins">
                         {im.note.pins.map((pin, i) => (
                           <li key={pin.id}>
-                            <span className="n">{i + 1}</span>
-                            <span>{pin.text}</span>
+                            {/* Click a fit comment to open it and reply — the
+                                whole row, so the target is generous. It opens
+                                the same viewer the photo does, landing on this
+                                mark's thread. */}
+                            <button
+                              type="button"
+                              className="sr-full-pinrow"
+                              onClick={() => { setEditing(im.url); setFocusPin(pin.id); }}
+                            >
+                              <span className="n">{i + 1}</span>
+                              <span className="t">{pin.text || "No fit comment yet"}</span>
+                              {pin.replies.length > 0 && (
+                                <span className="r">
+                                  {pin.replies.length} repl{pin.replies.length === 1 ? "y" : "ies"}
+                                </span>
+                              )}
+                            </button>
                           </li>
                         ))}
                       </ol>
@@ -942,10 +962,14 @@ function FullRound({
             // all route through `onFull?.(false)` and silently no-op, which
             // left the photo with no way out (Tess, 2026-08-17: "close function
             // isn't doing anything or allowing me to exit").
-            onFull={(v) => { if (!v) setEditing(null); }}
-            onPrev={at > 0 ? () => setEditing(images[at - 1].url) : null}
-            onNext={at < images.length - 1 ? () => setEditing(images[at + 1].url) : null}
-            onClose={() => setEditing(null)}
+            onFull={(v) => { if (!v) { setEditing(null); setFocusPin(null); } }}
+            // Land on the fit comment that was clicked in the rail, if any, and
+            // clear the request once it has so the same one can be re-opened.
+            openPinId={focusPin}
+            onOpenedPin={() => setFocusPin(null)}
+            onPrev={at > 0 ? () => { setEditing(images[at - 1].url); setFocusPin(null); } : null}
+            onNext={at < images.length - 1 ? () => { setEditing(images[at + 1].url); setFocusPin(null); } : null}
+            onClose={() => { setEditing(null); setFocusPin(null); }}
           />
         )}
       </div>

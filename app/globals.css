@@ -2841,6 +2841,19 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   background:var(--chip);color:var(--muted);font-size:var(--t-cap);line-height:1;
   font-variant-numeric:tabular-nums;
 }
+/* The whole fit-comment row is a button — click it to open that mark and reply
+   (Tess, 2026-08-17: "reply to fit comments in full screen view as well"). */
+.sr-full-rail .sr-full-pinrow{
+  display:flex;gap:9px;align-items:baseline;width:100%;text-align:left;
+  background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;
+  font-size:var(--t-body);line-height:1.55;color:var(--ink);
+}
+.sr-full-rail .sr-full-pinrow .t{flex:1;min-width:0}
+.sr-full-rail .sr-full-pinrow:hover .t{color:var(--accent)}
+.sr-full-rail .sr-full-pinrow .r{
+  flex:none;font-size:var(--t-micro);color:var(--faint);white-space:nowrap;
+  text-transform:uppercase;letter-spacing:.08em;
+}
 
 /* --- The small controls inside a comment --------------------------------
    Tess, 2026-08-05: "the notes section is still very clunky to me on the
