@@ -19,6 +19,17 @@ import { setPhotographerMeta } from "@/app/actions/photographers";
 import Select from "@/app/components/Select";
 import DetailModal from "../library/DetailModal";
 
+// The bare domain of a URL for display, while the link still carries the whole
+// thing (Tess, 2026-08-17: "just shows ... main url -- but links to the full
+// url"). "https://www.mollymatalon.com/about" reads as "mollymatalon.com".
+function prettyHost(u: string): string {
+  try {
+    return new URL(u).hostname.replace(/^www\./, "");
+  } catch {
+    return u.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  }
+}
+
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
 // people / profiles in different cities ... look at their work"). Built from the
 // campaign credits; a profile also shows the team-entered side — tier (FRED at
@@ -155,6 +166,10 @@ export default function PhotographersClient({
   function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
     const srcs = workSrcs(p.ids);
     const src = srcs[0] ?? null;
+    // The handle line: the IG handle, or — for a site-only photographer — the
+    // bare domain of their website.
+    const site = p.ids.map((id) => byId.get(id)?.link).find(Boolean) || null;
+    const handle = p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
     return (
       <button
         type="button"
@@ -173,7 +188,7 @@ export default function PhotographersClient({
           {srcs.length > 1 && <span className="pg-card-count">{srcs.length}</span>}
         </div>
         <div className="pg-card-name">{p.name}</div>
-        {p.ig && <div className="pg-card-ig">{igLabel(p.ig)}</div>}
+        {handle && <div className="pg-card-ig">{handle}</div>}
       </button>
     );
   }
@@ -388,7 +403,7 @@ function ProfileModal({
             )}
             {site && (
               <a className="pg-profile-ig" href={site} target="_blank" rel="noreferrer">
-                Website ↗
+                {prettyHost(site)}
               </a>
             )}
             {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
