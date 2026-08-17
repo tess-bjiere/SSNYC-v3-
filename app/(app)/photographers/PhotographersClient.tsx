@@ -34,6 +34,7 @@ export default function PhotographersClient({
   canEdit?: boolean;
 }) {
   const [q, setQ] = useState("");
+  const [tierFilter, setTierFilter] = useState<"" | PhotographerTier>("");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [detail, setDetail] = useState<Reference | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -60,40 +61,46 @@ export default function PhotographersClient({
     return m;
   }, [photographers]);
 
+  // Search matches a photographer's name or a city; the tier filter keeps only
+  // the people at the chosen tier. Both narrow the same list, and the per-city
+  // count is recomputed so a filtered city reads honestly.
   const term = q.trim().toLowerCase();
   const shownCities = useMemo(() => {
-    if (!term) return cities;
     return cities
       .map((c) => {
-        if (c.city.toLowerCase().includes(term)) return c;
-        const people = c.photographers.filter((p) => p.name.toLowerCase().includes(term));
-        return people.length ? { ...c, photographers: people } : null;
+        const people = c.photographers.filter((p) => {
+          if (tierFilter && (meta[p.key]?.tier ?? null) !== tierFilter) return false;
+          if (!term) return true;
+          return c.city.toLowerCase().includes(term) || p.name.toLowerCase().includes(term);
+        });
+        if (!people.length) return null;
+        const count = people.reduce((n, p) => n + p.ids.length, 0);
+        return { ...c, photographers: people, count };
       })
       .filter(Boolean) as typeof cities;
-  }, [cities, term]);
+  }, [cities, term, tierFilter, meta]);
 
-  // Nest the (search-filtered) cities into continent -> country -> city.
+  // Nest the filtered cities into continent -> country -> city.
   const continents = useMemo(() => groupByGeo(shownCities, cityGeo), [shownCities]);
 
-  const totalPeople = photographers.length;
-  const locatedCities = cities.filter((c) => c.located).length;
+  // Counts reflect what's shown, so the header tracks the active filter.
+  const shownPeople = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of shownCities) for (const p of c.photographers) s.add(p.key);
+    return s.size;
+  }, [shownCities]);
+  const locatedCities = shownCities.filter((c) => c.located).length;
+  // Only offer the tier filter once someone actually has a tier set.
+  const hasTiers = useMemo(
+    () => photographers.some((p) => meta[p.key]?.tier),
+    [photographers, meta]
+  );
   const openProfile = openKey ? profileByKey.get(openKey) ?? null : null;
   const metaFor = (key: string) => meta[key] ?? EMPTY_META;
 
   const igUrl = (ig: string | null) =>
     ig ? `https://instagram.com/${ig.replace(/^@/, "").trim()}` : null;
   const igLabel = (ig: string) => (ig.startsWith("@") ? ig : "@" + ig);
-
-  // On a card, only the tier — one quiet tag, so a wall of cards stays clean.
-  // The medium (Photo / Video) lives on the profile, where there's room.
-  function Tags({ m }: { m: PhotographerMeta }) {
-    if (!m.tier) return null;
-    return (
-      <div className="pg-tags">
-        <span className={"pg-tier pg-tier-" + m.tier}>{tierLabel(m.tier)}</span>
-      </div>
-    );
-  }
 
   // One photographer card, reused across every city grid.
   function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
@@ -116,7 +123,6 @@ export default function PhotographersClient({
         </div>
         <div className="pg-card-name">{p.name}</div>
         {p.ig && <div className="pg-card-ig">{igLabel(p.ig)}</div>}
-        <Tags m={metaFor(p.key)} />
       </button>
     );
   }
@@ -126,9 +132,9 @@ export default function PhotographersClient({
       <div className="page-head">
         <h1 className="page-title display">Photographers</h1>
         <div className="spacer" />
-        {totalPeople > 0 && (
+        {shownPeople > 0 && (
           <span className="pg-count">
-            {totalPeople} {totalPeople === 1 ? "photographer" : "photographers"} · {locatedCities}{" "}
+            {shownPeople} {shownPeople === 1 ? "photographer" : "photographers"} · {locatedCities}{" "}
             {locatedCities === 1 ? "city" : "cities"}
           </span>
         )}
@@ -143,11 +149,30 @@ export default function PhotographersClient({
         />
       </div>
 
+      {hasTiers && (
+        <div className="pg-filters">
+          {([["", "All"], ["home", "FRED at home"], ["campaign", "Campaign"]] as [
+            "" | PhotographerTier,
+            string,
+          ][]).map(([val, label]) => (
+            <button
+              key={val || "all"}
+              type="button"
+              className={"pg-filter" + (tierFilter === val ? " on" : "")}
+              aria-pressed={tierFilter === val}
+              onClick={() => setTierFilter(val)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {shownCities.length === 0 ? (
         <div className="empty">
           {refs.length === 0
             ? "No campaign images yet. Add photographers' work from the Campaign tab and they'll gather here by place."
-            : "No photographers or cities match that search."}
+            : "No photographers match those filters."}
         </div>
       ) : (
         continents.map((cont) => (

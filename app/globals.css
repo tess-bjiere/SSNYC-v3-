@@ -444,6 +444,12 @@ body.notes-open .wrap{padding-right:378px}
 /* --- Photographers directory (Tess, 2026-08-17) — campaign credits, browsed by
    city, each person opening onto their whole body of work. ------------------ */
 .pg-count{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+/* Tier filter chips — All / FRED at home / Campaign. */
+.pg-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
+.pg-filter{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
+  font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;cursor:pointer}
+.pg-filter:hover{color:var(--ink);border-color:var(--muted)}
+.pg-filter.on{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
 /* Geographic hierarchy: continent (largest) > country > city (leaf). Light
    weights, matching the app's own headings (.page-title is --w-body). */
 .pg-continent{margin-top:34px}
