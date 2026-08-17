@@ -69,6 +69,9 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       { href: "/library", label: "References" },
       { href: "/moodboard", label: "Moodboard" },
       { href: "/editorial", label: "Campaign" },
+      // The campaign credits, turned into a directory of photographers by city
+      // (Tess, 2026-08-17) — a front door to "who has shot in this city".
+      { href: "/photographers", label: "Photographers" },
     ],
   },
   // Tess, 2026-08-06: "ideation should come before product." Ideation leads now

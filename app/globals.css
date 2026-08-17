@@ -440,6 +440,40 @@ body.notes-open .wrap{padding-right:378px}
    without losing the ability to check a colour. */
 .grid.ed-mono .card img{filter:grayscale(1);transition:filter .15s}
 .grid.ed-mono .card:hover img{filter:none}
+
+/* --- Photographers directory (Tess, 2026-08-17) — campaign credits, browsed by
+   city, each person opening onto their whole body of work. ------------------ */
+.pg-count{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.pg-city{margin-top:26px}
+.pg-city:first-of-type{margin-top:12px}
+.pg-city-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding-bottom:8px;margin-bottom:14px;border-bottom:1px solid var(--hair)}
+.pg-city-name{font-size:var(--t-display);font-weight:var(--w-title);letter-spacing:0;line-height:1.1}
+.pg-city-name.muted{color:var(--muted)}
+.pg-city-meta{font-size:var(--t-meta);color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
+.pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+.pg-card{display:flex;flex-direction:column;gap:8px;text-align:left;background:none;border:none;
+  padding:0;font-family:inherit;color:var(--ink);cursor:pointer}
+.pg-card-img{position:relative;aspect-ratio:3/4;background:#111;border:1px solid var(--line);
+  overflow:hidden}
+.pg-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.pg-card:hover .pg-card-img img{transform:scale(1.03)}
+.pg-card:hover .pg-card-img{border-color:var(--muted)}
+.pg-card-count{position:absolute;top:6px;right:6px;background:rgba(12,12,12,.82);color:var(--ink);
+  font-size:var(--t-micro);padding:2px 6px;letter-spacing:.04em}
+.pg-card-name{font-size:var(--t-title);font-weight:var(--w-title);line-height:1.2}
+.pg-card-ig{font-size:var(--t-sm);color:var(--muted);margin-top:-4px}
+
+.pg-profile{max-width:960px;width:min(96vw,960px)}
+.pg-profile-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.pg-profile-ig{font-size:var(--t-body);color:var(--accent);text-decoration:underline;
+  text-underline-offset:3px}
+.pg-profile-cities{display:flex;gap:6px;flex-wrap:wrap}
+.pg-chip{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+  border:1px solid var(--line);padding:3px 8px}
+.pg-profile-count{font-size:var(--t-meta);color:var(--faint);text-transform:uppercase;
+  letter-spacing:.09em;margin-left:auto}
+.pg-profile-grid .meta{padding:6px 2px 2px}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
 .card .meta{padding:10px 12px 12px}
 .card .d{font-size:var(--t-title);font-weight:var(--w-title);letter-spacing:0;line-height:1.25}
