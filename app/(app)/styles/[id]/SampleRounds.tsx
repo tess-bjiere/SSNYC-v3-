@@ -955,6 +955,12 @@ function FullRound({
             label={open.label}
             note={open.note}
             position={`${at + 1} of ${images.length}`}
+            // No caption box on a fit photo — the slot label already says what
+            // the picture is, and this viewer only ever shows a round's photos
+            // (Tess, 2026-08-17: "remove the caption option -- we dont need this
+            // on fit photos"). SlotCards and ImageStrip already switch it off for
+            // sample photos; this full-screen viewer had defaulted it back on.
+            caption={false}
             full
             // This viewer opens straight into full screen, so "exiting full
             // size" is the same as closing it — there is no smaller state to
