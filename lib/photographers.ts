@@ -50,6 +50,9 @@ export type CityGroup = {
   count: number;
 };
 
+export type CountryGroup = { country: string; cities: CityGroup[]; count: number };
+export type ContinentGroup = { continent: string; countries: CountryGroup[]; count: number };
+
 /** One photographer across everything they have shot — what a profile shows. */
 export type PhotographerProfile = {
   key: string;
@@ -166,4 +169,62 @@ export function buildPhotographerDirectory(items: readonly PhotoCredit[]): {
     });
 
   return { cities: cityGroups, photographers };
+}
+
+/**
+ * Arrange the flat city list into continent -> country -> city (Tess,
+ * 2026-08-17). The geo lookup is injected so this stays dependency-free; a city
+ * with no known country groups directly under its continent (empty country), and
+ * the no-location bucket goes to an "Unspecified" continent, always last. Within
+ * each level, busiest first, ties alphabetical — the same order the flat view
+ * used, so nothing jumps around.
+ */
+export function groupByGeo(
+  cities: readonly CityGroup[],
+  geoOf: (city: string) => { country: string; continent: string }
+): ContinentGroup[] {
+  // continent -> (country -> cities)
+  const conts = new Map<string, Map<string, CityGroup[]>>();
+
+  for (const c of cities ?? []) {
+    const { continent, country } = c.located
+      ? geoOf(c.city)
+      : { continent: "Unspecified", country: "" };
+    const cont = continent || "Other";
+    let countries = conts.get(cont);
+    if (!countries) {
+      countries = new Map();
+      conts.set(cont, countries);
+    }
+    const arr = countries.get(country) ?? [];
+    arr.push(c);
+    countries.set(country, arr);
+  }
+
+  const count = (cs: readonly CityGroup[]) => cs.reduce((n, c) => n + c.count, 0);
+  const special = (name: string) => name === "Unspecified" || name === "Other";
+
+  return Array.from(conts.entries())
+    .map(([continent, countries]) => {
+      const countryGroups: CountryGroup[] = Array.from(countries.entries())
+        .map(([country, cs]) => ({
+          country,
+          cities: cs.slice().sort((a, b) => b.count - a.count || a.city.localeCompare(b.city)),
+          count: count(cs),
+        }))
+        // Busiest country first; an unknown-country ("") group sits last.
+        .sort((a, b) => {
+          if (!a.country && b.country) return 1;
+          if (a.country && !b.country) return -1;
+          return b.count - a.count || a.country.localeCompare(b.country);
+        });
+      return { continent, countries: countryGroups, count: count(Array.from(countries.values()).flat()) };
+    })
+    // Busiest continent first; "Other" then "Unspecified" always last.
+    .sort((a, b) => {
+      if (special(a.continent) !== special(b.continent)) return special(a.continent) ? 1 : -1;
+      if (a.continent === "Unspecified") return 1;
+      if (b.continent === "Unspecified") return -1;
+      return b.count - a.count || a.continent.localeCompare(b.continent);
+    });
 }

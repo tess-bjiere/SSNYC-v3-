@@ -444,13 +444,20 @@ body.notes-open .wrap{padding-right:378px}
 /* --- Photographers directory (Tess, 2026-08-17) — campaign credits, browsed by
    city, each person opening onto their whole body of work. ------------------ */
 .pg-count{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
-.pg-city{margin-top:26px}
-.pg-city:first-of-type{margin-top:12px}
-.pg-city-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
-  padding-bottom:8px;margin-bottom:14px;border-bottom:1px solid var(--hair)}
-.pg-city-name{font-size:var(--t-display);font-weight:var(--w-title);letter-spacing:0;line-height:1.1}
+/* Geographic hierarchy: continent (largest) > country > city (leaf). */
+.pg-continent{margin-top:40px}
+.pg-continent:first-of-type{margin-top:10px}
+.pg-continent-name{font-size:23px;font-weight:var(--w-title);letter-spacing:-.01em;line-height:1.05;
+  margin:0;padding-bottom:9px;border-bottom:1px solid var(--line)}
+.pg-continent-name.muted{color:var(--muted)}
+.pg-country{margin-top:20px}
+.pg-country-name{font-size:15px;font-weight:var(--w-title);letter-spacing:.01em;color:var(--ink);margin:0}
+.pg-city{margin-top:12px}
+.pg-city-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.pg-city-name{font-size:var(--t-title);font-weight:var(--w-title);text-transform:uppercase;
+  letter-spacing:.1em;line-height:1.1}
 .pg-city-name.muted{color:var(--muted)}
-.pg-city-meta{font-size:var(--t-meta);color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
+.pg-city-meta{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
 .pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
 .pg-card{display:flex;flex-direction:column;gap:8px;text-align:left;background:none;border:none;
   padding:0;font-family:inherit;color:var(--ink);cursor:pointer}

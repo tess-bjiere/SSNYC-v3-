@@ -4,8 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import { refThumb, type Reference } from "@/lib/types";
 import {
   buildPhotographerDirectory,
+  groupByGeo,
   type PhotographerProfile,
 } from "@/lib/photographers";
+import { cityGeo } from "@/lib/geo";
 import {
   readAllPhotographerMeta,
   tierLabel,
@@ -70,6 +72,9 @@ export default function PhotographersClient({
       .filter(Boolean) as typeof cities;
   }, [cities, term]);
 
+  // Nest the (search-filtered) cities into continent -> country -> city.
+  const continents = useMemo(() => groupByGeo(shownCities, cityGeo), [shownCities]);
+
   const totalPeople = photographers.length;
   const locatedCities = cities.filter((c) => c.located).length;
   const openProfile = openKey ? profileByKey.get(openKey) ?? null : null;
@@ -79,8 +84,7 @@ export default function PhotographersClient({
     ig ? `https://instagram.com/${ig.replace(/^@/, "").trim()}` : null;
   const igLabel = (ig: string) => (ig.startsWith("@") ? ig : "@" + ig);
 
-  // A tiny row of tags shown on a card and beside a profile name: tier, and the
-  // video / directs capabilities.
+  // A tiny row of tags shown on a card and beside a profile name: tier + medium.
   function Tags({ m }: { m: PhotographerMeta }) {
     if (!m.tier && !m.photo && !m.video) return null;
     return (
@@ -89,6 +93,32 @@ export default function PhotographersClient({
         {m.photo && <span className="pg-cap">Photo</span>}
         {m.video && <span className="pg-cap">Video</span>}
       </div>
+    );
+  }
+
+  // One photographer card, reused across every city grid.
+  function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
+    const cover = byId.get(p.ids[0]);
+    const src = cover ? refThumb(cover) : null;
+    return (
+      <button
+        type="button"
+        className="pg-card"
+        key={p.key}
+        onClick={() => setOpenKey(p.key)}
+        title={`See ${p.name}'s work`}
+      >
+        <div className="pg-card-img">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt={p.name} loading="lazy" />
+          ) : null}
+          {p.ids.length > 1 && <span className="pg-card-count">{p.ids.length}</span>}
+        </div>
+        <div className="pg-card-name">{p.name}</div>
+        {p.ig && <div className="pg-card-ig">{igLabel(p.ig)}</div>}
+        <Tags m={metaFor(p.key)} />
+      </button>
     );
   }
 
@@ -117,47 +147,33 @@ export default function PhotographersClient({
       {shownCities.length === 0 ? (
         <div className="empty">
           {refs.length === 0
-            ? "No campaign images yet. Add photographers' work from the Campaign tab and they'll gather here by city."
+            ? "No campaign images yet. Add photographers' work from the Campaign tab and they'll gather here by place."
             : "No photographers or cities match that search."}
         </div>
       ) : (
-        shownCities.map((c) => (
-          <section className="pg-city" key={c.city}>
-            <div className="pg-city-head">
-              <h2 className={"pg-city-name" + (c.located ? "" : " muted")}>{c.city}</h2>
-              <span className="pg-city-meta">
-                {c.photographers.length}{" "}
-                {c.photographers.length === 1 ? "photographer" : "photographers"} · {c.count}{" "}
-                {c.count === 1 ? "image" : "images"}
-              </span>
-            </div>
-
-            <div className="pg-grid">
-              {c.photographers.map((p) => {
-                const cover = byId.get(p.ids[0]);
-                const src = cover ? refThumb(cover) : null;
-                return (
-                  <button
-                    type="button"
-                    className="pg-card"
-                    key={p.key}
-                    onClick={() => setOpenKey(p.key)}
-                    title={`See ${p.name}'s work`}
-                  >
-                    <div className="pg-card-img">
-                      {src ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={src} alt={p.name} loading="lazy" />
-                      ) : null}
-                      {p.ids.length > 1 && <span className="pg-card-count">{p.ids.length}</span>}
+        continents.map((cont) => (
+          <section className="pg-continent" key={cont.continent}>
+            <h2 className={"pg-continent-name" + (cont.continent === "Unspecified" ? " muted" : "")}>
+              {cont.continent}
+            </h2>
+            {cont.countries.map((country) => (
+              <div className="pg-country" key={country.country || "_none"}>
+                {country.country && <h3 className="pg-country-name">{country.country}</h3>}
+                {country.cities.map((c) => (
+                  <section className="pg-city" key={c.city}>
+                    <div className="pg-city-head">
+                      <h4 className={"pg-city-name" + (c.located ? "" : " muted")}>{c.city}</h4>
+                      <span className="pg-city-meta">
+                        {c.photographers.length}{" "}
+                        {c.photographers.length === 1 ? "photographer" : "photographers"} · {c.count}{" "}
+                        {c.count === 1 ? "image" : "images"}
+                      </span>
                     </div>
-                    <div className="pg-card-name">{p.name}</div>
-                    {p.ig && <div className="pg-card-ig">{igLabel(p.ig)}</div>}
-                    <Tags m={metaFor(p.key)} />
-                  </button>
-                );
-              })}
-            </div>
+                    <div className="pg-grid">{c.photographers.map((p) => card(p))}</div>
+                  </section>
+                ))}
+              </div>
+            ))}
           </section>
         ))
       )}
