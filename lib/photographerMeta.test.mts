@@ -23,20 +23,26 @@ test("keying is the lower-cased trim, so the metadata joins to the directory", (
 
 test("writing one card leaves everyone else's untouched", () => {
   let v: unknown = withPhotographerMeta({}, "Ada", { tier: "campaign", video: true });
-  v = withPhotographerMeta(v, "Bea", { directs: true });
+  v = withPhotographerMeta(v, "Bea", { photo: true });
   assert.equal(readPhotographerMeta(v, "Ada").tier, "campaign");
   assert.equal(readPhotographerMeta(v, "Ada").video, true);
-  assert.equal(readPhotographerMeta(v, "Bea").directs, true);
+  assert.equal(readPhotographerMeta(v, "Bea").photo, true);
   assert.equal(readPhotographerMeta(v, "Bea").tier, null);
 });
 
 test("a patch merges onto the existing card, not replaces it", () => {
-  let v: unknown = withPhotographerMeta({}, "Ada", { tier: "home", clients: "Vogue, Nike" });
+  let v: unknown = withPhotographerMeta({}, "Ada", { tier: "home", pastWork: "Vogue, Nike" });
   v = withPhotographerMeta(v, "Ada", { video: true });
   const m = readPhotographerMeta(v, "Ada");
   assert.equal(m.tier, "home");
-  assert.equal(m.clients, "Vogue, Nike");
+  assert.equal(m.pastWork, "Vogue, Nike");
   assert.equal(m.video, true);
+});
+
+test("the old `clients` field is read as past work, after the rename", () => {
+  // A card written before the rename still shows its history.
+  const m = readPhotographerMeta({ ada: { clients: "Lemaire, SSENSE" } }, "Ada");
+  assert.equal(m.pastWork, "Lemaire, SSENSE");
 });
 
 test("clearing every field removes the card rather than storing an empty shell", () => {

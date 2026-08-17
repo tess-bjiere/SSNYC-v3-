@@ -21,16 +21,23 @@ export type PhotographerTier = "home" | "campaign";
 export type PhotographerMeta = {
   /** "home" = a FRED-at-home photographer; "campaign" = campaign-level. */
   tier: PhotographerTier | null;
-  /** Shoots video, not only stills. */
+  /** Medium — shoots stills, and/or moving image. */
+  photo: boolean;
   video: boolean;
-  /** Directs / does creative direction. */
-  directs: boolean;
-  /** A brief, free-text client list — anything beyond what the images already
-   *  show (an agency, notable brands, a portfolio note). */
-  clients: string;
+  /** A brief free-text history — brands, agencies, notable jobs (Tess renamed
+   *  this from "clients" to "past work", 2026-08-17). */
+  pastWork: string;
+  /** Anything else — miscellaneous notes. */
+  notes: string;
 };
 
-export const EMPTY_META: PhotographerMeta = { tier: null, video: false, directs: false, clients: "" };
+export const EMPTY_META: PhotographerMeta = {
+  tier: null,
+  photo: false,
+  video: false,
+  pastWork: "",
+  notes: "",
+};
 
 /** How a name becomes a key — the same lower-cased trim the directory uses, so
  *  the metadata joins to the right person. */
@@ -43,14 +50,21 @@ function asObject(raw: unknown): Record<string, unknown> {
   return { ...(raw as Record<string, unknown>) };
 }
 
+function str(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
+
 function readOne(raw: unknown): PhotographerMeta {
   const o = asObject(raw);
   const tier = o.tier === "home" || o.tier === "campaign" ? o.tier : null;
   return {
     tier,
+    photo: o.photo === true,
     video: o.video === true,
-    directs: o.directs === true,
-    clients: typeof o.clients === "string" ? o.clients.trim() : "",
+    // pastWork replaced the older "clients" field — read either so nothing set
+    // before the rename is lost.
+    pastWork: str(o.pastWork) || str(o.clients),
+    notes: str(o.notes),
   };
 }
 
@@ -71,7 +85,7 @@ export function readAllPhotographerMeta(settingsValue: unknown): Record<string, 
 
 /** True when a card carries nothing worth storing. */
 export function isEmptyMeta(m: PhotographerMeta): boolean {
-  return !m.tier && !m.video && !m.directs && !m.clients.trim();
+  return !m.tier && !m.photo && !m.video && !m.pastWork.trim() && !m.notes.trim();
 }
 
 /**
@@ -88,7 +102,14 @@ export function withPhotographerMeta(
   if (!k) return next;
   const merged = readOne({ ...readOne(next[k]), ...patch });
   if (isEmptyMeta(merged)) delete next[k];
-  else next[k] = { tier: merged.tier, video: merged.video, directs: merged.directs, clients: merged.clients };
+  else
+    next[k] = {
+      tier: merged.tier,
+      photo: merged.photo,
+      video: merged.video,
+      pastWork: merged.pastWork,
+      notes: merged.notes,
+    };
   return next;
 }
 

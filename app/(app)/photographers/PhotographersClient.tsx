@@ -82,12 +82,12 @@ export default function PhotographersClient({
   // A tiny row of tags shown on a card and beside a profile name: tier, and the
   // video / directs capabilities.
   function Tags({ m }: { m: PhotographerMeta }) {
-    if (!m.tier && !m.video && !m.directs) return null;
+    if (!m.tier && !m.photo && !m.video) return null;
     return (
       <div className="pg-tags">
         {m.tier && <span className={"pg-tier pg-tier-" + m.tier}>{tierLabel(m.tier)}</span>}
+        {m.photo && <span className="pg-cap">Photo</span>}
         {m.video && <span className="pg-cap">Video</span>}
-        {m.directs && <span className="pg-cap">Directs</span>}
       </div>
     );
   }
@@ -227,7 +227,8 @@ function ProfileModal({
     });
   }
 
-  const hasCard = !!meta.tier || meta.video || meta.directs || !!meta.clients.trim();
+  const hasCard =
+    !!meta.tier || meta.photo || meta.video || !!meta.pastWork.trim() || !!meta.notes.trim();
   const ig = igUrl(profile.ig);
 
   return (
@@ -246,14 +247,14 @@ function ProfileModal({
               </a>
             )}
             {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
+            {meta.photo && <span className="pg-cap">Photo</span>}
             {meta.video && <span className="pg-cap">Video</span>}
-            {meta.directs && <span className="pg-cap">Directs</span>}
             <span className="pg-profile-count">
               {profile.ids.length} {profile.ids.length === 1 ? "image" : "images"}
             </span>
           </div>
 
-          {/* Where they've shot, and who for — both derived from the images. */}
+          {/* Cities they've shot in — derived from the images. */}
           {profile.cities.length > 0 && (
             <div className="pg-facts">
               <span className="k">Cities</span>
@@ -262,18 +263,16 @@ function ProfileModal({
               </div>
             </div>
           )}
-          {profile.shotFor.length > 0 && (
+          {meta.pastWork.trim() && !editing && (
             <div className="pg-facts">
-              <span className="k">Shot for</span>
-              <div className="pg-chips">
-                {profile.shotFor.map((d) => <span className="pg-chip" key={d}>{d}</span>)}
-              </div>
+              <span className="k">Past work</span>
+              <div className="pg-clients">{meta.pastWork}</div>
             </div>
           )}
-          {meta.clients.trim() && !editing && (
+          {meta.notes.trim() && !editing && (
             <div className="pg-facts">
-              <span className="k">Clients</span>
-              <div className="pg-clients">{meta.clients}</div>
+              <span className="k">Notes</span>
+              <div className="pg-clients">{meta.notes}</div>
             </div>
           )}
 
@@ -304,8 +303,15 @@ function ProfileModal({
                 </div>
               </div>
               <div className="pg-editor-row">
-                <label className="pg-editor-label">Also does</label>
+                <label className="pg-editor-label">Medium</label>
                 <div className="pg-seg">
+                  <button
+                    type="button"
+                    className={"pg-seg-btn" + (draft.photo ? " on" : "")}
+                    onClick={() => setDraft((d) => ({ ...d, photo: !d.photo }))}
+                  >
+                    Photo
+                  </button>
                   <button
                     type="button"
                     className={"pg-seg-btn" + (draft.video ? " on" : "")}
@@ -313,23 +319,26 @@ function ProfileModal({
                   >
                     Video
                   </button>
-                  <button
-                    type="button"
-                    className={"pg-seg-btn" + (draft.directs ? " on" : "")}
-                    onClick={() => setDraft((d) => ({ ...d, directs: !d.directs }))}
-                  >
-                    Directs
-                  </button>
                 </div>
               </div>
-              <div className="pg-editor-row col">
-                <label className="pg-editor-label">Clients / notes</label>
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Past work</label>
                 <textarea
                   className="textarea"
                   rows={2}
-                  placeholder="Notable clients or a portfolio note — anything the images don't already show."
-                  value={draft.clients}
-                  onChange={(e) => setDraft((d) => ({ ...d, clients: e.target.value }))}
+                  placeholder="Brands, agencies, notable jobs…"
+                  value={draft.pastWork}
+                  onChange={(e) => setDraft((d) => ({ ...d, pastWork: e.target.value }))}
+                />
+              </div>
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Notes</label>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  placeholder="Anything else — rate, contact, availability, a reminder…"
+                  value={draft.notes}
+                  onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
                 />
               </div>
               <div className="pg-editor-tools">
