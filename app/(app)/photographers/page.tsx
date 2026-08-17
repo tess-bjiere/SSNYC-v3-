@@ -20,7 +20,10 @@ export default async function PhotographersPage() {
       .select("*")
       .eq("brand", brand)
       .is("deleted_at", null)
-      .eq("type", "editorial")
+      // Both the campaign images (type 'editorial') and the prospect roster
+      // (type 'roster') build the directory; Campaign shows only 'editorial', so
+      // the roster stays out of it.
+      .in("type", ["editorial", "roster"])
       .order("created_at", { ascending: false }),
     supabase.from("settings").select("value").eq("key", PHOTOGRAPHER_META_KEY).maybeSingle(),
     getSessionUser(),

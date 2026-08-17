@@ -141,10 +141,20 @@ export default function PhotographersClient({
     ig ? `https://instagram.com/${ig.replace(/^@/, "").trim()}` : null;
   const igLabel = (ig: string) => (ig.startsWith("@") ? ig : "@" + ig);
 
+  // A roster prospect often has no image of their own yet — the card falls back
+  // to their initials, and the IG/site link on it is one click to their work.
+  const initials = (name: string) =>
+    name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+  // The refs behind a photographer that actually carry an image (a roster entry
+  // carries none), newest-first.
+  const workSrcs = (ids: string[]) =>
+    ids.map((id) => { const r = byId.get(id); return r ? refThumb(r) : null; }).filter(Boolean) as string[];
+
   // One photographer card, reused across every city grid.
   function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
-    const cover = byId.get(p.ids[0]);
-    const src = cover ? refThumb(cover) : null;
+    const srcs = workSrcs(p.ids);
+    const src = srcs[0] ?? null;
     return (
       <button
         type="button"
@@ -153,12 +163,14 @@ export default function PhotographersClient({
         onClick={() => setOpenKey(p.key)}
         title={`See ${p.name}'s work`}
       >
-        <div className="pg-card-img">
+        <div className={"pg-card-img" + (src ? "" : " empty")}>
           {src ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={src} alt={p.name} loading="lazy" />
-          ) : null}
-          {p.ids.length > 1 && <span className="pg-card-count">{p.ids.length}</span>}
+          ) : (
+            <span className="pg-card-initials">{initials(p.name)}</span>
+          )}
+          {srcs.length > 1 && <span className="pg-card-count">{srcs.length}</span>}
         </div>
         <div className="pg-card-name">{p.name}</div>
         {p.ig && <div className="pg-card-ig">{igLabel(p.ig)}</div>}
@@ -272,8 +284,7 @@ export default function PhotographersClient({
                       <h4 className={"pg-city-name" + (c.located ? "" : " muted")}>{c.city}</h4>
                       <span className="pg-city-meta">
                         {c.photographers.length}{" "}
-                        {c.photographers.length === 1 ? "photographer" : "photographers"} · {c.count}{" "}
-                        {c.count === 1 ? "image" : "images"}
+                        {c.photographers.length === 1 ? "photographer" : "photographers"}
                       </span>
                     </div>
                     <div className="pg-grid">{c.photographers.map((p) => card(p))}</div>
@@ -353,6 +364,12 @@ function ProfileModal({
   const hasCard =
     !!meta.tier || meta.photo || meta.video || !!meta.pastWork.trim() || !!meta.notes.trim();
   const ig = igUrl(profile.ig);
+  // Only the refs that actually carry an image are "work"; a roster entry has
+  // none. The website is read off whichever ref carries a link.
+  const workRefs = profile.ids
+    .map((id) => byId.get(id))
+    .filter((r): r is Reference => !!r && !!refThumb(r));
+  const site = profile.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -369,12 +386,19 @@ function ProfileModal({
                 {igLabel(profile.ig!)}
               </a>
             )}
+            {site && (
+              <a className="pg-profile-ig" href={site} target="_blank" rel="noreferrer">
+                Website ↗
+              </a>
+            )}
             {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
             {meta.photo && <span className="pg-cap">Photo</span>}
             {meta.video && <span className="pg-cap">Video</span>}
-            <span className="pg-profile-count">
-              {profile.ids.length} {profile.ids.length === 1 ? "image" : "images"}
-            </span>
+            {workRefs.length > 0 && (
+              <span className="pg-profile-count">
+                {workRefs.length} {workRefs.length === 1 ? "image" : "images"}
+              </span>
+            )}
           </div>
 
           {/* Cities they've shot in — derived from the images. */}
@@ -475,30 +499,36 @@ function ProfileModal({
             </div>
           )}
 
-          <div className="grid dens-md pg-profile-grid">
-            {profile.ids.map((id) => {
-              const r = byId.get(id);
-              if (!r) return null;
-              const src = refThumb(r);
-              return (
-                <div className="card lib-card" key={id} onClick={() => onImage(r)}>
-                  <div className="imgwrap">
-                    {src ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={src} alt={r.designer || ""} loading="lazy" />
-                    ) : null}
-                  </div>
-                  <div className="meta">
-                    <div className="s">
-                      {[r.designer, r.location, r.year && r.year !== "Unknown" ? r.year : null]
-                        .filter(Boolean)
-                        .join(" · ")}
+          {workRefs.length > 0 ? (
+            <div className="grid dens-md pg-profile-grid">
+              {workRefs.map((r) => {
+                const src = refThumb(r);
+                return (
+                  <div className="card lib-card" key={r.id} onClick={() => onImage(r)}>
+                    <div className="imgwrap">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src ?? ""} alt={r.designer || ""} loading="lazy" />
+                    </div>
+                    <div className="meta">
+                      <div className="s">
+                        {[r.designer, r.location, r.year && r.year !== "Unknown" ? r.year : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            // A roster prospect with no images yet — point at where the work is.
+            <div className="pg-nowork">
+              No images saved yet. See their work
+              {ig && <> on <a href={ig} target="_blank" rel="noreferrer">Instagram</a></>}
+              {site && <> · <a href={site} target="_blank" rel="noreferrer">their site</a></>}
+              {canEdit && <>, or add a few from the Campaign tab.</>}
+            </div>
+          )}
         </div>
       </div>
     </div>
