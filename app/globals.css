@@ -1475,6 +1475,15 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .ann-listtext .linkified:hover{color:var(--accent)}
 .ann-listtext em{color:var(--muted);font-style:italic}
 .ann-listreplies{display:inline-block;margin-left:6px;font-size:var(--t-micro);color:var(--faint);white-space:nowrap}
+/* The visible way to reply on a fit comment in the list, so it is not a thing
+   you have to know to click the row for (Tess, 2026-08-17). Opens the mark with
+   the caret already in the reply box. */
+.ann-listreply{
+  flex:none;margin-left:auto;align-self:flex-start;background:none;border:1px solid var(--line);
+  color:var(--ink);font-family:inherit;font-size:var(--t-micro);text-transform:uppercase;
+  letter-spacing:.1em;line-height:1;padding:4px 9px;cursor:pointer;
+}
+.ann-listreply:hover{background:var(--chip)}
 .ann-cap{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
 .ann-cap label{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
 .ann-cap .input{width:100%;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
@@ -2841,19 +2850,23 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   background:var(--chip);color:var(--muted);font-size:var(--t-cap);line-height:1;
   font-variant-numeric:tabular-nums;
 }
-/* The whole fit-comment row is a button — click it to open that mark and reply
-   (Tess, 2026-08-17: "reply to fit comments in full screen view as well"). */
-.sr-full-rail .sr-full-pinrow{
-  display:flex;gap:9px;align-items:baseline;width:100%;text-align:left;
-  background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;
-  font-size:var(--t-body);line-height:1.55;color:var(--ink);
-}
-.sr-full-rail .sr-full-pinrow .t{flex:1;min-width:0}
-.sr-full-rail .sr-full-pinrow:hover .t{color:var(--accent)}
+/* The fit-comment row in the full-screen rail: number, text, reply count and a
+   Reply button (Tess, 2026-08-17: "there should be button to reply … some
+   wouldnt know to click it"). The Reply button is the visible way in; the text
+   is clickable too. */
+.sr-full-rail .sr-full-pinrow{align-items:center}
+.sr-full-rail .sr-full-pinrow .t{flex:1;min-width:0;cursor:pointer}
+.sr-full-rail .sr-full-pinrow .t:hover{color:var(--accent)}
 .sr-full-rail .sr-full-pinrow .r{
   flex:none;font-size:var(--t-micro);color:var(--faint);white-space:nowrap;
   text-transform:uppercase;letter-spacing:.08em;
 }
+.sr-full-rail .sr-full-reply{
+  flex:none;background:none;border:1px solid var(--line);color:var(--ink);
+  font-family:inherit;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;
+  line-height:1;padding:4px 9px;cursor:pointer;
+}
+.sr-full-rail .sr-full-reply:hover{background:var(--chip)}
 
 /* --- The small controls inside a comment --------------------------------
    Tess, 2026-08-05: "the notes section is still very clunky to me on the

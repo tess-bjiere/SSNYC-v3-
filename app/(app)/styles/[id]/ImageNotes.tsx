@@ -167,6 +167,10 @@ export default function ImageNotes({
   // removing one of its existing replies.
   const [reply, setReply] = useState("");
   const [armedReply, setArmedReply] = useState<string | null>(null);
+  // Set when a mark was opened by a "Reply" button rather than to edit it, so
+  // the caret lands in the reply box instead of the mark's own text.
+  const [wantReplyFocus, setWantReplyFocus] = useState(false);
+  const replyRef = useRef<HTMLTextAreaElement | null>(null);
   const busy = pending;
 
   // The live pin behind the open editor — the draft carries only position and
@@ -188,8 +192,11 @@ export default function ImageNotes({
     if (!openPinId) return;
     const p = pinsRef.current.find((x) => x.id === openPinId);
     if (p) {
+      // Opening a fit comment from the rail is to answer it, so land in the
+      // reply box, not the mark's own text.
       setDraft({ id: p.id, x: p.x, y: p.y, text: p.text });
       setError("");
+      setWantReplyFocus(true);
     }
     onOpenedRef.current?.();
   }, [openPinId]);
@@ -245,6 +252,17 @@ export default function ImageNotes({
     setReply("");
     setArmedReply(null);
   }, [draft?.id]);
+
+  // When a mark was opened to reply (a "Reply" button, or a fit comment tapped
+  // in the full-screen rail), move the caret into the reply box once it exists.
+  // The mark's own text box autofocuses on open; this runs after and wins, so a
+  // "Reply" click puts you where you can type an answer.
+  useEffect(() => {
+    if (wantReplyFocus && replyRef.current) {
+      replyRef.current.focus();
+      setWantReplyFocus(false);
+    }
+  }, [wantReplyFocus, draft?.id]);
 
   function place(e: MouseEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect();
@@ -537,6 +555,7 @@ export default function ImageNotes({
                   )}
                   <div className="ann-reply-form">
                     <textarea
+                      ref={replyRef}
                       className="textarea"
                       value={reply}
                       placeholder="Reply to this fit comment…"
@@ -615,6 +634,21 @@ export default function ImageNotes({
                             </span>
                           )}
                         </span>
+                        {/* An explicit way in, so replying is not a thing you have
+                            to know to click the row for (Tess, 2026-08-17: "there
+                            should be button to reply … some wouldnt know to click
+                            it"). Opens the mark and drops the caret in the reply
+                            box. */}
+                        <button
+                          type="button"
+                          className="ann-listreply"
+                          onClick={() => {
+                            setDraft({ id: p.id, x: p.x, y: p.y, text: p.text });
+                            setWantReplyFocus(true);
+                          }}
+                        >
+                          Reply
+                        </button>
                       </div>
                     </li>
                   ))}

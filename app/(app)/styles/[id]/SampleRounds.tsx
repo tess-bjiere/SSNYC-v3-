@@ -916,23 +916,31 @@ function FullRound({
                     {im.note.pins.length > 0 && (
                       <ol className="sr-full-pins">
                         {im.note.pins.map((pin, i) => (
-                          <li key={pin.id}>
-                            {/* Click a fit comment to open it and reply — the
-                                whole row, so the target is generous. It opens
-                                the same viewer the photo does, landing on this
-                                mark's thread. */}
-                            <button
-                              type="button"
-                              className="sr-full-pinrow"
+                          <li key={pin.id} className="sr-full-pinrow">
+                            <span className="n">{i + 1}</span>
+                            {/* The text is clickable too, but the Reply button is
+                                the visible way in — replying should not be a
+                                thing you have to know to click the row for (Tess,
+                                2026-08-17: "there should be button to reply …
+                                some wouldnt know to click it"). Both open this
+                                mark's thread with the caret in the reply box. */}
+                            <span
+                              className="t"
                               onClick={() => { setEditing(im.url); setFocusPin(pin.id); }}
                             >
-                              <span className="n">{i + 1}</span>
-                              <span className="t">{pin.text || "No fit comment yet"}</span>
-                              {pin.replies.length > 0 && (
-                                <span className="r">
-                                  {pin.replies.length} repl{pin.replies.length === 1 ? "y" : "ies"}
-                                </span>
-                              )}
+                              {pin.text || "No fit comment yet"}
+                            </span>
+                            {pin.replies.length > 0 && (
+                              <span className="r">
+                                {pin.replies.length} repl{pin.replies.length === 1 ? "y" : "ies"}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              className="sr-full-reply"
+                              onClick={() => { setEditing(im.url); setFocusPin(pin.id); }}
+                            >
+                              Reply
                             </button>
                           </li>
                         ))}
