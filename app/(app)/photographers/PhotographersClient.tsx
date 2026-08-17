@@ -16,6 +16,7 @@ import {
   type PhotographerTier,
 } from "@/lib/photographerMeta";
 import { setPhotographerMeta } from "@/app/actions/photographers";
+import Select from "@/app/components/Select";
 import DetailModal from "../library/DetailModal";
 
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
@@ -35,6 +36,11 @@ export default function PhotographersClient({
 }) {
   const [q, setQ] = useState("");
   const [tierFilter, setTierFilter] = useState<"" | PhotographerTier>("");
+  // Geographic filters — each narrows the next (a continent limits its
+  // countries, a country its cities).
+  const [continentF, setContinentF] = useState("");
+  const [countryF, setCountryF] = useState("");
+  const [cityF, setCityF] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [detail, setDetail] = useState<Reference | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -61,24 +67,57 @@ export default function PhotographersClient({
     return m;
   }, [photographers]);
 
-  // Search matches a photographer's name or a city; the tier filter keeps only
-  // the people at the chosen tier. Both narrow the same list, and the per-city
-  // count is recomputed so a filtered city reads honestly.
+  // Each city's place, resolved once.
+  const cityPlace = (city: string, located: boolean) =>
+    located ? cityGeo(city) : { continent: "Unspecified", country: "" };
+
+  // The values available to the geo dropdowns, cascading: countries within the
+  // chosen continent, cities within the chosen country/continent.
+  const geoOptions = useMemo(() => {
+    const rows = cities.map((c) => ({ city: c.city, located: c.located, ...cityPlace(c.city, c.located) }));
+    const uniq = (a: string[]) => Array.from(new Set(a.filter(Boolean))).sort((x, y) => x.localeCompare(y));
+    const inCont = continentF ? rows.filter((r) => r.continent === continentF) : rows;
+    const inCountry = countryF ? inCont.filter((r) => r.country === countryF) : inCont;
+    return {
+      continents: uniq(rows.map((r) => r.continent)),
+      countries: uniq(inCont.map((r) => r.country)),
+      cities: uniq(inCountry.filter((r) => r.located).map((r) => r.city)),
+    };
+  }, [cities, continentF, countryF]);
+
+  // Search matches a photographer's name, their city or country, or a brand they
+  // have worked with (the images' designers plus their past-work note). The tier
+  // and geo filters narrow further; per-city counts are recomputed so a filtered
+  // city reads honestly.
   const term = q.trim().toLowerCase();
   const shownCities = useMemo(() => {
     return cities
+      .filter((c) => {
+        const { continent, country } = cityPlace(c.city, c.located);
+        if (continentF && continent !== continentF) return false;
+        if (countryF && country !== countryF) return false;
+        if (cityF && c.city !== cityF) return false;
+        return true;
+      })
       .map((c) => {
+        const { country } = cityPlace(c.city, c.located);
         const people = c.photographers.filter((p) => {
           if (tierFilter && (meta[p.key]?.tier ?? null) !== tierFilter) return false;
           if (!term) return true;
-          return c.city.toLowerCase().includes(term) || p.name.toLowerCase().includes(term);
+          if (c.city.toLowerCase().includes(term)) return true;
+          if (country.toLowerCase().includes(term)) return true;
+          if (p.name.toLowerCase().includes(term)) return true;
+          const brands = [...(profileByKey.get(p.key)?.shotFor ?? []), meta[p.key]?.pastWork ?? ""]
+            .join(" ")
+            .toLowerCase();
+          return brands.includes(term);
         });
         if (!people.length) return null;
         const count = people.reduce((n, p) => n + p.ids.length, 0);
         return { ...c, photographers: people, count };
       })
       .filter(Boolean) as typeof cities;
-  }, [cities, term, tierFilter, meta]);
+  }, [cities, term, tierFilter, continentF, countryF, cityF, meta, profileByKey]);
 
   // Nest the filtered cities into continent -> country -> city.
   const continents = useMemo(() => groupByGeo(shownCities, cityGeo), [shownCities]);
@@ -143,7 +182,7 @@ export default function PhotographersClient({
       <div className="lib-bar">
         <input
           className="input lib-search"
-          placeholder="Search a photographer or a city…"
+          placeholder="Search a photographer, city, country, or a brand they've worked with…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -165,6 +204,50 @@ export default function PhotographersClient({
               {label}
             </button>
           ))}
+        </div>
+      )}
+
+      {geoOptions.continents.length > 0 && (
+        <div className="pg-geo-filters">
+          <Select
+            className="select sm"
+            aria-label="Continent"
+            value={continentF}
+            onChange={(v) => { setContinentF(v); setCountryF(""); setCityF(""); }}
+            options={[
+              { value: "", label: "All continents" },
+              ...geoOptions.continents.map((v) => ({ value: v, label: v })),
+            ]}
+          />
+          <Select
+            className="select sm"
+            aria-label="Country"
+            value={countryF}
+            onChange={(v) => { setCountryF(v); setCityF(""); }}
+            options={[
+              { value: "", label: "All countries" },
+              ...geoOptions.countries.map((v) => ({ value: v, label: v })),
+            ]}
+          />
+          <Select
+            className="select sm"
+            aria-label="City"
+            value={cityF}
+            onChange={setCityF}
+            options={[
+              { value: "", label: "All cities" },
+              ...geoOptions.cities.map((v) => ({ value: v, label: v })),
+            ]}
+          />
+          {(continentF || countryF || cityF) && (
+            <button
+              type="button"
+              className="btn link"
+              onClick={() => { setContinentF(""); setCountryF(""); setCityF(""); }}
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
 
