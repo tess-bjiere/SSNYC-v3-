@@ -181,7 +181,9 @@ export default function Nav({
         {/* Which brand the team is looking at (multi-brand, Tess 2026-08-11).
             Everything on the page is scoped to it. A talent has no switcher —
             they see only their own brand (phase 2). */}
-        {isTeam && <BrandSwitcher active={brand} brands={brands} />}
+        {/* Only when there's actually a choice — a single-brand deployment
+            (FRED) shows no switcher at all (Tess, 2026-08-17). */}
+        {isTeam && brands.length > 1 && <BrandSwitcher active={brand} brands={brands} />}
         {/* + New Style used to sit here (Tess, 2026-08-06: "dont have new style
             in upper navigation -- it's confusing"). It was the only ACTION in a
             row of destinations — everything else in this bar takes you
@@ -260,7 +262,7 @@ export default function Nav({
             {/* Settings & account, set apart from the destinations by a rule:
                 which brand you are looking at, then the personal links. */}
             <div className="nav-drawer-foot">
-              {isTeam && (
+              {isTeam && brands.length > 1 && (
                 <div className="nav-drawer-brand">
                   <span className="nav-drawer-label">Brand</span>
                   <BrandSwitcher active={brand} brands={brands} />

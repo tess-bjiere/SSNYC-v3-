@@ -8,7 +8,8 @@
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { BRANDS, type Brand } from "@/lib/brands";
+import { type Brand } from "@/lib/brands";
+import { APP } from "@/lib/appConfig";
 import { isSuperAdmin, parseSuperAdmins } from "@/lib/superAdmins";
 
 export const loadBrands = cache(async (): Promise<Brand[]> => {
@@ -17,9 +18,13 @@ export const loadBrands = cache(async (): Promise<Brand[]> => {
     const { data } = await supabase.from("brands").select("slug,name,logo_url").order("created_at");
     if (data && data.length) return data as Brand[];
   } catch {
-    // fall through to the seed
+    // fall through to the app default
   }
-  return [...BRANDS];
+  // App-specific fallback, so a deployment that can't read its brands table
+  // shows its OWN brand, never another app's seed (Tess, 2026-08-17: "the fred
+  // version shouldnt show the [switcher] for other brands"). The pure seed in
+  // lib/brands.ts stays the Loyalist's; this is the per-deployment default.
+  return [{ slug: APP.defaultBrand.slug, name: APP.defaultBrand.name }];
 });
 
 export async function loadBrandSlugs(): Promise<string[]> {

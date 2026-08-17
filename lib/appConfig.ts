@@ -33,6 +33,12 @@ export type AppConfig = {
   orgDomain: string;
   /** The parent company, for footer/copy. */
   company: string;
+  /**
+   * The brand a deployment falls back to if its `brands` table can't be read —
+   * app-specific, so FRED never borrows the Loyalist's seed brands. On a healthy
+   * deployment the real list comes from the DB and this is never seen.
+   */
+  defaultBrand: { slug: string; name: string };
 };
 
 const APPS: Record<AppId, AppConfig> = {
@@ -42,6 +48,7 @@ const APPS: Record<AppId, AppConfig> = {
     logo: "/ssync-logo.svg",
     orgDomain: "theloyalist.com",
     company: "The Loyalist",
+    defaultBrand: { slug: "sous-sous", name: "SOUS SOUS" },
   },
   fred: {
     id: "fred",
@@ -53,6 +60,7 @@ const APPS: Record<AppId, AppConfig> = {
     // that domain (a few studio Gmails) are added to FRED's app_allowlist.
     orgDomain: "fredathome.com",
     company: "FRED",
+    defaultBrand: { slug: "fred", name: "FRED" },
   },
 };
 

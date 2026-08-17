@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { APP } from "@/lib/appConfig";
 
 export default function LoginPage() {
   const [busy, setBusy] = useState(false);
@@ -27,12 +28,15 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <div className="login-brand">
+        {/* Logo and copy follow the deployment's identity — SSYNC shows the SSYNC
+            mark and the Loyalist line; FRED shows the FRED mark and FRED's line
+            (Tess, 2026-08-17). See lib/appConfig.ts. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="login-logo" src="/ssync-logo.svg" alt="SSYNC" />
+        <img className="login-logo" src={APP.logo} alt={APP.name} />
       </div>
       <div className="login-sub">
-        The Loyalist&apos;s reference library &amp; style development tool. Sign in with your
-        theloyalist.com Google account, or a guest account that&apos;s been added to the allowlist.
+        {APP.company}&apos;s reference library &amp; style development tool. Sign in with your{" "}
+        {APP.orgDomain} Google account, or a guest account that&apos;s been added to the allowlist.
       </div>
       <button className="btn" onClick={signIn} disabled={busy}>
         {busy ? "Redirecting…" : "Sign in with Google"}
