@@ -27,6 +27,8 @@ import {
   withImageNoteCaption,
   withImagePin,
   withImagePinRemoved,
+  withImagePinReply,
+  withImagePinReplyRemoved,
 } from "@/lib/imageNotes";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import {
@@ -1287,5 +1289,60 @@ export async function removeImagePin(
   const photos = await readPhotosFor(styleId, sampleId);
   if (photos === null) return { ok: false, error: "That no longer exists." };
   const err = await writePhotosFor(styleId, sampleId, withImagePinRemoved(photos, url, pinId));
+  return err ? { ok: false, error: err } : { ok: true };
+}
+
+/**
+ * Answer a fit comment (Tess, 2026-08-17: "Reply to fit comments in thread").
+ *
+ * The author and time are stamped here from the session, never trusted from the
+ * client — the reply reads as a conversation, and who said what has to be true.
+ * The id is minted here too, so lib/imageNotes.ts stays pure.
+ *
+ * Deliberately no notify(): the mark-and-reply system has never emailed the room
+ * (saveImagePin doesn't either), and turning every reply into a notification is
+ * a decision to make on its own, not a side effect of adding replies.
+ */
+export async function addImagePinReply(
+  styleId: string,
+  sampleId: string | null,
+  url: string,
+  pinId: string,
+  body: string
+): Promise<PhotoResult> {
+  const user = await requireTeam();
+  const text = (body ?? "").trim();
+  if (!text) return { ok: false, error: "Write something first." };
+  const photos = await readPhotosFor(styleId, sampleId);
+  if (photos === null) return { ok: false, error: "That no longer exists." };
+  const err = await writePhotosFor(
+    styleId,
+    sampleId,
+    withImagePinReply(photos, url, pinId, {
+      id: crypto.randomUUID(),
+      author: user?.email ?? null,
+      text,
+      at: new Date().toISOString(),
+    })
+  );
+  return err ? { ok: false, error: err } : { ok: true };
+}
+
+/** Drop one reply off a mark's thread. The mark and its other replies stay. */
+export async function removeImagePinReply(
+  styleId: string,
+  sampleId: string | null,
+  url: string,
+  pinId: string,
+  replyId: string
+): Promise<PhotoResult> {
+  await requireTeam();
+  const photos = await readPhotosFor(styleId, sampleId);
+  if (photos === null) return { ok: false, error: "That no longer exists." };
+  const err = await writePhotosFor(
+    styleId,
+    sampleId,
+    withImagePinReplyRemoved(photos, url, pinId, replyId)
+  );
   return err ? { ok: false, error: err } : { ok: true };
 }

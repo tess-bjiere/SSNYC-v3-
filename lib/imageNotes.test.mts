@@ -7,6 +7,8 @@ import {
   withImageNoteCaption,
   withImagePin,
   withImagePinRemoved,
+  withImagePinReply,
+  withImagePinReplyRemoved,
   noteCountLabel,
   hasNote,
 } from "./imageNotes.ts";
@@ -101,7 +103,7 @@ test("clearing a caption keeps the pins", () => {
   raw = withImageNoteCaption(raw, URL_A, "");
   const note = readNote(raw, URL_A);
   assert.equal(note.caption, "");
-  assert.deepEqual(note.pins, [{ id: "p1", x: 0.1, y: 0.1, text: "here" }]);
+  assert.deepEqual(note.pins, [{ id: "p1", x: 0.1, y: 0.1, text: "here", replies: [] }]);
 });
 
 // ---------------------------------------------------------------------------
@@ -114,7 +116,7 @@ test("a pin is added, then updated in place by id rather than duplicated", () =>
 
   const pins = readNote(raw, URL_A).pins;
   assert.equal(pins.length, 1);
-  assert.deepEqual(pins[0], { id: "p1", x: 0.45, y: 0.22, text: "2cm too wide" });
+  assert.deepEqual(pins[0], { id: "p1", x: 0.45, y: 0.22, text: "2cm too wide", replies: [] });
 });
 
 test("pins keep the order they were dropped in — that is their numbering", () => {
@@ -164,10 +166,10 @@ test("removing an unknown pin is a no-op", () => {
 
 test("coordinates are clamped to the picture and rounded to four places", () => {
   const raw = withImagePin({}, URL_A, { id: "p", x: 1.8, y: -0.4, text: "" });
-  assert.deepEqual(readNote(raw, URL_A).pins[0], { id: "p", x: 1, y: 0, text: "" });
+  assert.deepEqual(readNote(raw, URL_A).pins[0], { id: "p", x: 1, y: 0, text: "", replies: [] });
 
   const r2 = withImagePin({}, URL_A, { id: "p", x: 0.123456789, y: 0.987654321, text: "" });
-  assert.deepEqual(readNote(r2, URL_A).pins[0], { id: "p", x: 0.1235, y: 0.9877, text: "" });
+  assert.deepEqual(readNote(r2, URL_A).pins[0], { id: "p", x: 0.1235, y: 0.9877, text: "", replies: [] });
 });
 
 test("an unreadable coordinate parks in the middle, where it looks like it needs moving", () => {
@@ -177,12 +179,12 @@ test("an unreadable coordinate parks in the middle, where it looks like it needs
     y: "elbow" as unknown as number,
     text: "",
   });
-  assert.deepEqual(readNote(raw, URL_A).pins[0], { id: "p", x: 0.5, y: 0.5, text: "" });
+  assert.deepEqual(readNote(raw, URL_A).pins[0], { id: "p", x: 0.5, y: 0.5, text: "", replies: [] });
 });
 
 test("a numeric string from a hand-written row still reads as a position", () => {
   const raw = { notes: { [URL_A]: { pins: [{ id: "p", x: "0.25", y: "0.75", text: "hem" }] } } };
-  assert.deepEqual(readNote(raw, URL_A).pins[0], { id: "p", x: 0.25, y: 0.75, text: "hem" });
+  assert.deepEqual(readNote(raw, URL_A).pins[0], { id: "p", x: 0.25, y: 0.75, text: "hem", replies: [] });
 });
 
 // ---------------------------------------------------------------------------
@@ -217,7 +219,7 @@ test("non-object entries in the pin list are skipped, not fatal", () => {
   const raw = {
     notes: { [URL_A]: { pins: [null, "x", 4, { id: "ok", x: 0.5, y: 0.5, text: "real" }] } },
   };
-  assert.deepEqual(readNote(raw, URL_A).pins, [{ id: "ok", x: 0.5, y: 0.5, text: "real" }]);
+  assert.deepEqual(readNote(raw, URL_A).pins, [{ id: "ok", x: 0.5, y: 0.5, text: "real", replies: [] }]);
 });
 
 // ---------------------------------------------------------------------------
@@ -240,9 +242,9 @@ test("the count on the button includes the caption", () => {
   assert.equal(noteCountLabel(null), "");
   assert.equal(noteCountLabel({ caption: "", pins: [] }), "");
   assert.equal(noteCountLabel({ caption: "a", pins: [] }), "1 fit comment");
-  assert.equal(noteCountLabel({ caption: "", pins: [{ id: "p", x: 0, y: 0, text: "" }] }), "1 fit comment");
+  assert.equal(noteCountLabel({ caption: "", pins: [{ id: "p", x: 0, y: 0, text: "", replies: [] }] }), "1 fit comment");
   assert.equal(
-    noteCountLabel({ caption: "a", pins: [{ id: "p", x: 0, y: 0, text: "" }] }),
+    noteCountLabel({ caption: "a", pins: [{ id: "p", x: 0, y: 0, text: "", replies: [] }] }),
     "2 fit comments"
   );
 });
@@ -251,7 +253,7 @@ test("hasNote answers the only question the card asks", () => {
   assert.equal(hasNote(null), false);
   assert.equal(hasNote({ caption: "", pins: [] }), false);
   assert.equal(hasNote({ caption: "x", pins: [] }), true);
-  assert.equal(hasNote({ caption: "", pins: [{ id: "p", x: 0, y: 0, text: "" }] }), true);
+  assert.equal(hasNote({ caption: "", pins: [{ id: "p", x: 0, y: 0, text: "", replies: [] }] }), true);
 });
 
 // ---------------------------------------------------------------------------
@@ -284,4 +286,117 @@ test("the same photograph carries its marks wherever it is shown", () => {
     text: "same mark, both places",
   });
   assert.equal(readNote(raw, URL_A).pins.length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// Replies — the thread hanging off a fit comment
+// (Tess, 2026-08-17: "Reply to fit comments in thread")
+// ---------------------------------------------------------------------------
+
+test("a reply is appended to a mark's thread, carrying who and when", () => {
+  let raw: unknown = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "1cm too wide" });
+  raw = withImagePinReply(raw, URL_A, "p1", {
+    id: "r1",
+    author: "kara@theloyalist.com",
+    text: "corrected on the next proto",
+    at: "2026-08-17T10:00:00.000Z",
+  });
+  const pin = readNote(raw, URL_A).pins[0];
+  assert.equal(pin.replies.length, 1);
+  assert.deepEqual(pin.replies[0], {
+    id: "r1",
+    author: "kara@theloyalist.com",
+    text: "corrected on the next proto",
+    at: "2026-08-17T10:00:00.000Z",
+  });
+});
+
+test("replies keep the order they were written — a thread is a sequence", () => {
+  let raw: unknown = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "a", text: "first", author: "x", at: "1" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "b", text: "second", author: "y", at: "2" });
+  assert.deepEqual(
+    readNote(raw, URL_A).pins[0].replies.map((r) => r.id),
+    ["a", "b"]
+  );
+});
+
+test("moving or retyping a mark keeps its replies — the conversation is not the position", () => {
+  let raw: unknown = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "shoulder" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "r1", text: "still out", author: "x", at: "1" });
+  // The pin editor only ever knows position and text; it must not blank the thread.
+  raw = withImagePin(raw, URL_A, { id: "p1", x: 0.6, y: 0.3, text: "shoulder — see reply" });
+  const pin = readNote(raw, URL_A).pins[0];
+  assert.equal(pin.x, 0.6);
+  assert.equal(pin.text, "shoulder — see reply");
+  assert.equal(pin.replies.length, 1);
+  assert.equal(pin.replies[0].text, "still out");
+});
+
+test("a reply to a mark that is not there changes nothing", () => {
+  const raw = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  assert.deepEqual(withImagePinReply(raw, URL_A, "nope", { id: "r", text: "hi", author: "x", at: "1" }), raw);
+});
+
+test("a reply with no id or no text is refused, not written", () => {
+  const raw = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  assert.deepEqual(withImagePinReply(raw, URL_A, "p1", { id: "", text: "hi", author: "x", at: "1" }), raw);
+  assert.deepEqual(withImagePinReply(raw, URL_A, "p1", { id: "r", text: "   ", author: "x", at: "1" }), raw);
+});
+
+test("a re-sent reply id lands once, so a double-submit does not double the reply", () => {
+  let raw: unknown = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "r1", text: "one", author: "x", at: "1" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "r1", text: "one again", author: "x", at: "2" });
+  assert.equal(readNote(raw, URL_A).pins[0].replies.length, 1);
+});
+
+test("removing a reply leaves the mark and its other replies", () => {
+  let raw: unknown = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "a", text: "keep", author: "x", at: "1" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "b", text: "drop", author: "x", at: "2" });
+  raw = withImagePinReplyRemoved(raw, URL_A, "p1", "b");
+  const pin = readNote(raw, URL_A).pins[0];
+  assert.equal(pin.text, "hem");
+  assert.deepEqual(pin.replies.map((r) => r.id), ["a"]);
+});
+
+test("a pin nobody has answered keeps its old four-key shape in the map", () => {
+  const raw = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" }) as Record<string, unknown>;
+  const stored = (raw[NOTES_KEY] as Record<string, { pins: Record<string, unknown>[] }>)[URL_A].pins[0];
+  assert.deepEqual(Object.keys(stored).sort(), ["id", "text", "x", "y"]);
+  assert.ok(!("replies" in stored));
+});
+
+test("a reply with no text stored by hand is dropped on read", () => {
+  const raw = {
+    notes: {
+      [URL_A]: {
+        pins: [{ id: "p", x: 0.1, y: 0.1, text: "hem", replies: [{ id: "r", text: "" }, { id: "s", text: "real" }] }],
+      },
+    },
+  };
+  const replies = readNote(raw, URL_A).pins[0].replies;
+  assert.equal(replies.length, 1);
+  assert.equal(replies[0].id, "s");
+});
+
+test("writing a reply leaves the slots and the gallery beside it untouched", () => {
+  const base = {
+    flat_front: URL_A,
+    gallery: [{ id: "g1", url: URL_B, caption: "a shot" }],
+  };
+  let raw: unknown = withImagePin(base, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  raw = withImagePinReply(raw, URL_A, "p1", { id: "r1", text: "reply", author: "x", at: "1" });
+  const out = raw as Record<string, unknown>;
+  assert.equal(out.flat_front, URL_A);
+  assert.deepEqual(out.gallery, [{ id: "g1", url: URL_B, caption: "a shot" }]);
+});
+
+test("neither reply writer mutates the source object", () => {
+  const raw = withImagePin({}, URL_A, { id: "p1", x: 0.4, y: 0.2, text: "hem" });
+  const before = JSON.stringify(raw);
+  withImagePinReply(raw, URL_A, "p1", { id: "r", text: "hi", author: "x", at: "1" });
+  withImagePinReplyRemoved(raw, URL_A, "p1", "r");
+  assert.equal(JSON.stringify(raw), before);
 });

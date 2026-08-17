@@ -3,8 +3,30 @@
 import { useEffect, useState, useTransition } from "react";
 import type { MouseEvent } from "react";
 import type { ImageNote } from "@/lib/imageNotes";
-import { saveImagePin, removeImagePin, setImageCaption } from "@/app/actions/styles";
+import {
+  saveImagePin,
+  removeImagePin,
+  setImageCaption,
+  addImagePinReply,
+  removeImagePinReply,
+} from "@/app/actions/styles";
 import Linked from "@/app/components/Linked";
+
+// A reply's date, short and forgiving of a bad string — the same face the
+// comments drawer uses so a fit-comment thread and a style comment read alike.
+function when(ts: string): string {
+  if (!ts) return "";
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return ts.slice(0, 10);
+  }
+}
 
 // Writing on a photograph.
 //
@@ -128,7 +150,15 @@ export default function ImageNotes({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [armed, setArmed] = useState<string | null>(null);
   const [error, setError] = useState("");
+  // The reply being written under the open mark, and the two-click arm for
+  // removing one of its existing replies.
+  const [reply, setReply] = useState("");
+  const [armedReply, setArmedReply] = useState<string | null>(null);
   const busy = pending;
+
+  // The live pin behind the open editor — the draft carries only position and
+  // text (what the editor changes), so its thread is read from the note itself.
+  const openPin = draft?.id ? note.pins.find((p) => p.id === draft.id) ?? null : null;
 
   // While the picture fills the window, the page behind it does not scroll —
   // otherwise a flick of the wheel over the photograph moves the round list
@@ -174,6 +204,14 @@ export default function ImageNotes({
     return () => window.removeEventListener("keydown", onKey);
   }, [draft, full, onFull, onPrev, onNext, onClose]);
 
+  // A half-written reply belongs to the mark it was being written under, so
+  // moving to another mark (or closing the editor) clears it rather than
+  // carrying it across to answer the wrong thing.
+  useEffect(() => {
+    setReply("");
+    setArmedReply(null);
+  }, [draft?.id]);
+
   function place(e: MouseEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect();
     if (!r.width || !r.height) return;
@@ -211,6 +249,29 @@ export default function ImageNotes({
     setError("");
     start(async () => {
       const res = await setImageCaption(styleId, sampleId, url, form);
+      if (!res.ok) setError(res.error || "That didn't save.");
+    });
+  }
+
+  function sendReply() {
+    const pinId = draft?.id;
+    const text = reply.trim();
+    if (!pinId || !text) return;
+    setError("");
+    start(async () => {
+      const res = await addImagePinReply(styleId, sampleId, url, pinId, text);
+      if (!res.ok) setError(res.error || "That didn't save.");
+      else setReply("");
+    });
+  }
+
+  function dropReply(replyId: string) {
+    const pinId = draft?.id;
+    setArmedReply(null);
+    if (!pinId) return;
+    setError("");
+    start(async () => {
+      const res = await removeImagePinReply(styleId, sampleId, url, pinId, replyId);
       if (!res.ok) setError(res.error || "That didn't save.");
     });
   }
@@ -390,6 +451,74 @@ export default function ImageNotes({
                     </button>
                   ))}
               </div>
+
+              {/* The thread hanging off this mark (Tess, 2026-08-17: "Reply to
+                  fit comments in thread"). Only on a saved mark — a reply needs
+                  something to answer, and a mark that has not been added yet has
+                  no id to hang one on. One level deep, like the style comments:
+                  a mark is the place on the garment, and the replies answer it.
+                  Replies carry who and when because they are a conversation, not
+                  more anonymous marks. */}
+              {draft.id && openPin && (
+                <div className="ann-thread">
+                  {openPin.replies.length > 0 && (
+                    <ol className="ann-replies">
+                      {openPin.replies.map((r) => (
+                        <li key={r.id} className="ann-reply">
+                          <div className="ann-reply-meta">
+                            <span className="who">{r.author || "Someone"}</span>
+                            {r.at && (
+                              <span className="when" suppressHydrationWarning>
+                                {when(r.at)}
+                              </span>
+                            )}
+                            <div className="spacer" />
+                            {armedReply === r.id ? (
+                              <button
+                                type="button"
+                                className="ph-link danger"
+                                disabled={busy}
+                                onClick={() => dropReply(r.id)}
+                                onMouseLeave={() => setArmedReply(null)}
+                              >
+                                Remove?
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="ph-link"
+                                disabled={busy}
+                                onClick={() => setArmedReply(r.id)}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="ann-reply-text">
+                            <Linked text={r.text} block={false} />
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                  <div className="ann-reply-form">
+                    <textarea
+                      className="textarea"
+                      value={reply}
+                      placeholder="Reply to this fit comment…"
+                      onChange={(e) => setReply(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn ghost sm"
+                      disabled={busy || !reply.trim()}
+                      onClick={sendReply}
+                    >
+                      {busy ? "Saving…" : "Reply"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -443,6 +572,13 @@ export default function ImageNotes({
                             <Linked text={p.text} block={false} />
                           ) : (
                             <em>No fit comment yet — click to write one</em>
+                          )}
+                          {/* So a reviewer scanning the list can see which marks
+                              have a conversation without opening each one. */}
+                          {p.replies.length > 0 && (
+                            <span className="ann-listreplies">
+                              {p.replies.length} repl{p.replies.length === 1 ? "y" : "ies"}
+                            </span>
                           )}
                         </span>
                       </div>

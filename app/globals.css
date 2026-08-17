@@ -1440,6 +1440,20 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .ann-side{min-width:0}
 .ann-editor .textarea{width:100%;min-height:96px}
 .ann-editor-tools{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+/* The reply thread on one mark — a fit comment's conversation. Walled off from
+   the mark's own editor with a hairline so it reads as answers to the mark, not
+   more of the mark (Tess, 2026-08-17: "Reply to fit comments in thread"). */
+.ann-thread{margin-top:14px;padding-top:12px;border-top:1px solid var(--hair)}
+.ann-replies{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:10px}
+.ann-reply{display:flex;flex-direction:column;gap:3px}
+.ann-reply-meta{display:flex;align-items:baseline;gap:8px}
+.ann-reply-meta .who{font-size:var(--t-cap);color:var(--ink)}
+.ann-reply-meta .when{font-size:var(--t-micro);color:var(--faint)}
+.ann-reply-meta .spacer{flex:1}
+.ann-reply-text{font-size:var(--t-sm);line-height:1.5;color:var(--ink);overflow-wrap:anywhere}
+.ann-reply-text .linkified{text-decoration:underline;text-underline-offset:2px}
+.ann-reply-form{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ann-reply-form .textarea{width:100%;min-height:56px}
 .ann-empty{font-size:var(--t-sm);line-height:1.6;color:var(--muted);margin:0}
 .ann-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 /* The pin row was a single button until 2026-08-06; it is now a row holding a
@@ -1457,6 +1471,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .ann-listtext .linkified{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .ann-listtext .linkified:hover{color:var(--accent)}
 .ann-listtext em{color:var(--muted);font-style:italic}
+.ann-listreplies{display:inline-block;margin-left:6px;font-size:var(--t-micro);color:var(--faint);white-space:nowrap}
 .ann-cap{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
 .ann-cap label{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
 .ann-cap .input{width:100%;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}

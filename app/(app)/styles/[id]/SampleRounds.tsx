@@ -936,6 +936,13 @@ function FullRound({
             note={open.note}
             position={`${at + 1} of ${images.length}`}
             full
+            // This viewer opens straight into full screen, so "exiting full
+            // size" is the same as closing it — there is no smaller state to
+            // fall back to. Without an onFull, Done / Exit full size / Escape
+            // all route through `onFull?.(false)` and silently no-op, which
+            // left the photo with no way out (Tess, 2026-08-17: "close function
+            // isn't doing anything or allowing me to exit").
+            onFull={(v) => { if (!v) setEditing(null); }}
             onPrev={at > 0 ? () => setEditing(images[at - 1].url) : null}
             onNext={at < images.length - 1 ? () => setEditing(images[at + 1].url) : null}
             onClose={() => setEditing(null)}

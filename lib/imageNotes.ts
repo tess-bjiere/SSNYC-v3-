@@ -58,6 +58,26 @@
 /** Reserved key for the annotation map, inside any photos jsonb. */
 export const NOTES_KEY = "notes";
 
+/**
+ * An answer to a fit comment (Tess, 2026-08-17: "Reply to fit comments in
+ * thread"). A mark is a point on the garment; a reply answers that point — the
+ * factory saying "corrected on the next proto", the studio saying "still 1cm
+ * out". One level deep, like the style comments: a reply is not itself a place
+ * on the picture, so it does not get its own mark, and there is no replying to a
+ * reply. Unlike a pin, a reply is committed prose — it carries who wrote it and
+ * when, so the thread reads as a conversation rather than a wall of anonymous
+ * marks. Ids, author and timestamp are minted by the server action, never here:
+ * this module stays pure.
+ */
+export type PinReply = {
+  id: string;
+  /** Who wrote it — an email, or "" if somehow unknown. */
+  author: string;
+  text: string;
+  /** ISO timestamp, so replies read in the order they were written. */
+  at: string;
+};
+
 export type ImagePin = {
   id: string;
   /** 0–1 across the image, left to right. */
@@ -65,6 +85,12 @@ export type ImagePin = {
   /** 0–1 down the image, top to bottom. */
   y: number;
   text: string;
+  /**
+   * The thread hanging off this mark. Empty for every pin written before
+   * replies existed, and for every mark nobody has answered — so nothing about
+   * an old note changes until someone replies to it.
+   */
+  replies: PinReply[];
 };
 
 export type ImageNote = {
@@ -100,6 +126,30 @@ function coord(v: unknown): number {
   return Math.round(clamped * 10000) / 10000;
 }
 
+/**
+ * The replies on one pin, read defensively. A reply with no text is dropped —
+ * unlike a pin (which is kept empty while it is being written), a reply only
+ * ever exists once somebody has committed words to it, so an empty one is a bad
+ * write, not a work in progress.
+ */
+function readReplies(raw: unknown): PinReply[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PinReply[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < raw.length; i++) {
+    const e = raw[i];
+    if (!e || typeof e !== "object" || Array.isArray(e)) continue;
+    const o = e as Record<string, unknown>;
+    const text = str(o.text);
+    if (!text) continue;
+    let id = str(o.id) || `reply-${i}`;
+    while (seen.has(id)) id = `${id}~${i}`;
+    seen.add(id);
+    out.push({ id, author: str(o.author), text, at: str(o.at) });
+  }
+  return out;
+}
+
 function readPins(raw: unknown): ImagePin[] {
   if (!Array.isArray(raw)) return [];
   const out: ImagePin[] = [];
@@ -114,7 +164,7 @@ function readPins(raw: unknown): ImagePin[] {
     let id = str(o.id) || `pin-${i}`;
     while (seen.has(id)) id = `${id}~${i}`;
     seen.add(id);
-    out.push({ id, x: coord(o.x), y: coord(o.y), text: str(o.text) });
+    out.push({ id, x: coord(o.x), y: coord(o.y), text: str(o.text), replies: readReplies(o.replies) });
   }
   return out;
 }
@@ -167,7 +217,17 @@ function withNote(raw: unknown, url: string, note: ImageNote): Record<string, un
   else
     box[key] = {
       caption: note.caption,
-      pins: note.pins.map((p) => ({ id: p.id, x: p.x, y: p.y, text: p.text })),
+      pins: note.pins.map((p) => ({
+        id: p.id,
+        x: p.x,
+        y: p.y,
+        text: p.text,
+        // Only written when there is a thread, so a pin nobody has answered
+        // stays exactly the four-key shape it has always been in the database.
+        ...(p.replies.length
+          ? { replies: p.replies.map((r) => ({ id: r.id, author: r.author, text: r.text, at: r.at })) }
+          : {}),
+      })),
     };
 
   if (Object.keys(box).length === 0) delete next[NOTES_KEY];
@@ -204,8 +264,12 @@ export function withImagePin(
   const id = str(pin.id);
   if (!id) return asObject(raw);
   const note = readNote(raw, url);
-  const next: ImagePin = { id, x: coord(pin.x), y: coord(pin.y), text: str(pin.text) };
   const at = note.pins.findIndex((p) => p.id === id);
+  // Moving or retyping a mark must not drop the conversation hanging off it: the
+  // pin editor knows the position and the text, not the replies, so they are
+  // carried through from the pin already in the map.
+  const replies = at === -1 ? [] : note.pins[at].replies;
+  const next: ImagePin = { id, x: coord(pin.x), y: coord(pin.y), text: str(pin.text), replies };
   const pins = note.pins.slice();
   if (at === -1) pins.push(next);
   else pins[at] = next;
@@ -218,6 +282,54 @@ export function withImagePinRemoved(raw: unknown, url: string, pinId: string): R
   if (!want) return asObject(raw);
   const note = readNote(raw, url);
   return withNote(raw, url, { ...note, pins: note.pins.filter((p) => p.id !== want) });
+}
+
+/**
+ * Add a reply to a mark's thread (Tess, 2026-08-17: "Reply to fit comments in
+ * thread"). A reply for a pin that is not there, or with no id or no text, is a
+ * no-op — the same defensive stance as the rest of this file, where a bad write
+ * changes nothing rather than throwing. A reply id already on the thread is
+ * ignored rather than duplicated, so a double-submit lands once.
+ */
+export function withImagePinReply(
+  raw: unknown,
+  url: string,
+  pinId: string,
+  reply: { id: string; author?: string | null; text: string; at?: string | null }
+): Record<string, unknown> {
+  const pid = str(pinId);
+  const rid = str(reply.id);
+  const text = str(reply.text);
+  if (!pid || !rid || !text) return asObject(raw);
+  const note = readNote(raw, url);
+  const at = note.pins.findIndex((p) => p.id === pid);
+  if (at === -1) return asObject(raw);
+  const pin = note.pins[at];
+  if (pin.replies.some((r) => r.id === rid)) return asObject(raw);
+  const pins = note.pins.slice();
+  pins[at] = {
+    ...pin,
+    replies: [...pin.replies, { id: rid, author: str(reply.author), text, at: str(reply.at) }],
+  };
+  return withNote(raw, url, { ...note, pins });
+}
+
+/** Drop one reply off a mark's thread. The mark and its other replies stay. */
+export function withImagePinReplyRemoved(
+  raw: unknown,
+  url: string,
+  pinId: string,
+  replyId: string
+): Record<string, unknown> {
+  const pid = str(pinId);
+  const wid = str(replyId);
+  if (!pid || !wid) return asObject(raw);
+  const note = readNote(raw, url);
+  const at = note.pins.findIndex((p) => p.id === pid);
+  if (at === -1) return asObject(raw);
+  const pins = note.pins.slice();
+  pins[at] = { ...pins[at], replies: pins[at].replies.filter((r) => r.id !== wid) };
+  return withNote(raw, url, { ...note, pins });
 }
 
 /**
