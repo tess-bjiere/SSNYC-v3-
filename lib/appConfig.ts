@@ -46,10 +46,9 @@ const APPS: Record<AppId, AppConfig> = {
   fred: {
     id: "fred",
     name: "FRED",
-    // Add this file to /public. A plain placeholder wordmark ships with this
-    // change so FRED is not broken out of the box; replace it with FRED's real
-    // logo when you have it.
-    logo: "/fred-logo.svg",
+    // FRED's real wordmark — white on transparent (the nav is dark), from FRED's
+    // brand kit. Tess, 2026-08-17.
+    logo: "/fred-logo.png",
     // TODO(FRED): set FRED's real Google Workspace domain before launch. Until
     // then no one is auto-approved and FRED's team signs in via the allowlist.
     orgDomain: "fred.invalid",
