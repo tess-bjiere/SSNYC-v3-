@@ -30,6 +30,11 @@ export default function EditorialClient({
   const [sel, setSel] = useState<Record<string, string>>({});
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
+  // Campaign view options (Tess, 2026-08-17): show the grid as bare images with
+  // no credits, and/or in black & white — for looking at a campaign as a wall of
+  // pictures rather than a filed, captioned list.
+  const [imagesOnly, setImagesOnly] = useState(false);
+  const [mono, setMono] = useState(false);
   // Same phone organisation as the References library (Tess, 2026-08-11):
   // filters fold behind one button so the default is search + grid.
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -123,6 +128,25 @@ export default function EditorialClient({
         />
         <div className="lib-head-tools">
           <SizeToggle value={size} onChange={setSize} />
+          {/* Two view options for the campaign wall — bare images, and B&W. */}
+          <button
+            type="button"
+            className={"btn ghost sm" + (imagesOnly ? " on" : "")}
+            aria-pressed={imagesOnly}
+            onClick={() => setImagesOnly((v) => !v)}
+            title="Hide the credits — show images only"
+          >
+            Images only
+          </button>
+          <button
+            type="button"
+            className={"btn ghost sm" + (mono ? " on" : "")}
+            aria-pressed={mono}
+            onClick={() => setMono((v) => !v)}
+            title="Show the grid in black &amp; white"
+          >
+            B&amp;W
+          </button>
           <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
         </div>
       </div>
@@ -177,7 +201,7 @@ export default function EditorialClient({
             : "No campaign images match those filters."}
         </div>
       ) : (
-        <div className={"grid dens-" + size}>
+        <div className={"grid dens-" + size + (mono ? " ed-mono" : "")}>
           {list.map((r) => {
             const src = refThumb(r);
             const sub = [r.year && r.year !== "Unknown" ? r.year : null, r.photographer, r.model]
@@ -190,10 +214,13 @@ export default function EditorialClient({
                   {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
                 </div>
-                <div className="meta">
-                  <div className="d">{r.designer || "Untitled"}</div>
-                  {sub && <div className="s">{sub}</div>}
-                </div>
+                {/* The credits, unless "Images only" is on. */}
+                {!imagesOnly && (
+                  <div className="meta">
+                    <div className="d">{r.designer || "Untitled"}</div>
+                    {sub && <div className="s">{sub}</div>}
+                  </div>
+                )}
               </div>
             );
           })}

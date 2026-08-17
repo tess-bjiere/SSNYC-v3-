@@ -435,6 +435,11 @@ body.notes-open .wrap{padding-right:378px}
 .grid.dens-lg{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .card{background:var(--panel);border:1px solid var(--line);position:relative;overflow:hidden;display:block}
 .card .imgwrap{position:relative;aspect-ratio:3/4;background:#111;overflow:hidden}
+/* Campaign "B&W" view option (Tess, 2026-08-17). Grayscale the whole wall; a
+   hover brings the image it is over back to colour, so B&W is the resting state
+   without losing the ability to check a colour. */
+.grid.ed-mono .card img{filter:grayscale(1);transition:filter .15s}
+.grid.ed-mono .card:hover img{filter:none}
 .card img{width:100%;height:100%;object-fit:cover;display:block}
 .card .meta{padding:10px 12px 12px}
 .card .d{font-size:var(--t-title);font-weight:var(--w-title);letter-spacing:0;line-height:1.25}
