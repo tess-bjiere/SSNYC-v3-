@@ -321,6 +321,24 @@ create policy "signed-in can write style_versions" on public.style_versions for 
 create policy "signed-in can read styles"  on public.styles for select to authenticated using (true);
 create policy "signed-in can write styles" on public.styles for all    to authenticated using (true) with check (true);
 
+-- --- API role grants --------------------------------------------------------
+-- The dashboard adds these automatically when you make a table in the UI, but a
+-- raw `create table` in the SQL editor does NOT — without them the anon and
+-- authenticated API roles get "permission denied for table ..." on the first
+-- write, even though RLS is set up. RLS (above) still gates every row; these
+-- just let the API roles reach the tables at all. (Learned the hard way on the
+-- FRED clone, 2026-08-17.)
+
+grant usage on schema public to anon, authenticated, service_role;
+
+grant all privileges on all tables    in schema public to anon, authenticated, service_role;
+grant all privileges on all sequences in schema public to anon, authenticated, service_role;
+grant all privileges on all functions in schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+
 -- --- Storage ----------------------------------------------------------------
 -- One public bucket, "references" — every image the app uploads (references,
 -- style photos, moodboard images) lives here under different path prefixes. It
