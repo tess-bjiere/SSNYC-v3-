@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type Brand } from "@/lib/brands";
+import { APP } from "@/lib/appConfig";
 import BrandSwitcher from "./BrandSwitcher";
 
 // The top row, in two named halves.
@@ -150,7 +151,7 @@ export default function Nav({
     <nav className="nav">
       <Link href={home} className="brand">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="brand-logo" src="/ssync-logo.svg" alt="SSYNC" />
+        <img className="brand-logo" src={APP.logo} alt={APP.name} />
       </Link>
       <div className="nav-links">
         {groups.map((g) => (
@@ -223,7 +224,7 @@ export default function Nav({
             <div className="nav-drawer-head">
               <span className="brand">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="brand-logo" src="/ssync-logo.svg" alt="SSYNC" />
+                <img className="brand-logo" src={APP.logo} alt={APP.name} />
               </span>
               <button
                 type="button"

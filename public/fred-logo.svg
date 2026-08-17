@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder FRED wordmark so the FRED deployment renders out of the box.
+     Replace with FRED's real logo (keep the file name /public/fred-logo.svg,
+     or point lib/appConfig.ts at a new one). Sized to sit on the same baseline
+     as the SSYNC wordmark (viewBox height ~33). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 33.03" role="img" aria-label="FRED">
+  <text x="0" y="26" font-family="'Barlow Semi Condensed', 'Arial Narrow', sans-serif"
+        font-size="30" font-weight="600" letter-spacing="2" fill="#fff">FRED</text>
+</svg>

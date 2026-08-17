@@ -11,6 +11,7 @@ import {
   type Role,
 } from "@/lib/authz";
 import { isBrandSlug } from "@/lib/brands";
+import { APP } from "@/lib/appConfig";
 
 // Access control, the part that touches the world (P0 — security).
 //
@@ -19,9 +20,11 @@ import { isBrandSlug } from "@/lib/brands";
 // answer into the two shapes the app uses: a nullable user for rendering, and
 // a throwing guard for anything that writes.
 
-// The organization domain — anyone with an @theloyalist.com Google account is
-// auto-approved. Guests outside this domain must be added to app_allowlist.
-export const ORG_DOMAIN = "theloyalist.com";
+// The organization domain — anyone with a Google account on it is auto-approved;
+// guests outside it must be added to app_allowlist. It follows the deployment's
+// identity so FRED auto-approves FRED's domain and SSYNC the Loyalist's, from
+// one codebase (see lib/appConfig.ts).
+export const ORG_DOMAIN = APP.orgDomain;
 
 /**
  * Is login bypassed?

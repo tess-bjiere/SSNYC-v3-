@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { APP } from "@/lib/appConfig";
 
+// Title and description follow the deployment's identity (SSYNC or FRED) — see
+// lib/appConfig.ts. One codebase, two apps.
 export const metadata: Metadata = {
-  title: "SSYNC",
-  description: "SOUS SOUS reference library + style development tool",
+  title: APP.name,
+  description: `${APP.name} — reference library + style development tool`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
