@@ -85,6 +85,8 @@ export default function ImageStrip({
   // on every arrow press, so full size has to be held by whoever owns the list.
   const [full, setFull] = useState(false);
   const [error, setError] = useState("");
+  // Highlighted while an image is being dragged over the strip.
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const tileRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -129,6 +131,12 @@ export default function ImageStrip({
       setBusy(false);
       if (!res.ok) setError(res.error || "That didn't save.");
     });
+  }
+
+  // Only a file drag arms the drop — dragging text or a link over the strip
+  // should do nothing, and its dataTransfer carries no "Files" type.
+  function isFileDrag(e: { dataTransfer: DataTransfer }): boolean {
+    return Array.from(e.dataTransfer?.types ?? []).includes("Files");
   }
 
   function onPick(files: FileList | null) {
@@ -195,7 +203,27 @@ export default function ImageStrip({
   }
 
   return (
-    <div className="img-strip">
+    <div
+      className={"img-strip" + (dragging ? " dragging" : "")}
+      // Drop images anywhere on the strip to add them — no need to find the
+      // button (Tess, 2026-08-17: "you should be able to drag images in to
+      // upload in the samples"). The strip already takes a whole batch at once,
+      // so a drop of several lands as several, in order.
+      onDragOver={(e) => {
+        if (working || !isFileDrag(e)) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        setDragging(false);
+        onPick(e.dataTransfer.files);
+      }}
+    >
       {(title || hint) && (
         <div className="img-strip-head">
           {title && <span className="l">{title}</span>}

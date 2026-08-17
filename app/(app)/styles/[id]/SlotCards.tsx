@@ -85,6 +85,8 @@ export default function SlotCards({
   // every arrow press.
   const [full, setFull] = useState(false);
   const [error, setError] = useState("");
+  // Which card an image is being dragged over, for the drop highlight.
+  const [dragSlot, setDragSlot] = useState<string | null>(null);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -131,11 +133,19 @@ export default function SlotCards({
   }
 
   function onPick(slotId: string, files: FileList | null) {
+    // A slot holds one picture, so a drop of several fills it with the first —
+    // the rest belong in the "Anything else" strip, which takes a whole batch.
     const f = files?.[0];
     if (!f) return;
     const fd = new FormData();
     fd.set("file", f);
     upload(slotId, fd);
+  }
+
+  // Only a file drag arms the drop — dragging selected text or a link over a
+  // card should do nothing, and its dataTransfer carries no "Files" type.
+  function isFileDrag(e: { dataTransfer: DataTransfer }): boolean {
+    return Array.from(e.dataTransfer?.types ?? []).includes("Files");
   }
 
   function remove(slotId: string) {
@@ -179,11 +189,35 @@ export default function SlotCards({
           return (
             <Fragment key={slot.id}>
             <div
-              className={"ph-card" + (src ? " filled" : "")}
+              className={
+                "ph-card" + (src ? " filled" : "") + (dragSlot === slot.id ? " drag" : "")
+              }
               ref={(el) => {
                 cardRefs.current[slot.id] = el;
               }}
               onMouseLeave={() => setArmed((a) => (a === slot.id ? null : a))}
+              // Drag an image onto a card to fill it — the same act as Upload,
+              // without hunting for the button (Tess, 2026-08-17: "you should be
+              // able to drag images in to upload in the samples"). A drop on a
+              // filled card replaces, exactly like Upload does.
+              onDragOver={(e) => {
+                if (busy || !isFileDrag(e)) return;
+                e.preventDefault();
+                setDragSlot(slot.id);
+              }}
+              onDragLeave={(e) => {
+                // Ignore the leave fired while crossing a child element — only a
+                // pointer that has actually left the card clears the highlight.
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setDragSlot((d) => (d === slot.id ? null : d));
+                }
+              }}
+              onDrop={(e) => {
+                if (!isFileDrag(e)) return;
+                e.preventDefault();
+                setDragSlot(null);
+                onPick(slot.id, e.dataTransfer.files);
+              }}
             >
               <div className="ph-frame">
                 {src ? (
@@ -218,10 +252,16 @@ export default function SlotCards({
 
               <div className="ph-label">
                 {slot.label}
-                {/* Named, shot and stored like the rest — just never chased.
-                    Said on the card so "5 of 6 shot" under seven cards is not a
-                    piece of arithmetic anyone has to work out. */}
-                {slot.optional && <span className="ph-opt">Optional</span>}
+                {/* The detail shots no longer wear an "Optional" tag (Tess,
+                    2026-08-17: "remove optional from detail shot labels"). It
+                    was desk furniture that only added noise to the tiles, and a
+                    detail card that is offered at all is one somebody can fill
+                    or leave — the tag was telling them what the empty card
+                    already says. Kept for any future optional slot outside the
+                    detail family; there are none today. */}
+                {slot.optional && slot.group !== "detail" && (
+                  <span className="ph-opt">Optional</span>
+                )}
               </div>
 
               {/* What the picture is, if anybody said. Under the name, above
