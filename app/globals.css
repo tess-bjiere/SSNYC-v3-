@@ -444,19 +444,20 @@ body.notes-open .wrap{padding-right:378px}
 /* --- Photographers directory (Tess, 2026-08-17) — campaign credits, browsed by
    city, each person opening onto their whole body of work. ------------------ */
 .pg-count{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
-/* Geographic hierarchy: continent (largest) > country > city (leaf). */
-.pg-continent{margin-top:40px}
-.pg-continent:first-of-type{margin-top:10px}
-.pg-continent-name{font-size:23px;font-weight:var(--w-title);letter-spacing:-.01em;line-height:1.05;
-  margin:0;padding-bottom:9px;border-bottom:1px solid var(--line)}
+/* Geographic hierarchy: continent (largest) > country > city (leaf). Light
+   weights, matching the app's own headings (.page-title is --w-body). */
+.pg-continent{margin-top:34px}
+.pg-continent:first-of-type{margin-top:8px}
+.pg-continent-name{font-size:21px;font-weight:var(--w-body);letter-spacing:.01em;line-height:1.12;
+  margin:0;padding-bottom:8px;border-bottom:1px solid var(--hair)}
 .pg-continent-name.muted{color:var(--muted)}
-.pg-country{margin-top:20px}
-.pg-country-name{font-size:15px;font-weight:var(--w-title);letter-spacing:.01em;color:var(--ink);margin:0}
-.pg-city{margin-top:12px}
-.pg-city-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:11px}
-.pg-city-name{font-size:var(--t-title);font-weight:var(--w-title);text-transform:uppercase;
-  letter-spacing:.1em;line-height:1.1}
-.pg-city-name.muted{color:var(--muted)}
+.pg-country{margin-top:18px}
+.pg-country-name{font-size:14px;font-weight:var(--w-mid);letter-spacing:.01em;color:var(--ink);margin:0}
+.pg-city{margin-top:13px}
+.pg-city-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:11px}
+.pg-city-name{font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;
+  letter-spacing:.11em;line-height:1.1;color:var(--muted)}
+.pg-city-name.muted{color:var(--faint)}
 .pg-city-meta{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
 .pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
 .pg-card{display:flex;flex-direction:column;gap:8px;text-align:left;background:none;border:none;
@@ -468,7 +469,7 @@ body.notes-open .wrap{padding-right:378px}
 .pg-card:hover .pg-card-img{border-color:var(--muted)}
 .pg-card-count{position:absolute;top:6px;right:6px;background:rgba(12,12,12,.82);color:var(--ink);
   font-size:var(--t-micro);padding:2px 6px;letter-spacing:.04em}
-.pg-card-name{font-size:var(--t-title);font-weight:var(--w-title);line-height:1.2}
+.pg-card-name{font-size:var(--t-title);font-weight:var(--w-mid);line-height:1.2}
 .pg-card-ig{font-size:var(--t-sm);color:var(--muted);margin-top:-4px}
 
 .pg-profile{max-width:960px;width:min(96vw,960px)}

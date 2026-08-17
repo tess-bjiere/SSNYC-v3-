@@ -84,14 +84,13 @@ export default function PhotographersClient({
     ig ? `https://instagram.com/${ig.replace(/^@/, "").trim()}` : null;
   const igLabel = (ig: string) => (ig.startsWith("@") ? ig : "@" + ig);
 
-  // A tiny row of tags shown on a card and beside a profile name: tier + medium.
+  // On a card, only the tier — one quiet tag, so a wall of cards stays clean.
+  // The medium (Photo / Video) lives on the profile, where there's room.
   function Tags({ m }: { m: PhotographerMeta }) {
-    if (!m.tier && !m.photo && !m.video) return null;
+    if (!m.tier) return null;
     return (
       <div className="pg-tags">
-        {m.tier && <span className={"pg-tier pg-tier-" + m.tier}>{tierLabel(m.tier)}</span>}
-        {m.photo && <span className="pg-cap">Photo</span>}
-        {m.video && <span className="pg-cap">Video</span>}
+        <span className={"pg-tier pg-tier-" + m.tier}>{tierLabel(m.tier)}</span>
       </div>
     );
   }
