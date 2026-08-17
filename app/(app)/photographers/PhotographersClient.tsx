@@ -1,24 +1,43 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { refThumb, type Reference } from "@/lib/types";
 import {
   buildPhotographerDirectory,
   type PhotographerProfile,
 } from "@/lib/photographers";
+import {
+  readAllPhotographerMeta,
+  tierLabel,
+  EMPTY_META,
+  type PhotographerMeta,
+  type PhotographerTier,
+} from "@/lib/photographerMeta";
+import { setPhotographerMeta } from "@/app/actions/photographers";
 import DetailModal from "../library/DetailModal";
 
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
 // people / profiles in different cities ... look at their work"). Built from the
-// campaign credits — no photographer table. A city section lists the people who
-// have shot there; opening one shows their whole body of work and where it was
-// made. Everything here is derived, so it is read-only: the images are still
-// edited from Campaign, and clicking one opens the same detail card.
-export default function PhotographersClient({ refs }: { refs: Reference[] }) {
+// campaign credits; a profile also shows the team-entered side — tier (FRED at
+// home vs campaign), whether they shoot video / direct, and a brief client list.
+// The images are still edited from Campaign; only the person's card is edited
+// here, and only by the team.
+export default function PhotographersClient({
+  refs,
+  metaValue,
+  canEdit = false,
+}: {
+  refs: Reference[];
+  metaValue: unknown;
+  canEdit?: boolean;
+}) {
   const [q, setQ] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [detail, setDetail] = useState<Reference | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [meta, setMeta] = useState<Record<string, PhotographerMeta>>(() =>
+    readAllPhotographerMeta(metaValue)
+  );
 
   function flashToast(m: string) {
     setToast(m);
@@ -31,10 +50,7 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
     return m;
   }, [refs]);
 
-  const { cities, photographers } = useMemo(
-    () => buildPhotographerDirectory(refs),
-    [refs]
-  );
+  const { cities, photographers } = useMemo(() => buildPhotographerDirectory(refs), [refs]);
 
   const profileByKey = useMemo(() => {
     const m = new Map<string, PhotographerProfile>();
@@ -42,8 +58,6 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
     return m;
   }, [photographers]);
 
-  // Search filters photographers by name; a city whose NAME matches keeps all of
-  // its people, so "paris" finds the city and "ada" finds the person.
   const term = q.trim().toLowerCase();
   const shownCities = useMemo(() => {
     if (!term) return cities;
@@ -57,10 +71,26 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
   }, [cities, term]);
 
   const totalPeople = photographers.length;
+  const locatedCities = cities.filter((c) => c.located).length;
   const openProfile = openKey ? profileByKey.get(openKey) ?? null : null;
+  const metaFor = (key: string) => meta[key] ?? EMPTY_META;
 
   const igUrl = (ig: string | null) =>
     ig ? `https://instagram.com/${ig.replace(/^@/, "").trim()}` : null;
+  const igLabel = (ig: string) => (ig.startsWith("@") ? ig : "@" + ig);
+
+  // A tiny row of tags shown on a card and beside a profile name: tier, and the
+  // video / directs capabilities.
+  function Tags({ m }: { m: PhotographerMeta }) {
+    if (!m.tier && !m.video && !m.directs) return null;
+    return (
+      <div className="pg-tags">
+        {m.tier && <span className={"pg-tier pg-tier-" + m.tier}>{tierLabel(m.tier)}</span>}
+        {m.video && <span className="pg-cap">Video</span>}
+        {m.directs && <span className="pg-cap">Directs</span>}
+      </div>
+    );
+  }
 
   return (
     <div className="page lib-page">
@@ -69,9 +99,8 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
         <div className="spacer" />
         {totalPeople > 0 && (
           <span className="pg-count">
-            {totalPeople} {totalPeople === 1 ? "photographer" : "photographers"} ·{" "}
-            {cities.filter((c) => c.located).length}{" "}
-            {cities.filter((c) => c.located).length === 1 ? "city" : "cities"}
+            {totalPeople} {totalPeople === 1 ? "photographer" : "photographers"} · {locatedCities}{" "}
+            {locatedCities === 1 ? "city" : "cities"}
           </span>
         )}
       </div>
@@ -97,9 +126,9 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
             <div className="pg-city-head">
               <h2 className={"pg-city-name" + (c.located ? "" : " muted")}>{c.city}</h2>
               <span className="pg-city-meta">
-                {c.photographers.length} {c.photographers.length === 1 ? "photographer" : "photographers"}
-                {" · "}
-                {c.count} {c.count === 1 ? "image" : "images"}
+                {c.photographers.length}{" "}
+                {c.photographers.length === 1 ? "photographer" : "photographers"} · {c.count}{" "}
+                {c.count === 1 ? "image" : "images"}
               </span>
             </div>
 
@@ -123,7 +152,8 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
                       {p.ids.length > 1 && <span className="pg-card-count">{p.ids.length}</span>}
                     </div>
                     <div className="pg-card-name">{p.name}</div>
-                    {p.ig && <div className="pg-card-ig">{p.ig.startsWith("@") ? p.ig : "@" + p.ig}</div>}
+                    {p.ig && <div className="pg-card-ig">{igLabel(p.ig)}</div>}
+                    <Tags m={metaFor(p.key)} />
                   </button>
                 );
               })}
@@ -132,63 +162,18 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
         ))
       )}
 
-      {/* A photographer's profile — their whole body of work, across every city,
-          with a way into each image's full credits. */}
       {openProfile && (
-        <div className="modal-overlay" onClick={() => setOpenKey(null)}>
-          <div className="modal pg-profile" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
-              <span>{openProfile.name}</span>
-              <button className="notes-close" onClick={() => setOpenKey(null)} title="Close">
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="pg-profile-meta">
-                {igUrl(openProfile.ig) && (
-                  <a className="pg-profile-ig" href={igUrl(openProfile.ig)!} target="_blank" rel="noreferrer">
-                    {openProfile.ig!.startsWith("@") ? openProfile.ig : "@" + openProfile.ig}
-                  </a>
-                )}
-                <div className="pg-profile-cities">
-                  {openProfile.cities.map((city) => (
-                    <span className="pg-chip" key={city}>
-                      {city}
-                    </span>
-                  ))}
-                </div>
-                <span className="pg-profile-count">
-                  {openProfile.ids.length} {openProfile.ids.length === 1 ? "image" : "images"}
-                </span>
-              </div>
-
-              <div className="grid dens-md pg-profile-grid">
-                {openProfile.ids.map((id) => {
-                  const r = byId.get(id);
-                  if (!r) return null;
-                  const src = refThumb(r);
-                  return (
-                    <div className="card lib-card" key={id} onClick={() => setDetail(r)}>
-                      <div className="imgwrap">
-                        {src ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={src} alt={r.designer || ""} loading="lazy" />
-                        ) : null}
-                      </div>
-                      <div className="meta">
-                        <div className="s">
-                          {[r.location, r.year && r.year !== "Unknown" ? r.year : null]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProfileModal
+          profile={openProfile}
+          meta={metaFor(openProfile.key)}
+          canEdit={canEdit}
+          byId={byId}
+          onImage={(r) => setDetail(r)}
+          onClose={() => setOpenKey(null)}
+          onSaved={(m) => { setMeta((prev) => ({ ...prev, [openProfile.key]: m })); flashToast("Saved"); }}
+          igUrl={igUrl}
+          igLabel={igLabel}
+        />
       )}
 
       {detail && (
@@ -202,6 +187,188 @@ export default function PhotographersClient({ refs }: { refs: Reference[] }) {
       )}
 
       {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+// A photographer's profile — their whole body of work with a way into each
+// image, the derived "shot for" list, and the team-entered card (tier, video,
+// directs, clients) with an inline editor for the team.
+function ProfileModal({
+  profile,
+  meta,
+  canEdit,
+  byId,
+  onImage,
+  onClose,
+  onSaved,
+  igUrl,
+  igLabel,
+}: {
+  profile: PhotographerProfile;
+  meta: PhotographerMeta;
+  canEdit: boolean;
+  byId: Map<string, Reference>;
+  onImage: (r: Reference) => void;
+  onClose: () => void;
+  onSaved: (m: PhotographerMeta) => void;
+  igUrl: (ig: string | null) => string | null;
+  igLabel: (ig: string) => string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<PhotographerMeta>(meta);
+  const [pending, start] = useTransition();
+
+  function save() {
+    start(async () => {
+      await setPhotographerMeta(profile.key, draft);
+      setEditing(false);
+      onSaved(draft);
+    });
+  }
+
+  const hasCard = !!meta.tier || meta.video || meta.directs || !!meta.clients.trim();
+  const ig = igUrl(profile.ig);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal pg-profile" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <span>{profile.name}</span>
+          <button className="notes-close" onClick={onClose} title="Close">×</button>
+        </div>
+
+        <div className="modal-body">
+          <div className="pg-profile-meta">
+            {ig && (
+              <a className="pg-profile-ig" href={ig} target="_blank" rel="noreferrer">
+                {igLabel(profile.ig!)}
+              </a>
+            )}
+            {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
+            {meta.video && <span className="pg-cap">Video</span>}
+            {meta.directs && <span className="pg-cap">Directs</span>}
+            <span className="pg-profile-count">
+              {profile.ids.length} {profile.ids.length === 1 ? "image" : "images"}
+            </span>
+          </div>
+
+          {/* Where they've shot, and who for — both derived from the images. */}
+          {profile.cities.length > 0 && (
+            <div className="pg-facts">
+              <span className="k">Cities</span>
+              <div className="pg-chips">
+                {profile.cities.map((c) => <span className="pg-chip" key={c}>{c}</span>)}
+              </div>
+            </div>
+          )}
+          {profile.shotFor.length > 0 && (
+            <div className="pg-facts">
+              <span className="k">Shot for</span>
+              <div className="pg-chips">
+                {profile.shotFor.map((d) => <span className="pg-chip" key={d}>{d}</span>)}
+              </div>
+            </div>
+          )}
+          {meta.clients.trim() && !editing && (
+            <div className="pg-facts">
+              <span className="k">Clients</span>
+              <div className="pg-clients">{meta.clients}</div>
+            </div>
+          )}
+
+          {/* Team editor for the card. Kept behind an Edit button so viewing is
+              clean; a talent never sees it. */}
+          {canEdit && !editing && (
+            <button type="button" className="btn ghost sm pg-edit-btn" onClick={() => { setDraft(meta); setEditing(true); }}>
+              {hasCard ? "Edit profile" : "Add tier, video, clients…"}
+            </button>
+          )}
+          {canEdit && editing && (
+            <div className="pg-editor">
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Tier</label>
+                <div className="pg-seg">
+                  {([["home", "FRED at home"], ["campaign", "Campaign"]] as [PhotographerTier, string][]).map(
+                    ([val, label]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        className={"pg-seg-btn" + (draft.tier === val ? " on" : "")}
+                        onClick={() => setDraft((d) => ({ ...d, tier: d.tier === val ? null : val }))}
+                      >
+                        {label}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Also does</label>
+                <div className="pg-seg">
+                  <button
+                    type="button"
+                    className={"pg-seg-btn" + (draft.video ? " on" : "")}
+                    onClick={() => setDraft((d) => ({ ...d, video: !d.video }))}
+                  >
+                    Video
+                  </button>
+                  <button
+                    type="button"
+                    className={"pg-seg-btn" + (draft.directs ? " on" : "")}
+                    onClick={() => setDraft((d) => ({ ...d, directs: !d.directs }))}
+                  >
+                    Directs
+                  </button>
+                </div>
+              </div>
+              <div className="pg-editor-row col">
+                <label className="pg-editor-label">Clients / notes</label>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  placeholder="Notable clients or a portfolio note — anything the images don't already show."
+                  value={draft.clients}
+                  onChange={(e) => setDraft((d) => ({ ...d, clients: e.target.value }))}
+                />
+              </div>
+              <div className="pg-editor-tools">
+                <button type="button" className="btn sm" disabled={pending} onClick={save}>
+                  {pending ? "Saving…" : "Save"}
+                </button>
+                <button type="button" className="ph-link" disabled={pending} onClick={() => setEditing(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid dens-md pg-profile-grid">
+            {profile.ids.map((id) => {
+              const r = byId.get(id);
+              if (!r) return null;
+              const src = refThumb(r);
+              return (
+                <div className="card lib-card" key={id} onClick={() => onImage(r)}>
+                  <div className="imgwrap">
+                    {src ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={src} alt={r.designer || ""} loading="lazy" />
+                    ) : null}
+                  </div>
+                  <div className="meta">
+                    <div className="s">
+                      {[r.designer, r.location, r.year && r.year !== "Unknown" ? r.year : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

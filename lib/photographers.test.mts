@@ -4,9 +4,9 @@ import { buildPhotographerDirectory, NO_CITY } from "./photographers.ts";
 
 test("groups a photographer's work by city and aggregates their profile", () => {
   const { cities, photographers } = buildPhotographerDirectory([
-    { id: "1", photographer: "Ada Lovelace", photographer_ig: "@ada", location: "Paris" },
-    { id: "2", photographer: "Ada Lovelace", location: "Paris" },
-    { id: "3", photographer: "Ada Lovelace", location: "New York" },
+    { id: "1", photographer: "Ada Lovelace", photographer_ig: "@ada", location: "Paris", designer: "Lemaire" },
+    { id: "2", photographer: "Ada Lovelace", location: "Paris", designer: "The Row" },
+    { id: "3", photographer: "Ada Lovelace", location: "New York", designer: "Lemaire" },
   ]);
 
   // One profile, across two cities, holding all three images.
@@ -15,6 +15,8 @@ test("groups a photographer's work by city and aggregates their profile", () => 
   assert.deepEqual(photographers[0].ids.sort(), ["1", "2", "3"]);
   // IG is carried through from the one image that had it.
   assert.equal(photographers[0].ig, "@ada");
+  // "Shot for" is the distinct brands across their images, deduped and sorted.
+  assert.deepEqual(photographers[0].shotFor, ["Lemaire", "The Row"]);
 
   // Two city groups; Paris has two of Ada's shots, New York one.
   const paris = cities.find((c) => c.city === "Paris")!;

@@ -25,6 +25,8 @@ export type PhotoCredit = {
   photographer?: string | null;
   photographer_ig?: string | null;
   location?: string | null;
+  /** The brand on the image — a photographer's "shot for" list is built from these. */
+  designer?: string | null;
 };
 
 /** One photographer as they appear within a single city. */
@@ -55,6 +57,8 @@ export type PhotographerProfile = {
   ig: string | null;
   /** Distinct cities they have shot in, located ones first, then any placeholder. */
   cities: string[];
+  /** Distinct brands on their images — the "shot for" client list, derived. */
+  shotFor: string[];
   /** Every image id by this photographer, across all cities. */
   ids: string[];
 };
@@ -88,7 +92,10 @@ export function buildPhotographerDirectory(items: readonly PhotoCredit[]): {
   photographers: PhotographerProfile[];
 } {
   // key -> profile (across all cities)
-  const profiles = new Map<string, PhotographerProfile & { citySet: Set<string> }>();
+  const profiles = new Map<
+    string,
+    PhotographerProfile & { citySet: Set<string>; designerSet: Set<string> }
+  >();
   // cityDisplay -> (key -> in-city entry)
   const cities = new Map<string, { located: boolean; people: Map<string, PhotographerInCity> }>();
 
@@ -105,12 +112,14 @@ export function buildPhotographerDirectory(items: readonly PhotoCredit[]): {
     // profile
     let p = profiles.get(key);
     if (!p) {
-      p = { key, name, ig, cities: [], ids: [], citySet: new Set() };
+      p = { key, name, ig, cities: [], shotFor: [], ids: [], citySet: new Set(), designerSet: new Set() };
       profiles.set(key, p);
     }
     if (!p.ig && ig) p.ig = ig;
     p.ids.push(id);
     p.citySet.add(cityDisplay);
+    const designer = clean(it.designer);
+    if (designer) p.designerSet.add(designer);
 
     // city -> person
     let c = cities.get(cityDisplay);
@@ -136,7 +145,8 @@ export function buildPhotographerDirectory(items: readonly PhotoCredit[]): {
         if (b === NO_CITY) return -1;
         return a.localeCompare(b);
       });
-      return { key: p.key, name: p.name, ig: p.ig, cities: list, ids: p.ids };
+      const shotFor = Array.from(p.designerSet).sort((a, b) => a.localeCompare(b));
+      return { key: p.key, name: p.name, ig: p.ig, cities: list, shotFor, ids: p.ids };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
