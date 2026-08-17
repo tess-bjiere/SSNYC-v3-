@@ -49,9 +49,9 @@ const APPS: Record<AppId, AppConfig> = {
     // FRED's real wordmark — white on transparent (the nav is dark), from FRED's
     // brand kit. Tess, 2026-08-17.
     logo: "/fred-logo.png",
-    // TODO(FRED): set FRED's real Google Workspace domain before launch. Until
-    // then no one is auto-approved and FRED's team signs in via the allowlist.
-    orgDomain: "fred.invalid",
+    // Anyone on fredathome.com is auto-approved (Tess, 2026-08-17). People off
+    // that domain (a few studio Gmails) are added to FRED's app_allowlist.
+    orgDomain: "fredathome.com",
     company: "FRED",
   },
 };
