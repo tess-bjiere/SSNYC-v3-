@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Placeholder FRED wordmark so the FRED deployment renders out of the box.
-     Replace with FRED's real logo (keep the file name /public/fred-logo.svg,
-     or point lib/appConfig.ts at a new one). Sized to sit on the same baseline
-     as the SSYNC wordmark (viewBox height ~33). -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 33.03" role="img" aria-label="FRED">
-  <text x="0" y="26" font-family="'Barlow Semi Condensed', 'Arial Narrow', sans-serif"
-        font-size="30" font-weight="600" letter-spacing="2" fill="#fff">FRED</text>
+<!-- FRED wordmark for the app nav — WHITE, because the nav is dark (the SSYNC
+     mark is white too). This is a clean stand-in built from a heavy geometric
+     face; to use FRED's exact artwork, replace this file with the white version
+     of the logo (keep the name public/fred-logo.svg). The black version in the
+     brand kit is for light backgrounds and is not what the dark nav needs. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 50" role="img" aria-label="FRED">
+  <text x="0" y="46" textLength="196" lengthAdjust="spacingAndGlyphs"
+        font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-weight="900" font-size="64" fill="#ffffff">FRED</text>
 </svg>
