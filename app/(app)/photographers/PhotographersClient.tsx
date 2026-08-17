@@ -210,7 +210,7 @@ export default function PhotographersClient({
       {geoOptions.continents.length > 0 && (
         <div className="pg-geo-filters">
           <Select
-            className="select sm"
+            className="select"
             aria-label="Continent"
             value={continentF}
             onChange={(v) => { setContinentF(v); setCountryF(""); setCityF(""); }}
@@ -220,7 +220,7 @@ export default function PhotographersClient({
             ]}
           />
           <Select
-            className="select sm"
+            className="select"
             aria-label="Country"
             value={countryF}
             onChange={(v) => { setCountryF(v); setCityF(""); }}
@@ -230,7 +230,7 @@ export default function PhotographersClient({
             ]}
           />
           <Select
-            className="select sm"
+            className="select"
             aria-label="City"
             value={cityF}
             onChange={setCityF}

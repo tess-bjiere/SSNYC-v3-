@@ -450,9 +450,10 @@ body.notes-open .wrap{padding-right:378px}
   font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;cursor:pointer}
 .pg-filter:hover{color:var(--ink);border-color:var(--muted)}
 .pg-filter.on{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
-/* Continent / country / city dropdowns. */
+/* Continent / country / city dropdowns — the same treatment as the Library and
+   Campaign filter dropdowns (auto width, medium padding, the app's own chevron). */
 .pg-geo-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 2px}
-.pg-geo-filters .select{min-width:140px}
+.pg-geo-filters .select{width:auto;min-width:140px}
 /* Geographic hierarchy: continent (largest) > country > city (leaf). Light
    weights, matching the app's own headings (.page-title is --w-body). */
 .pg-continent{margin-top:34px}
