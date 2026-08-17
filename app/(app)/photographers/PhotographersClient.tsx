@@ -30,6 +30,14 @@ function prettyHost(u: string): string {
   }
 }
 
+// The stored `ig` is a full instagram URL, not a handle. Pull the handle out so
+// the card reads "@paulbellaart", not "@https://www.instagram.com/paulbellaart/"
+// (Tess, 2026-08-17: "just show ig handle ... way too jumbled").
+function igHandle(ig: string): string {
+  const m = ig.match(/instagram\.com\/([^/?#]+)/i);
+  return (m ? m[1] : ig).replace(/^@/, "").replace(/\/+$/, "").trim();
+}
+
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
 // people / profiles in different cities ... look at their work"). Built from the
 // campaign credits; a profile also shows the team-entered side — tier (FRED at
@@ -165,9 +173,13 @@ export default function PhotographersClient({
   const openProfile = openKey ? profileByKey.get(openKey) ?? null : null;
   const metaFor = (key: string) => meta[key] ?? EMPTY_META;
 
-  const igUrl = (ig: string | null) =>
-    ig ? `https://instagram.com/${ig.replace(/^@/, "").trim()}` : null;
-  const igLabel = (ig: string) => (ig.startsWith("@") ? ig : "@" + ig);
+  const igUrl = (ig: string | null) => {
+    if (!ig) return null;
+    if (/^https?:\/\//i.test(ig)) return ig; // already a full URL — use it as-is
+    const h = igHandle(ig);
+    return h ? `https://instagram.com/${h}` : null;
+  };
+  const igLabel = (ig: string) => "@" + igHandle(ig);
 
   // A roster prospect often has no image of their own yet — the card falls back
   // to their initials, and the IG/site link on it is one click to their work.

@@ -481,16 +481,17 @@ body.notes-open .wrap{padding-right:378px}
 /* Count sits top-LEFT so it never collides with the star at top-right. */
 .pg-card-count{position:absolute;top:6px;left:6px;background:rgba(12,12,12,.82);color:var(--ink);
   font-size:var(--t-micro);padding:2px 6px;letter-spacing:.04em}
-/* Star, top-right of the thumbnail. Gold when set; a quiet outline otherwise. */
-.pg-star{position:absolute;top:6px;right:6px;width:26px;height:26px;display:flex;align-items:center;
+/* Star, top-right of the thumbnail. White when set; a quiet outline otherwise. */
+.pg-star{position:absolute;top:5px;right:5px;width:18px;height:18px;display:flex;align-items:center;
   justify-content:center;background:rgba(12,12,12,.5);border:none;border-radius:50%;
-  color:rgba(243,239,232,.55);font-size:14px;line-height:1;padding:0;cursor:pointer;
+  color:rgba(243,239,232,.5);font-size:10px;line-height:1;padding:0;cursor:pointer;
   transition:color .12s,background .12s}
 .pg-star:hover{color:var(--ink);background:rgba(12,12,12,.75)}
-.pg-star.on{color:#f2c14e}
+.pg-star.on{color:#fff}
 span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .pg-card-name{font-size:var(--t-title);font-weight:var(--w-mid);line-height:1.2}
-.pg-card-ig{font-size:var(--t-sm);color:var(--muted);margin-top:-4px}
+.pg-card-ig{font-size:var(--t-sm);color:var(--muted);margin-top:-4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 /* No image yet (a roster prospect) — a quiet initials tile in place of a photo. */
 .pg-card-img.empty{display:flex;align-items:center;justify-content:center;background:var(--chip)}
 .pg-card-initials{font-size:26px;font-weight:var(--w-mid);letter-spacing:.04em;color:var(--faint)}
