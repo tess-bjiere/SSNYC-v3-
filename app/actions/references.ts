@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/access";
+import { isOversize, oversizeError } from "@/lib/uploadLimits";
+import type { ExtraImage } from "@/lib/types";
 import {
   REFERENCES_BUCKET,
   referenceStoragePaths,
@@ -48,6 +50,110 @@ export async function updateReference(id: string, patch: Record<string, string |
   // refreshed rather than guessing which page the edit came from.
   revalidatePath("/library");
   revalidatePath("/editorial");
+}
+
+function extFor(type: string): string {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  if (type === "image/gif") return "gif";
+  if (type === "image/avif") return "avif";
+  return "jpg";
+}
+
+// The url a stored extra-image row resolves to — the list holds either plain URL
+// strings or the importer's { image_url, thumb_url } objects.
+function extraUrl(e: unknown): string | null {
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    if (typeof o.image_url === "string") return o.image_url;
+    if (typeof o.url === "string") return o.url;
+  }
+  return null;
+}
+
+// Attach more images to ONE reference — extra angles/views, appended to its
+// `extra_images` list rather than becoming their own rows (Tess, 2026-08-12:
+// "add functionality to upload multiple images for a single reference"). Uploaded
+// to the same references bucket as the primary image; stored as plain URL strings
+// (extraImageUrls reads both shapes). Returns the new list so the open modal can
+// update without a reload.
+export async function addReferenceImages(
+  id: string,
+  formData: FormData
+): Promise<{ ok: boolean; extra_images: ExtraImage[]; errors: string[] }> {
+  await requireUser();
+  const files = formData
+    .getAll("files")
+    .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
+  if (!id || files.length === 0) {
+    return { ok: false, extra_images: [], errors: ["No image files provided."] };
+  }
+
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("references")
+    .select("extra_images")
+    .eq("id", id)
+    .maybeSingle();
+  const existing: unknown[] = Array.isArray(row?.extra_images) ? (row!.extra_images as unknown[]) : [];
+
+  const added: string[] = [];
+  const errors: string[] = [];
+  for (const file of files) {
+    if (isOversize(file.size)) {
+      errors.push(oversizeError(file.name, file.size));
+      continue;
+    }
+    try {
+      const path = `${crypto.randomUUID()}/full.${extFor(file.type)}`;
+      const { error: upErr } = await supabase.storage
+        .from(REFERENCES_BUCKET)
+        .upload(path, Buffer.from(await file.arrayBuffer()), {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+      if (upErr) {
+        errors.push(`${file.name}: ${upErr.message}`);
+        continue;
+      }
+      const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+      if (pub?.publicUrl) added.push(pub.publicUrl);
+    } catch (e) {
+      errors.push(`${file.name}: ${e instanceof Error ? e.message : "upload failed"}`);
+    }
+  }
+
+  const next = [...existing, ...added];
+  if (added.length > 0) {
+    await supabase.from("references").update({ extra_images: next }).eq("id", id);
+    revalidatePath("/library");
+    revalidatePath("/editorial");
+  }
+  return { ok: added.length > 0, extra_images: next as ExtraImage[], errors };
+}
+
+// Drop one extra image off a reference. The storage file is left in place (an
+// orphaned file costs storage, it does not break anything — same stance as
+// purgeReference); this only removes it from the row's `extra_images`.
+export async function removeReferenceImage(
+  id: string,
+  url: string
+): Promise<{ ok: boolean; extra_images: ExtraImage[] }> {
+  await requireUser();
+  if (!id || !url) return { ok: false, extra_images: [] };
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("references")
+    .select("extra_images")
+    .eq("id", id)
+    .maybeSingle();
+  const existing: unknown[] = Array.isArray(row?.extra_images) ? (row!.extra_images as unknown[]) : [];
+  const next = existing.filter((e) => extraUrl(e) !== url);
+  await supabase.from("references").update({ extra_images: next }).eq("id", id);
+  revalidatePath("/library");
+  revalidatePath("/editorial");
+  return { ok: true, extra_images: next as ExtraImage[] };
 }
 
 // Soft delete: moves a reference to the Trash (recoverable) rather than

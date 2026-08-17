@@ -14,11 +14,16 @@
 //                 should ever do.
 //   "read-only" — no actions at all.
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refImage, extraImageUrls, type Reference } from "@/lib/types";
-import { updateReference, softDeleteReference } from "@/app/actions/references";
+import {
+  updateReference,
+  softDeleteReference,
+  addReferenceImages,
+  removeReferenceImage,
+} from "@/app/actions/references";
 import {
   developFromReference,
   linkReference,
@@ -27,22 +32,32 @@ import {
   unlinkReference,
   type LinkedStyle,
 } from "@/app/actions/styleRefs";
+import Combo from "./Combo";
 
-// Editable fields for the in-place Edit form (label + input type).
-const EDIT_FIELDS: { key: keyof Reference; label: string; type?: "text" | "textarea" }[] = [
-  { key: "designer", label: "Designer" },
-  { key: "year", label: "Year" },
-  { key: "season", label: "Season" },
-  { key: "category", label: "Category" },
-  { key: "garment", label: "Garment" },
-  { key: "fabric", label: "Fabric" },
-  { key: "color", label: "Color" },
+// Editable fields for the in-place Edit form. `suggest` fields offer the curated
+// dropdown (when options are passed in), the same lists the Add form uses so a
+// value is tagged consistently wherever it is filled in. `hint` is the small
+// helper line under a field.
+const EDIT_FIELDS: {
+  key: keyof Reference;
+  label: string;
+  type?: "text" | "textarea";
+  suggest?: boolean;
+  hint?: string;
+}[] = [
+  { key: "designer", label: "Designer", suggest: true },
+  { key: "year", label: "Year", suggest: true },
+  { key: "season", label: "Season", suggest: true },
+  { key: "category", label: "Category", suggest: true, hint: "The broad group — the merchandising bucket (e.g. Outerwear, Tops)." },
+  { key: "garment", label: "Garment", suggest: true, hint: "The specific piece within that group (e.g. Jacket, Tee)." },
+  { key: "fabric", label: "Fabric", suggest: true },
+  { key: "color", label: "Color", suggest: true },
   { key: "color_hex", label: "Color hex" },
   { key: "price", label: "Price point" },
-  { key: "photographer", label: "Photographer" },
+  { key: "photographer", label: "Photographer", suggest: true },
   { key: "photographer_ig", label: "Photographer IG" },
-  { key: "model", label: "Model" },
-  { key: "location", label: "Location" },
+  { key: "model", label: "Model", suggest: true },
+  { key: "location", label: "Location", suggest: true },
   { key: "link", label: "Product link" },
   { key: "notes", label: "Notes", type: "textarea" },
 ];
@@ -56,6 +71,7 @@ export default function DetailModal({
   onToast,
   onDeleted,
   actions = "library",
+  options = {},
 }: {
   r: Reference;
   onClose: () => void;
@@ -63,6 +79,9 @@ export default function DetailModal({
   onToast: (m: string) => void;
   onDeleted?: () => void;
   actions?: DetailActions;
+  // The curated dropdown vocabulary per field (category, garment, …). When a
+  // field has options they show as an autocomplete; otherwise it's a plain input.
+  options?: Record<string, string[]>;
 }) {
   const router = useRouter();
   const [cur, setCur] = useState<Reference>(r);
@@ -70,6 +89,40 @@ export default function DetailModal({
   const [confirmDel, setConfirmDel] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [pending, start] = useTransition();
+  // Adding / removing images on this one reference (extra angles).
+  const imgInputRef = useRef<HTMLInputElement>(null);
+  const [imgBusy, setImgBusy] = useState(false);
+
+  function addImages(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    const files = Array.from(list).filter((f) => f.type.startsWith("image/"));
+    if (files.length === 0) return;
+    setImgBusy(true);
+    start(async () => {
+      const fd = new FormData();
+      for (const f of files) fd.append("files", f);
+      const res = await addReferenceImages(cur.id, fd);
+      setImgBusy(false);
+      if (res.ok) {
+        setCur((c) => ({ ...c, extra_images: res.extra_images }));
+        onToast(res.errors.length ? `Added · ${res.errors.length} failed` : "Images added");
+      } else {
+        onToast(res.errors[0] || "Could not add the images.");
+      }
+    });
+  }
+
+  function dropImage(url: string) {
+    setImgBusy(true);
+    start(async () => {
+      const res = await removeReferenceImage(cur.id, url);
+      setImgBusy(false);
+      if (res.ok) {
+        setCur((c) => ({ ...c, extra_images: res.extra_images }));
+        onToast("Image removed");
+      }
+    });
+  }
 
   const images = [refImage(cur), ...extraImageUrls(cur)].filter(Boolean);
   const [active, setActive] = useState(images[0] || "");
@@ -252,6 +305,50 @@ export default function DetailModal({
                 <div className="detail-head">
                   <h2 className="display">Edit reference</h2>
                 </div>
+
+                {/* Manage this reference's images — the main one plus extra angles
+                    (Tess, 2026-08-12: "upload multiple images for a single
+                    reference"). The first image is primary and can't be removed
+                    here; extras get an ×, and "+ add" appends more. */}
+                <div className="detail-editimgs">
+                  <label>Images</label>
+                  <div className="up-thumbs">
+                    {[refImage(cur), ...extraImageUrls(cur)].filter(Boolean).map((im, i) => (
+                      <div className="up-thumb" key={im}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={im} alt="" />
+                        {i > 0 && (
+                          <button
+                            className="up-x"
+                            title="Remove this image"
+                            disabled={imgBusy}
+                            onClick={() => dropImage(im)}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="up-add"
+                      disabled={imgBusy}
+                      onClick={() => imgInputRef.current?.click()}
+                    >
+                      {imgBusy ? "…" : "+ add"}
+                    </button>
+                  </div>
+                  <input
+                    ref={imgInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: "none" }}
+                    onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ""; }}
+                  />
+                  <span className="field-hint">The first image is the main one; add more angles or details.</span>
+                </div>
+
                 <div className="detail-edit">
                   {EDIT_FIELDS.map((f) => (
                     <div className="field" key={f.key}>
@@ -263,6 +360,12 @@ export default function DetailModal({
                           value={draft[f.key] ?? ""}
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
                         />
+                      ) : f.suggest && (options[f.key as string]?.length ?? 0) > 0 ? (
+                        <Combo
+                          value={draft[f.key] ?? ""}
+                          options={options[f.key as string]}
+                          onChange={(val) => setDraft((d) => ({ ...d, [f.key]: val }))}
+                        />
                       ) : (
                         <input
                           className="input"
@@ -270,6 +373,7 @@ export default function DetailModal({
                           onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
                         />
                       )}
+                      {f.hint && <span className="field-hint">{f.hint}</span>}
                     </div>
                   ))}
                 </div>

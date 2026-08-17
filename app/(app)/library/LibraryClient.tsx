@@ -354,6 +354,7 @@ export default function LibraryClient({
       {detail && (
         <DetailModal
           r={detail}
+          options={formOptions}
           onClose={() => setDetail(null)}
           onAdd={() => { setPicker(detail); setDetail(null); }}
           onToast={flashToast}

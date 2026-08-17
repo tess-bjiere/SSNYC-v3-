@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { uploadReferences } from "@/app/actions/upload";
 import { thumbDims } from "@/lib/thumbnail";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
+import Combo from "./Combo";
 
 // Downscale a picked image in the browser before it is uploaded, so the library
 // grid can load a small `thumb.jpg` instead of the full-size original. Doing it
@@ -36,83 +37,16 @@ async function makeThumb(file: File): Promise<File | null> {
   }
 }
 
-// Styled autocomplete that matches the site (dark panel, site fonts) instead of
-// the browser's native <datalist> popup. Filters existing library values as you
-// type, click or keyboard to pick, and free text is still allowed.
-function Combo({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(-1);
-  const boxRef = useRef<HTMLDivElement>(null);
-
-  const q = value.trim().toLowerCase();
-  const matches = (q ? options.filter((o) => o.toLowerCase().includes(q)) : options).slice(0, 12);
-
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
-
-  function choose(v: string) {
-    onChange(v);
-    setOpen(false);
-    setActive(-1);
-  }
-
-  return (
-    <div className="combo" ref={boxRef}>
-      <input
-        className="input"
-        value={value}
-        autoComplete="off"
-        onChange={(e) => { onChange(e.target.value); setOpen(true); setActive(-1); }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={(e) => {
-          if (!open && e.key === "ArrowDown") { setOpen(true); return; }
-          if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, matches.length - 1)); }
-          else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
-          else if (e.key === "Enter" && open && active >= 0 && matches[active]) { e.preventDefault(); choose(matches[active]); }
-          else if (e.key === "Escape") { setOpen(false); }
-        }}
-      />
-      {open && matches.length > 0 && (
-        <div className="combo-menu">
-          {matches.map((m, i) => (
-            <div
-              key={m}
-              className={"combo-opt" + (i === active ? " active" : "")}
-              onMouseDown={(e) => { e.preventDefault(); choose(m); }}
-              onMouseEnter={() => setActive(i)}
-            >
-              {m}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 type Picked = { file: File; url: string };
-type Field = { key: string; label: string; type?: "textarea"; suggest?: boolean };
+type Field = { key: string; label: string; type?: "textarea"; suggest?: boolean; hint?: string };
 
 // `suggest` fields autocomplete from the curated dropdown lists (lib/lists.ts).
 const REFERENCE_FIELDS: Field[] = [
   { key: "designer", label: "Designer", suggest: true },
   { key: "year", label: "Year", suggest: true },
   { key: "season", label: "Season", suggest: true },
-  { key: "category", label: "Category", suggest: true },
-  { key: "garment", label: "Garment", suggest: true },
+  { key: "category", label: "Category", suggest: true, hint: "The broad group — the merchandising bucket (e.g. Outerwear, Tops)." },
+  { key: "garment", label: "Garment", suggest: true, hint: "The specific piece within that group (e.g. Jacket, Tee)." },
   { key: "fabric", label: "Fabric", suggest: true },
   { key: "color", label: "Color", suggest: true },
   { key: "color_hex", label: "Color hex" },
@@ -312,6 +246,7 @@ export default function UploadModal({
                       onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}
                     />
                   )}
+                  {f.hint && <span className="field-hint">{f.hint}</span>}
                 </div>
               )
             )}
