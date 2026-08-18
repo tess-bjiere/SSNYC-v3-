@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireTeam } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
+import { isOversize, oversizeError } from "@/lib/uploadLimits";
+import { REFERENCES_BUCKET } from "@/lib/storage";
 import {
   PHOTOGRAPHER_META_KEY,
   withPhotographerMeta,
@@ -31,4 +34,88 @@ export async function setPhotographerMeta(nameKey: string, patch: Partial<Photog
     .upsert({ key: PHOTOGRAPHER_META_KEY, value: next, updated_at: new Date().toISOString() });
 
   revalidatePath("/photographers");
+}
+
+function extFor(type: string): string {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  if (type === "image/gif") return "gif";
+  if (type === "image/avif") return "avif";
+  return "jpg";
+}
+
+// Attach a photographer's own work to their profile (Tess, 2026-08-17: "upload
+// 3-5 images per photographer ... work that look most similar to FRED at home").
+// I can't source those images from here — Instagram blocks fetching and I have no
+// write access to FRED's storage bucket — so this is the durable in-app path
+// instead: the team uploads the shots that actually feel FRED-at-home and this
+// stores them properly.
+//
+// Each image becomes its own `references` row, typed 'roster' (not 'editorial',
+// so it never leaks onto the Campaign grid) and carrying the photographer's name
+// + city. That is exactly what the directory groups on, so the images gather
+// under the right person, place their card in the right city, and give an
+// otherwise-blank roster card a real cover — no photographer table, same shape as
+// the 185 roster rows already there.
+export async function addPhotographerImages(
+  photographer: string,
+  location: string,
+  formData: FormData
+): Promise<{ ok: boolean; added: number; errors: string[] }> {
+  await requireTeam();
+  const name = (photographer ?? "").trim();
+  const files = formData
+    .getAll("files")
+    .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
+  if (!name) return { ok: false, added: 0, errors: ["No photographer."] };
+  if (files.length === 0) return { ok: false, added: 0, errors: ["No image files provided."] };
+
+  const supabase = await createClient();
+  const brand = await activeBrand();
+  const loc = (location ?? "").trim();
+
+  const rows: Record<string, unknown>[] = [];
+  const errors: string[] = [];
+  for (const file of files) {
+    if (isOversize(file.size)) {
+      errors.push(oversizeError(file.name, file.size));
+      continue;
+    }
+    try {
+      const path = `${crypto.randomUUID()}/full.${extFor(file.type)}`;
+      const { error: upErr } = await supabase.storage
+        .from(REFERENCES_BUCKET)
+        .upload(path, Buffer.from(await file.arrayBuffer()), {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+      if (upErr) {
+        errors.push(`${file.name}: ${upErr.message}`);
+        continue;
+      }
+      const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+      if (pub?.publicUrl) {
+        rows.push({
+          brand,
+          type: "roster",
+          // designer is NOT NULL and means the label/brand of the shoot, which a
+          // portfolio sample doesn't have — empty, same as the roster rows.
+          designer: "",
+          photographer: name,
+          location: loc || null,
+          image_url: pub.publicUrl,
+          thumb_url: pub.publicUrl,
+        });
+      }
+    } catch (e) {
+      errors.push(`${file.name}: ${e instanceof Error ? e.message : "upload failed"}`);
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from("references").insert(rows);
+    if (error) return { ok: false, added: 0, errors: [...errors, error.message] };
+    revalidatePath("/photographers");
+  }
+  return { ok: rows.length > 0, added: rows.length, errors };
 }

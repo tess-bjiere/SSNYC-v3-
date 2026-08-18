@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { refThumb, type Reference } from "@/lib/types";
 import {
   buildPhotographerDirectory,
@@ -15,7 +16,7 @@ import {
   type PhotographerMeta,
   type PhotographerTier,
 } from "@/lib/photographerMeta";
-import { setPhotographerMeta } from "@/app/actions/photographers";
+import { setPhotographerMeta, addPhotographerImages } from "@/app/actions/photographers";
 import Select from "@/app/components/Select";
 import DetailModal from "../library/DetailModal";
 
@@ -377,6 +378,7 @@ export default function PhotographersClient({
           onImage={(r) => setDetail(r)}
           onClose={() => setOpenKey(null)}
           onSaved={(m) => { setMeta((prev) => ({ ...prev, [openProfile.key]: m })); flashToast("Saved"); }}
+          onToast={flashToast}
           igUrl={igUrl}
           igLabel={igLabel}
         />
@@ -408,6 +410,7 @@ function ProfileModal({
   onImage,
   onClose,
   onSaved,
+  onToast,
   igUrl,
   igLabel,
 }: {
@@ -418,12 +421,16 @@ function ProfileModal({
   onImage: (r: Reference) => void;
   onClose: () => void;
   onSaved: (m: PhotographerMeta) => void;
+  onToast: (m: string) => void;
   igUrl: (ig: string | null) => string | null;
   igLabel: (ig: string) => string;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PhotographerMeta>(meta);
   const [pending, start] = useTransition();
+  const imgInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   function save() {
     start(async () => {
@@ -442,10 +449,45 @@ function ProfileModal({
     .map((id) => byId.get(id))
     .filter((r): r is Reference => !!r && !!refThumb(r));
   const site = profile.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
+  // Where this photographer sits — carried onto the images so they land in the
+  // same city they do.
+  const location = profile.ids.map((id) => byId.get(id)?.location).find((l) => !!l) || "";
+
+  // Upload the shots the team picks. Each becomes a roster row under this
+  // photographer's name; a refresh pulls them straight back into the grid.
+  async function addImages(list: FileList | null) {
+    if (!canEdit) return;
+    const files = Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+    if (files.length === 0) return;
+    setUploading(true);
+    const fd = new FormData();
+    for (const f of files) fd.append("files", f);
+    try {
+      const res = await addPhotographerImages(profile.name, location, fd);
+      if (res.ok) {
+        router.refresh();
+        onToast(res.added === 1 ? "Added 1 image" : `Added ${res.added} images`);
+      }
+      if (res.errors.length) onToast(res.errors[0]);
+    } catch {
+      onToast("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal pg-profile" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal pg-profile"
+        onClick={(e) => e.stopPropagation()}
+        onDragOver={canEdit ? (e) => e.preventDefault() : undefined}
+        onDrop={
+          canEdit
+            ? (e) => { e.preventDefault(); addImages(e.dataTransfer.files); }
+            : undefined
+        }
+      >
         <div className="modal-head">
           <span>{profile.name}</span>
           <button className="notes-close" onClick={onClose} title="Close">×</button>
@@ -571,6 +613,31 @@ function ProfileModal({
             </div>
           )}
 
+          {/* Team uploads the photographer's own work here — the FRED-at-home
+              shots. Hidden input driven by the button, plus drop-anywhere on the
+              modal (Tess likes drag-to-upload). */}
+          {canEdit && (
+            <div className="pg-upload">
+              <input
+                ref={imgInput}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ""; }}
+              />
+              <button
+                type="button"
+                className="btn ghost sm"
+                disabled={uploading}
+                onClick={() => imgInput.current?.click()}
+              >
+                {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add FRED-at-home images"}
+              </button>
+              <span className="pg-upload-hint">Pick the 3–5 shots that feel most FRED at home — or drag them in.</span>
+            </div>
+          )}
+
           {workRefs.length > 0 ? (
             <div className="grid dens-md pg-profile-grid">
               {workRefs.map((r) => {
@@ -598,7 +665,7 @@ function ProfileModal({
               No images saved yet. See their work
               {ig && <> on <a href={ig} target="_blank" rel="noreferrer">Instagram</a></>}
               {site && <> · <a href={site} target="_blank" rel="noreferrer">their site</a></>}
-              {canEdit && <>, or add a few from the Campaign tab.</>}
+              {canEdit && <>, then add the FRED-at-home ones with the button above.</>}
             </div>
           )}
         </div>
