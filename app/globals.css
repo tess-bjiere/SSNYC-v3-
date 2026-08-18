@@ -444,6 +444,29 @@ body.notes-open .wrap{padding-right:378px}
 /* --- Photographers directory (Tess, 2026-08-17) — campaign credits, browsed by
    city, each person opening onto their whole body of work. ------------------ */
 .pg-count{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+/* Grid / List view toggle (Tess, 2026-08-18: "offer a list view for
+   photographers as well"). */
+.pg-viewtoggle{display:flex;margin-left:16px;border:1px solid var(--line)}
+.pg-vt{background:none;border:none;color:var(--faint);font-family:inherit;font-size:14px;line-height:1;
+  padding:5px 9px;cursor:pointer}
+.pg-vt+.pg-vt{border-left:1px solid var(--line)}
+.pg-vt:hover{color:var(--ink)}
+.pg-vt.on{background:var(--accent);color:var(--btnfg)}
+/* List view — a dense, alphabetised name list; click a name for the profile. */
+.pg-list{display:flex;flex-direction:column;margin-top:10px}
+.pg-lrow{display:flex;align-items:baseline;gap:12px;padding:9px 4px;border-bottom:1px solid var(--hair)}
+.pg-lstar{flex:none;width:16px;text-align:center;background:none;border:none;font-size:11px;line-height:1;
+  cursor:pointer;color:rgba(243,239,232,.35);padding:0}
+.pg-lstar.on{color:#a3e635}
+.pg-lstar.sp{cursor:default}
+.pg-lname{background:none;border:none;font-family:inherit;font-size:var(--t-body);font-weight:var(--w-mid);
+  color:var(--ink);cursor:pointer;padding:0;text-align:left;white-space:nowrap}
+.pg-lname:hover{text-decoration:underline;text-underline-offset:3px}
+.pg-lcity{font-size:var(--t-sm);color:var(--muted)}
+.pg-lspace{flex:1}
+.pg-lcount{font-size:var(--t-meta);color:var(--faint);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.pg-llink{font-size:var(--t-sm);color:var(--accent);text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.pg-llink:hover{color:var(--ink)}
 /* Tier filter chips — All / FRED at home / Campaign. */
 .pg-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
 .pg-filter{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
