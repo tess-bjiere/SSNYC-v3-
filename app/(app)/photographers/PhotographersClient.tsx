@@ -556,44 +556,43 @@ function ProfileModal({
             : undefined
         }
       >
-        <div className="modal-head">
-          <span>{profile.name}</span>
+        {/* Name and links share the header line (Tess, 2026-08-17: "put links
+            next to name"). */}
+        <div className="modal-head pg-head">
+          <div className="pg-head-main">
+            <span className="pg-head-name">{profile.name}</span>
+            {ig && (
+              <a className="pg-profile-ig" href={ig} target="_blank" rel="noreferrer">
+                {igLabel(profile.ig!)}
+              </a>
+            )}
+            {site && (
+              <a className="pg-profile-ig" href={site} target="_blank" rel="noreferrer">
+                {prettyHost(site)}
+              </a>
+            )}
+          </div>
           <button className="notes-close" onClick={onClose} title="Close">×</button>
         </div>
 
         <div className="modal-body">
-          <div className="pg-profile-meta">
-            {(ig || site) && (
-              <div className="pg-profile-line">
-                {ig && (
-                  <a className="pg-profile-ig" href={ig} target="_blank" rel="noreferrer">
-                    {igLabel(profile.ig!)}
-                  </a>
-                )}
-                {site && (
-                  <a className="pg-profile-ig" href={site} target="_blank" rel="noreferrer">
-                    {prettyHost(site)}
-                  </a>
-                )}
+          {/* One consistent labelled column for every fact — tier, medium, cities,
+              past work, notes — instead of the old row of filled/outline tag boxes
+              that read as toggle states (Tess, 2026-08-17). Image count dropped. */}
+          {meta.tier && !editing && (
+            <div className="pg-facts">
+              <span className="k">Tier</span>
+              <div className="pg-fact-val">{tierLabel(meta.tier)}</div>
+            </div>
+          )}
+          {(meta.photo || meta.video) && !editing && (
+            <div className="pg-facts">
+              <span className="k">Medium</span>
+              <div className="pg-fact-val">
+                {[meta.photo && "Photo", meta.video && "Video"].filter(Boolean).join(" · ")}
               </div>
-            )}
-            {(meta.tier || meta.photo || meta.video) && (
-              <div className="pg-profile-line">
-                {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
-                {meta.photo && <span className="pg-cap">Photo</span>}
-                {meta.video && <span className="pg-cap">Video</span>}
-              </div>
-            )}
-            {workRefs.length > 0 && (
-              <div className="pg-profile-line">
-                <span className="pg-profile-count">
-                  {workRefs.length} {workRefs.length === 1 ? "image" : "images"}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Cities they've shot in — derived from the images. */}
+            </div>
+          )}
           {profile.cities.length > 0 && (
             <div className="pg-facts">
               <span className="k">Cities</span>
@@ -605,13 +604,13 @@ function ProfileModal({
           {meta.pastWork.trim() && !editing && (
             <div className="pg-facts">
               <span className="k">Past work</span>
-              <div className="pg-clients">{meta.pastWork}</div>
+              <div className="pg-fact-val">{meta.pastWork}</div>
             </div>
           )}
           {meta.notes.trim() && !editing && (
             <div className="pg-facts">
               <span className="k">Notes</span>
-              <div className="pg-clients">{meta.notes}</div>
+              <div className="pg-fact-val">{meta.notes}</div>
             </div>
           )}
 
