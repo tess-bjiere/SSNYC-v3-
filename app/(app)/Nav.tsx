@@ -97,6 +97,9 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // Where finished / in-progress styles are assembled into a season or
       // evergreen linesheet (Tess, 2026-08-12).
       { href: "/linesheets", label: "Linesheets" },
+      // The fabric & trim library (Tess, 2026-08-18: "build library for fabrics
+      // and trims") — the sourced materials the product side draws on.
+      { href: "/materials", label: "Fabrics & Trims" },
     ],
   },
 ];

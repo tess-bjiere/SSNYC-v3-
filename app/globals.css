@@ -467,6 +467,22 @@ body.notes-open .wrap{padding-right:378px}
 .pg-lcount{font-size:var(--t-meta);color:var(--faint);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 .pg-llink{font-size:var(--t-sm);color:var(--accent);text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
 .pg-llink:hover{color:var(--ink)}
+
+/* Fabric & trim library (Tess, 2026-08-18). */
+.mat-noimg{display:flex;align-items:center;justify-content:center;gap:8px;height:100%;
+  color:var(--faint);font-size:var(--t-sm);background:var(--chip)}
+.mat-chip{width:16px;height:16px;border:1px solid var(--line);display:inline-block}
+.mat-modal{max-width:720px;width:min(94vw,720px)}
+.mat-form{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.mat-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.mat-field-wide{grid-column:1 / -1}
+.mat-label{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+.mat-err{grid-column:1 / -1;color:#c0392b;font-size:var(--t-sm)}
+.mat-tools{grid-column:1 / -1;display:flex;align-items:center;gap:14px;margin-top:6px}
+.mat-images{margin-bottom:18px}
+.mat-readfacts{margin-top:4px}
+.btn.link.arm{color:#c0392b}
+@media (max-width:640px){.mat-form{grid-template-columns:1fr}}
 /* Tier filter chips — All / FRED at home / Campaign. */
 .pg-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
 .pg-filter{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
