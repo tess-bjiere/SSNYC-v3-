@@ -16,7 +16,11 @@ import {
   type PhotographerMeta,
   type PhotographerTier,
 } from "@/lib/photographerMeta";
-import { setPhotographerMeta, addPhotographerImages } from "@/app/actions/photographers";
+import {
+  setPhotographerMeta,
+  addPhotographerImages,
+  removePhotographerImage,
+} from "@/app/actions/photographers";
 import MultiSelect from "@/app/components/MultiSelect";
 import DetailModal from "../library/DetailModal";
 
@@ -459,8 +463,6 @@ function ProfileModal({
     });
   }
 
-  const hasCard =
-    !!meta.tier || meta.photo || meta.video || !!meta.pastWork.trim() || !!meta.notes.trim();
   const ig = igUrl(profile.ig);
   // Only the refs that actually carry an image are "work"; a roster entry has
   // none. The website is read off whichever ref carries a link.
@@ -515,6 +517,21 @@ function ProfileModal({
     start(async () => {
       await setPhotographerMeta(profile.key, { imageOrder: ids });
       onSaved({ ...meta, imageOrder: ids });
+    });
+  }
+  // Remove one image from the profile — optimistic, then a soft delete (it goes
+  // to Trash, recoverable). Tess, 2026-08-17: "allow to x out image easily".
+  function removeImg(id: string) {
+    if (!canEdit) return;
+    setItems((cur) => {
+      const next = cur.filter((x) => x.id !== id);
+      itemsRef.current = next;
+      return next;
+    });
+    onToast("Image removed");
+    start(async () => {
+      await removePhotographerImage(id);
+      router.refresh();
     });
   }
   // Where this photographer sits — carried onto the images so they land in the
@@ -572,7 +589,20 @@ function ProfileModal({
               </a>
             )}
           </div>
-          <button className="notes-close" onClick={onClose} title="Close">×</button>
+          {/* Edit sits at the right of the header, just left of the close
+              (Tess, 2026-08-17). */}
+          <div className="pg-head-actions">
+            {canEdit && !editing && (
+              <button
+                type="button"
+                className="btn ghost sm"
+                onClick={() => { setDraft(meta); setEditing(true); }}
+              >
+                Edit profile
+              </button>
+            )}
+            <button className="notes-close" onClick={onClose} title="Close">×</button>
+          </div>
         </div>
 
         <div className="modal-body">
@@ -596,9 +626,7 @@ function ProfileModal({
           {profile.cities.length > 0 && (
             <div className="pg-facts">
               <span className="k">Cities</span>
-              <div className="pg-chips">
-                {profile.cities.map((c) => <span className="pg-chip" key={c}>{c}</span>)}
-              </div>
+              <div className="pg-fact-val">{profile.cities.join(", ")}</div>
             </div>
           )}
           {meta.pastWork.trim() && !editing && (
@@ -614,13 +642,8 @@ function ProfileModal({
             </div>
           )}
 
-          {/* Team editor for the card. Kept behind an Edit button so viewing is
-              clean; a talent never sees it. */}
-          {canEdit && !editing && (
-            <button type="button" className="btn ghost sm pg-edit-btn" onClick={() => { setDraft(meta); setEditing(true); }}>
-              {hasCard ? "Edit profile" : "Add tier, video, clients…"}
-            </button>
-          )}
+          {/* Team editor for the card. Opened from the "Edit profile" button in
+              the header; a talent never sees it. */}
           {canEdit && editing && (
             <div className="pg-editor">
               <div className="pg-editor-row">
@@ -736,6 +759,17 @@ function ProfileModal({
                     <div className="imgwrap">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src ?? ""} alt={r.designer || ""} loading="lazy" draggable={false} />
+                      {canEdit && (
+                        <button
+                          type="button"
+                          className="pg-img-x"
+                          title="Remove image"
+                          aria-label="Remove image"
+                          onClick={(e) => { e.stopPropagation(); removeImg(r.id); }}
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                     <div className="meta">
                       <div className="s">

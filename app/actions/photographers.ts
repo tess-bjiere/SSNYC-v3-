@@ -36,6 +36,21 @@ export async function setPhotographerMeta(nameKey: string, patch: Partial<Photog
   revalidatePath("/photographers");
 }
 
+// Remove one image off a photographer's profile (Tess, 2026-08-17: "allow to x
+// out image easily"). Soft delete, so it goes to Trash and can be restored — the
+// same recoverable path as everywhere else, not a hard delete.
+export async function removePhotographerImage(id: string) {
+  await requireTeam();
+  if (!id) return;
+  const supabase = await createClient();
+  await supabase
+    .from("references")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath("/photographers");
+  revalidatePath("/trash");
+}
+
 function extFor(type: string): string {
   if (type === "image/png") return "png";
   if (type === "image/webp") return "webp";
