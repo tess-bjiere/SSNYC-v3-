@@ -213,14 +213,31 @@ export default function PhotographersClient({
   const initials = (name: string) =>
     name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
-  // The refs behind a photographer that actually carry an image (a roster entry
-  // carries none), newest-first.
-  const workSrcs = (ids: string[]) =>
-    ids.map((id) => { const r = byId.get(id); return r ? refThumb(r) : null; }).filter(Boolean) as string[];
+  // The image thumbs behind a photographer (a roster entry carries none), in the
+  // team's hand-set order — so the FIRST image in the profile is also the card's
+  // thumbnail (Tess, 2026-08-17: "whatever the first image is in the order of
+  // profile should be the thumbnail"). Unordered ones keep their default place.
+  const workSrcs = (key: string, ids: string[]) => {
+    const withImg = ids
+      .map((id) => {
+        const r = byId.get(id);
+        const src = r ? refThumb(r) : "";
+        return src ? { id, src } : null;
+      })
+      .filter(Boolean) as { id: string; src: string }[];
+    const order = meta[key]?.imageOrder ?? [];
+    if (order.length) {
+      const pos = new Map(order.map((id, i) => [id, i] as const));
+      withImg.sort(
+        (a, b) => (pos.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (pos.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      );
+    }
+    return withImg.map((x) => x.src);
+  };
 
   // One photographer card, reused across every city grid.
   function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
-    const srcs = workSrcs(p.ids);
+    const srcs = workSrcs(p.key, p.ids);
     const src = srcs[0] ?? null;
     // The handle line: the IG handle, or — for a site-only photographer — the
     // bare domain of their website.
@@ -713,11 +730,17 @@ function ProfileModal({
             </div>
           )}
 
-          {/* Team uploads the photographer's own work here — the FRED-at-home
-              shots. Hidden input driven by the button, plus drop-anywhere on the
-              modal (Tess likes drag-to-upload). */}
+          {/* Image toolbar: a bit of guidance on the left, "Add images" on the
+              right (Tess, 2026-08-17). The whole modal is also a drop zone. */}
           {canEdit && (
-            <div className="pg-upload">
+            <div className="pg-imgbar">
+              <span className="pg-imgbar-hint">
+                {workRefs.length > 1
+                  ? "Drag to reorder — the first image is the thumbnail"
+                  : workRefs.length === 0
+                    ? "Add the 3–5 shots that feel most FRED at home — or drag them in"
+                    : ""}
+              </span>
               <input
                 ref={imgInput}
                 type="file"
@@ -734,12 +757,7 @@ function ProfileModal({
               >
                 {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add FRED-at-home images"}
               </button>
-              <span className="pg-upload-hint">Pick the 3–5 shots that feel most FRED at home — or drag them in.</span>
             </div>
-          )}
-
-          {canEdit && workRefs.length > 1 && (
-            <div className="pg-reorder-hint">Drag to reorder</div>
           )}
           {workRefs.length > 0 ? (
             <div className="grid dens-md pg-profile-grid">
