@@ -1,8 +1,9 @@
 "use client";
 
 import Select from "@/app/components/Select";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
+import { addRefsToBoard } from "@/app/actions/moodboards";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
 import UploadModal from "../library/UploadModal";
 import DetailModal from "../library/DetailModal";
@@ -24,10 +25,12 @@ const FACETS: { key: keyof Reference; label: string }[] = [
 
 export default function EditorialClient({
   refs,
+  boards,
   lists,
   designers,
 }: {
   refs: Reference[];
+  boards: { id: string; name: string; sections: { tid: string; label: string }[] }[];
   lists: ListsSetting;
   designers: string[];
 }) {
@@ -47,10 +50,22 @@ export default function EditorialClient({
   const [detail, setDetail] = useState<Reference | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // Add-to-moodboard, straight off a thumbnail (Tess, 2026-08-17). Same two-step
+  // picker as the Library: pick a board, then a section if it has any.
+  const [picker, setPicker] = useState<Reference | null>(null);
+  const [pickBoard, setPickBoard] = useState<string | null>(null);
+  const [pending, start] = useTransition();
 
   function flashToast(m: string) {
     setToast(m);
     setTimeout(() => setToast(null), 1800);
+  }
+
+  function addToBoard(boardId: string, label: string, ref: Reference, sectionTid?: string | null) {
+    start(() => addRefsToBoard(boardId, [ref.id], sectionTid ?? null));
+    flashToast(`Added to ${label}`);
+    setPicker(null);
+    setPickBoard(null);
   }
 
   // Credit fields have no curated vocabulary behind them — a photographer or a
@@ -222,6 +237,18 @@ export default function EditorialClient({
                 <div className="imgwrap">
                   {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
+                  {/* Drop this image onto a moodboard without opening it. */}
+                  {boards.length > 0 && (
+                    <button
+                      type="button"
+                      className="card-mb"
+                      title="Add to moodboard"
+                      aria-label="Add to moodboard"
+                      onClick={(e) => { e.stopPropagation(); setPickBoard(null); setPicker(r); }}
+                    >
+                      ＋
+                    </button>
+                  )}
                 </div>
                 {/* The credits, unless "Images only" is on. */}
                 {!imagesOnly && (
@@ -253,6 +280,65 @@ export default function EditorialClient({
           onClose={() => setUploading(false)}
           onToast={flashToast}
         />
+      )}
+
+      {/* Board picker — pick a board, then a section within it if it has any. */}
+      {picker && (
+        <div className="modal-overlay" onClick={() => { setPicker(null); setPickBoard(null); }}>
+          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <span>Add “{picker.designer || picker.photographer || "image"}” to…</span>
+              <button className="notes-close" onClick={() => { setPicker(null); setPickBoard(null); }}>×</button>
+            </div>
+            <div className="modal-body">
+              {boards.length === 0 ? (
+                <div style={{ color: "var(--muted)", fontSize: 13 }}>No boards yet.</div>
+              ) : pickBoard ? (
+                (() => {
+                  const b = boards.find((x) => x.id === pickBoard);
+                  if (!b) return null;
+                  return (
+                    <>
+                      <div className="pick-step">
+                        <button className="pick-back" onClick={() => setPickBoard(null)}>← Boards</button>
+                        <span>{b.name}</span>
+                      </div>
+                      <div className="board-pick">
+                        <button className="btn ghost sm" disabled={pending} onClick={() => addToBoard(b.id, b.name, picker, null)}>
+                          End of board
+                        </button>
+                        {b.sections.map((s) => (
+                          <button
+                            key={s.tid}
+                            className="btn ghost sm"
+                            disabled={pending}
+                            onClick={() => addToBoard(b.id, `${b.name} · ${s.label}`, picker, s.tid)}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()
+              ) : (
+                <div className="board-pick">
+                  {boards.map((b) => (
+                    <button
+                      key={b.id}
+                      className="btn ghost sm"
+                      disabled={pending}
+                      onClick={() => (b.sections.length > 0 ? setPickBoard(b.id) : addToBoard(b.id, b.name, picker, null))}
+                    >
+                      {b.name}
+                      {b.sections.length > 0 && <span className="pick-more"> ›</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {toast && <div className="toast">{toast}</div>}
