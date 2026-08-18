@@ -456,17 +456,24 @@ body.notes-open .wrap{padding-right:378px}
 .pg-geo-filters .select{width:auto;min-width:140px}
 /* Geographic hierarchy: continent (largest) > country > city (leaf). Light
    weights, matching the app's own headings (.page-title is --w-body). */
-.pg-continent{margin-top:34px}
+/* Three clearly distinct levels with generous air between groups (Tess,
+   2026-08-17: "clearer for cities and countries. More space between groups").
+   Continent = big header on a rule; country = a labelled band above its cities;
+   city = the small uppercase leaf. */
+.pg-continent{margin-top:56px}
 .pg-continent:first-of-type{margin-top:8px}
-.pg-continent-name{font-size:21px;font-weight:var(--w-body);letter-spacing:.01em;line-height:1.12;
-  margin:0;padding-bottom:8px;border-bottom:1px solid var(--hair)}
+.pg-continent-name{font-size:23px;font-weight:var(--w-body);letter-spacing:.01em;line-height:1.12;
+  margin:0;padding-bottom:9px;border-bottom:1px solid var(--hair)}
 .pg-continent-name.muted{color:var(--muted)}
-.pg-country{margin-top:18px}
-.pg-country-name{font-size:14px;font-weight:var(--w-mid);letter-spacing:.01em;color:var(--ink);margin:0}
-.pg-city{margin-top:13px}
-.pg-city-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:11px}
+.pg-country{margin-top:34px}
+/* Country reads as a country: a little accent tab + slightly larger, so it never
+   gets mistaken for a city line. */
+.pg-country-name{font-size:15px;font-weight:var(--w-mid);letter-spacing:.02em;color:var(--ink);
+  margin:0 0 4px;padding-left:10px;border-left:3px solid var(--accent);line-height:1.2}
+.pg-city{margin-top:22px}
+.pg-city-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:12px}
 .pg-city-name{font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;
-  letter-spacing:.11em;line-height:1.1;color:var(--muted)}
+  letter-spacing:.13em;line-height:1.1;color:var(--muted)}
 .pg-city-name.muted{color:var(--faint)}
 .pg-city-meta{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.09em}
 .pg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
@@ -487,7 +494,9 @@ body.notes-open .wrap{padding-right:378px}
   color:rgba(243,239,232,.5);font-size:10px;line-height:1;padding:0;cursor:pointer;
   transition:color .12s,background .12s}
 .pg-star:hover{color:var(--ink);background:rgba(12,12,12,.75)}
-.pg-star.on{color:#fff}
+/* A set star is lime green (Tess, 2026-08-17: "Change color of selected star to
+   lime green"). */
+.pg-star.on,.pg-star.on:hover{color:#a3e635}
 span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .pg-card-name{font-size:var(--t-title);font-weight:var(--w-mid);line-height:1.2}
 .pg-card-ig{font-size:var(--t-sm);color:var(--muted);margin-top:-4px;
@@ -504,7 +513,11 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .pg-upload-hint{font-size:var(--t-meta);color:var(--faint)}
 
 .pg-profile{max-width:960px;width:min(96vw,960px)}
-.pg-profile-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+/* Stacked lines, not one jumbled row (Tess, 2026-08-17: "less jumbled / more
+   stacked lines"): links on one line, tier/medium on the next, then the labelled
+   facts each on their own row. */
+.pg-profile-meta{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin-bottom:18px}
+.pg-profile-line{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .pg-profile-ig{font-size:var(--t-body);color:var(--accent);text-decoration:underline;
   text-underline-offset:3px}
 .pg-profile-cities{display:flex;gap:6px;flex-wrap:wrap}
@@ -513,6 +526,12 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .pg-profile-count{font-size:var(--t-meta);color:var(--faint);text-transform:uppercase;
   letter-spacing:.09em;margin-left:auto}
 .pg-profile-grid .meta{padding:6px 2px 2px}
+/* Drag-to-reorder (team only). */
+.pg-reorder-hint{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;
+  color:var(--faint);margin:0 0 8px}
+.pg-drag{cursor:grab}
+.pg-drag:active{cursor:grabbing}
+.pg-drag img{pointer-events:none}
 
 /* Tier + capability tags — on a card and beside a profile name. The tier carries
    a subtle colour; the capabilities are quiet outlines. */
@@ -956,6 +975,13 @@ body.nav-open .notes-tab{display:none}
 .sel-opt.on:not(.active){color:var(--ink);background:var(--chip)}
 .sel-opt.off{color:var(--faint);cursor:default}
 .sel-opt.off.active{background:none;color:var(--faint)}
+/* MultiSelect rows: a check column, and the chosen ones tinted (they stay
+   visible while you keep picking rather than closing the panel). */
+.ms-opt{display:flex;align-items:center;gap:9px}
+.ms-opt.on{background:var(--chip)}
+.ms-opt:hover{background:var(--accent);color:var(--btnfg)}
+.ms-check{flex:none;width:13px;text-align:center;color:var(--accent);font-size:var(--t-sm);line-height:1}
+.ms-opt:hover .ms-check{color:var(--btnfg)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 

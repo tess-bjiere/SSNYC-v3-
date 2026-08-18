@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, type Reference } from "@/lib/types";
 import {
@@ -17,7 +17,7 @@ import {
   type PhotographerTier,
 } from "@/lib/photographerMeta";
 import { setPhotographerMeta, addPhotographerImages } from "@/app/actions/photographers";
-import Select from "@/app/components/Select";
+import MultiSelect from "@/app/components/MultiSelect";
 import DetailModal from "../library/DetailModal";
 
 // The bare domain of a URL for display, while the link still carries the whole
@@ -58,11 +58,12 @@ export default function PhotographersClient({
   const [tierFilter, setTierFilter] = useState<"" | PhotographerTier>("");
   const [starredOnly, setStarredOnly] = useState(false);
   const [, startStar] = useTransition();
-  // Geographic filters — each narrows the next (a continent limits its
-  // countries, a country its cities).
-  const [continentF, setContinentF] = useState("");
-  const [countryF, setCountryF] = useState("");
-  const [cityF, setCityF] = useState("");
+  // Geographic filters — multi-select (Tess, 2026-08-17: "select multiple cities,
+  // countries"). Each narrows the next: chosen continents limit the country
+  // options, chosen countries limit the cities. Empty at a level means "all".
+  const [continentF, setContinentF] = useState<string[]>([]);
+  const [countryF, setCountryF] = useState<string[]>([]);
+  const [cityF, setCityF] = useState<string[]>([]);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [detail, setDetail] = useState<Reference | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -93,19 +94,40 @@ export default function PhotographersClient({
   const cityPlace = (city: string, located: boolean) =>
     located ? cityGeo(city) : { continent: "Unspecified", country: "" };
 
+  // Every city with its place, resolved once — shared by the dropdown options and
+  // the pruning the multi-selects do when a higher level changes.
+  const geoRows = useMemo(
+    () => cities.map((c) => ({ city: c.city, located: c.located, ...cityPlace(c.city, c.located) })),
+    [cities]
+  );
+
   // The values available to the geo dropdowns, cascading: countries within the
-  // chosen continent, cities within the chosen country/continent.
+  // chosen continents, cities within the chosen countries/continents.
   const geoOptions = useMemo(() => {
-    const rows = cities.map((c) => ({ city: c.city, located: c.located, ...cityPlace(c.city, c.located) }));
     const uniq = (a: string[]) => Array.from(new Set(a.filter(Boolean))).sort((x, y) => x.localeCompare(y));
-    const inCont = continentF ? rows.filter((r) => r.continent === continentF) : rows;
-    const inCountry = countryF ? inCont.filter((r) => r.country === countryF) : inCont;
+    const inCont = continentF.length ? geoRows.filter((r) => continentF.includes(r.continent)) : geoRows;
+    const inCountry = countryF.length ? inCont.filter((r) => countryF.includes(r.country)) : inCont;
     return {
-      continents: uniq(rows.map((r) => r.continent)),
+      continents: uniq(geoRows.map((r) => r.continent)),
       countries: uniq(inCont.map((r) => r.country)),
       cities: uniq(inCountry.filter((r) => r.located).map((r) => r.city)),
     };
-  }, [cities, continentF, countryF]);
+  }, [geoRows, continentF, countryF]);
+
+  // When a higher level changes, drop any lower selections it no longer allows,
+  // so a stale pick can't silently empty the page.
+  const chooseContinents = (vals: string[]) => {
+    setContinentF(vals);
+    const okC = new Set(geoRows.filter((r) => !vals.length || vals.includes(r.continent)).map((r) => r.country));
+    const okCity = new Set(geoRows.filter((r) => !vals.length || vals.includes(r.continent)).map((r) => r.city));
+    setCountryF((prev) => prev.filter((c) => okC.has(c)));
+    setCityF((prev) => prev.filter((c) => okCity.has(c)));
+  };
+  const chooseCountries = (vals: string[]) => {
+    setCountryF(vals);
+    const okCity = new Set(geoRows.filter((r) => !vals.length || vals.includes(r.country)).map((r) => r.city));
+    setCityF((prev) => prev.filter((c) => okCity.has(c)));
+  };
 
   // Search matches a photographer's name, their city or country, or a brand they
   // have worked with (the images' designers plus their past-work note). The tier
@@ -116,9 +138,9 @@ export default function PhotographersClient({
     return cities
       .filter((c) => {
         const { continent, country } = cityPlace(c.city, c.located);
-        if (continentF && continent !== continentF) return false;
-        if (countryF && country !== countryF) return false;
-        if (cityF && c.city !== cityF) return false;
+        if (continentF.length && !continentF.includes(continent)) return false;
+        if (countryF.length && !countryF.includes(country)) return false;
+        if (cityF.length && !cityF.includes(c.city)) return false;
         return true;
       })
       .map((c) => {
@@ -294,41 +316,38 @@ export default function PhotographersClient({
 
       {geoOptions.continents.length > 0 && (
         <div className="pg-geo-filters">
-          <Select
+          <MultiSelect
             className="select"
-            aria-label="Continent"
-            value={continentF}
-            onChange={(v) => { setContinentF(v); setCountryF(""); setCityF(""); }}
-            options={[
-              { value: "", label: "All continents" },
-              ...geoOptions.continents.map((v) => ({ value: v, label: v })),
-            ]}
+            aria-label="Continents"
+            placeholder="All continents"
+            allLabel="continents"
+            values={continentF}
+            onChange={chooseContinents}
+            options={geoOptions.continents.map((v) => ({ value: v, label: v }))}
           />
-          <Select
+          <MultiSelect
             className="select"
-            aria-label="Country"
-            value={countryF}
-            onChange={(v) => { setCountryF(v); setCityF(""); }}
-            options={[
-              { value: "", label: "All countries" },
-              ...geoOptions.countries.map((v) => ({ value: v, label: v })),
-            ]}
+            aria-label="Countries"
+            placeholder="All countries"
+            allLabel="countries"
+            values={countryF}
+            onChange={chooseCountries}
+            options={geoOptions.countries.map((v) => ({ value: v, label: v }))}
           />
-          <Select
+          <MultiSelect
             className="select"
-            aria-label="City"
-            value={cityF}
+            aria-label="Cities"
+            placeholder="All cities"
+            allLabel="cities"
+            values={cityF}
             onChange={setCityF}
-            options={[
-              { value: "", label: "All cities" },
-              ...geoOptions.cities.map((v) => ({ value: v, label: v })),
-            ]}
+            options={geoOptions.cities.map((v) => ({ value: v, label: v }))}
           />
-          {(continentF || countryF || cityF) && (
+          {(continentF.length > 0 || countryF.length > 0 || cityF.length > 0) && (
             <button
               type="button"
               className="btn link"
-              onClick={() => { setContinentF(""); setCountryF(""); setCityF(""); }}
+              onClick={() => { setContinentF([]); setCountryF([]); setCityF([]); }}
             >
               Clear
             </button>
@@ -445,10 +464,59 @@ function ProfileModal({
   const ig = igUrl(profile.ig);
   // Only the refs that actually carry an image are "work"; a roster entry has
   // none. The website is read off whichever ref carries a link.
-  const workRefs = profile.ids
-    .map((id) => byId.get(id))
-    .filter((r): r is Reference => !!r && !!refThumb(r));
+  const workRefsRaw = useMemo(
+    () =>
+      profile.ids
+        .map((id) => byId.get(id))
+        .filter((r): r is Reference => !!r && !!refThumb(r)),
+    [profile.ids, byId]
+  );
+  // Apply the team's hand-set order; anything not in the list keeps its default
+  // place at the end, so a fresh upload shows up without disturbing the order.
+  const workRefs = useMemo(() => {
+    if (!meta.imageOrder.length) return workRefsRaw;
+    const pos = new Map(meta.imageOrder.map((id, i) => [id, i] as const));
+    return [...workRefsRaw].sort(
+      (a, b) =>
+        (pos.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (pos.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }, [workRefsRaw, meta.imageOrder]);
   const site = profile.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
+
+  // Drag-to-reorder the grid (Tess, 2026-08-17: "easy reorder of images ... by
+  // dragging"). Local order for a smooth drag; the id list is saved on drop and
+  // rides back through the photographer's meta.
+  const [items, setItems] = useState<Reference[]>(workRefs);
+  const itemsRef = useRef<Reference[]>(workRefs);
+  const dragId = useRef<string | null>(null);
+  useEffect(() => {
+    setItems(workRefs);
+    itemsRef.current = workRefs;
+  }, [workRefs]);
+
+  function reorderTo(targetId: string) {
+    const src = dragId.current;
+    if (!src || src === targetId) return;
+    setItems((cur) => {
+      const from = cur.findIndex((x) => x.id === src);
+      const to = cur.findIndex((x) => x.id === targetId);
+      if (from < 0 || to < 0) return cur;
+      const next = [...cur];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      itemsRef.current = next;
+      return next;
+    });
+  }
+  function commitOrder() {
+    dragId.current = null;
+    if (!canEdit) return;
+    const ids = itemsRef.current.map((x) => x.id);
+    start(async () => {
+      await setPhotographerMeta(profile.key, { imageOrder: ids });
+      onSaved({ ...meta, imageOrder: ids });
+    });
+  }
   // Where this photographer sits — carried onto the images so they land in the
   // same city they do.
   const location = profile.ids.map((id) => byId.get(id)?.location).find((l) => !!l) || "";
@@ -495,23 +563,33 @@ function ProfileModal({
 
         <div className="modal-body">
           <div className="pg-profile-meta">
-            {ig && (
-              <a className="pg-profile-ig" href={ig} target="_blank" rel="noreferrer">
-                {igLabel(profile.ig!)}
-              </a>
+            {(ig || site) && (
+              <div className="pg-profile-line">
+                {ig && (
+                  <a className="pg-profile-ig" href={ig} target="_blank" rel="noreferrer">
+                    {igLabel(profile.ig!)}
+                  </a>
+                )}
+                {site && (
+                  <a className="pg-profile-ig" href={site} target="_blank" rel="noreferrer">
+                    {prettyHost(site)}
+                  </a>
+                )}
+              </div>
             )}
-            {site && (
-              <a className="pg-profile-ig" href={site} target="_blank" rel="noreferrer">
-                {prettyHost(site)}
-              </a>
+            {(meta.tier || meta.photo || meta.video) && (
+              <div className="pg-profile-line">
+                {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
+                {meta.photo && <span className="pg-cap">Photo</span>}
+                {meta.video && <span className="pg-cap">Video</span>}
+              </div>
             )}
-            {meta.tier && <span className={"pg-tier pg-tier-" + meta.tier}>{tierLabel(meta.tier)}</span>}
-            {meta.photo && <span className="pg-cap">Photo</span>}
-            {meta.video && <span className="pg-cap">Video</span>}
             {workRefs.length > 0 && (
-              <span className="pg-profile-count">
-                {workRefs.length} {workRefs.length === 1 ? "image" : "images"}
-              </span>
+              <div className="pg-profile-line">
+                <span className="pg-profile-count">
+                  {workRefs.length} {workRefs.length === 1 ? "image" : "images"}
+                </span>
+              </div>
             )}
           </div>
 
@@ -638,15 +716,27 @@ function ProfileModal({
             </div>
           )}
 
+          {canEdit && workRefs.length > 1 && (
+            <div className="pg-reorder-hint">Drag to reorder</div>
+          )}
           {workRefs.length > 0 ? (
             <div className="grid dens-md pg-profile-grid">
-              {workRefs.map((r) => {
+              {items.map((r) => {
                 const src = refThumb(r);
                 return (
-                  <div className="card lib-card" key={r.id} onClick={() => onImage(r)}>
+                  <div
+                    className={"card lib-card" + (canEdit ? " pg-drag" : "")}
+                    key={r.id}
+                    onClick={() => onImage(r)}
+                    draggable={canEdit}
+                    onDragStart={canEdit ? () => { dragId.current = r.id; } : undefined}
+                    onDragOver={canEdit ? (e) => { e.preventDefault(); reorderTo(r.id); } : undefined}
+                    onDrop={canEdit ? (e) => { e.preventDefault(); commitOrder(); } : undefined}
+                    onDragEnd={canEdit ? commitOrder : undefined}
+                  >
                     <div className="imgwrap">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src ?? ""} alt={r.designer || ""} loading="lazy" />
+                      <img src={src ?? ""} alt={r.designer || ""} loading="lazy" draggable={false} />
                     </div>
                     <div className="meta">
                       <div className="s">

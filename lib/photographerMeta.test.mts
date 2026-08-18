@@ -55,3 +55,16 @@ test("an unknown tier value is refused", () => {
   const v = withPhotographerMeta({}, "Ada", { tier: "vip" as unknown as "home" });
   assert.equal(readPhotographerMeta(v, "Ada").tier, null);
 });
+
+test("a hand-set image order round-trips and keeps only string ids", () => {
+  const v = withPhotographerMeta({}, "Ada", {
+    imageOrder: ["b", "a", 7 as unknown as string, "c"],
+  });
+  assert.deepEqual(readPhotographerMeta(v, "Ada").imageOrder, ["b", "a", "c"]);
+});
+
+test("an image order alone is worth storing — not treated as an empty card", () => {
+  // A photographer can have a custom order with no tier/notes; it must survive.
+  const v = withPhotographerMeta({}, "Ada", { imageOrder: ["x", "y"] });
+  assert.deepEqual(readAllPhotographerMeta(v).ada.imageOrder, ["x", "y"]);
+});

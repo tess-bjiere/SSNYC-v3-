@@ -31,6 +31,10 @@ export type PhotographerMeta = {
   pastWork: string;
   /** Anything else — miscellaneous notes. */
   notes: string;
+  /** A hand-set order of this photographer's image reference ids (Tess,
+   *  2026-08-17: "easy reorder of images ... by dragging"). Ids missing from the
+   *  list fall to the end in their default order, so it survives new uploads. */
+  imageOrder: string[];
 };
 
 export const EMPTY_META: PhotographerMeta = {
@@ -40,6 +44,7 @@ export const EMPTY_META: PhotographerMeta = {
   starred: false,
   pastWork: "",
   notes: "",
+  imageOrder: [],
 };
 
 /** How a name becomes a key — the same lower-cased trim the directory uses, so
@@ -69,6 +74,9 @@ function readOne(raw: unknown): PhotographerMeta {
     // before the rename is lost.
     pastWork: str(o.pastWork) || str(o.clients),
     notes: str(o.notes),
+    imageOrder: Array.isArray(o.imageOrder)
+      ? o.imageOrder.filter((x): x is string => typeof x === "string")
+      : [],
   };
 }
 
@@ -89,7 +97,10 @@ export function readAllPhotographerMeta(settingsValue: unknown): Record<string, 
 
 /** True when a card carries nothing worth storing. */
 export function isEmptyMeta(m: PhotographerMeta): boolean {
-  return !m.tier && !m.photo && !m.video && !m.starred && !m.pastWork.trim() && !m.notes.trim();
+  return (
+    !m.tier && !m.photo && !m.video && !m.starred &&
+    !m.pastWork.trim() && !m.notes.trim() && m.imageOrder.length === 0
+  );
 }
 
 /**
@@ -114,6 +125,7 @@ export function withPhotographerMeta(
       starred: merged.starred,
       pastWork: merged.pastWork,
       notes: merged.notes,
+      imageOrder: merged.imageOrder,
     };
   return next;
 }
