@@ -734,13 +734,6 @@ function ProfileModal({
               right (Tess, 2026-08-17). The whole modal is also a drop zone. */}
           {canEdit && (
             <div className="pg-imgbar">
-              <span className="pg-imgbar-hint">
-                {workRefs.length > 1
-                  ? "Drag to reorder — the first image is the thumbnail"
-                  : workRefs.length === 0
-                    ? "Add the 3–5 shots that feel most FRED at home — or drag them in"
-                    : ""}
-              </span>
               <input
                 ref={imgInput}
                 type="file"
@@ -757,6 +750,13 @@ function ProfileModal({
               >
                 {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add FRED-at-home images"}
               </button>
+              <span className="pg-imgbar-hint">
+                {workRefs.length > 1
+                  ? "Drag to reorder — the first image is the thumbnail"
+                  : workRefs.length === 0
+                    ? "Add the 3–5 shots that feel most FRED at home — or drag them in"
+                    : ""}
+              </span>
             </div>
           )}
           {workRefs.length > 0 ? (

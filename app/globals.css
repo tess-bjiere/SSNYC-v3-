@@ -511,7 +511,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 /* Image toolbar above the grid — guidance on the left, "Add images" pushed to
    the right (Tess, 2026-08-17: "move add images to right side"). The whole modal
    is also a drop zone. */
-.pg-imgbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:6px 0 12px}
+.pg-imgbar{display:flex;align-items:center;justify-content:flex-start;gap:14px;margin:26px 0 14px}
 .pg-imgbar-hint{font-size:var(--t-meta);color:var(--faint);min-width:0}
 
 .pg-profile{max-width:960px;width:min(96vw,960px)}
