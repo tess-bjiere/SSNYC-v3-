@@ -174,13 +174,6 @@ export default function PhotographersClient({
   // Nest the filtered cities into continent -> country -> city.
   const continents = useMemo(() => groupByGeo(shownCities, cityGeo), [shownCities]);
 
-  // The same filtered people, flattened and de-duped (a photographer in two
-  // cities appears once) and alphabetised — the List view.
-  const shownList = useMemo(() => {
-    const seen = new Map<string, { key: string; name: string; ig: string | null; ids: string[] }>();
-    for (const c of shownCities) for (const p of c.photographers) if (!seen.has(p.key)) seen.set(p.key, p);
-    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [shownCities]);
 
   // Counts reflect what's shown, so the header tracks the active filter.
   const shownPeople = useMemo(() => {
@@ -290,6 +283,43 @@ export default function PhotographersClient({
         ) : starred ? (
           <span className="pg-star on" aria-hidden="true">★</span>
         ) : null}
+      </div>
+    );
+  }
+
+  // One photographer as a dense list row — same data as the card, grouped under
+  // the same city (Tess, 2026-08-18: "the list view should be organized the same
+  // way as the grid view").
+  function listRow(p: { key: string; name: string; ig: string | null; ids: string[] }) {
+    const tier = meta[p.key]?.tier ?? null;
+    const site = p.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
+    const linkUrl = igUrl(p.ig) || site;
+    const linkLabel = p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
+    const starred = !!meta[p.key]?.starred;
+    const n = workSrcs(p.key, p.ids).length;
+    return (
+      <div className="pg-lrow" key={p.key}>
+        {canEdit ? (
+          <button
+            type="button"
+            className={"pg-lstar" + (starred ? " on" : "")}
+            title={starred ? "Unstar" : "Star"}
+            onClick={() => toggleStar(p.key)}
+          >
+            ★
+          </button>
+        ) : (
+          <span className={"pg-lstar" + (starred ? " on" : " sp")}>{starred ? "★" : ""}</span>
+        )}
+        <button type="button" className="pg-lname" onClick={() => setOpenKey(p.key)}>
+          {p.name}
+        </button>
+        {tier && <span className={"pg-tier pg-tier-" + tier}>{tierLabel(tier)}</span>}
+        <span className="pg-lspace" />
+        {n > 0 && <span className="pg-lcount">{n} {n === 1 ? "image" : "images"}</span>}
+        {linkUrl && linkLabel && (
+          <a className="pg-llink" href={linkUrl} target="_blank" rel="noreferrer">{linkLabel}</a>
+        )}
       </div>
     );
   }
@@ -413,45 +443,6 @@ export default function PhotographersClient({
             ? "No campaign images yet. Add photographers' work from the Campaign tab and they'll gather here by place."
             : "No photographers match those filters."}
         </div>
-      ) : view === "list" ? (
-        <div className="pg-list">
-          {shownList.map((p) => {
-            const profile = profileByKey.get(p.key);
-            const cities = profile?.cities.join(", ") || "";
-            const tier = meta[p.key]?.tier ?? null;
-            const site = p.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
-            const linkUrl = igUrl(p.ig) || site;
-            const linkLabel = p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
-            const starred = !!meta[p.key]?.starred;
-            const n = workSrcs(p.key, p.ids).length;
-            return (
-              <div className="pg-lrow" key={p.key}>
-                {canEdit ? (
-                  <button
-                    type="button"
-                    className={"pg-lstar" + (starred ? " on" : "")}
-                    title={starred ? "Unstar" : "Star"}
-                    onClick={() => toggleStar(p.key)}
-                  >
-                    ★
-                  </button>
-                ) : (
-                  <span className={"pg-lstar" + (starred ? " on" : " sp")}>{starred ? "★" : ""}</span>
-                )}
-                <button type="button" className="pg-lname" onClick={() => setOpenKey(p.key)}>
-                  {p.name}
-                </button>
-                {cities && <span className="pg-lcity">{cities}</span>}
-                {tier && <span className={"pg-tier pg-tier-" + tier}>{tierLabel(tier)}</span>}
-                <span className="pg-lspace" />
-                {n > 0 && <span className="pg-lcount">{n} {n === 1 ? "image" : "images"}</span>}
-                {linkUrl && linkLabel && (
-                  <a className="pg-llink" href={linkUrl} target="_blank" rel="noreferrer">{linkLabel}</a>
-                )}
-              </div>
-            );
-          })}
-        </div>
       ) : (
         continents.map((cont) => (
           <section className="pg-continent" key={cont.continent}>
@@ -470,7 +461,11 @@ export default function PhotographersClient({
                         {c.photographers.length === 1 ? "photographer" : "photographers"}
                       </span>
                     </div>
-                    <div className="pg-grid">{c.photographers.map((p) => card(p))}</div>
+                    {view === "list" ? (
+                      <div className="pg-list">{c.photographers.map((p) => listRow(p))}</div>
+                    ) : (
+                      <div className="pg-grid">{c.photographers.map((p) => card(p))}</div>
+                    )}
                   </section>
                 ))}
               </div>
