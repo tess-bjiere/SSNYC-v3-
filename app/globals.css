@@ -727,6 +727,17 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .card-mb:hover{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
 /* Touch devices have no hover — keep it visible so it is reachable there. */
 @media (hover:none){.card-mb{opacity:.85}}
+/* Delete-from-thumbnail on References and Campaign — one click moves the image
+   to Trash (recoverable). Top-left, opposite the moodboard control, hidden until
+   hover, red on hover (Tess, 2026-08-18: "easily delete images in campaign …
+   and references"). Same ✕ affordance as the photographer grid. */
+.card-del{position:absolute;top:6px;left:6px;z-index:3;width:24px;height:24px;display:flex;
+  align-items:center;justify-content:center;background:rgba(12,12,12,.7);color:var(--ink);
+  border:1px solid var(--line);font-size:12px;line-height:1;cursor:pointer;opacity:0;
+  transition:opacity .12s,background .12s}
+.card:hover .card-del{opacity:1}
+.card-del:hover{background:#c0392b;color:#fff;border-color:#c0392b}
+@media (hover:none){.card-del{opacity:.85}}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .modal{background:var(--panel);border:1px solid var(--line);max-height:88vh;overflow:auto;box-shadow:var(--shadow)}

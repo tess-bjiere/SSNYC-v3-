@@ -2,9 +2,11 @@
 
 import Select from "@/app/components/Select";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { addRefsToBoard } from "@/app/actions/moodboards";
+import { softDeleteReference } from "@/app/actions/references";
 import {
   LIST_FIELDS,
   resolveDesigners,
@@ -62,6 +64,11 @@ export default function LibraryClient({
   const [uploading, setUploading] = useState(false);
   const [managing, setManaging] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // Images just ✕'d out of the grid — hidden at once, then soft-deleted to Trash
+  // (recoverable). Tess, 2026-08-18: "easily delete images in campaign … and
+  // references".
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const router = useRouter();
   const [pending, start] = useTransition();
 
   function flashToast(m: string) {
@@ -131,6 +138,7 @@ export default function LibraryClient({
 
   const list = useMemo(() => {
     let out = refs.filter((r) => {
+      if (hidden.has(r.id)) return false;
       const n = yearNum(r.year);
       if (tab === "archival" && !(n != null && n < 2010)) return false;
       if (tab === "market" && !(n != null && n >= 2010)) return false;
@@ -154,7 +162,7 @@ export default function LibraryClient({
       return (b.created_at || "").localeCompare(a.created_at || "");
     });
     return out;
-  }, [refs, tab, q, sel, sort]);
+  }, [refs, tab, q, sel, sort, hidden]);
 
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
@@ -164,6 +172,17 @@ export default function LibraryClient({
     setPicker(null);
     setPickBoard(null);
     setTimeout(() => setToast(null), 1800);
+  }
+
+  // Delete one reference straight from its thumbnail — hide it now, soft delete
+  // behind (recoverable in Trash), then reconcile from the server.
+  function removeCard(id: string) {
+    setHidden((prev) => new Set(prev).add(id));
+    flashToast("Moved to Trash");
+    start(async () => {
+      await softDeleteReference(id);
+      router.refresh();
+    });
   }
 
   return (
@@ -271,6 +290,16 @@ export default function LibraryClient({
                 <div className="imgwrap">
                   {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
+                  {/* Delete straight from the thumbnail — one click, to Trash. */}
+                  <button
+                    type="button"
+                    className="card-del"
+                    title="Delete (moves to Trash)"
+                    aria-label="Delete image"
+                    onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
+                  >
+                    ✕
+                  </button>
                 </div>
                 <div className="meta">
                   <div className="d">{r.designer || "Untitled"}</div>
