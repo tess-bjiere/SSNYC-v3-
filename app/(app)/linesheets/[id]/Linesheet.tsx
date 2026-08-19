@@ -712,8 +712,15 @@ function StyleVersions({
 }) {
   const n = standing.versions.length;
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal ls-vmodal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+      <div className="modal ls-vmodal">
         <div className="ls-vmodal-head">
           <strong>{name}</strong>
           <span className="ls-vmodal-sub">
@@ -799,8 +806,15 @@ function AddStyles({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal ls-picker" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+      <div className="modal ls-picker">
         <div className="ls-picker-head">
           <strong>Add styles</strong>
           <input

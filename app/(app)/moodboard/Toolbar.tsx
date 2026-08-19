@@ -107,8 +107,15 @@ export default function Toolbar({
       </div>
 
       {newBoardOpen && (
-        <div className="modal-overlay" onClick={() => setNewBoardOpen(false)}>
-          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="New board">
+        <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+          <div className="modal modal-sm" role="dialog" aria-modal="true" aria-label="New board">
             <div className="modal-head">
               <span>New board</span>
               <button className="notes-close" type="button" aria-label="Close" onClick={() => setNewBoardOpen(false)}>

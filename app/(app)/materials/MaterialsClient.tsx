@@ -322,8 +322,15 @@ function MaterialForm({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal mat-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+      <div className="modal mat-modal">
         <div className="modal-head">
           <span>Add {kindLabel(k).toLowerCase()}</span>
           <button className="notes-close" onClick={onClose} title="Close">×</button>
@@ -405,8 +412,15 @@ function NameOrder({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal mat-modal mat-modal-sm" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+      <div className="modal mat-modal mat-modal-sm">
         <div className="modal-head">
           <span>New order · {count} {count === 1 ? "material" : "materials"}</span>
           <button className="notes-close" onClick={onClose} title="Close">×</button>
@@ -495,8 +509,15 @@ function MaterialDetail({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal mat-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+      <div className="modal mat-modal">
         <div className="modal-head">
           <span>{material.name} · {kindLabel(k)}</span>
           <button className="notes-close" onClick={onClose} title="Close">×</button>

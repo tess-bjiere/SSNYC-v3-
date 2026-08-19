@@ -313,8 +313,15 @@ export default function EditorialClient({
 
       {/* Board picker — pick a board, then a section within it if it has any. */}
       {picker && (
-        <div className="modal-overlay" onClick={() => { setPicker(null); setPickBoard(null); }}>
-          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          {/* The backdrop is scenery, not a control (Tess, 2026-08-19: "if i click
+          outside the box it closes -- that's creating an issue for me as i keep
+          losing information accidentally before saving"). It used to close on
+          click, and a click here is easier to land by accident than it looks: a
+          drag that starts in a text field and releases on the backdrop fires its
+          click on the OVERLAY, so the modal's own stopPropagation never saw it.
+          Close or a save are the ways out. */}
+          <div className="modal modal-sm">
             <div className="modal-head">
               <span>Add “{picker.designer || picker.photographer || "image"}” to…</span>
               <button className="notes-close" onClick={() => { setPicker(null); setPickBoard(null); }}>×</button>

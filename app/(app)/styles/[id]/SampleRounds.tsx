@@ -927,12 +927,12 @@ function FullRound({
   const label = SAMPLE_ROUND_LABELS[s.round as SampleRound] ?? s.round;
 
   return (
-    <div
-      className="modal-overlay sr-full-overlay"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="modal-overlay sr-full-overlay">
+      {/* No close-on-backdrop here either, and this one was worse than it
+          looked: Escape is gated on `editing === null` so the marking editor
+          keeps its own key, but the backdrop was not gated at all — a click
+          into the dark while marking a photograph shut the whole viewer and
+          took the marks with it. Close is the way out. */}
       <div className="modal sr-full" role="dialog" aria-modal="true" aria-label={`${label}, full screen`}>
         <div className="modal-head">
           <span>
