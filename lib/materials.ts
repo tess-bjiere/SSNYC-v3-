@@ -71,14 +71,26 @@ export function kindLabel(k: MaterialKind): string {
   return k === "trim" ? "Trim" : "Fabric";
 }
 
-/** The one line under a card — the two or three facts that identify a material
- *  at a glance, kind-appropriate, blanks skipped. */
+/** The one line under a card: what it is made of, what it costs, who it comes
+ *  from (Tess, 2026-08-19: "Preview text should be / contents / cost / supplier
+ *  / location"). Blanks are skipped, so a material with no price entered reads
+ *  as contents and supplier rather than leaving a gap or a stray separator.
+ *
+ *  It used to carry GSM and width for a fabric, and type and size for a trim.
+ *  Those are the numbers you compare once you are already looking at one
+ *  material; the card is for finding it, and cost is what was missing.
+ *  Everything dropped from here is still on the detail and still searchable —
+ *  matchMaterial reads every field regardless of what this line shows.
+ *
+ *  "Contents" is composition on a fabric and material on a trim: the same
+ *  question, asked of two different shapes of thing. Location is not a column —
+ *  it is written into supplier, as in "Vilartex (Portugal)". */
 export function specLine(m: MaterialLike): string {
-  const parts =
-    kindOf(m) === "trim"
-      ? [m.trim_type, m.material, m.size, m.supplier]
-      : [m.composition, m.weight, m.width, m.supplier];
-  return parts.map((s) => (s ?? "").trim()).filter(Boolean).join(" · ");
+  const contents = kindOf(m) === "trim" ? m.material : m.composition;
+  return [contents, m.price, m.supplier]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /** Free-text search across every field that carries words. Every whitespace-

@@ -25,14 +25,41 @@ test("fieldsFor shows kind-specific fields first, then the shared set", () => {
   assert.ok(!trim.includes("weight"));
 });
 
-test("specLine reads the right facts per kind and skips blanks", () => {
+test("specLine is contents, cost, supplier — and ignores the specs it used to carry", () => {
   assert.equal(
-    specLine({ kind: "fabric", composition: "100% Linen", weight: "200 GSM", width: "", supplier: "Albini" }),
-    "100% Linen · 200 GSM · Albini"
+    specLine({
+      kind: "fabric",
+      composition: "100% Linen",
+      price: "$8.40/m",
+      supplier: "Albini (Italy)",
+      // Both of these used to be on the line and must not come back.
+      weight: "200 GSM",
+      width: "1.5 m",
+    }),
+    "100% Linen · $8.40/m · Albini (Italy)"
   );
+});
+
+test("specLine reads contents from material on a trim, not composition", () => {
   assert.equal(
-    specLine({ kind: "trim", trim_type: "Button", material: "Corozo", size: "18L", supplier: "" }),
-    "Button · Corozo · 18L"
+    specLine({ kind: "trim", material: "Corozo", price: "$0.35", supplier: "YKK", trim_type: "Button", size: "18L" }),
+    "Corozo · $0.35 · YKK"
+  );
+});
+
+test("specLine closes up rather than leaving a stray separator when a fact is missing", () => {
+  assert.equal(
+    specLine({ kind: "fabric", composition: "100% Cotton", price: "", supplier: "Vilartex (Portugal)" }),
+    "100% Cotton · Vilartex (Portugal)"
+  );
+  assert.equal(specLine({ kind: "fabric", composition: "100% Cotton" }), "100% Cotton");
+  assert.equal(specLine({ kind: "fabric" }), "");
+});
+
+test("specLine trims whitespace so a space-only field does not become a separator", () => {
+  assert.equal(
+    specLine({ kind: "fabric", composition: "100% Wool", price: "   ", supplier: "Loro Piana" }),
+    "100% Wool · Loro Piana"
   );
 });
 
