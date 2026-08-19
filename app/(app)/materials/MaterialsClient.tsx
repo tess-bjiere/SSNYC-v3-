@@ -12,7 +12,10 @@ import {
   kindLabel,
   materialGarments,
   gsmLabel,
+  sourcingOf,
+  sourcingLabel,
   type MaterialKind,
+  type Sourcing,
 } from "@/lib/materials";
 import {
   createMaterial,
@@ -48,11 +51,37 @@ export type Material = {
   moq: string | null;
   lead_time: string | null;
   notes: string | null;
+  sourcing: string | null;
   image_url: string | null;
   thumb_url: string | null;
   extra_images: unknown;
   garments: unknown;
 };
+
+// A small segmented Stock / Custom control — click a chosen side again to clear.
+function SourcingPick({
+  value,
+  onChange,
+}: {
+  value: Sourcing | "";
+  onChange: (v: Sourcing | "") => void;
+}) {
+  return (
+    <div className="pg-filters" style={{ marginTop: 0 }}>
+      {(["stock", "custom"] as Sourcing[]).map((s) => (
+        <button
+          key={s}
+          type="button"
+          className={"pg-filter" + (value === s ? " on" : "")}
+          aria-pressed={value === s}
+          onClick={() => onChange(value === s ? "" : s)}
+        >
+          {sourcingLabel(s)}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function cover(m: Material): string {
   return m.thumb_url || m.image_url || "";
@@ -88,6 +117,8 @@ export default function MaterialsClient({
   // 2026-08-19: "filtered by garment type and fabric type").
   const [productF, setProductF] = useState<string[]>([]);
   const [typeF, setTypeF] = useState<string[]>([]);
+  // Custom / stock filter (Tess, 2026-08-19). "" = either.
+  const [sourcingF, setSourcingF] = useState<Sourcing | "">("");
   // Sort order (Tess, 2026-08-19: "add ability to sort by garment type or fabric
   // type"). Default keeps the newest-first order the page loads in.
   const [sort, setSort] = useState("newest");
@@ -187,6 +218,7 @@ export default function MaterialsClient({
       const filtered = ofKind.filter((m) => {
         if (!matchMaterial(m, q)) return false;
         if (supplier && (m.supplier ?? "") !== supplier) return false;
+        if (sourcingF && sourcingOf(m) !== sourcingF) return false;
         if (productF.length) {
           const g = new Set(materialGarments(m));
           if (!productF.some((p) => g.has(p))) return false;
@@ -216,7 +248,7 @@ export default function MaterialsClient({
     },
     // typesOf/*Type helpers are derived from `products`/`typeOf`, via the closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ofKind, q, supplier, productF, typeF, typeOf, sort]
+    [ofKind, q, supplier, sourcingF, productF, typeF, typeOf, sort]
   );
 
   return (
@@ -285,6 +317,17 @@ export default function MaterialsClient({
             options={[{ value: "", label: "All suppliers" }, ...suppliers.map((s) => ({ value: s, label: s }))]}
           />
         )}
+        <Select
+          className="select sm lib-sort"
+          aria-label="Custom or stock"
+          value={sourcingF}
+          onChange={(v) => setSourcingF(v as Sourcing | "")}
+          options={[
+            { value: "", label: "Stock & custom" },
+            { value: "stock", label: "Stock" },
+            { value: "custom", label: "Custom" },
+          ]}
+        />
         {typeOptions.length > 0 && (
           <MultiSelect
             className="select sm lib-sort"
@@ -323,6 +366,7 @@ export default function MaterialsClient({
             const isSel = selected.has(m.id);
             const gl = materialGarments(m);
             const gsm = gsmLabel(m.weight);
+            const sc = sourcingOf(m);
             return (
               <div
                 className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
@@ -340,6 +384,9 @@ export default function MaterialsClient({
                     </div>
                   )}
                   {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
+                  {/* Custom / stock badge (Tess, 2026-08-19: "add check for
+                      custom or stock and include on thumbnail"). */}
+                  {sc && <span className={"mat-badge " + sc}>{sourcingLabel(sc)}</span>}
                   {n > 1 && <span className="card-extra">{n}</span>}
                 </div>
                 <div className="meta">
@@ -451,6 +498,7 @@ function MaterialForm({
   const router = useRouter();
   const [k, setK] = useState<MaterialKind>(kind);
   const [garments, setGarments] = useState<string[]>([]);
+  const [sourcing, setSourcing] = useState<Sourcing | "">("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -459,6 +507,7 @@ function MaterialForm({
     e.preventDefault();
     const fd = new FormData(formRef.current!);
     fd.set("kind", k);
+    fd.set("sourcing", sourcing);
     for (const g of garments) fd.append("garments", g);
     setBusy(true);
     setErr(null);
@@ -509,6 +558,11 @@ function MaterialForm({
             <span className="mat-label">Name *</span>
             <input className="input" name="name" required autoFocus />
           </label>
+
+          <div className="mat-field">
+            <span className="mat-label">Custom or stock</span>
+            <SourcingPick value={sourcing} onChange={setSourcing} />
+          </div>
 
           {fieldsFor(k).map((f) => (
             <label className="mat-field" key={f.key}>
@@ -641,6 +695,7 @@ function MaterialDetail({
     const d: Record<string, string> = { name: material.name ?? "" };
     for (const f of fieldsFor(k)) d[f.key] = (material[f.key as keyof Material] as string | null) ?? "";
     d.notes = material.notes ?? "";
+    d.sourcing = sourcingOf(material);
     return d;
   });
   const [garments, setGarments] = useState<string[]>(() => materialGarments(material));
@@ -716,6 +771,13 @@ function MaterialDetail({
                 <span className="mat-label">Name</span>
                 <input className="input" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
               </label>
+              <div className="mat-field">
+                <span className="mat-label">Custom or stock</span>
+                <SourcingPick
+                  value={(draft.sourcing as Sourcing | "") ?? ""}
+                  onChange={(v) => setDraft((d) => ({ ...d, sourcing: v }))}
+                />
+              </div>
               {fieldsFor(k).map((f) => (
                 <label className="mat-field" key={f.key}>
                   <span className="mat-label">{f.label}</span>
@@ -784,6 +846,12 @@ function MaterialDetail({
                   </div>
                 ) : null;
               })}
+              {sourcingOf(material) && (
+                <div className="pg-facts">
+                  <span className="k">Sourcing</span>
+                  <div className="pg-fact-val">{sourcingLabel(sourcingOf(material))}</div>
+                </div>
+              )}
               {garments.length > 0 && (
                 <div className="pg-facts">
                   <span className="k">Used for</span>

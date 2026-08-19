@@ -29,6 +29,10 @@ export type MaterialLike = {
   moq?: string | null;
   lead_time?: string | null;
   notes?: string | null;
+  // Custom or stock (Tess, 2026-08-19: "add check for custom or stock"). Stock is
+  // an off-the-shelf material; custom is developed/made-to-order. Unset until
+  // someone says which.
+  sourcing?: string | null;
   // The products (garments) this material is used for — FRED's website products,
   // which are the brand's styles (Tess, 2026-08-19: "add a dropdown for garments
   // the fabric is being used for … it would be the products listed on the
@@ -36,6 +40,8 @@ export type MaterialLike = {
   // can serve many products.
   garments?: unknown;
 };
+
+export type Sourcing = "stock" | "custom";
 
 export type MaterialField = { key: string; label: string };
 
@@ -75,6 +81,14 @@ export function kindOf(m: MaterialLike): MaterialKind {
 }
 export function kindLabel(k: MaterialKind): string {
   return k === "trim" ? "Trim" : "Fabric";
+}
+
+/** Custom / stock, normalized — anything else (unset) reads as "". */
+export function sourcingOf(m: MaterialLike): Sourcing | "" {
+  return m.sourcing === "custom" || m.sourcing === "stock" ? m.sourcing : "";
+}
+export function sourcingLabel(s: Sourcing | ""): string {
+  return s === "custom" ? "Custom" : s === "stock" ? "Stock" : "";
 }
 
 /** The one line under a card: what it is made of, what it costs, who it comes
@@ -141,6 +155,7 @@ export function matchMaterial(m: MaterialLike, query: string): boolean {
   const hay = [
     m.name, m.supplier, m.supplier_ref, m.composition, m.color, m.weight, m.width,
     m.construction, m.finish, m.trim_type, m.size, m.material, m.notes,
+    sourcingOf(m),
     ...materialGarments(m),
   ]
     .map((s) => (s ?? "").toLowerCase())

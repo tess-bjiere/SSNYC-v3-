@@ -9,6 +9,8 @@ import {
   materialGarments,
   usedForProduct,
   gsmLabel,
+  sourcingOf,
+  sourcingLabel,
 } from "./materials.ts";
 
 test("kindOf defaults to fabric unless the row explicitly says trim", () => {
@@ -118,4 +120,19 @@ test("gsmLabel appends GSM to a bare number and leaves a unit alone", () => {
   assert.equal(gsmLabel("6 oz"), "6 oz");
   assert.equal(gsmLabel(""), "");
   assert.equal(gsmLabel(null), "");
+});
+
+test("sourcingOf only recognizes stock or custom, else empty", () => {
+  assert.equal(sourcingOf({ sourcing: "custom" }), "custom");
+  assert.equal(sourcingOf({ sourcing: "stock" }), "stock");
+  assert.equal(sourcingOf({ sourcing: "" }), "");
+  assert.equal(sourcingOf({ sourcing: "whatever" }), "");
+  assert.equal(sourcingOf({}), "");
+  assert.equal(sourcingLabel(sourcingOf({ sourcing: "custom" })), "Custom");
+  assert.equal(sourcingLabel(""), "");
+});
+
+test("matchMaterial searches the custom/stock flag", () => {
+  assert.ok(matchMaterial({ name: "Rib", sourcing: "custom" }, "custom"));
+  assert.ok(!matchMaterial({ name: "Rib", sourcing: "stock" }, "custom"));
 });
