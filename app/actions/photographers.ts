@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireTeam } from "@/lib/access";
+import { requireFredTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
@@ -17,7 +17,7 @@ import {
 // by the photographer's normalised name, read-modify-write so one edit never
 // disturbs another person's card. No table, no migration.
 export async function setPhotographerMeta(nameKey: string, patch: Partial<PhotographerMeta>) {
-  await requireTeam();
+  await requireFredTeam();
   const key = (nameKey ?? "").trim();
   if (!key) return;
 
@@ -40,7 +40,7 @@ export async function setPhotographerMeta(nameKey: string, patch: Partial<Photog
 // out image easily"). Soft delete, so it goes to Trash and can be restored — the
 // same recoverable path as everywhere else, not a hard delete.
 export async function removePhotographerImage(id: string) {
-  await requireTeam();
+  await requireFredTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
@@ -77,7 +77,7 @@ export async function addPhotographerImages(
   location: string,
   formData: FormData
 ): Promise<{ ok: boolean; added: number; errors: string[] }> {
-  await requireTeam();
+  await requireFredTeam();
   const name = (photographer ?? "").trim();
   const files = formData
     .getAll("files")

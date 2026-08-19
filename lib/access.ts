@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   bypassAllowed,
@@ -173,4 +173,23 @@ export async function requireTeam(): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role !== "team") redirect("/library");
   return user;
+}
+
+/** Team, and only on the FRED deployment.
+ *
+ * The fabric & trim library, the material orders built from it and the
+ * photographer directory are FRED-only (Tess, 2026-08-18). Their pages already
+ * call notFound() when APP.id is not "fred", so on SSYNC there is no UI and the
+ * client never receives a bundle carrying these actions' ids.
+ *
+ * This closes the gap behind that door. A server action is a POST endpoint in
+ * its own right: it is deployed to SSYNC whether or not any page there imports
+ * it, and it outlives the page it was written for. So the deployment check
+ * belongs on the write itself, not only on the route that normally reaches it.
+ *
+ * The app check runs BEFORE the session lookup — it is a build-time constant,
+ * so on SSYNC these actions cost nothing and never touch the database. */
+export async function requireFredTeam(): Promise<SessionUser> {
+  if (APP.id !== "fred") notFound();
+  return requireTeam();
 }

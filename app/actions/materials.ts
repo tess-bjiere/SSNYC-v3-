@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireTeam } from "@/lib/access";
+import { requireFredTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
@@ -67,7 +67,7 @@ function imageFiles(form: FormData): File[] {
 export async function createMaterial(
   form: FormData
 ): Promise<{ ok: boolean; id?: string; errors: string[] }> {
-  const user = await requireTeam();
+  const user = await requireFredTeam();
   const name = String(form.get("name") ?? "").trim();
   if (!name) return { ok: false, errors: ["A name is required."] };
   const kind = form.get("kind") === "trim" ? "trim" : "fabric";
@@ -96,7 +96,7 @@ export async function createMaterial(
 
 // Edit the fields of an existing material (the detail-view form).
 export async function updateMaterial(id: string, patch: Record<string, string | null>) {
-  await requireTeam();
+  await requireFredTeam();
   if (!id) return;
   const clean: Record<string, string | null> = {};
   for (const k of FIELDS) {
@@ -119,7 +119,7 @@ export async function addMaterialImages(
   id: string,
   form: FormData
 ): Promise<{ ok: boolean; errors: string[] }> {
-  await requireTeam();
+  await requireFredTeam();
   const files = imageFiles(form);
   if (!id || files.length === 0) return { ok: false, errors: ["No image files provided."] };
   const supabase = await createClient();
@@ -148,7 +148,7 @@ export async function addMaterialImages(
 
 // Soft delete — to Trash, recoverable — like everything else in the app.
 export async function softDeleteMaterial(id: string) {
-  await requireTeam();
+  await requireFredTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
@@ -159,7 +159,7 @@ export async function softDeleteMaterial(id: string) {
 }
 
 export async function restoreMaterial(id: string) {
-  await requireTeam();
+  await requireFredTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase.from("materials").update({ deleted_at: null }).eq("id", id);

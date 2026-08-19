@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireTeam } from "@/lib/access";
+import { requireFredTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import {
   addItems,
@@ -15,9 +15,11 @@ import {
 } from "@/lib/materialOrder";
 
 // Every write to a material order goes through here, matching
-// app/actions/linesheets.ts: requireTeam (the product side), read the row's
-// items jsonb, apply a pure lib/materialOrder.ts helper, write the whole list
-// back. Nothing hard-deletes.
+// app/actions/linesheets.ts: gate, read the row's items jsonb, apply a pure
+// lib/materialOrder.ts helper, write the whole list back. Nothing hard-deletes.
+// The gate here is requireFredTeam rather than linesheets' requireTeam — these
+// orders are FRED-only, and a server action stays callable on SSYNC even with
+// no page there importing it.
 
 const TABLE = "material_orders";
 
@@ -43,7 +45,7 @@ async function writeItems(
 // with the materials selected in the library. `material_ids` arrives as repeated
 // form fields (the library's select mode) or is passed directly.
 export async function createOrder(form: FormData) {
-  const user = await requireTeam();
+  const user = await requireFredTeam();
   const name = ((form.get("name") as string) || "").trim();
   if (!name) return;
   const ids = form.getAll("material_ids").map((v) => String(v)).filter(Boolean);
@@ -61,7 +63,7 @@ export async function createOrder(form: FormData) {
 }
 
 export async function renameOrder(id: string, form: FormData) {
-  await requireTeam();
+  await requireFredTeam();
   const name = ((form.get("name") as string) || "").trim();
   if (!name) return;
   const supabase = await createClient();
@@ -71,7 +73,7 @@ export async function renameOrder(id: string, form: FormData) {
 }
 
 export async function setOrderStatus(id: string, status: string) {
-  await requireTeam();
+  await requireFredTeam();
   const supabase = await createClient();
   await supabase
     .from(TABLE)
@@ -86,7 +88,7 @@ export async function setOrderMeta(
   id: string,
   patch: { ship_to?: string | null; notes?: string | null }
 ) {
-  await requireTeam();
+  await requireFredTeam();
   const clean: Record<string, string | null> = {};
   for (const k of ["ship_to", "notes"] as const) {
     if (k in patch) {
@@ -110,7 +112,7 @@ export async function addMaterialsToOrder(
   id: string,
   materialIds: string[]
 ): Promise<{ added: number }> {
-  await requireTeam();
+  await requireFredTeam();
   const { supabase, items } = await readItems(id);
   const next = addItems(items, materialIds);
   const added = next.length - items.length;
@@ -119,7 +121,7 @@ export async function addMaterialsToOrder(
 }
 
 export async function removeOrderLine(id: string, materialId: string) {
-  await requireTeam();
+  await requireFredTeam();
   const { supabase, items } = await readItems(id);
   const next = removeItem(items, materialId);
   if (next.length === items.length) return;
@@ -132,7 +134,7 @@ export async function setOrderLine(
   materialId: string,
   patch: { qty?: string | null; unit?: string | null; note?: string | null }
 ) {
-  await requireTeam();
+  await requireFredTeam();
   const { supabase, items } = await readItems(id);
   await writeItems(supabase, id, setItemField(items, materialId, patch));
 }
@@ -140,7 +142,7 @@ export async function setOrderLine(
 // Delete an order — soft, like everything else: a deleted_at timestamp takes it
 // off the list and Restore (setting it back to null) would bring it whole.
 export async function deleteOrder(id: string) {
-  await requireTeam();
+  await requireFredTeam();
   const supabase = await createClient();
   await supabase.from(TABLE).update({ deleted_at: new Date().toISOString() }).eq("id", id);
   revalidatePath("/material-orders");
