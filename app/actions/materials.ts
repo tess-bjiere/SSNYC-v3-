@@ -12,6 +12,8 @@ import { REFERENCES_BUCKET } from "@/lib/storage";
 const FIELDS = [
   "name", "supplier", "supplier_ref", "composition", "color", "color_hex",
   "weight", "width", "construction", "finish", "trim_type", "size", "material",
+  // Packaging's own type (Tess, 2026-08-19: "add packaging tab").
+  "pack_type",
   "price", "moq", "lead_time", "notes",
   // 'stock' | 'custom' (Tess, 2026-08-19). Set from the add/edit form like the
   // rest; a blank clears it back to unset.

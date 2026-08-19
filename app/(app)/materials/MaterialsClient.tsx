@@ -9,7 +9,9 @@ import {
   specLine,
   matchMaterial,
   distinct,
+  kindOf,
   kindLabel,
+  kindLabelPlural,
   materialGarments,
   gsmLabel,
   sourcingOf,
@@ -49,6 +51,7 @@ export type Material = {
   trim_type: string | null;
   size: string | null;
   material: string | null;
+  pack_type: string | null;
   price: string | null;
   moq: string | null;
   lead_time: string | null;
@@ -213,7 +216,7 @@ export default function MaterialsClient({
   }
 
   const ofKind = useMemo(
-    () => materials.filter((m) => (m.kind === "trim" ? "trim" : "fabric") === kind),
+    () => materials.filter((m) => kindOf(m) === kind),
     [materials, kind]
   );
   const suppliers = useMemo(() => distinct(ofKind, "supplier"), [ofKind]);
@@ -282,9 +285,11 @@ export default function MaterialsClient({
       }));
     }
 
-    // sort === "type"
-    if (kind === "trim") {
-      const map = bucket(filtered, (m) => (m.trim_type ?? "").trim() || BLANK);
+    // sort === "type". Trim and packaging group by their own type field, one
+    // level; fabric is the two-level knit/woven case below.
+    if (kind === "trim" || kind === "packaging") {
+      const typeField = kind === "trim" ? "trim_type" : "pack_type";
+      const map = bucket(filtered, (m) => ((m[typeField] as string | null) ?? "").trim() || BLANK);
       return sortKeys([...map.keys()]).map((k) => ({
         key: k,
         header: k === BLANK ? "Other" : k,
@@ -471,9 +476,10 @@ export default function MaterialsClient({
         )}
       </div>
 
-      {/* Fabric / Trim — two libraries in one, told apart by kind. */}
+      {/* Fabric / Trim / Packaging — three libraries in one, told apart by kind
+          (Tess, 2026-08-19: "add packaging tab to fabric and trims"). */}
       <div className="pg-filters">
-        {(["fabric", "trim"] as MaterialKind[]).map((k) => (
+        {(["fabric", "trim", "packaging"] as MaterialKind[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -481,7 +487,7 @@ export default function MaterialsClient({
             aria-pressed={kind === k}
             onClick={() => { setKind(k); setSupplier(""); }}
           >
-            {kindLabel(k)}s
+            {kindLabelPlural(k)}
           </button>
         ))}
       </div>
@@ -489,7 +495,7 @@ export default function MaterialsClient({
       <div className="lib-bar">
         <input
           className="input lib-search"
-          placeholder={`Search ${kindLabel(kind).toLowerCase()}s — name, composition, supplier…`}
+          placeholder={`Search ${kindLabelPlural(kind).toLowerCase()} — name, composition, supplier…`}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -553,8 +559,8 @@ export default function MaterialsClient({
       {filtered.length === 0 ? (
         <div className="empty">
           {ofKind.length === 0
-            ? `No ${kindLabel(kind).toLowerCase()}s yet.${canEdit ? ` Add one with the button above.` : ""}`
-            : `No ${kindLabel(kind).toLowerCase()}s match those filters.`}
+            ? `No ${kindLabelPlural(kind).toLowerCase()} yet.${canEdit ? ` Add one with the button above.` : ""}`
+            : `No ${kindLabelPlural(kind).toLowerCase()} match those filters.`}
         </div>
       ) : (
         grouped.map((g) => (
@@ -698,7 +704,7 @@ function MaterialForm({
         </div>
         <form ref={formRef} className="modal-body mat-form" onSubmit={submit}>
           <div className="pg-filters" style={{ marginTop: 0 }}>
-            {(["fabric", "trim"] as MaterialKind[]).map((kk) => (
+            {(["fabric", "trim", "packaging"] as MaterialKind[]).map((kk) => (
               <button
                 key={kk}
                 type="button"

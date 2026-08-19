@@ -12,23 +12,41 @@ import {
   sourcingOf,
   sourcingLabel,
   constructionClass,
+  kindLabelPlural,
 } from "./materials.ts";
 
-test("kindOf defaults to fabric unless the row explicitly says trim", () => {
+test("kindOf defaults to fabric unless the row explicitly says trim or packaging", () => {
   assert.equal(kindOf({}), "fabric");
   assert.equal(kindOf({ kind: "fabric" }), "fabric");
   assert.equal(kindOf({ kind: "trim" }), "trim");
+  assert.equal(kindOf({ kind: "packaging" }), "packaging");
   assert.equal(kindOf({ kind: "junk" }), "fabric");
+});
+
+test("kindLabelPlural spells packaging out rather than adding an -s", () => {
+  assert.equal(kindLabelPlural("fabric"), "Fabrics");
+  assert.equal(kindLabelPlural("trim"), "Trims");
+  assert.equal(kindLabelPlural("packaging"), "Packaging");
 });
 
 test("fieldsFor shows kind-specific fields first, then the shared set", () => {
   const fab = fieldsFor("fabric").map((f) => f.key);
   const trim = fieldsFor("trim").map((f) => f.key);
+  const pack = fieldsFor("packaging").map((f) => f.key);
   assert.equal(fab[0], "weight"); // fabric-specific leads
   assert.equal(trim[0], "trim_type"); // trim-specific leads
-  assert.ok(fab.includes("supplier") && trim.includes("supplier")); // shared in both
+  assert.equal(pack[0], "pack_type"); // packaging-specific leads
+  assert.ok(fab.includes("supplier") && trim.includes("supplier") && pack.includes("supplier"));
   assert.ok(!fab.includes("trim_type")); // no cross-contamination
   assert.ok(!trim.includes("weight"));
+  assert.ok(!pack.includes("trim_type") && !pack.includes("weight"));
+});
+
+test("specLine for packaging reads material · cost · supplier", () => {
+  assert.equal(
+    specLine({ kind: "packaging", material: "Recycled LDPE", price: "$0.08", supplier: "PacRite" }),
+    "Recycled LDPE · $0.08 · PacRite"
+  );
 });
 
 test("specLine is contents, cost, supplier — and ignores the specs it used to carry", () => {

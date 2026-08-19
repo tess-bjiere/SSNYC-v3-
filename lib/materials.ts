@@ -7,7 +7,7 @@
  * — all dependency-free and tested without a database (lib/materials.test.mts).
  */
 
-export type MaterialKind = "fabric" | "trim";
+export type MaterialKind = "fabric" | "trim" | "packaging";
 
 /** The columns a card / form / search read — declared structurally so this stays
  *  dependency-free. */
@@ -25,6 +25,10 @@ export type MaterialLike = {
   trim_type?: string | null;
   size?: string | null;
   material?: string | null;
+  // Packaging's own "type" (poly bag / box / mailer / hangtag / …) — Tess,
+  // 2026-08-19: "add packaging tab to fabric and trims". Its dimensions and
+  // make-up reuse the shared `size` and `material` columns.
+  pack_type?: string | null;
   price?: string | null;
   moq?: string | null;
   lead_time?: string | null;
@@ -68,19 +72,32 @@ export const TRIM_FIELDS: MaterialField[] = [
   { key: "size", label: "Size" },
   { key: "material", label: "Material" },
 ];
+// Packaging by what it is, its dimensions, and its make-up (Tess, 2026-08-19).
+// Same shape as a trim — its own `pack_type`, then the shared size/material.
+export const PACKAGING_FIELDS: MaterialField[] = [
+  { key: "pack_type", label: "Type" },
+  { key: "size", label: "Dimensions" },
+  { key: "material", label: "Material" },
+];
 
 /** The fields a form/detail shows for a kind: the kind-specific ones first,
  *  then the shared set. `name` is handled separately (it is always required). */
 export function fieldsFor(kind: MaterialKind): MaterialField[] {
-  const specific = kind === "trim" ? TRIM_FIELDS : FABRIC_FIELDS;
+  const specific =
+    kind === "trim" ? TRIM_FIELDS : kind === "packaging" ? PACKAGING_FIELDS : FABRIC_FIELDS;
   return [...specific, ...SHARED_FIELDS];
 }
 
 export function kindOf(m: MaterialLike): MaterialKind {
-  return m.kind === "trim" ? "trim" : "fabric";
+  return m.kind === "trim" ? "trim" : m.kind === "packaging" ? "packaging" : "fabric";
 }
 export function kindLabel(k: MaterialKind): string {
-  return k === "trim" ? "Trim" : "Fabric";
+  return k === "trim" ? "Trim" : k === "packaging" ? "Packaging" : "Fabric";
+}
+/** The tab / count label — packaging has no natural plural, so it is spelled out
+ *  rather than left to a bare "+s". */
+export function kindLabelPlural(k: MaterialKind): string {
+  return k === "trim" ? "Trims" : k === "packaging" ? "Packaging" : "Fabrics";
 }
 
 /** Custom / stock, normalized — anything else (unset) reads as "". */
@@ -127,7 +144,9 @@ export function constructionClass(m: MaterialLike): FabricClass {
  *  question, asked of two different shapes of thing. Location is not a column —
  *  it is written into supplier, as in "Vilartex (Portugal)". */
 export function specLine(m: MaterialLike): string {
-  const contents = kindOf(m) === "trim" ? m.material : m.composition;
+  // A fabric's contents is its composition; a trim's or packaging's is what it
+  // is made of (`material`).
+  const contents = kindOf(m) === "fabric" ? m.composition : m.material;
   return [contents, m.price, m.supplier]
     .map((s) => (s ?? "").trim())
     .filter(Boolean)
@@ -175,7 +194,7 @@ export function matchMaterial(m: MaterialLike, query: string): boolean {
   if (!q) return true;
   const hay = [
     m.name, m.supplier, m.supplier_ref, m.composition, m.color, m.weight, m.width,
-    m.construction, m.finish, m.trim_type, m.size, m.material, m.notes,
+    m.construction, m.finish, m.trim_type, m.size, m.material, m.pack_type, m.notes,
     sourcingOf(m),
     ...materialGarments(m),
   ]

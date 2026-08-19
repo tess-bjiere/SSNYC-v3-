@@ -5,7 +5,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { APP } from "@/lib/appConfig";
 import { loadBrands } from "@/lib/brandsServer";
 import { brandName } from "@/lib/brands";
-import { specLine } from "@/lib/materials";
+import { specLine, kindOf } from "@/lib/materials";
 import type { Material } from "@/app/(app)/materials/MaterialsClient";
 import {
   normalizeItems,
@@ -97,7 +97,7 @@ export default async function MaterialOrderPage({
   const pickable: PickMaterial[] = materials.map((m) => ({
     id: m.id,
     name: m.name,
-    kind: m.kind === "trim" ? "trim" : "fabric",
+    kind: kindOf(m),
     supplier: m.supplier,
     spec: specLine(m),
     thumb: cover(m) || null,

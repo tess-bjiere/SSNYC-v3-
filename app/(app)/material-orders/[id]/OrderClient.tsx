@@ -17,7 +17,7 @@ import {
 export type PickMaterial = {
   id: string;
   name: string;
-  kind: "fabric" | "trim";
+  kind: "fabric" | "trim" | "packaging";
   supplier: string | null;
   spec: string;
   thumb: string | null;
@@ -427,7 +427,7 @@ function AddMaterials({
   onAdd: (ids: string[]) => void;
 }) {
   const [q, setQ] = useState("");
-  const [kind, setKind] = useState<"all" | "fabric" | "trim">("all");
+  const [kind, setKind] = useState<"all" | "fabric" | "trim" | "packaging">("all");
   const [chosen, setChosen] = useState<Set<string>>(new Set());
 
   const shown = useMemo(() => {
@@ -468,14 +468,14 @@ function AddMaterials({
         </div>
         <div className="modal-body">
           <div className="pg-filters" style={{ marginTop: 0 }}>
-            {(["all", "fabric", "trim"] as const).map((k) => (
+            {(["all", "fabric", "trim", "packaging"] as const).map((k) => (
               <button
                 key={k}
                 type="button"
                 className={"pg-filter" + (kind === k ? " on" : "")}
                 onClick={() => setKind(k)}
               >
-                {k === "all" ? "All" : k === "fabric" ? "Fabrics" : "Trims"}
+                {k === "all" ? "All" : k === "fabric" ? "Fabrics" : k === "trim" ? "Trims" : "Packaging"}
               </button>
             ))}
           </div>
