@@ -49,6 +49,12 @@ import ImageNotes from "./ImageNotes";
 import Linked from "@/app/components/Linked";
 import { requestCommentScope } from "./commentScope";
 import { PHOTO_FOCUS_EVENT, peekPhotoFocus } from "./photoFocus";
+import {
+  normalizeMaterialIds,
+  resolveMaterials,
+  splitByKind,
+  type LinkedMaterial,
+} from "@/lib/sampleMaterials";
 
 // The sample rounds (P3 #40, refined).
 //
@@ -358,18 +364,95 @@ function TrackingField({ value }: { value?: string | null }) {
   );
 }
 
+// One material, as it reads on a round — the library's own shorthand, so a chip
+// here and a row there say the same thing about the same cloth.
+function MaterialChip({ m }: { m: LinkedMaterial }) {
+  const under = [m.composition, m.supplier].filter(Boolean).join(" · ");
+  return (
+    <span className={`sr-mat${m.deleted ? " is-retired" : ""}`}>
+      {m.color_hex ? (
+        <i className="sr-mat-dot" style={{ background: m.color_hex }} aria-hidden="true" />
+      ) : null}
+      <span className="sr-mat-name">{m.name}</span>
+      {under ? <span className="sr-mat-sub">{under}</span> : null}
+      {/* A material retired from the library after this round was made in it.
+          Worth saying, because the chip otherwise reads as current stock. */}
+      {m.deleted ? <span className="sr-mat-flag">retired</span> : null}
+    </span>
+  );
+}
+
+// The picker. Native checkboxes named material_ids, so the whole selection
+// posts itself and readMaterialIds(form.getAll("material_ids")) is the only
+// thing that has to understand it — no state to fall out of sync with the form.
+//
+// Only rendered when there IS a library: on SSYNC the materials table has never
+// been applied and the library is hidden (db/p11-materials.sql), so SOUS SOUS
+// and Renggli see the words-only form exactly as before.
+function MaterialPicker({
+  library,
+  selected,
+}: {
+  library: readonly LinkedMaterial[];
+  selected: readonly string[];
+}) {
+  const chosen = new Set(selected);
+  // A retired material stays offered only if THIS round already links it —
+  // history is kept, but the list of things you can newly pick is current.
+  const offer = library.filter((m) => !m.deleted || chosen.has(m.id));
+  if (!offer.length) return null;
+  const { fabrics, trims } = splitByKind(offer);
+
+  const group = (label: string, items: LinkedMaterial[]) =>
+    items.length ? (
+      <div className="sr-matpick-group">
+        <div className="sr-matpick-label">{label}</div>
+        <div className="sr-matpick-list">
+          {items.map((m) => (
+            <label key={m.id} className="sr-matpick-item">
+              <input
+                type="checkbox"
+                name="material_ids"
+                value={m.id}
+                defaultChecked={chosen.has(m.id)}
+              />
+              <MaterialChip m={m} />
+            </label>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <div className="sr-matpick">
+      <label className="sr-matpick-head">From the library</label>
+      {group("Fabrics", fabrics)}
+      {group("Trims", trims)}
+    </div>
+  );
+}
+
 // The material half of the form. Identical on add and edit so the two can never
 // drift into asking for different things.
+//
+// The typed fields are the record for anything not in the library, and stay the
+// record regardless: lib/sampleCycle.ts and both exports read them. The picker
+// is additive (Tess, 2026-08-19: "on the sample profile -- we should be able to
+// link the fabric and trims") and appears only where a library exists.
 function MaterialFields({
   s,
+  library = [],
 }: {
   s?: Pick<StyleSample, "material_type" | "material_contents" | "material_supplier"> & {
     material_notes?: string | null;
+    material_ids?: unknown;
   };
+  library?: readonly LinkedMaterial[];
 }) {
   return (
     <>
       <div className="sr-legend">Raw material</div>
+      <MaterialPicker library={library} selected={normalizeMaterialIds(s?.material_ids)} />
       <div className="row3">
         <Field
           label="Type"
@@ -441,12 +524,26 @@ function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name" | "contact_
  * would have been a second copy of the same twenty lines, and the two would
  * have drifted the first time a field was added to one of them.
  */
-function RoundFacts({ s, today }: { s: StyleSample; today: string }) {
+function RoundFacts({
+  s,
+  today,
+  library = [],
+}: {
+  s: StyleSample;
+  today: string;
+  library?: readonly LinkedMaterial[];
+}) {
   const mat = materialStatus(s, today);
   const steps = sampleTimeline(s);
   const matLead = materialLeadDays(s);
   const facLead = factoryLeadDays(s);
   const matLine = materialSummary(s);
+  // Resolved against the library rather than trusted: an id whose row is
+  // genuinely gone renders as unlinked, not as a broken chip.
+  const linked = resolveMaterials(
+    normalizeMaterialIds((s as { material_ids?: unknown }).material_ids),
+    library,
+  );
 
   return (
     <>
@@ -466,10 +563,20 @@ function RoundFacts({ s, today }: { s: StyleSample; today: string }) {
           So the dates won. One shape now — .sr-field, caption over value — for
           the fabric, the legs, the status and all three notes, on one rhythm.
           Titles are written out in full: "Material notes", not "Material". */}
-      {(matLine || mat.state !== "none") && (
+      {(matLine || mat.state !== "none" || linked.length > 0) && (
         <div className="sr-field">
           <span className="k">Raw material</span>
           {matLine && <div className="v">{matLine}</div>}
+          {/* What the round is linked to in the library, under what was typed.
+              Both, deliberately: the words are the record for anything not in
+              the library, and a link is the record for what is. */}
+          {linked.length > 0 && (
+            <div className="sr-mats">
+              {linked.map((m) => (
+                <MaterialChip key={m.id} m={m} />
+              ))}
+            </div>
+          )}
           {mat.state !== "none" && <div className={"sr-material " + mat.state}>{mat.label}</div>}
         </div>
       )}
@@ -616,10 +723,12 @@ function RoundForm({
   styleId,
   s,
   onDone,
+  library = [],
 }: {
   styleId: string;
   s: StyleSample;
   onDone: () => void;
+  library?: readonly LinkedMaterial[];
 }) {
   const legacyDates = hasLegacyMaterialDates(s);
   const landed = !!s.received_date;
@@ -664,7 +773,7 @@ function RoundForm({
 
       <ContactFields s={s} />
 
-      <MaterialFields s={s} />
+      <MaterialFields s={s} library={library} />
 
       <div className="sr-legend">Factory</div>
       <div className="row3">
@@ -785,12 +894,14 @@ function FullRound({
   today,
   images,
   onClose,
+  library = [],
 }: {
   styleId: string;
   s: StyleSample;
   today: string;
   images: { url: string; label: string; note: ImageNote }[];
   onClose: () => void;
+  library?: readonly LinkedMaterial[];
 }) {
   /** Which photograph is being marked, by url. Null is the review screen. */
   const [editing, setEditing] = useState<string | null>(null);
@@ -849,7 +960,7 @@ function FullRound({
             scrolls on its own if it has to, so the view itself never does. */}
         <div className="modal-body sr-full-body">
           <div className="sr-full-side">
-            <RoundFacts s={s} today={today} />
+            <RoundFacts s={s} today={today} library={library} />
           </div>
 
           {images.length === 0 ? (
@@ -996,12 +1107,14 @@ function RoundCard({
   s,
   today,
   comments,
+  library = [],
 }: {
   styleId: string;
   s: StyleSample;
   today: string;
   /** How many comments are filed against this round. */
   comments: number;
+  library?: readonly LinkedMaterial[];
 }) {
   const [open, setOpen] = useState(false);
   const [full, setFull] = useState(false);
@@ -1108,9 +1221,9 @@ function RoundCard({
       {/* Read or write, in the same place. Never both, and never the write half
           shoved below the photographs. */}
       {open ? (
-        <RoundForm styleId={styleId} s={s} onDone={() => setOpen(false)} />
+        <RoundForm styleId={styleId} s={s} onDone={() => setOpen(false)} library={library} />
       ) : (
-        <RoundFacts s={s} today={today} />
+        <RoundFacts s={s} today={today} library={library} />
       )}
 
       {/* The photography standard, on the round it is a photograph of. The
@@ -1150,6 +1263,7 @@ function RoundCard({
           today={today}
           images={roundImages(slotPhotos, shots, imageNotes)}
           onClose={() => setFull(false)}
+          library={library}
         />
       )}
     </div>
@@ -1164,6 +1278,7 @@ export default function SampleRounds({
   commentCounts = {},
   filedOnStyle,
   styleNotes,
+  materialLibrary = [],
 }: {
   styleId: string;
   samples: StyleSample[];
@@ -1181,6 +1296,9 @@ export default function SampleRounds({
    * notes are read inside RoundCard from that round's own map.
    */
   styleNotes?: Record<string, ImageNote>;
+  /** The fabric & trim library a round can link to. Empty on SSYNC, which has
+   *  no materials table — the picker simply does not render. */
+  materialLibrary?: LinkedMaterial[];
 }) {
   const [adding, setAdding] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
@@ -1290,7 +1408,7 @@ export default function SampleRounds({
 
           <ContactFields s={carried} />
 
-          <MaterialFields s={carried} />
+          <MaterialFields s={carried} library={materialLibrary} />
 
           <div className="sr-legend">Factory</div>
           <div className="row3">
@@ -1348,6 +1466,7 @@ export default function SampleRounds({
           s={current}
           today={today}
           comments={commentCounts[current.id] ?? 0}
+          library={materialLibrary}
         />
       )}
 
@@ -1387,6 +1506,7 @@ export default function SampleRounds({
                 s={s}
                 today={today}
                 comments={commentCounts[s.id] ?? 0}
+                library={materialLibrary}
               />
             ))}
         </div>

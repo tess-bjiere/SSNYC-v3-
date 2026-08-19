@@ -61,6 +61,9 @@ import ModalButton from "./ModalButton";
 import { ModalCloseOnSave } from "@/app/components/CloseOnSave";
 import Linked from "@/app/components/Linked";
 import { MOCK, mockStyleBundle } from "@/lib/mock";
+import { APP } from "@/lib/appConfig";
+import { activeBrand } from "@/lib/activeBrand";
+import type { LinkedMaterial } from "@/lib/sampleMaterials";
 
 // Today as a plain calendar day in the studio's timezone, decided once on the
 // server. The sample-cycle arithmetic is pure and takes this as an argument, so
@@ -93,6 +96,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
   let sm: StyleSample[];
   let cm: StyleComment[];
   let refs: LinkedRef[] = [];
+  // The fabric & trim library the round form's picker offers. Empty on SSYNC,
+  // which has no materials table — see the FRED-only load below.
+  let library: LinkedMaterial[] = [];
   // Every other style, narrowly. Two things are read off it: which other
   // profiles are the same garment at another factory (lib/styleSiblings.ts),
   // and the factory names already in use, so the duplicate box can offer them
@@ -133,6 +139,32 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
 
     vs = (versions ?? []) as StyleVersion[];
     sm = (samples ?? []) as StyleSample[];
+
+    // The fabric & trim library, for the round form's picker. FRED only: the
+    // materials table has never been applied to the Loyalist project and the
+    // library is hidden on the SSYNC deploy (db/p11-materials.sql), so on
+    // SOUS SOUS and Renggli there is nothing to offer and no query to run.
+    // Soft-deleted rows are fetched too — a round made in a since-retired
+    // fabric should still be able to name it — and flagged so the chip can say
+    // so rather than silently presenting it as current stock.
+    if (APP.id === "fred") {
+      const brand = await activeBrand();
+      const { data: mats } = await supabase
+        .from("materials")
+        .select("id, name, kind, supplier, composition, color, color_hex, deleted_at")
+        .eq("brand", brand)
+        .order("name", { ascending: true });
+      library = (mats ?? []).map((m) => ({
+        id: m.id as string,
+        name: (m.name as string) ?? "",
+        kind: (m.kind as string) ?? "fabric",
+        supplier: (m.supplier as string | null) ?? null,
+        composition: (m.composition as string | null) ?? null,
+        color: (m.color as string | null) ?? null,
+        color_hex: (m.color_hex as string | null) ?? null,
+        deleted: Boolean(m.deleted_at),
+      }));
+    }
     // A withdrawn comment stops being read here, for everybody including the
     // person who wrote it (Tess, 2026-08-06: "once i delete i shouldnt still
     // have to see my own cooment"). The row is still in the table with its
@@ -1050,6 +1082,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             commentCounts={roundCommentCounts}
             filedOnStyle={normalizePhotos(st.photos)}
             styleNotes={styleNotes}
+            materialLibrary={library}
           />
 
           {/* Everything else that is a picture of this style but is not a

@@ -1554,6 +1554,45 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-legend{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:2px 0 10px}
 .sr-today{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:14px}
 
+/* Fabric & trim links on a round (Tess, 2026-08-19: "on the sample profile --
+   we should be able to link the fabric and trims").
+
+   A chip, not a row: the round already answers in .sr-field captions over
+   values, and a linked material is a thing rather than an answer. Name on the
+   line, composition and supplier under it in the same muted micro the rest of
+   the card uses for its captions, so a chip carries the library's shorthand
+   without shouting over the typed words above it. */
+.sr-mats{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sr-mat{display:inline-flex;align-items:baseline;gap:6px;padding:4px 8px;
+  border:1px solid var(--line);border-radius:2px;background:var(--field);max-width:100%}
+.sr-mat-dot{width:8px;height:8px;border-radius:50%;flex:none;align-self:center;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.sr-mat-name{font-size:var(--t-cap);color:var(--ink);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.sr-mat-sub{font-size:var(--t-micro);color:var(--muted);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+/* Retired from the library after this round was made in it. Muted rather than
+   struck through — the link is still true, the material just is not stock. */
+.sr-mat-flag{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted)}
+.sr-mat.is-retired{opacity:.72}
+
+/* The picker, in the round form. Checkboxes so the whole selection posts
+   itself; the chip beside each is the same one the card shows, so picking and
+   reading look like the same object. */
+.sr-matpick{margin:0 0 14px}
+.sr-matpick-head{display:block;font-size:var(--t-micro);text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
+.sr-matpick-group{margin-bottom:10px}
+.sr-matpick-group:last-child{margin-bottom:0}
+.sr-matpick-label{font-size:var(--t-micro);color:var(--muted);margin-bottom:5px}
+.sr-matpick-list{display:flex;flex-wrap:wrap;gap:6px}
+.sr-matpick-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.sr-matpick-item input{flex:none;margin:0}
+/* The chip reads as chosen, so the state is legible without hunting the box. */
+.sr-matpick-item:has(input:checked) .sr-mat{border-color:var(--ink)}
+.sr-matpick-item input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
 /* Photography, inside the round card (Tess, 2026-08-05: "photography should
    not be it's own section, it needs to live within the specific sample round").
 

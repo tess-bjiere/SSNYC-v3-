@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { requireTeam } from "@/lib/access";
+import { APP } from "@/lib/appConfig";
+import { readMaterialIds } from "@/lib/sampleMaterials";
 import {
   canDeleteComment,
   canEditComment,
@@ -772,6 +774,18 @@ function sampleFields(form: FormData) {
     material_type: s(form, "material_type"),
     material_contents: s(form, "material_contents"),
     material_notes: s(form, "material_notes"),
+    // Links into the fabric & trim library, alongside the words above rather
+    // than instead of them — a round is often made in something nobody has
+    // entered into the library yet.
+    //
+    // FRED only, and spread so the key is ABSENT rather than null elsewhere:
+    // the materials table has never been applied to the Loyalist project
+    // (db/p11-materials.sql) and the library is hidden on the SSYNC deploy, so
+    // there is nothing there to link to and a write would only find a column
+    // that does not exist. Same reasoning as the four material_*_date columns
+    // above — a save from a form that does not offer the field must not be
+    // able to blank it.
+    ...(APP.id === "fred" ? { material_ids: readMaterialIds(form.getAll("material_ids")) } : {}),
   };
 }
 
