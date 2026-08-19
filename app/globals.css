@@ -242,7 +242,7 @@ body.notes-open .wrap{padding-right:378px}
    half below the line the links sit on. Every row in the bar is now centred on
    one horizontal axis instead, and .nav-link is given the pill's line-height so
    the two boxes are measured the same way before they are centred. */
-.nav-links{display:flex;gap:38px;align-items:center;margin-left:8px}
+.nav-links{display:flex;gap:16px;align-items:center;margin-left:8px}
 /* Two groups rather than one row of five (Tess, 2026-08-06: "rethinnk
    navigation / organization ... i just want it to be very clear / logical in
    that somethings are actual development and somethings are ideation"). The
@@ -252,7 +252,7 @@ body.notes-open .wrap{padding-right:378px}
    but it looks messy with it stacked." The caption sits on the line WITH its
    links now, not above them, so the bar is one row of type again. The grouping
    is unchanged — only its geometry. */
-.nav-group{display:flex;flex-direction:row;align-items:center;gap:13px}
+.nav-group{position:relative;display:flex;align-items:center}
 /* Tess, 2026-08-06: "make the product and ideation more readable" — it was
    9px at half opacity in the faintest grey in the palette, which is a
    watermark, not a word. Same size as the tabs it labels now, one step up the
@@ -274,11 +274,29 @@ body.notes-open .wrap{padding-right:378px}
    The links keep their square underline; only the captions are rounded, which
    is the distinction. Baseline alignment still comes from .nav-group, so the
    padding here cannot push the caption off the row. */
-.nav-grouplabel{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
-  letter-spacing:.1em;color:var(--pill);line-height:1;white-space:nowrap;
-  padding:calc(4px + .21em) 10px 4px;border:1px solid var(--hair);border-radius:999px;
-  background:var(--chip)}
-.nav-grouplinks{display:flex;gap:18px;align-items:center}
+/* The group label became a dropdown trigger (Tess, 2026-08-19: "this navigation
+   is getting really long and wonky" → the dropdown layout). It keeps the pill
+   shape the caption used to have, but now it is a button: clicking it opens the
+   group's menu, and the pill of the group you are on reads brighter so the bar
+   still says where you are. The inline `.nav-grouplinks` row it replaced is gone
+   — every child now lives in the menu (and, unchanged, in the mobile drawer). */
+.nav-group-trigger{display:inline-flex;align-items:center;gap:7px;font-family:inherit;cursor:pointer;
+  font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);line-height:1;white-space:nowrap;padding:calc(4px + .21em) 12px 4px;
+  border:1px solid var(--hair);border-radius:999px;background:var(--chip)}
+.nav-group-trigger:hover{color:var(--ink);border-color:var(--line)}
+.nav-group-trigger.active{color:var(--ink);border-color:var(--line)}
+.nav-group.open .nav-group-trigger{color:var(--ink);border-color:var(--line)}
+.nav-caret{width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;
+  border-top:4px solid currentColor;opacity:.65;transition:transform .12s}
+.nav-group.open .nav-caret{transform:rotate(180deg)}
+.nav-menu{position:absolute;top:calc(100% + 8px);left:0;z-index:30;min-width:190px;display:flex;
+  flex-direction:column;padding:6px;background:var(--panel);border:1px solid var(--line);
+  box-shadow:0 8px 26px rgba(0,0,0,.32)}
+.nav-menu-link{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);white-space:nowrap;padding:8px 10px;line-height:1}
+.nav-menu-link:hover{color:var(--ink);background:var(--chip)}
+.nav-menu-link.active{color:var(--ink)}
 /* Tess, 2026-08-06: "remove underline on select in nav-- just change to white".
    The rule is gone entirely rather than left transparent, so nothing in the bar
    is reserving space for a line that will never be drawn. Which tab you are on

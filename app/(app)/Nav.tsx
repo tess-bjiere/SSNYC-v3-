@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type Brand } from "@/lib/brands";
@@ -97,8 +97,18 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // Where finished / in-progress styles are assembled into a season or
       // evergreen linesheet (Tess, 2026-08-12).
       { href: "/linesheets", label: "Linesheets" },
-      // The fabric & trim library (Tess, 2026-08-18: "build library for fabrics
-      // and trims") — the sourced materials the product side draws on.
+    ],
+  },
+  // Materials is its own group as of the dropdown nav (Tess, 2026-08-19: "this
+  // navigation is getting really long and wonky" → chose the dropdown layout).
+  // The fabric/trim/packaging library and the orders drawn from it are sourcing,
+  // not garment-making, so pulling them out of Product stops Product from being
+  // a catch-all and gives each menu a clean, single subject.
+  {
+    label: "Materials",
+    links: [
+      // The fabric, trim & packaging library (Tess, 2026-08-18: "build library
+      // for fabrics and trims"; 2026-08-19: "add packaging tab").
       { href: "/materials", label: "Fabrics & Trims" },
       // Purchase orders assembled from that library (Tess, 2026-08-18: "add
       // ability to create an order for materials from the material library").
@@ -132,16 +142,22 @@ export default function Nav({
   // deploy, which is what SOUS SOUS and Renggli use, doesn't show them.
   // Route-level guards in each page back this up; this just hides the doors.
   const FRED_ONLY = new Set(["/photographers", "/materials", "/material-orders"]);
-  const visibleGroups = (isTeam
-    ? GROUPS
-    : GROUPS.filter((g) => g.label === "Ideation")
-  ).map((g) =>
-    APP.id === "fred"
-      ? g
-      : { ...g, links: g.links.filter((l) => !FRED_ONLY.has(l.href)) },
-  );
-  const groups = visibleGroups;
+  const groups = (isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation"))
+    .map((g) =>
+      APP.id === "fred"
+        ? g
+        : { ...g, links: g.links.filter((l) => !FRED_ONLY.has(l.href)) },
+    )
+    // A group whose only links were FRED-only (Materials on SSYNC) drops entirely
+    // rather than rendering an empty menu.
+    .filter((g) => g.links.length > 0);
   const home = isTeam ? "/development" : "/library";
+
+  // Which group's dropdown is open on the desktop bar (Tess, 2026-08-19: chose
+  // the dropdown layout so the bar stays short as pages are added). One at a
+  // time; closed on outside-click, Escape, or arriving somewhere.
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const linksRef = useRef<HTMLDivElement>(null);
 
   // Below 1200px the full bar cannot hold six links plus the switcher, Setup,
   // the email and Sign out without clipping (Tess, 2026-08-11: "plan out how to
@@ -153,7 +169,24 @@ export default function Nav({
   // The drawer closes when you arrive somewhere (a tapped link has done its job)
   // and on Escape, and the page underneath is scroll-locked while it is open so
   // a swipe moves the drawer's own list rather than the page behind it.
-  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    setMenuOpen(false);
+    setOpenGroup(null);
+  }, [pathname]);
+  // Close an open desktop dropdown on a click outside the bar or on Escape.
+  useEffect(() => {
+    if (!openGroup) return;
+    const onDown = (e: MouseEvent) => {
+      if (!linksRef.current?.contains(e.target as Node)) setOpenGroup(null);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenGroup(null);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openGroup]);
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
@@ -178,29 +211,46 @@ export default function Nav({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-logo" src={APP.logo} alt={APP.name} />
       </Link>
-      <div className="nav-links">
-        {groups.map((g) => (
-          <Fragment key={g.label}>
-            {/* A hairline used to sit between the groups (Tess, 2026-08-06:
-                "remove divider"). The gap does the same work quietly. */}
-            <div className="nav-group">
-              {/* Presentational: the accessible grouping is the heading text
-                  itself, read out before the links it labels. */}
-              <span className="nav-grouplabel">{g.label}</span>
-              <div className="nav-grouplinks">
-                {g.links.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className={"nav-link" + (isActive(l.href) ? " active" : "")}
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
+      {/* The desktop bar shows one word per group; clicking opens that group's
+          menu (Tess, 2026-08-19: "this navigation is getting really long and
+          wonky" → the dropdown layout). The group holding the page you are on is
+          marked active, so you can see where you are without opening anything.
+          Below the drawer breakpoint this whole row is CSS-hidden and the
+          hamburger drawer — which still lists every link — takes over. */}
+      <div className="nav-links" ref={linksRef}>
+        {groups.map((g) => {
+          const open = openGroup === g.label;
+          const groupActive = g.links.some((l) => isActive(l.href));
+          return (
+            <div className={"nav-group" + (open ? " open" : "")} key={g.label}>
+              <button
+                type="button"
+                className={"nav-group-trigger" + (groupActive ? " active" : "")}
+                aria-expanded={open}
+                aria-haspopup="true"
+                onClick={() => setOpenGroup(open ? null : g.label)}
+              >
+                {g.label}
+                <span className="nav-caret" aria-hidden="true" />
+              </button>
+              {open && (
+                <div className="nav-menu" role="menu">
+                  {g.links.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      role="menuitem"
+                      className={"nav-menu-link" + (isActive(l.href) ? " active" : "")}
+                      onClick={() => setOpenGroup(null)}
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
-          </Fragment>
-        ))}
+          );
+        })}
       </div>
       <div className="nav-right">
         {/* Which brand the team is looking at (multi-brand, Tess 2026-08-11).
