@@ -1,6 +1,8 @@
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { getSessionUser } from "@/lib/access";
+import { APP } from "@/lib/appConfig";
 import { type Reference } from "@/lib/types";
 import { PHOTOGRAPHER_META_KEY } from "@/lib/photographerMeta";
 import PhotographersClient from "./PhotographersClient";
@@ -12,6 +14,11 @@ export const dynamic = "force-dynamic";
 // blob holding the team-entered side of each person (tier, video/directs,
 // clients). No photographer table.
 export default async function PhotographersPage() {
+  // FRED-only for now (Tess, 2026-08-18: "hide ... photographer library on the
+  // sous sous / renggli versions"). The nav hides the link on the SSYNC deploy;
+  // this makes the URL itself a 404 there, so a shared/bookmarked link can't
+  // reach it either.
+  if (APP.id !== "fred") notFound();
   const supabase = await createClient();
   const brand = await activeBrand();
   const [{ data }, { data: metaRow }, user] = await Promise.all([

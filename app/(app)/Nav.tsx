@@ -121,7 +121,22 @@ export default function Nav({
   // server too — this only keeps a talent from being shown a door they cannot
   // open. The SSYNC wordmark takes them to References, not Development.
   const isTeam = role === "team";
-  const groups = isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation");
+  // The photographer directory and the fabric & trim library are FRED-only for
+  // now (Tess, 2026-08-18: "hide fabric and trims and photographer library on
+  // the sous sous / renggli versions of the tool"). They live in the shared
+  // codebase but only earn a nav door on the FRED deploy — the SSYNC deploy,
+  // which is what SOUS SOUS and Renggli use, doesn't show them. Route-level
+  // guards in each page back this up; this just hides the doors.
+  const FRED_ONLY = new Set(["/photographers", "/materials"]);
+  const visibleGroups = (isTeam
+    ? GROUPS
+    : GROUPS.filter((g) => g.label === "Ideation")
+  ).map((g) =>
+    APP.id === "fred"
+      ? g
+      : { ...g, links: g.links.filter((l) => !FRED_ONLY.has(l.href)) },
+  );
+  const groups = visibleGroups;
   const home = isTeam ? "/development" : "/library";
 
   // Below 1200px the full bar cannot hold six links plus the switcher, Setup,
