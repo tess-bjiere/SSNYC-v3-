@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { requireTeam } from "@/lib/access";
 import { APP } from "@/lib/appConfig";
-import { readMaterialIds } from "@/lib/sampleMaterials";
+import { readMaterialIds, normalizeMaterialIds } from "@/lib/sampleMaterials";
 import {
   canDeleteComment,
   canEditComment,
@@ -269,6 +269,24 @@ export async function setInLibrary(id: string, on: boolean) {
     .eq("id", id);
   revalidatePath(`/styles/${id}`);
   revalidatePath("/style-library");
+  revalidatePath("/development");
+}
+
+// The materials a style is made in — fabrics / trims / packaging linked from the
+// library (Tess, 2026-08-19: "add fabric and trims from library to a style in
+// development or production"). FRED-only, since the materials library is; on
+// SSYNC this is a no-op. The client sends the whole id set after each add or
+// remove, so this just normalises and writes it — the style_samples.material_ids
+// column takes the same shape for a single round.
+export async function setStyleMaterials(styleId: string, ids: string[]) {
+  await requireTeam();
+  if (APP.id !== "fred" || !styleId) return;
+  const supabase = await createClient();
+  await supabase
+    .from("styles")
+    .update({ material_ids: normalizeMaterialIds(ids), updated_at: new Date().toISOString() })
+    .eq("id", styleId);
+  revalidatePath(`/styles/${styleId}`);
   revalidatePath("/development");
 }
 

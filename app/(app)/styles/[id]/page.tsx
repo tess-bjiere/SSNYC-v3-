@@ -64,6 +64,8 @@ import { MOCK, mockStyleBundle } from "@/lib/mock";
 import { APP } from "@/lib/appConfig";
 import { activeBrand } from "@/lib/activeBrand";
 import type { LinkedMaterial } from "@/lib/sampleMaterials";
+import { normalizeMaterialIds } from "@/lib/sampleMaterials";
+import StyleMaterials from "./StyleMaterials";
 
 // Today as a plain calendar day in the studio's timezone, decided once on the
 // server. The sample-cycle arithmetic is pure and takes this as an argument, so
@@ -430,6 +432,12 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
       offer(im.url, im.caption || `${round} — image ${i + 1}`)
     );
   }
+
+  // The materials linked to the style itself (not to a round). The column is
+  // FRED-only and jsonb; normalize tolerates the old rows that predate it.
+  const styleMaterialIds = normalizeMaterialIds(
+    (st as { material_ids?: unknown }).material_ids,
+  );
 
   return (
     <div className="page">
@@ -1124,6 +1132,26 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               notes={styleNotes}
             />
           </details>
+
+          {/* Materials — the fabrics / trims / packaging this style is made in,
+              linked from the library (Tess, 2026-08-19: "add fabric and trims
+              from library to a style in development or production"). FRED-only,
+              because the materials library is; collapsed like Reference(s), with
+              the count on the summary. This is the style-level list — a sample
+              round keeps its own, for what that specific sample was sewn in. */}
+          {APP.id === "fred" && (
+            <details className="section">
+              <summary className="section-toggle">
+                Materials{" "}
+                <span className="ph-progress">
+                  {styleMaterialIds.length === 0
+                    ? "none linked"
+                    : `${styleMaterialIds.length} linked`}
+                </span>
+              </summary>
+              <StyleMaterials styleId={st.id} library={library} linked={styleMaterialIds} />
+            </details>
+          )}
 
           {/* Reference(s) — the library references behind this style.
               Renamed from "Developed from" (Tess, 2026-08-05). Collapsed by

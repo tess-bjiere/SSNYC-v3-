@@ -2534,6 +2534,25 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .linkref-msg{font-size:var(--t-sm);color:var(--muted);margin-top:12px}
 .linkref-hint{font-size:var(--t-meta);line-height:1.5;color:var(--muted);margin-top:12px;max-width:60ch}
 
+/* Style-level materials (Tess, 2026-08-19: "add fabric and trims from library to
+   a style"). Linked chips reuse the round's .sr-mat look; the picker is a search
+   + grouped list of what's left to add. */
+.stmat-chips{display:flex;flex-wrap:wrap;gap:8px}
+.stmat-chiprow{display:inline-flex;align-items:center;gap:4px}
+.stmat-x{background:none;border:none;color:var(--faint);font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
+.stmat-x:hover{color:#c0392b}
+.stmat-picker{margin-top:14px;border:1px solid var(--hair);background:var(--field);padding:12px}
+.stmat-pickhead{display:flex;gap:8px;align-items:center}
+.stmat-pickhead .input{flex:1;padding:var(--ctl-y-md) var(--ctl-x-md);font-size:var(--t-body)}
+.stmat-group{margin-top:12px}
+.stmat-grouplabel{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);margin-bottom:7px}
+.stmat-offerlist{display:flex;flex-wrap:wrap;gap:8px}
+.stmat-offer{display:inline-flex;align-items:center;gap:9px;background:var(--panel);
+  border:1px solid var(--hair);padding:5px 9px;cursor:pointer;font-family:inherit}
+.stmat-offer:hover{border-color:var(--line)}
+.stmat-add{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--accent);flex:none}
+
 @media(max-width:860px){
   .linkref-grid{grid-template-columns:1fr}
 }
