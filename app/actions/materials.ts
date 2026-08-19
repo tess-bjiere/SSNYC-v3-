@@ -83,14 +83,18 @@ function imageFiles(form: FormData): File[] {
     .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
 }
 
-// Add a fabric or trim, born into the brand you're looking at.
+// Add a fabric, trim or packaging item, born into the brand you're looking at.
 export async function createMaterial(
   form: FormData
 ): Promise<{ ok: boolean; id?: string; errors: string[] }> {
   const user = await requireFredTeam();
   const name = String(form.get("name") ?? "").trim();
   if (!name) return { ok: false, errors: ["A name is required."] };
-  const kind = form.get("kind") === "trim" ? "trim" : "fabric";
+  // fabric | trim | packaging (Tess, 2026-08-19: "add packaging tab" — before
+  // this, anything that wasn't "trim" was filed as fabric, so packaging saved
+  // as fabric).
+  const kindRaw = form.get("kind");
+  const kind = kindRaw === "trim" ? "trim" : kindRaw === "packaging" ? "packaging" : "fabric";
 
   const supabase = await createClient();
   const brand = await activeBrand();
