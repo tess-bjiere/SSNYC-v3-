@@ -88,6 +88,9 @@ export default function MaterialsClient({
   // 2026-08-19: "filtered by garment type and fabric type").
   const [productF, setProductF] = useState<string[]>([]);
   const [typeF, setTypeF] = useState<string[]>([]);
+  // Sort order (Tess, 2026-08-19: "add ability to sort by garment type or fabric
+  // type"). Default keeps the newest-first order the page loads in.
+  const [sort, setSort] = useState("newest");
   const [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Material | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -161,6 +164,18 @@ export default function MaterialsClient({
     }
     return Array.from(out);
   }
+  // The one garment type a material sorts under — the alphabetically-first of the
+  // types it serves; none sorts last.
+  function primaryGarmentType(m: Material): string {
+    const ts = typesOf(m).sort((a, b) => a.localeCompare(b));
+    return ts[0] ?? "";
+  }
+  // "Fabric type" is the fabric's construction (woven / knit / jersey); for a
+  // trim it is the trim type (button / zip). The kind-appropriate "what kind of
+  // thing is this" field.
+  function fabricTypeVal(m: Material): string {
+    return ((m.kind === "trim" ? m.trim_type : m.construction) ?? "").trim();
+  }
 
   const ofKind = useMemo(
     () => materials.filter((m) => (m.kind === "trim" ? "trim" : "fabric") === kind),
@@ -168,8 +183,8 @@ export default function MaterialsClient({
   );
   const suppliers = useMemo(() => distinct(ofKind, "supplier"), [ofKind]);
   const shown = useMemo(
-    () =>
-      ofKind.filter((m) => {
+    () => {
+      const filtered = ofKind.filter((m) => {
         if (!matchMaterial(m, q)) return false;
         if (supplier && (m.supplier ?? "") !== supplier) return false;
         if (productF.length) {
@@ -181,10 +196,27 @@ export default function MaterialsClient({
           if (!typeF.some((t) => ts.has(t))) return false;
         }
         return true;
-      }),
-    // typesOf is derived from `products`/`typeOf`, captured via the closure.
+      });
+      if (sort === "newest") return filtered; // page order is newest-first
+      // A blank sort key always sinks to the bottom, then name breaks ties, so a
+      // sorted list never buries the un-tagged ones among the tagged.
+      const keyOf =
+        sort === "name"
+          ? (m: Material) => (m.name ?? "").toLowerCase()
+          : sort === "garment"
+            ? (m: Material) => primaryGarmentType(m).toLowerCase()
+            : (m: Material) => fabricTypeVal(m).toLowerCase();
+      return [...filtered].sort((a, b) => {
+        const ka = keyOf(a);
+        const kb = keyOf(b);
+        if (!ka !== !kb) return ka ? -1 : 1; // non-empty before empty
+        const c = ka.localeCompare(kb);
+        return c !== 0 ? c : (a.name ?? "").localeCompare(b.name ?? "");
+      });
+    },
+    // typesOf/*Type helpers are derived from `products`/`typeOf`, via the closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ofKind, q, supplier, productF, typeF, typeOf]
+    [ofKind, q, supplier, productF, typeF, typeOf, sort]
   );
 
   return (
@@ -230,6 +262,19 @@ export default function MaterialsClient({
           placeholder={`Search ${kindLabel(kind).toLowerCase()}s — name, composition, supplier…`}
           value={q}
           onChange={(e) => setQ(e.target.value)}
+        />
+        <Select
+          className="select sm lib-sort"
+          aria-label="Sort"
+          value={sort}
+          onChange={setSort}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "name", label: "Name A–Z" },
+            // Garment type is only meaningful once products carry types.
+            ...(typeOptions.length > 0 ? [{ value: "garment", label: "Garment type" }] : []),
+            { value: "type", label: `${kindLabel(kind)} type` },
+          ]}
         />
         {suppliers.length > 0 && (
           <Select
