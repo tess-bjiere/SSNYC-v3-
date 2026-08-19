@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type Brand } from "@/lib/brands";
@@ -157,11 +157,19 @@ export default function Nav({
     .filter((g) => g.links.length > 0);
   const home = isTeam ? "/development" : "/library";
 
-  // Which group's dropdown is open on the desktop bar (Tess, 2026-08-19: chose
-  // the dropdown layout so the bar stays short as pages are added). One at a
-  // time; closed on outside-click, Escape, or arriving somewhere.
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
-  const linksRef = useRef<HTMLDivElement>(null);
+  // Which group's links are showing inline on the team bar. It behaves like a row
+  // of tabs (Tess, 2026-08-19: "the inline options should stay open until you
+  // click product or sourcing"): exactly one group is open, its links sit inline,
+  // and the ONLY thing that changes which is clicking another group. It does not
+  // close when you click into the page, follow a link, or navigate — so the
+  // options you opened stay put. It starts on the group holding the current page.
+  const activeGroupLabel =
+    groups.find((g) =>
+      g.links.some((l) => pathname === l.href || pathname.startsWith(l.href + "/")),
+    )?.label ??
+    groups[0]?.label ??
+    null;
+  const [openGroup, setOpenGroup] = useState<string | null>(activeGroupLabel);
 
   // Below 1200px the full bar cannot hold six links plus the switcher, Setup,
   // the email and Sign out without clipping (Tess, 2026-08-11: "plan out how to
@@ -173,24 +181,9 @@ export default function Nav({
   // The drawer closes when you arrive somewhere (a tapped link has done its job)
   // and on Escape, and the page underneath is scroll-locked while it is open so
   // a swipe moves the drawer's own list rather than the page behind it.
-  useEffect(() => {
-    setMenuOpen(false);
-    setOpenGroup(null);
-  }, [pathname]);
-  // Close an open desktop dropdown on a click outside the bar or on Escape.
-  useEffect(() => {
-    if (!openGroup) return;
-    const onDown = (e: MouseEvent) => {
-      if (!linksRef.current?.contains(e.target as Node)) setOpenGroup(null);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenGroup(null);
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [openGroup]);
+  // Only the mobile drawer closes on navigation; the inline group selection is
+  // left exactly where the user put it (see the tabs note above).
+  useEffect(() => setMenuOpen(false), [pathname]);
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
@@ -215,43 +208,38 @@ export default function Nav({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-logo" src={APP.logo} alt={APP.name} />
       </Link>
-      {/* The team bar shows one word per group; clicking opens that group's menu
-          (Tess, 2026-08-19: "this navigation is getting really long and wonky" →
-          the dropdown layout). The group holding the page you are on is marked
-          active, so you can see where you are without opening anything.
-          A TALENT sees only the Ideation group — a handful of links with no
-          length problem — so for them the bar stays the plain horizontal row it
-          always was; the dropdown is just for the fuller team view (Tess,
-          2026-08-19: "for just the talent view, can the ideation navigation stay
-          as the horizontal bar -- full view moves to dropdown"). Below the drawer
-          breakpoint this whole row is CSS-hidden and the hamburger drawer — which
-          lists every link — takes over for both. */}
-      <div className="nav-links" ref={linksRef}>
+      {/* The team bar reads as a row of tabs: one group is selected, its links
+          show inline, and clicking another group switches the selection (Tess,
+          2026-08-19: "this navigation is getting really long and wonky" → dropdown
+          layout; then "the inline options should stay open until you click
+          product or sourcing"). The selected pill is filled rather than carrying
+          a caret, which pointed down at options that actually open to the side
+          (Tess: "the current carrot down is misleading ... rethink how to best
+          symbolize"). A TALENT sees only Ideation — a few links, no length
+          problem — so their bar stays the plain horizontal row (Tess: "for just
+          the talent view ... stay as the horizontal bar"). Below the drawer
+          breakpoint this row is hidden and the hamburger drawer takes over. */}
+      <div className="nav-links">
         {isTeam
           ? groups.map((g) => {
               const open = openGroup === g.label;
-              const groupActive = g.links.some((l) => isActive(l.href));
               return (
                 <div className={"nav-group" + (open ? " open" : "")} key={g.label}>
                   <button
                     type="button"
-                    className={"nav-group-trigger" + (groupActive ? " active" : "")}
+                    className="nav-group-trigger"
                     aria-expanded={open}
-                    aria-haspopup="true"
-                    onClick={() => setOpenGroup(open ? null : g.label)}
+                    onClick={() => setOpenGroup(g.label)}
                   >
                     {g.label}
-                    <span className="nav-caret" aria-hidden="true" />
                   </button>
                   {open && (
-                    <div className="nav-menu" role="menu">
+                    <div className="nav-menu" role="group" aria-label={g.label}>
                       {g.links.map((l) => (
                         <Link
                           key={l.href}
                           href={l.href}
-                          role="menuitem"
                           className={"nav-menu-link" + (isActive(l.href) ? " active" : "")}
-                          onClick={() => setOpenGroup(null)}
                         >
                           {l.label}
                         </Link>

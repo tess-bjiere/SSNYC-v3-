@@ -280,16 +280,17 @@ body.notes-open .wrap{padding-right:378px}
    group's menu, and the pill of the group you are on reads brighter so the bar
    still says where you are. The inline `.nav-grouplinks` row it replaced is gone
    — every child now lives in the menu (and, unchanged, in the mobile drawer). */
-.nav-group-trigger{display:inline-flex;align-items:center;gap:7px;font-family:inherit;cursor:pointer;
+/* No caret: the pills are tabs, not dropdowns (Tess, 2026-08-19: "the current
+   carrot down is misleading ... rethink how to best symbolize"). The selected
+   group is filled — its colours invert — which reads as "this is the one that's
+   open" without pointing anywhere. The others stay as quiet outline pills. */
+.nav-group-trigger{display:inline-flex;align-items:center;font-family:inherit;cursor:pointer;
   font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.1em;
   color:var(--muted);line-height:1;white-space:nowrap;padding:calc(4px + .21em) 12px 4px;
-  border:1px solid var(--hair);border-radius:999px;background:var(--chip)}
+  border:1px solid var(--hair);border-radius:999px;background:transparent;
+  transition:color .12s,background .12s,border-color .12s}
 .nav-group-trigger:hover{color:var(--ink);border-color:var(--line)}
-.nav-group-trigger.active{color:var(--ink);border-color:var(--line)}
-.nav-group.open .nav-group-trigger{color:var(--ink);border-color:var(--line)}
-.nav-caret{width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;
-  border-top:4px solid currentColor;opacity:.65;transition:transform .12s}
-.nav-group.open .nav-caret{transform:rotate(180deg)}
+.nav-group.open .nav-group-trigger{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 /* The open group's links sit inline in the bar, not in a floating panel (Tess,
    2026-08-19: "when you click on ideation, product or sourcing -- can the sub
    menu show inline?"). They read exactly like the talent bar's inline links —
