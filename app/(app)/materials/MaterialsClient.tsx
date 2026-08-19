@@ -17,6 +17,8 @@ import {
   sourcingOf,
   sourcingLabel,
   constructionClass,
+  isArchived,
+  inProduction,
   type MaterialKind,
   type Sourcing,
   type FabricClass,
@@ -26,6 +28,7 @@ import {
   updateMaterial,
   addMaterialImages,
   softDeleteMaterial,
+  setMaterialArchived,
 } from "@/app/actions/materials";
 import { createOrder, addMaterialsToOrder } from "@/app/actions/materialOrders";
 
@@ -57,6 +60,8 @@ export type Material = {
   lead_time: string | null;
   notes: string | null;
   sourcing: string | null;
+  archived: boolean | null;
+  current_production: boolean | null;
   image_url: string | null;
   thumb_url: string | null;
   extra_images: unknown;
@@ -129,6 +134,9 @@ export default function MaterialsClient({
   const [typeF, setTypeF] = useState<string[]>([]);
   // Custom / stock filter (Tess, 2026-08-19). "" = either.
   const [sourcingF, setSourcingF] = useState<Sourcing | "">("");
+  // Archived are hidden by default; the toggle shows the archived ones instead
+  // (Tess, 2026-08-19: "archive a fabric or a trim or packaging item").
+  const [showArchived, setShowArchived] = useState(false);
   // Sort order (Tess, 2026-08-19: "add ability to sort by garment type or fabric
   // type"). Default keeps the newest-first order the page loads in. A sort other
   // than newest/name also groups the grid under labelled headers.
@@ -224,6 +232,8 @@ export default function MaterialsClient({
   const filtered = useMemo(
     () =>
       ofKind.filter((m) => {
+        // Archived out of the default view; the toggle flips to archived-only.
+        if (isArchived(m) !== showArchived) return false;
         if (!matchMaterial(m, q)) return false;
         if (supplier && (m.supplier ?? "") !== supplier) return false;
         if (sourcingF && sourcingOf(m) !== sourcingF) return false;
@@ -239,7 +249,7 @@ export default function MaterialsClient({
       }),
     // typesOf is derived from `products`/`typeOf`, captured via the closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ofKind, q, supplier, sourcingF, productF, typeF, typeOf]
+    [ofKind, q, supplier, sourcingF, showArchived, productF, typeF, typeOf]
   );
 
   // The sorted, grouped result. Newest and Name are flat (one unlabelled group);
@@ -332,7 +342,7 @@ export default function MaterialsClient({
     const sc = sourcingOf(m);
     return (
       <div
-        className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
+        className={"card lib-card mat-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
         key={m.id}
         onClick={() => (selecting ? toggleSelect(m.id) : setDetail(m))}
       >
@@ -347,13 +357,21 @@ export default function MaterialsClient({
             </div>
           )}
           {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
-          {/* Custom / stock badge (Tess, 2026-08-19: "add check for custom or
-              stock and include on thumbnail"). */}
-          {sc && <span className={"mat-badge " + sc}>{sourcingLabel(sc)}</span>}
+          {/* Current-production is the operational flag, so it rides ON the
+              swatch (Tess, 2026-08-19: "'current production' fabric ... should
+              appear on thumbnail"). Custom/stock moved off the image to a chip by
+              the name — that reorg keeps the swatch from crowding as flags grow
+              (Tess: "if thumbnails are getting too crowded -- reorganize"). */}
+          {!selecting && inProduction(m) && (
+            <span className="mat-badge prod">In production</span>
+          )}
           {n > 1 && <span className="card-extra">{n}</span>}
         </div>
         <div className="meta">
-          <div className="d">{m.name}</div>
+          <div className="d">
+            <span className="mat-dname">{m.name}</span>
+            {sc && <span className={"mat-ibadge " + sc}>{sourcingLabel(sc)}</span>}
+          </div>
           {/* Colour and GSM, up front on the thumbnail (Tess, 2026-08-19: "also
               list color on and gsm on thumbnail"). */}
           {(m.color || gsm) && (
@@ -408,6 +426,7 @@ export default function MaterialsClient({
         <div className="mat-lmain">
           <div className="mat-lname">
             {m.name}
+            {inProduction(m) && <span className="mat-ibadge prod">In production</span>}
             {sc && <span className={"mat-ibadge " + sc}>{sourcingLabel(sc)}</span>}
           </div>
           {specLine(m) && <div className="mat-lspec">{specLine(m)}</div>}
@@ -532,6 +551,15 @@ export default function MaterialsClient({
             { value: "custom", label: "Custom" },
           ]}
         />
+        <button
+          type="button"
+          className={"btn ghost sm" + (showArchived ? " on" : "")}
+          aria-pressed={showArchived}
+          onClick={() => setShowArchived((v) => !v)}
+          title="Show archived materials"
+        >
+          Archived
+        </button>
         {typeOptions.length > 0 && (
           <MultiSelect
             className="select sm lib-sort"
@@ -726,6 +754,11 @@ function MaterialForm({
             <SourcingPick value={sourcing} onChange={setSourcing} />
           </div>
 
+          <label className="mat-field mat-check-field">
+            <input type="checkbox" name="current_production" />
+            <span>Current production</span>
+          </label>
+
           {fieldsFor(k).map((f) => (
             <label className="mat-field" key={f.key}>
               <span className="mat-label">{f.label}</span>
@@ -858,6 +891,7 @@ function MaterialDetail({
     for (const f of fieldsFor(k)) d[f.key] = (material[f.key as keyof Material] as string | null) ?? "";
     d.notes = material.notes ?? "";
     d.sourcing = sourcingOf(material);
+    d.current_production = inProduction(material) ? "true" : "";
     return d;
   });
   const [garments, setGarments] = useState<string[]>(() => materialGarments(material));
@@ -895,6 +929,15 @@ function MaterialDetail({
       await softDeleteMaterial(material.id);
       router.refresh();
       onToast("Moved to Trash");
+      onClose();
+    });
+  }
+  const archived = isArchived(material);
+  function toggleArchive() {
+    start(async () => {
+      await setMaterialArchived(material.id, !archived);
+      router.refresh();
+      onToast(archived ? "Unarchived" : "Archived");
       onClose();
     });
   }
@@ -940,6 +983,14 @@ function MaterialDetail({
                   onChange={(v) => setDraft((d) => ({ ...d, sourcing: v }))}
                 />
               </div>
+              <label className="mat-field mat-check-field">
+                <input
+                  type="checkbox"
+                  checked={draft.current_production === "true"}
+                  onChange={(e) => setDraft((d) => ({ ...d, current_production: e.target.checked ? "true" : "" }))}
+                />
+                <span>Current production</span>
+              </label>
               {fieldsFor(k).map((f) => (
                 <label className="mat-field" key={f.key}>
                   <span className="mat-label">{f.label}</span>
@@ -984,6 +1035,9 @@ function MaterialDetail({
                 </button>
                 <button type="button" className="btn ghost sm" disabled={uploading} onClick={() => imgInput.current?.click()}>
                   {uploading ? "Uploading…" : "+ Add images"}
+                </button>
+                <button type="button" className="btn ghost sm" disabled={pending} onClick={toggleArchive}>
+                  {archived ? "Unarchive" : "Archive"}
                 </button>
                 <span className="spacer" />
                 <button

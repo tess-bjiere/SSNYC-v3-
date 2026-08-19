@@ -37,6 +37,14 @@ export type MaterialLike = {
   // an off-the-shelf material; custom is developed/made-to-order. Unset until
   // someone says which.
   sourcing?: string | null;
+  // Kept but out of the way — hidden from the default view, recoverable, and not
+  // the same as Trash (Tess, 2026-08-19: "archive a fabric or a trim or packaging
+  // item").
+  archived?: boolean | null;
+  // The material currently being produced in — surfaced on the card (Tess,
+  // 2026-08-19: "check 'current production' fabric ... should appear on
+  // thumbnail").
+  current_production?: boolean | null;
   // The products (garments) this material is used for — FRED's website products,
   // which are the brand's styles (Tess, 2026-08-19: "add a dropdown for garments
   // the fabric is being used for … it would be the products listed on the
@@ -106,6 +114,13 @@ export function sourcingOf(m: MaterialLike): Sourcing | "" {
 }
 export function sourcingLabel(s: Sourcing | ""): string {
   return s === "custom" ? "Custom" : s === "stock" ? "Stock" : "";
+}
+
+export function isArchived(m: MaterialLike): boolean {
+  return m.archived === true;
+}
+export function inProduction(m: MaterialLike): boolean {
+  return m.current_production === true;
 }
 
 // The two ways a fabric is built. A fabric sort divides into these before it

@@ -104,6 +104,8 @@ export async function createMaterial(
     if (typeof v === "string" && v.trim()) row[k] = v.trim();
   }
   row.name = name;
+  // Current-production flag from the form checkbox (Tess, 2026-08-19).
+  if (form.get("current_production")) row.current_production = true;
 
   // The products (garments) this material is used for — repeated `garments`
   // fields off the multi-select. De-duped; empty stays the column default [].
@@ -141,12 +143,28 @@ export async function updateMaterial(
       clean[k] = typeof v === "string" && v.trim() === "" ? null : (v ?? null);
     }
   }
+  // Boolean flags arrive as "true"/"" strings in the same patch.
+  if ("current_production" in patch) clean.current_production = patch.current_production === "true";
   if (garments !== undefined) clean.garments = uniqTrim(garments);
   if (Object.keys(clean).length === 0) return;
   const supabase = await createClient();
   await supabase
     .from("materials")
     .update({ ...clean, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath("/materials");
+}
+
+// Archive / unarchive a material — kept, not deleted; hidden from the default
+// view until restored (Tess, 2026-08-19: "archive a fabric or a trim or
+// packaging item").
+export async function setMaterialArchived(id: string, archived: boolean) {
+  await requireFredTeam();
+  if (!id) return;
+  const supabase = await createClient();
+  await supabase
+    .from("materials")
+    .update({ archived, updated_at: new Date().toISOString() })
     .eq("id", id);
   revalidatePath("/materials");
 }

@@ -505,8 +505,20 @@ body.notes-open .wrap{padding-right:378px}
 .mat-images{margin-bottom:18px}
 .mat-readfacts{margin-top:4px}
 .btn.link.arm{color:#c0392b}
+/* A checkbox field lays its box beside its label, not stacked like the inputs. */
+.mat-check-field{flex-direction:row;align-items:center;gap:8px;cursor:pointer}
+.mat-check-field input{width:15px;height:15px;accent-color:var(--accent)}
+.mat-check-field span{font-size:var(--t-sm);color:var(--ink)}
 @media (max-width:640px){.mat-form{grid-template-columns:1fr}}
 .mat-modal-sm{max-width:440px;width:min(94vw,440px)}
+/* The name line carries a small sourcing chip beside the name; the name itself
+   truncates so the chip is never pushed off (Tess, 2026-08-19 reorg). */
+.mat-card .meta .d{display:flex;align-items:baseline;gap:6px;min-width:0}
+.mat-dname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* "In production" reads in the accent wherever it appears — the swatch badge and
+   the list-row inline chip (Tess, 2026-08-19: "current production ... on
+   thumbnail"). */
+.mat-badge.prod,.mat-ibadge.prod{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
 /* Colour + GSM on a swatch card, and the products it's used for (Tess,
    2026-08-19: "list color on and gsm on thumbnail" + "dropdown for garments the
    fabric is being used for"). */
