@@ -17,8 +17,10 @@
 //
 // No window.confirm and no alert anywhere in here, on purpose: a native modal
 // dialog freezes the page against everything else the tool does. This is a
-// plain overlay — Escape closes it, clicking the backdrop closes it, and the
-// form inside is the same server action the collapsed section always posted to.
+// plain overlay, and the form inside is the same server action the collapsed
+// section always posted to. Close or a landed save are the only ways out (Tess,
+// 2026-08-19: "when a modal is open, the only way to close it would be to press
+// X or save") — see ModalButton.tsx for the reasoning, including a11y.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -33,18 +35,15 @@ export default function RepurposeButton({
   const [open, setOpen] = useState(false);
   const seasonRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes. Bound only while the box is open, so the page keeps its own
-  // keyboard behaviour the rest of the time.
+  // The season is the only field that has to be filled in, so the cursor starts
+  // there rather than making everyone find it.
+  //
+  // This effect used to bind Escape-to-close alongside the focus. Only the focus
+  // is left — careful here, because deleting the whole effect would have taken
+  // the autofocus with it.
   useEffect(() => {
     if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", onKey);
-    // The season is the only field that has to be filled in, so the cursor
-    // starts there rather than making everyone find it.
     seasonRef.current?.focus();
-    return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
   return (
@@ -56,11 +55,6 @@ export default function RepurposeButton({
       {open && (
         <div
           className="modal-overlay"
-          // Backdrop only — a click that started inside the box and ended on the
-          // overlay (a drag across a text field) must not count as "close".
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
         >
           <div className="modal modal-up" role="dialog" aria-modal="true" aria-label="Repurpose into a new season">
             <div className="modal-head">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { StyleVersion } from "@/lib/types";
 import type { VariationStyle } from "@/lib/variations";
 import Variations, { type VariationSource } from "./Variations";
@@ -23,8 +23,10 @@ import Variations, { type VariationSource } from "./Variations";
 // page — see RepurposeButton.tsx, which is the pattern being followed here.
 //
 // NO window.confirm AND NO alert, anywhere. A native dialog freezes the page.
-// These are plain overlays: Escape closes, the backdrop closes, and the form
-// inside posts to the same server action it always did.
+// These are plain overlays, and the form inside posts to the same server action
+// it always did. Close or a landed save are the only ways out (Tess,
+// 2026-08-19: "when a modal is open, the only way to close it would be to press
+// X or save") — see ModalButton.tsx for the reasoning, including a11y.
 //
 // WHAT THE TWO BUTTONS ARE, exactly, because the words are easy to confuse:
 //
@@ -61,18 +63,6 @@ function when(ts: string | null | undefined): string {
   return ts ? ts.slice(0, 10) : "";
 }
 
-/** Escape-to-close, bound only while a box is open. */
-function useEscape(open: boolean, close: () => void) {
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, close]);
-}
-
 function Modal({
   label,
   wide,
@@ -87,11 +77,6 @@ function Modal({
   return (
     <div
       className="modal-overlay"
-      // Backdrop only — a drag that starts inside a text field and ends out
-      // here must not count as "close".
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       <div className={"modal" + (wide ? " modal-lg" : " modal-up")} role="dialog" aria-modal="true" aria-label={label}>
         <div className="modal-head">
@@ -128,7 +113,6 @@ export default function VersionStrip({
 }) {
   const [box, setBox] = useState<"" | "dup" | "ai">("");
   const close = () => setBox("");
-  useEscape(box !== "", close);
 
   const n = versions.length;
 

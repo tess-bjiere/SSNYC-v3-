@@ -20,10 +20,22 @@ import { ModalCloseContext } from "@/app/components/CloseOnSave";
 // without knowing what either of them is.
 //
 // NO window.confirm AND NO alert, anywhere near this — a native dialog freezes
-// the page and takes the Chrome extension with it. This is a plain overlay:
-// Escape closes it, the backdrop closes it, and anything inside posts exactly
-// as it did when it was a panel. Same pattern as RepurposeButton.tsx and the
-// boxes in VersionStrip.tsx.
+// the page and takes the Chrome extension with it. This is a plain overlay, and
+// anything inside posts exactly as it did when it was a panel. Same pattern as
+// RepurposeButton.tsx and the boxes in VersionStrip.tsx.
+//
+// It closes on Close, or on a save that lands — and on nothing else (Tess,
+// 2026-08-19: "when a modal is open, the only way to close it would be to press
+// X or save"). Escape and the backdrop used to close it too. Both are one
+// unconsidered gesture away from throwing out a form somebody has been filling
+// in, and neither asks first — the backdrop especially, since these boxes are
+// wide and the miss is easy.
+//
+// The a11y note, so the next person does not "fix" this back: the ARIA dialog
+// pattern expects Escape to close. What that expectation is protecting is that
+// a keyboard user must never be stuck in a box, and Close satisfies it — it is
+// a real button, it is the first thing in the modal, and it is reachable by Tab
+// from anywhere inside. The convention is gone; the guarantee is not.
 export default function ModalButton({
   label,
   title,
@@ -74,15 +86,6 @@ export default function ModalButton({
     return () => window.removeEventListener("hashchange", check);
   }, [openOnHash]);
 
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, close]);
-
   return (
     <>
       <div className="modal-btn-row" id={openOnHash}>
@@ -96,15 +99,12 @@ export default function ModalButton({
         {hint && <span className="ph-progress">{hint}</span>}
       </div>
 
+      {/* The backdrop is scenery now, not a control. It used to close on a
+          mousedown that both started and ended on it — careful about drags out
+          of a text field, but still a click into empty space that discarded a
+          form. */}
       {open && (
-        <div
-          className="modal-overlay"
-          // Backdrop only — a drag that starts in a text field and ends out
-          // here must not count as "close", or a half-typed form vanishes.
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) close();
-          }}
-        >
+        <div className="modal-overlay">
           <div
             className={"modal" + (wide ? " modal-lg" : " modal-up")}
             role="dialog"
