@@ -484,6 +484,19 @@ body.notes-open .wrap{padding-right:378px}
 .btn.link.arm{color:#c0392b}
 @media (max-width:640px){.mat-form{grid-template-columns:1fr}}
 .mat-modal-sm{max-width:440px;width:min(94vw,440px)}
+/* Colour + GSM on a swatch card, and the products it's used for (Tess,
+   2026-08-19: "list color on and gsm on thumbnail" + "dropdown for garments the
+   fabric is being used for"). */
+.mat-facts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:2px}
+.mat-colorbit{display:inline-flex;align-items:center;gap:5px;font-size:var(--t-meta);color:var(--muted)}
+.mat-dot{width:11px;height:11px;border-radius:50%;border:1px solid var(--line);display:inline-block;flex:none}
+.mat-gsm{font-size:var(--t-meta);color:var(--muted)}
+.mat-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.mat-tag{font-size:var(--t-micro);letter-spacing:.03em;color:var(--muted);background:var(--chip);
+  border:1px solid var(--hair);padding:1px 6px;white-space:nowrap}
+.mat-tag-more{color:var(--faint)}
+/* The used-for multi-select fills its wide field row. */
+.mat-garments{width:100%}
 
 /* --- Order select mode in the library (Tess, 2026-08-18: "create an order for
    materials from the material library"). A ticked card and a bottom pickbar. --- */

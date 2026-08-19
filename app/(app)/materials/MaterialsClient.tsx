@@ -3,12 +3,15 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Select from "@/app/components/Select";
+import MultiSelect from "@/app/components/MultiSelect";
 import {
   fieldsFor,
   specLine,
   matchMaterial,
   distinct,
   kindLabel,
+  materialGarments,
+  gsmLabel,
   type MaterialKind,
 } from "@/lib/materials";
 import {
@@ -20,6 +23,9 @@ import {
 import { createOrder, addMaterialsToOrder } from "@/app/actions/materialOrders";
 
 export type OpenOrder = { id: string; name: string; status: string };
+// A product the brand sells (a style), with its garment type — the options for
+// "used for" and the garment-type filter.
+export type Product = { name: string; type: string | null };
 
 export type Material = {
   id: string;
@@ -45,6 +51,7 @@ export type Material = {
   image_url: string | null;
   thumb_url: string | null;
   extra_images: unknown;
+  garments: unknown;
 };
 
 function cover(m: Material): string {
@@ -65,15 +72,22 @@ export default function MaterialsClient({
   materials,
   canEdit = false,
   openOrders = [],
+  products = [],
 }: {
   materials: Material[];
   canEdit?: boolean;
   openOrders?: OpenOrder[];
+  products?: Product[];
 }) {
   const router = useRouter();
   const [kind, setKind] = useState<MaterialKind>("fabric");
   const [q, setQ] = useState("");
   const [supplier, setSupplier] = useState("");
+  // Filter by which product a material is used for, and by garment type. A
+  // material's type is derived from its products via the styles list (Tess,
+  // 2026-08-19: "filtered by garment type and fabric type").
+  const [productF, setProductF] = useState<string[]>([]);
+  const [typeF, setTypeF] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Material | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -120,14 +134,57 @@ export default function MaterialsClient({
     flash(res.added > 0 ? `Added ${res.added} to order` : "Already on the order");
   }
 
+  // product name → garment type, for deriving a material's types from its
+  // products and for building the garment-type filter options.
+  const typeOf = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const p of products) m.set(p.name, p.type);
+    return m;
+  }, [products]);
+  const productOptions = useMemo(
+    () => products.map((p) => ({ value: p.name, label: p.name })),
+    [products]
+  );
+  const typeOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of products) if (p.type) s.add(p.type);
+    return Array.from(s).sort((a, b) => a.localeCompare(b)).map((t) => ({ value: t, label: t }));
+  }, [products]);
+
+  // The garment types a material serves — its products mapped through the styles
+  // list. Unknown products (renamed/removed styles) contribute no type.
+  function typesOf(m: Material): string[] {
+    const out = new Set<string>();
+    for (const g of materialGarments(m)) {
+      const t = typeOf.get(g);
+      if (t) out.add(t);
+    }
+    return Array.from(out);
+  }
+
   const ofKind = useMemo(
     () => materials.filter((m) => (m.kind === "trim" ? "trim" : "fabric") === kind),
     [materials, kind]
   );
   const suppliers = useMemo(() => distinct(ofKind, "supplier"), [ofKind]);
   const shown = useMemo(
-    () => ofKind.filter((m) => matchMaterial(m, q) && (!supplier || (m.supplier ?? "") === supplier)),
-    [ofKind, q, supplier]
+    () =>
+      ofKind.filter((m) => {
+        if (!matchMaterial(m, q)) return false;
+        if (supplier && (m.supplier ?? "") !== supplier) return false;
+        if (productF.length) {
+          const g = new Set(materialGarments(m));
+          if (!productF.some((p) => g.has(p))) return false;
+        }
+        if (typeF.length) {
+          const ts = new Set(typesOf(m));
+          if (!typeF.some((t) => ts.has(t))) return false;
+        }
+        return true;
+      }),
+    // typesOf is derived from `products`/`typeOf`, captured via the closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ofKind, q, supplier, productF, typeF, typeOf]
   );
 
   return (
@@ -183,6 +240,28 @@ export default function MaterialsClient({
             options={[{ value: "", label: "All suppliers" }, ...suppliers.map((s) => ({ value: s, label: s }))]}
           />
         )}
+        {typeOptions.length > 0 && (
+          <MultiSelect
+            className="select sm lib-sort"
+            aria-label="Garment type"
+            placeholder="All garment types"
+            allLabel="types"
+            values={typeF}
+            onChange={setTypeF}
+            options={typeOptions}
+          />
+        )}
+        {productOptions.length > 0 && (
+          <MultiSelect
+            className="select sm lib-sort"
+            aria-label="Product"
+            placeholder="All products"
+            allLabel="products"
+            values={productF}
+            onChange={setProductF}
+            options={productOptions}
+          />
+        )}
       </div>
 
       {shown.length === 0 ? (
@@ -197,6 +276,8 @@ export default function MaterialsClient({
             const src = cover(m);
             const n = extraUrls(m).length + (src ? 1 : 0);
             const isSel = selected.has(m.id);
+            const gl = materialGarments(m);
+            const gsm = gsmLabel(m.weight);
             return (
               <div
                 className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
@@ -218,7 +299,31 @@ export default function MaterialsClient({
                 </div>
                 <div className="meta">
                   <div className="d">{m.name}</div>
+                  {/* Colour and GSM, up front on the thumbnail (Tess, 2026-08-19:
+                      "also list color on and gsm on thumbnail"). */}
+                  {(m.color || gsm) && (
+                    <div className="mat-facts">
+                      {m.color && (
+                        <span className="mat-colorbit">
+                          {m.color_hex && (
+                            <span className="mat-dot" style={{ background: m.color_hex }} />
+                          )}
+                          {m.color}
+                        </span>
+                      )}
+                      {gsm && <span className="mat-gsm">{gsm}</span>}
+                    </div>
+                  )}
                   {specLine(m) && <div className="s">{specLine(m)}</div>}
+                  {/* The products this material is used for. */}
+                  {gl.length > 0 && (
+                    <div className="mat-tags">
+                      {gl.slice(0, 3).map((g) => (
+                        <span className="mat-tag" key={g}>{g}</span>
+                      ))}
+                      {gl.length > 3 && <span className="mat-tag mat-tag-more">+{gl.length - 3}</span>}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -264,6 +369,7 @@ export default function MaterialsClient({
       {adding && (
         <MaterialForm
           kind={kind}
+          products={products}
           onClose={() => setAdding(false)}
           onDone={(k) => { setAdding(false); flash(`Added ${kindLabel(k).toLowerCase()}`); }}
         />
@@ -273,6 +379,7 @@ export default function MaterialsClient({
         <MaterialDetail
           material={detail}
           canEdit={canEdit}
+          products={products}
           onClose={() => setDetail(null)}
           onToast={flash}
         />
@@ -287,15 +394,18 @@ export default function MaterialsClient({
 // or more swatch photos.
 function MaterialForm({
   kind,
+  products,
   onClose,
   onDone,
 }: {
   kind: MaterialKind;
+  products: Product[];
   onClose: () => void;
   onDone: (k: MaterialKind) => void;
 }) {
   const router = useRouter();
   const [k, setK] = useState<MaterialKind>(kind);
+  const [garments, setGarments] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -304,6 +414,7 @@ function MaterialForm({
     e.preventDefault();
     const fd = new FormData(formRef.current!);
     fd.set("kind", k);
+    for (const g of garments) fd.append("garments", g);
     setBusy(true);
     setErr(null);
     try {
@@ -360,6 +471,21 @@ function MaterialForm({
               <input className="input" name={f.key} />
             </label>
           ))}
+
+          {products.length > 0 && (
+            <div className="mat-field mat-field-wide">
+              <span className="mat-label">Used for (products)</span>
+              <MultiSelect
+                className="select mat-garments"
+                aria-label="Used for"
+                placeholder="Pick products…"
+                allLabel="products"
+                values={garments}
+                onChange={setGarments}
+                options={products.map((p) => ({ value: p.name, label: p.name }))}
+              />
+            </div>
+          )}
 
           <label className="mat-field mat-field-wide">
             <span className="mat-label">Notes</span>
@@ -453,11 +579,13 @@ function NameOrder({
 function MaterialDetail({
   material,
   canEdit,
+  products,
   onClose,
   onToast,
 }: {
   material: Material;
   canEdit: boolean;
+  products: Product[];
   onClose: () => void;
   onToast: (m: string) => void;
 }) {
@@ -470,6 +598,7 @@ function MaterialDetail({
     d.notes = material.notes ?? "";
     return d;
   });
+  const [garments, setGarments] = useState<string[]>(() => materialGarments(material));
   const [arm, setArm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInput = useRef<HTMLInputElement>(null);
@@ -479,7 +608,7 @@ function MaterialDetail({
   function save() {
     if (!canEdit) return;
     start(async () => {
-      await updateMaterial(material.id, draft);
+      await updateMaterial(material.id, draft, garments);
       router.refresh();
       onToast("Saved");
     });
@@ -552,6 +681,21 @@ function MaterialDetail({
                   />
                 </label>
               ))}
+              {products.length > 0 && (
+                <div className="mat-field mat-field-wide">
+                  <span className="mat-label">Used for (products)</span>
+                  <MultiSelect
+                    className="select mat-garments"
+                    aria-label="Used for"
+                    placeholder="Pick products…"
+                    allLabel="products"
+                    values={garments}
+                    onChange={setGarments}
+                    options={products.map((p) => ({ value: p.name, label: p.name }))}
+                  />
+                </div>
+              )}
+
               <label className="mat-field mat-field-wide">
                 <span className="mat-label">Notes</span>
                 <textarea
@@ -595,6 +739,16 @@ function MaterialDetail({
                   </div>
                 ) : null;
               })}
+              {garments.length > 0 && (
+                <div className="pg-facts">
+                  <span className="k">Used for</span>
+                  <div className="pg-fact-val mat-tags">
+                    {garments.map((g) => (
+                      <span className="mat-tag" key={g}>{g}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -57,6 +57,21 @@ async function uploadImages(
   return { urls, errors };
 }
 
+// De-dupe and trim a list of strings, dropping blanks, order preserved — used
+// for the products-used-for list on create and update.
+function uniqTrim(list: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of list) {
+    const s = (raw ?? "").trim();
+    if (s && !seen.has(s)) {
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
 function imageFiles(form: FormData): File[] {
   return form
     .getAll("files")
@@ -81,6 +96,11 @@ export async function createMaterial(
   }
   row.name = name;
 
+  // The products (garments) this material is used for — repeated `garments`
+  // fields off the multi-select. De-duped; empty stays the column default [].
+  const garments = uniqTrim(form.getAll("garments").map((v) => String(v)));
+  if (garments.length) row.garments = garments;
+
   const { urls, errors } = await uploadImages(supabase, imageFiles(form));
   if (urls[0]) {
     row.image_url = urls[0];
@@ -94,17 +114,25 @@ export async function createMaterial(
   return { ok: true, id: data?.id as string | undefined, errors };
 }
 
-// Edit the fields of an existing material (the detail-view form).
-export async function updateMaterial(id: string, patch: Record<string, string | null>) {
+// Edit the fields of an existing material (the detail-view form). `garments`,
+// when passed, replaces the products-used-for list wholesale (an empty array
+// clears it) — it is a separate channel because it is an array, not one of the
+// text FIELDS.
+export async function updateMaterial(
+  id: string,
+  patch: Record<string, string | null>,
+  garments?: string[]
+) {
   await requireFredTeam();
   if (!id) return;
-  const clean: Record<string, string | null> = {};
+  const clean: Record<string, unknown> = {};
   for (const k of FIELDS) {
     if (k in patch) {
       const v = patch[k];
       clean[k] = typeof v === "string" && v.trim() === "" ? null : (v ?? null);
     }
   }
+  if (garments !== undefined) clean.garments = uniqTrim(garments);
   if (Object.keys(clean).length === 0) return;
   const supabase = await createClient();
   await supabase

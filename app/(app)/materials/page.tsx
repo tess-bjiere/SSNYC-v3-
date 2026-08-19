@@ -18,7 +18,7 @@ export default async function MaterialsPage() {
   if (APP.id !== "fred") notFound();
   const supabase = await createClient();
   const brand = await activeBrand();
-  const [{ data, error }, ordersRes, user] = await Promise.all([
+  const [{ data, error }, ordersRes, stylesRes, user] = await Promise.all([
     supabase
       .from("materials")
       .select("*")
@@ -34,6 +34,16 @@ export default async function MaterialsPage() {
       .is("deleted_at", null)
       .neq("status", "received")
       .order("updated_at", { ascending: false }),
+    // The brand's products — its styles. These are the garments a fabric can be
+    // used for (Tess, 2026-08-19: "the products listed on the website"), sourced
+    // live so the dropdown never drifts from what's actually in the line. Each
+    // carries its garment `type`, which gives the "filter by garment type" axis.
+    supabase
+      .from("styles")
+      .select("name,garment")
+      .eq("brand", brand)
+      .is("deleted_at", null)
+      .order("name", { ascending: true }),
     getSessionUser(),
   ]);
 
@@ -43,11 +53,23 @@ export default async function MaterialsPage() {
     name: string;
     status: string;
   }[];
+  // Distinct products by name (a garment type can have several products); each
+  // keeps its type for the garment-type filter.
+  const seen = new Set<string>();
+  const products: { name: string; type: string | null }[] = [];
+  for (const s of (stylesRes.data ?? []) as { name: string | null; garment: string | null }[]) {
+    const name = (s.name ?? "").trim();
+    if (name && !seen.has(name)) {
+      seen.add(name);
+      products.push({ name, type: (s.garment ?? "").trim() || null });
+    }
+  }
   return (
     <MaterialsClient
       materials={materials}
       canEdit={user?.role === "team"}
       openOrders={openOrders}
+      products={products}
     />
   );
 }

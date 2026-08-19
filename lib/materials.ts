@@ -29,6 +29,12 @@ export type MaterialLike = {
   moq?: string | null;
   lead_time?: string | null;
   notes?: string | null;
+  // The products (garments) this material is used for — FRED's website products,
+  // which are the brand's styles (Tess, 2026-08-19: "add a dropdown for garments
+  // the fabric is being used for … it would be the products listed on the
+  // website … used for multiple"). A jsonb array of product names; one material
+  // can serve many products.
+  garments?: unknown;
 };
 
 export type MaterialField = { key: string; label: string };
@@ -93,14 +99,49 @@ export function specLine(m: MaterialLike): string {
     .join(" · ");
 }
 
-/** Free-text search across every field that carries words. Every whitespace-
- *  separated term must appear somewhere (AND), so "linen 200" narrows. */
+/** The products (garments) a material is used for, read from the jsonb array
+ *  into clean, de-duplicated, non-empty strings — order preserved. Anything that
+ *  is not an array of strings reads as none. */
+export function materialGarments(m: MaterialLike): string[] {
+  const a = m.garments;
+  if (!Array.isArray(a)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of a) {
+    const s = typeof v === "string" ? v.trim() : "";
+    if (s && !seen.has(s)) {
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+/** Does this material serve the given product? Case-insensitive exact match on
+ *  a product name. */
+export function usedForProduct(m: MaterialLike, product: string): boolean {
+  const p = product.trim().toLowerCase();
+  return materialGarments(m).some((g) => g.toLowerCase() === p);
+}
+
+/** A fabric weight shown as GSM on the card. A bare number gets " GSM" appended;
+ *  a value that already names a unit (gsm / oz / g) is left as typed. */
+export function gsmLabel(weight: string | null | undefined): string {
+  const w = (weight ?? "").trim();
+  if (!w) return "";
+  return /[a-z]/i.test(w) ? w : `${w} GSM`;
+}
+
+/** Free-text search across every field that carries words, the products it is
+ *  used for included. Every whitespace-separated term must appear somewhere
+ *  (AND), so "linen 200" narrows. */
 export function matchMaterial(m: MaterialLike, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const hay = [
     m.name, m.supplier, m.supplier_ref, m.composition, m.color, m.weight, m.width,
     m.construction, m.finish, m.trim_type, m.size, m.material, m.notes,
+    ...materialGarments(m),
   ]
     .map((s) => (s ?? "").toLowerCase())
     .join(" ");

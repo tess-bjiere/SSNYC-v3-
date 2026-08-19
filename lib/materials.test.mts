@@ -6,6 +6,9 @@ import {
   specLine,
   matchMaterial,
   distinct,
+  materialGarments,
+  usedForProduct,
+  gsmLabel,
 } from "./materials.ts";
 
 test("kindOf defaults to fabric unless the row explicitly says trim", () => {
@@ -81,4 +84,38 @@ test("distinct returns sorted, de-duped, non-empty values for a filter", () => {
     { supplier: null },
   ];
   assert.deepEqual(distinct(list, "supplier"), ["Albini", "Brunello"]);
+});
+
+// A material can serve many products; the list reads cleanly whatever the jsonb
+// holds.
+test("materialGarments normalizes the products array", () => {
+  assert.deepEqual(materialGarments({ garments: ["Tee", "Boxer", "Tee", " ", "Oxford"] }), [
+    "Tee",
+    "Boxer",
+    "Oxford",
+  ]);
+  assert.deepEqual(materialGarments({ garments: [] }), []);
+  assert.deepEqual(materialGarments({}), []);
+  assert.deepEqual(materialGarments({ garments: "Tee" as unknown }), []); // not an array
+});
+
+test("usedForProduct matches a product case-insensitively", () => {
+  const m = { garments: ["Monogram Sock", "Crew Sock"] };
+  assert.ok(usedForProduct(m, "crew sock"));
+  assert.ok(usedForProduct(m, "Monogram Sock"));
+  assert.ok(!usedForProduct(m, "Boxer"));
+});
+
+test("matchMaterial also searches the products a material is used for", () => {
+  const m = { name: "Rib Jersey", composition: "Cotton", garments: ["Crew Sock", "Boxer"] };
+  assert.ok(matchMaterial(m, "sock")); // matches a product, not a spec field
+  assert.ok(matchMaterial(m, "cotton boxer")); // one spec term, one product term
+});
+
+test("gsmLabel appends GSM to a bare number and leaves a unit alone", () => {
+  assert.equal(gsmLabel("220"), "220 GSM");
+  assert.equal(gsmLabel("220 gsm"), "220 gsm");
+  assert.equal(gsmLabel("6 oz"), "6 oz");
+  assert.equal(gsmLabel(""), "");
+  assert.equal(gsmLabel(null), "");
 });
