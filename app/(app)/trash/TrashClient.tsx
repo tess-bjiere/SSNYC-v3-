@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, extraImageUrls, type Reference, type Style } from "@/lib/types";
-import { restoreReference, purgeReference } from "@/app/actions/references";
+import { restoreReference, purgeReference, emptyReferenceTrash } from "@/app/actions/references";
 import { restoreStyle } from "@/app/actions/styles";
 import { styleCoverUrl } from "@/lib/styleCover";
 import DetailModal from "@/app/(app)/library/DetailModal";
@@ -44,6 +44,10 @@ export default function TrashClient({
   const [armed, setArmed] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // Empty-the-whole-trash is its own two-click arm, apart from the per-card one
+  // (Tess, 2026-08-19: "allow ability to empty the whole trash").
+  const [emptyArm, setEmptyArm] = useState(false);
+  const [emptying, setEmptying] = useState(false);
   const [pending, start] = useTransition();
 
   function flashToast(m: string) {
@@ -95,6 +99,21 @@ export default function TrashClient({
     });
   }
 
+  function emptyTrash() {
+    setEmptyArm(false);
+    setEmptying(true);
+    start(async () => {
+      const res = await emptyReferenceTrash();
+      setEmptying(false);
+      flashToast(
+        res.ok
+          ? `Emptied — ${res.rowsRemoved} reference${res.rowsRemoved === 1 ? "" : "s"} deleted permanently`
+          : res.error || "Could not empty the Trash."
+      );
+      router.refresh();
+    });
+  }
+
   return (
     <div className="page">
       <div className="page-head">
@@ -107,6 +126,26 @@ export default function TrashClient({
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+        )}
+        {/* Empty the whole Trash — permanently delete every reference in it at
+            once. Two-click arm, never a browser confirm(), like the per-card
+            delete. Only references are purgeable, so the count is refs.length;
+            styles (which have no permanent delete) stay. */}
+        {refs.length > 0 && (
+          <button
+            type="button"
+            className={"btn sm trash-empty" + (emptyArm ? " danger" : " ghost")}
+            disabled={emptying}
+            onMouseLeave={() => setEmptyArm(false)}
+            onClick={() => (emptyArm ? emptyTrash() : setEmptyArm(true))}
+            title="Permanently delete every reference in the Trash and its image files"
+          >
+            {emptying
+              ? "Emptying…"
+              : emptyArm
+                ? `Delete ${refs.length} forever?`
+                : "Empty Trash"}
+          </button>
         )}
       </div>
 

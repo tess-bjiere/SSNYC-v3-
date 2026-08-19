@@ -582,6 +582,13 @@ body.notes-open .wrap{padding-right:378px}
   padding:10px 14px}
 .mo-pickbar-n{font-size:var(--t-sm);color:var(--ink)}
 .mo-pickbar-add{min-width:150px}
+/* Bulk select / edit / delete bar for References and Campaign (Tess,
+   2026-08-19). Rides on the material pickbar; the delete button arms red before
+   it fires, since it moves several rows at once. */
+.bulk-bar{gap:10px}
+.bulk-del.arm{color:#c0392b;border-color:#c0392b}
+.bulk-hint{margin:0 0 4px;font-size:var(--t-meta);color:var(--muted)}
+.bulk-edit .bulk-hint,.bulk-edit .bulk-field{grid-column:1 / -1}
 
 /* --- Material orders (Tess, 2026-08-18). --- */
 .mo-head{align-items:flex-start;gap:12px}

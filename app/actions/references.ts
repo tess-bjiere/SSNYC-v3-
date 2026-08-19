@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUser } from "@/lib/access";
+import { requireUser, requireTeam } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import type { ExtraImage } from "@/lib/types";
 import {
@@ -50,6 +51,50 @@ export async function updateReference(id: string, patch: Record<string, string |
   // refreshed rather than guessing which page the edit came from.
   revalidatePath("/library");
   revalidatePath("/editorial");
+}
+
+// Bulk edit and bulk delete for the References and Campaign grids (Tess,
+// 2026-08-19: "add bulk select / edit / delete option for references and
+// campaign libraries"). Both take a list of ids and go through the same
+// whitelist / soft-delete rules the single-row actions use — nothing here can
+// touch a column the Edit form couldn't, and a delete is still only a move to
+// Trash.
+
+// Set the same field(s) on every selected reference. The UI only sends the keys
+// the user actually filled, so a missing key leaves that field untouched; an
+// explicit empty value clears it on all of them.
+export async function bulkUpdateReferences(ids: string[], patch: Record<string, string | null>) {
+  await requireUser();
+  const cleanIds = Array.from(new Set(ids.filter(Boolean)));
+  if (cleanIds.length === 0) return;
+  const clean: Record<string, string | null> = {};
+  for (const k of EDITABLE) {
+    if (k in patch) {
+      const v = patch[k];
+      clean[k] = typeof v === "string" && v.trim() === "" ? null : (v ?? null);
+    }
+  }
+  if (Object.keys(clean).length === 0) return;
+  const supabase = await createClient();
+  await supabase.from("references").update(clean).in("id", cleanIds);
+  revalidatePath("/library");
+  revalidatePath("/editorial");
+}
+
+// Move several references to Trash at once — recoverable, exactly like the
+// single delete (which the library footer's Trash restores from).
+export async function bulkSoftDeleteReferences(ids: string[]) {
+  await requireUser();
+  const cleanIds = Array.from(new Set(ids.filter(Boolean)));
+  if (cleanIds.length === 0) return;
+  const supabase = await createClient();
+  await supabase
+    .from("references")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", cleanIds);
+  revalidatePath("/library");
+  revalidatePath("/editorial");
+  revalidatePath("/trash");
 }
 
 function extFor(type: string): string {
@@ -245,4 +290,62 @@ export async function purgeReference(id: string): Promise<PurgeResult> {
   revalidatePath("/trash");
   revalidatePath("/moodboard");
   return { ok: true, filesRemoved };
+}
+
+// Empty the Trash — permanently delete every trashed reference for the active
+// brand in one go (Tess, 2026-08-19: "allow ability to empty the whole trash").
+// The same fences purgeReference sets stay up: only rows already in the Trash
+// are touched (the select filters to deleted_at IS NOT NULL), and a file is only
+// removed if no surviving reference — in ANY brand, since the bucket is shared —
+// still points at it. Styles are left alone; they have no permanent delete.
+export async function emptyReferenceTrash(): Promise<{
+  ok: boolean;
+  error?: string;
+  rowsRemoved: number;
+  filesRemoved: number;
+}> {
+  await requireTeam();
+  const supabase = await createClient();
+  const brand = await activeBrand();
+
+  const { data: trashed, error: readErr } = await supabase
+    .from("references")
+    .select("id,image,thumb,image_url,thumb_url,extra_images")
+    .eq("brand", brand)
+    .not("deleted_at", "is", null);
+  if (readErr) return { ok: false, error: readErr.message, rowsRemoved: 0, filesRemoved: 0 };
+  const rows = (trashed ?? []) as (ImageBearingRow & { id: string })[];
+  if (rows.length === 0) return { ok: true, rowsRemoved: 0, filesRemoved: 0 };
+  const ids = new Set(rows.map((r) => r.id));
+
+  // Guard 3, applied across the whole purge set at once: every path any row NOT
+  // being purged still points at is off-limits.
+  const { data: others } = await supabase
+    .from("references")
+    .select("id,image,thumb,image_url,thumb_url,extra_images");
+  const stillUsed = new Set<string>();
+  for (const o of (others ?? []) as (ImageBearingRow & { id: string })[]) {
+    if (ids.has(o.id)) continue;
+    for (const p of referenceStoragePaths(o)) stillUsed.add(p);
+  }
+  const toRemove = new Set<string>();
+  for (const r of rows) {
+    for (const p of safeToDelete(referenceStoragePaths(r), stillUsed)) toRemove.add(p);
+  }
+
+  const { error: delErr } = await supabase.from("references").delete().in("id", Array.from(ids));
+  if (delErr) return { ok: false, error: delErr.message, rowsRemoved: 0, filesRemoved: 0 };
+
+  let filesRemoved = 0;
+  const pathList = Array.from(toRemove);
+  if (pathList.length) {
+    const { data: removed } = await supabase.storage.from(REFERENCES_BUCKET).remove(pathList);
+    filesRemoved = removed?.length ?? 0;
+  }
+
+  revalidatePath("/library");
+  revalidatePath("/editorial");
+  revalidatePath("/trash");
+  revalidatePath("/moodboard");
+  return { ok: true, rowsRemoved: ids.size, filesRemoved };
 }

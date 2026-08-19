@@ -5,10 +5,15 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { addRefsToBoard } from "@/app/actions/moodboards";
-import { softDeleteReference } from "@/app/actions/references";
+import {
+  softDeleteReference,
+  bulkUpdateReferences,
+  bulkSoftDeleteReferences,
+} from "@/app/actions/references";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
 import UploadModal from "../library/UploadModal";
 import DetailModal from "../library/DetailModal";
+import BulkEditModal, { type BulkField } from "../library/BulkEditModal";
 import SizeToggle from "@/app/components/SizeToggle";
 
 // Editorial images are credited, not specced: who shot it, who is in it, where.
@@ -61,6 +66,11 @@ export default function EditorialClient({
   // picker as the Library: pick a board, then a section if it has any.
   const [picker, setPicker] = useState<Reference | null>(null);
   const [pickBoard, setPickBoard] = useState<string | null>(null);
+  // Bulk select / edit / delete (Tess, 2026-08-19), same as the References grid.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkEditing, setBulkEditing] = useState(false);
+  const [bulkArm, setBulkArm] = useState(false);
   const [pending, start] = useTransition();
 
   function flashToast(m: string) {
@@ -151,6 +161,64 @@ export default function EditorialClient({
 
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
+  // --- Bulk select / edit / delete ---
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function leaveSelect() {
+    setSelecting(false);
+    setSelected(new Set());
+    setBulkEditing(false);
+    setBulkArm(false);
+  }
+  const shownIds = list.map((r) => r.id);
+  const allShownSelected = shownIds.length > 0 && shownIds.every((id) => selected.has(id));
+  function toggleSelectAll() {
+    setSelected((prev) => {
+      if (shownIds.every((id) => prev.has(id))) {
+        const next = new Set(prev);
+        for (const id of shownIds) next.delete(id);
+        return next;
+      }
+      return new Set([...prev, ...shownIds]);
+    });
+  }
+  // The credit fields, with the same option lists the add form offers.
+  const bulkFields: BulkField[] = (
+    [
+      { key: "designer", label: "Designer" },
+      { key: "photographer", label: "Photographer" },
+      { key: "model", label: "Model" },
+      { key: "location", label: "Location" },
+      { key: "year", label: "Year" },
+      { key: "season", label: "Season" },
+    ] as const
+  ).map((f) => ({ key: f.key, label: f.label, options: formOptions[f.key] ?? [] }));
+  async function applyBulkEdit(patch: Record<string, string>) {
+    const ids = Array.from(selected);
+    setBulkEditing(false);
+    await bulkUpdateReferences(ids, patch);
+    router.refresh();
+    flashToast(`Updated ${ids.length}`);
+    leaveSelect();
+  }
+  function bulkDelete() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setHidden((prev) => new Set([...prev, ...ids]));
+    flashToast(`Moved ${ids.length} to Trash`);
+    start(async () => {
+      await bulkSoftDeleteReferences(ids);
+      router.refresh();
+    });
+    leaveSelect();
+  }
+
   return (
     <div className="page lib-page">
       <div className="page-head">
@@ -189,6 +257,14 @@ export default function EditorialClient({
             title="Show the grid in black &amp; white"
           >
             B&amp;W
+          </button>
+          {/* Bulk select — pick several, then edit or delete together. */}
+          <button
+            type="button"
+            className={"btn ghost sm" + (selecting ? " on" : "")}
+            onClick={() => (selecting ? leaveSelect() : setSelecting(true))}
+          >
+            {selecting ? "Done" : "Select"}
           </button>
           <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
         </div>
@@ -251,23 +327,31 @@ export default function EditorialClient({
               .filter(Boolean)
               .join(" · ");
             const extra = extraImageUrls(r).length;
+            const isSel = selected.has(r.id);
             return (
-              <div className="card lib-card" key={r.id} onClick={() => setDetail(r)}>
+              <div
+                className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
+                key={r.id}
+                onClick={() => (selecting ? toggleSelect(r.id) : setDetail(r))}
+              >
                 <div className="imgwrap">
                   {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
-                  {/* Delete straight from the thumbnail — one click, to Trash. */}
-                  <button
-                    type="button"
-                    className="card-del"
-                    title="Delete (moves to Trash)"
-                    aria-label="Delete image"
-                    onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
-                  >
-                    ✕
-                  </button>
-                  {/* Drop this image onto a moodboard without opening it. */}
-                  {boards.length > 0 && (
+                  {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
+                  {/* The ✕ delete and moodboard + are hidden in select mode — a
+                      click on a card there means "tick this one". */}
+                  {!selecting && (
+                    <button
+                      type="button"
+                      className="card-del"
+                      title="Delete (moves to Trash)"
+                      aria-label="Delete image"
+                      onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                  {!selecting && boards.length > 0 && (
                     <button
                       type="button"
                       className="card-mb"
@@ -290,6 +374,43 @@ export default function EditorialClient({
             );
           })}
         </div>
+      )}
+
+      {/* Bulk action bar — appears while selecting (Tess, 2026-08-19). */}
+      {selecting && (
+        <div className="mo-pickbar bulk-bar">
+          <span className="mo-pickbar-n">{selected.size} selected</span>
+          <button type="button" className="btn link sm" onClick={toggleSelectAll}>
+            {allShownSelected ? "Clear all" : "Select all"}
+          </button>
+          <div className="spacer" />
+          <button
+            type="button"
+            className="btn ghost sm"
+            disabled={selected.size === 0}
+            onClick={() => setBulkEditing(true)}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className={"btn ghost sm bulk-del" + (bulkArm ? " arm" : "")}
+            disabled={selected.size === 0}
+            onMouseLeave={() => setBulkArm(false)}
+            onClick={() => (bulkArm ? bulkDelete() : setBulkArm(true))}
+          >
+            {bulkArm ? `Delete ${selected.size}?` : "Delete"}
+          </button>
+        </div>
+      )}
+
+      {bulkEditing && (
+        <BulkEditModal
+          count={selected.size}
+          fields={bulkFields}
+          onClose={() => setBulkEditing(false)}
+          onApply={applyBulkEdit}
+        />
       )}
 
       {detail && (

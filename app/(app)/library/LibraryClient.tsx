@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { addRefsToBoard } from "@/app/actions/moodboards";
-import { softDeleteReference } from "@/app/actions/references";
+import {
+  softDeleteReference,
+  bulkUpdateReferences,
+  bulkSoftDeleteReferences,
+} from "@/app/actions/references";
+import BulkEditModal, { type BulkField } from "./BulkEditModal";
 import {
   LIST_FIELDS,
   resolveDesigners,
@@ -68,6 +73,12 @@ export default function LibraryClient({
   // (recoverable). Tess, 2026-08-18: "easily delete images in campaign … and
   // references".
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  // Bulk select / edit / delete (Tess, 2026-08-19). Off, a card opens its detail;
+  // on, a click ticks it, and a bar offers Edit / Delete across the selection.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkEditing, setBulkEditing] = useState(false);
+  const [bulkArm, setBulkArm] = useState(false);
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -185,6 +196,60 @@ export default function LibraryClient({
     });
   }
 
+  // --- Bulk select / edit / delete ---
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function leaveSelect() {
+    setSelecting(false);
+    setSelected(new Set());
+    setBulkEditing(false);
+    setBulkArm(false);
+  }
+  const shownIds = list.map((r) => r.id);
+  const allShownSelected = shownIds.length > 0 && shownIds.every((id) => selected.has(id));
+  function toggleSelectAll() {
+    setSelected((prev) => {
+      if (shownIds.every((id) => prev.has(id))) {
+        const next = new Set(prev);
+        for (const id of shownIds) next.delete(id);
+        return next;
+      }
+      return new Set([...prev, ...shownIds]);
+    });
+  }
+  // Bulk-edit offers the same fields (and curated options) as the single Edit
+  // form's facets.
+  const bulkFields: BulkField[] = FACETS.map((f) => ({
+    key: f.key as string,
+    label: f.label,
+    options: formOptions[f.key as string] ?? [],
+  }));
+  async function applyBulkEdit(patch: Record<string, string>) {
+    const ids = Array.from(selected);
+    setBulkEditing(false);
+    await bulkUpdateReferences(ids, patch);
+    router.refresh();
+    flashToast(`Updated ${ids.length}`);
+    leaveSelect();
+  }
+  function bulkDelete() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setHidden((prev) => new Set([...prev, ...ids]));
+    flashToast(`Moved ${ids.length} to Trash`);
+    start(async () => {
+      await bulkSoftDeleteReferences(ids);
+      router.refresh();
+    });
+    leaveSelect();
+  }
+
   return (
     <div className="page lib-page">
       <div className="page-head">
@@ -214,6 +279,14 @@ export default function LibraryClient({
             at. */}
         <div className="lib-head-tools">
           <SizeToggle value={size} onChange={setSize} />
+          {/* Bulk select — pick several, then edit or delete them together
+              (Tess, 2026-08-19). */}
+          <button
+            className={"btn ghost sm lib-add-desk" + (selecting ? " on" : "")}
+            onClick={() => (selecting ? leaveSelect() : setSelecting(true))}
+          >
+            {selecting ? "Done" : "Select"}
+          </button>
           {/* The desktop add sits in the head; on a phone it folds into the big
               button below, which is the first thing you can reach. */}
           <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
@@ -278,28 +351,39 @@ export default function LibraryClient({
             const src = refThumb(r);
             const sub = [r.year && r.year !== "Unknown" ? r.year : null, r.garment, r.color].filter(Boolean).join(" · ");
             const extra = extraImageUrls(r).length;
+            const isSel = selected.has(r.id);
             return (
-              <div className="card lib-card" key={r.id} onClick={() => setDetail(r)}>
-                <button
-                  className="pin"
-                  title="Add to a moodboard"
-                  onClick={(e) => { e.stopPropagation(); setPicker(r); }}
-                >
-                  +
-                </button>
+              <div
+                className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
+                key={r.id}
+                onClick={() => (selecting ? toggleSelect(r.id) : setDetail(r))}
+              >
+                {/* The moodboard + and the ✕ delete are hidden in select mode —
+                    a click there means "tick this card", nothing else. */}
+                {!selecting && (
+                  <button
+                    className="pin"
+                    title="Add to a moodboard"
+                    onClick={(e) => { e.stopPropagation(); setPicker(r); }}
+                  >
+                    +
+                  </button>
+                )}
                 <div className="imgwrap">
                   {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
-                  {/* Delete straight from the thumbnail — one click, to Trash. */}
-                  <button
-                    type="button"
-                    className="card-del"
-                    title="Delete (moves to Trash)"
-                    aria-label="Delete image"
-                    onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
-                  >
-                    ✕
-                  </button>
+                  {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
+                  {!selecting && (
+                    <button
+                      type="button"
+                      className="card-del"
+                      title="Delete (moves to Trash)"
+                      aria-label="Delete image"
+                      onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
                 <div className="meta">
                   <div className="d">{r.designer || "Untitled"}</div>
@@ -319,6 +403,45 @@ export default function LibraryClient({
         <button className="lib-trash-link" onClick={() => setManaging(true)}>Lists</button>
         <Link href="/trash" className="lib-trash-link">Trash</Link>
       </div>
+
+      {/* Bulk action bar — appears while selecting, once at least one card is
+          ticked (Tess, 2026-08-19). Edit applies shared fields; Delete is a
+          two-click arm since it moves several at once. */}
+      {selecting && (
+        <div className="mo-pickbar bulk-bar">
+          <span className="mo-pickbar-n">{selected.size} selected</span>
+          <button type="button" className="btn link sm" onClick={toggleSelectAll}>
+            {allShownSelected ? "Clear all" : "Select all"}
+          </button>
+          <div className="spacer" />
+          <button
+            type="button"
+            className="btn ghost sm"
+            disabled={selected.size === 0}
+            onClick={() => setBulkEditing(true)}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className={"btn ghost sm bulk-del" + (bulkArm ? " arm" : "")}
+            disabled={selected.size === 0}
+            onMouseLeave={() => setBulkArm(false)}
+            onClick={() => (bulkArm ? bulkDelete() : setBulkArm(true))}
+          >
+            {bulkArm ? `Delete ${selected.size}?` : "Delete"}
+          </button>
+        </div>
+      )}
+
+      {bulkEditing && (
+        <BulkEditModal
+          count={selected.size}
+          fields={bulkFields}
+          onClose={() => setBulkEditing(false)}
+          onApply={applyBulkEdit}
+        />
+      )}
 
       {/* Board picker — pick a board, then a section within it if it has any */}
       {picker && (
