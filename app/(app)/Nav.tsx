@@ -99,17 +99,21 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       { href: "/linesheets", label: "Linesheets" },
     ],
   },
-  // Materials is its own group as of the dropdown nav (Tess, 2026-08-19: "this
+  // Sourcing is its own group as of the dropdown nav (Tess, 2026-08-19: "this
   // navigation is getting really long and wonky" → chose the dropdown layout).
-  // The fabric/trim/packaging library and the orders drawn from it are sourcing,
-  // not garment-making, so pulling them out of Product stops Product from being
-  // a catch-all and gives each menu a clean, single subject.
+  // The materials library and the orders drawn from it are sourcing, not
+  // garment-making, so pulling them out of Product stops Product from being a
+  // catch-all and gives each menu a clean, single subject. The group is
+  // "Sourcing" rather than "Materials" so it doesn't collide with the library
+  // page, which Tess renamed to "Materials" (2026-08-19: "yes rename to
+  // materials") now that it holds fabrics, trims AND packaging.
   {
-    label: "Materials",
+    label: "Sourcing",
     links: [
       // The fabric, trim & packaging library (Tess, 2026-08-18: "build library
-      // for fabrics and trims"; 2026-08-19: "add packaging tab").
-      { href: "/materials", label: "Fabrics & Trims" },
+      // for fabrics and trims"; 2026-08-19: "add packaging tab" + "rename to
+      // materials").
+      { href: "/materials", label: "Materials" },
       // Purchase orders assembled from that library (Tess, 2026-08-18: "add
       // ability to create an order for materials from the material library").
       { href: "/material-orders", label: "Material Orders" },
@@ -211,46 +215,63 @@ export default function Nav({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-logo" src={APP.logo} alt={APP.name} />
       </Link>
-      {/* The desktop bar shows one word per group; clicking opens that group's
-          menu (Tess, 2026-08-19: "this navigation is getting really long and
-          wonky" → the dropdown layout). The group holding the page you are on is
-          marked active, so you can see where you are without opening anything.
-          Below the drawer breakpoint this whole row is CSS-hidden and the
-          hamburger drawer — which still lists every link — takes over. */}
+      {/* The team bar shows one word per group; clicking opens that group's menu
+          (Tess, 2026-08-19: "this navigation is getting really long and wonky" →
+          the dropdown layout). The group holding the page you are on is marked
+          active, so you can see where you are without opening anything.
+          A TALENT sees only the Ideation group — a handful of links with no
+          length problem — so for them the bar stays the plain horizontal row it
+          always was; the dropdown is just for the fuller team view (Tess,
+          2026-08-19: "for just the talent view, can the ideation navigation stay
+          as the horizontal bar -- full view moves to dropdown"). Below the drawer
+          breakpoint this whole row is CSS-hidden and the hamburger drawer — which
+          lists every link — takes over for both. */}
       <div className="nav-links" ref={linksRef}>
-        {groups.map((g) => {
-          const open = openGroup === g.label;
-          const groupActive = g.links.some((l) => isActive(l.href));
-          return (
-            <div className={"nav-group" + (open ? " open" : "")} key={g.label}>
-              <button
-                type="button"
-                className={"nav-group-trigger" + (groupActive ? " active" : "")}
-                aria-expanded={open}
-                aria-haspopup="true"
-                onClick={() => setOpenGroup(open ? null : g.label)}
-              >
-                {g.label}
-                <span className="nav-caret" aria-hidden="true" />
-              </button>
-              {open && (
-                <div className="nav-menu" role="menu">
-                  {g.links.map((l) => (
-                    <Link
-                      key={l.href}
-                      href={l.href}
-                      role="menuitem"
-                      className={"nav-menu-link" + (isActive(l.href) ? " active" : "")}
-                      onClick={() => setOpenGroup(null)}
-                    >
-                      {l.label}
-                    </Link>
-                  ))}
+        {isTeam
+          ? groups.map((g) => {
+              const open = openGroup === g.label;
+              const groupActive = g.links.some((l) => isActive(l.href));
+              return (
+                <div className={"nav-group" + (open ? " open" : "")} key={g.label}>
+                  <button
+                    type="button"
+                    className={"nav-group-trigger" + (groupActive ? " active" : "")}
+                    aria-expanded={open}
+                    aria-haspopup="true"
+                    onClick={() => setOpenGroup(open ? null : g.label)}
+                  >
+                    {g.label}
+                    <span className="nav-caret" aria-hidden="true" />
+                  </button>
+                  {open && (
+                    <div className="nav-menu" role="menu">
+                      {g.links.map((l) => (
+                        <Link
+                          key={l.href}
+                          href={l.href}
+                          role="menuitem"
+                          className={"nav-menu-link" + (isActive(l.href) ? " active" : "")}
+                          onClick={() => setOpenGroup(null)}
+                        >
+                          {l.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })
+          : groups
+              .flatMap((g) => g.links)
+              .map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={"nav-link" + (isActive(l.href) ? " active" : "")}
+                >
+                  {l.label}
+                </Link>
+              ))}
       </div>
       <div className="nav-right">
         {/* Which brand the team is looking at (multi-brand, Tess 2026-08-11).

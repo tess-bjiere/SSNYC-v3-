@@ -436,7 +436,7 @@ export default function MaterialsClient({
   return (
     <div className="page lib-page">
       <div className="page-head">
-        <h1 className="page-title display">Fabrics &amp; Trims</h1>
+        <h1 className="page-title display">Materials</h1>
         <div className="spacer" />
         {/* Grid ⇄ list (Tess, 2026-08-19: "add list view"). */}
         <div className="mat-viewtoggle" role="group" aria-label="View">

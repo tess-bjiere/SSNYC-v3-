@@ -100,7 +100,7 @@ export default async function MaterialOrdersPage() {
       {rows.length === 0 && (
         <div className="empty">
           No orders yet. Create one above, or select materials in{" "}
-          <Link href="/materials">Fabrics &amp; Trims</Link> and choose “Create order”.
+          <Link href="/materials">Materials</Link> and choose “Create order”.
         </div>
       )}
     </div>
