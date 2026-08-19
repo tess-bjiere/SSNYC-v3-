@@ -851,7 +851,7 @@ function MaterialDetail({
   onToast: (m: string) => void;
 }) {
   const router = useRouter();
-  const k: MaterialKind = material.kind === "trim" ? "trim" : "fabric";
+  const k: MaterialKind = kindOf(material);
   const [pending, start] = useTransition();
   const [draft, setDraft] = useState<Record<string, string>>(() => {
     const d: Record<string, string> = { name: material.name ?? "" };
