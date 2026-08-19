@@ -11,6 +11,7 @@ import {
   gsmLabel,
   sourcingOf,
   sourcingLabel,
+  constructionClass,
 } from "./materials.ts";
 
 test("kindOf defaults to fabric unless the row explicitly says trim", () => {
@@ -135,4 +136,15 @@ test("sourcingOf only recognizes stock or custom, else empty", () => {
 test("matchMaterial searches the custom/stock flag", () => {
   assert.ok(matchMaterial({ name: "Rib", sourcing: "custom" }, "custom"));
   assert.ok(!matchMaterial({ name: "Rib", sourcing: "stock" }, "custom"));
+});
+
+test("constructionClass reads knit vs woven from construction text", () => {
+  assert.equal(constructionClass({ construction: "Knit" }), "Knit");
+  assert.equal(constructionClass({ construction: "Single Jersey" }), "Knit");
+  assert.equal(constructionClass({ construction: "2x2 Rib" }), "Knit");
+  assert.equal(constructionClass({ construction: "Woven" }), "Woven");
+  assert.equal(constructionClass({ construction: "Cotton Twill" }), "Woven");
+  assert.equal(constructionClass({ construction: "Poplin" }), "Woven");
+  assert.equal(constructionClass({ construction: "" }), "Other");
+  assert.equal(constructionClass({}), "Other");
 });

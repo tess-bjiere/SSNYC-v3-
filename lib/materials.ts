@@ -91,6 +91,27 @@ export function sourcingLabel(s: Sourcing | ""): string {
   return s === "custom" ? "Custom" : s === "stock" ? "Stock" : "";
 }
 
+// The two ways a fabric is built. A fabric sort divides into these before it
+// divides by content (Tess, 2026-08-19: "when you sort by fabric it should be by
+// knit content types and woven content types"). Read off the free-text
+// `construction` field by the words weavers and knitters actually use — the bare
+// "Knit"/"Woven" first, then the common names of each.
+const KNIT_WORDS =
+  /\b(knit|jersey|rib|interlock|fleece|terry|piqu|waffle|ponte|loopback|mesh)\b/i;
+const WOVEN_WORDS =
+  /\b(woven|twill|poplin|oxford|canvas|denim|flannel|chambray|sateen|satin|dobby|herringbone|corduroy|cord|gabardine|broadcloth|seersucker|voile|shirting|drill)\b/i;
+
+export type FabricClass = "Knit" | "Woven" | "Other";
+
+/** Knit vs woven for a fabric, from its construction text; "Other" when it says
+ *  nothing recognizable (or is blank). */
+export function constructionClass(m: MaterialLike): FabricClass {
+  const c = (m.construction ?? "").toLowerCase();
+  if (KNIT_WORDS.test(c)) return "Knit";
+  if (WOVEN_WORDS.test(c)) return "Woven";
+  return "Other";
+}
+
 /** The one line under a card: what it is made of, what it costs, who it comes
  *  from (Tess, 2026-08-19: "Preview text should be / contents / cost / supplier
  *  / location"). Blanks are skipped, so a material with no price entered reads

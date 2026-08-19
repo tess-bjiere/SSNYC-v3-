@@ -507,6 +507,45 @@ body.notes-open .wrap{padding-right:378px}
 /* In select mode the check sits top-left; nudge the badge below it so both show. */
 .mat-selectable .mat-badge{top:32px}
 
+/* Grid ⇄ list toggle, grouped headers, and the list view (Tess, 2026-08-19:
+   "add list view" + "the results should show the swatches under labeled headers
+   for how each is divided up"). */
+.mat-viewtoggle{display:inline-flex;border:1px solid var(--line)}
+.mat-vt{background:none;border:none;color:var(--muted);font-family:inherit;font-size:15px;line-height:1;
+  padding:5px 9px;cursor:pointer}
+.mat-vt + .mat-vt{border-left:1px solid var(--line)}
+.mat-vt.on{background:var(--chip);color:var(--ink)}
+
+.mat-group{margin-bottom:26px}
+.mat-group-h{display:flex;align-items:baseline;gap:9px;margin:0 0 14px;padding-bottom:6px;
+  border-bottom:1px solid var(--line);font-size:var(--t-title);font-weight:var(--w-title);
+  color:var(--ink);text-transform:uppercase;letter-spacing:.08em}
+.mat-group-n{font-size:var(--t-micro);letter-spacing:.1em;color:var(--faint);font-weight:400}
+.mat-sub{margin:0 0 18px}
+.mat-sub-h{margin:0 0 9px;font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted)}
+
+.mat-list{display:flex;flex-direction:column;border-top:1px solid var(--hair)}
+.mat-lrow{display:grid;grid-template-columns:48px minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.2fr);
+  align-items:center;gap:12px;padding:7px 6px;border-bottom:1px solid var(--hair);cursor:pointer}
+.mat-lrow:hover{background:var(--chip)}
+.mat-lthumb{position:relative;width:44px;height:44px;background:var(--chip);overflow:hidden}
+.mat-lthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.mat-lnoimg{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.mat-lmain{min-width:0}
+.mat-lname{display:flex;align-items:center;gap:8px;font-size:var(--t-body);color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mat-lspec{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mat-lfacts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
+.mat-ltags{margin-top:0}
+.mat-ibadge{flex:none;font-size:var(--t-micro);letter-spacing:.06em;text-transform:uppercase;
+  padding:1px 5px;border:1px solid var(--line);color:var(--muted);line-height:1}
+.mat-ibadge.custom{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
+@media (max-width:720px){
+  .mat-lrow{grid-template-columns:44px minmax(0,1fr)}
+  .mat-lfacts,.mat-ltags{display:none}
+}
+
 /* --- Order select mode in the library (Tess, 2026-08-18: "create an order for
    materials from the material library"). A ticked card and a bottom pickbar. --- */
 .mat-selectable{cursor:pointer}

@@ -14,8 +14,10 @@ import {
   gsmLabel,
   sourcingOf,
   sourcingLabel,
+  constructionClass,
   type MaterialKind,
   type Sourcing,
+  type FabricClass,
 } from "@/lib/materials";
 import {
   createMaterial,
@@ -83,6 +85,11 @@ function SourcingPick({
   );
 }
 
+// A rendered result group: an optional header, and one or more sub-sections
+// (the fabric-type sort nests content types under Knit / Woven).
+type Sub = { key: string; header: string | null; items: Material[] };
+type Group = { key: string; header: string | null; count: number; subs: Sub[] };
+
 function cover(m: Material): string {
   return m.thumb_url || m.image_url || "";
 }
@@ -120,8 +127,11 @@ export default function MaterialsClient({
   // Custom / stock filter (Tess, 2026-08-19). "" = either.
   const [sourcingF, setSourcingF] = useState<Sourcing | "">("");
   // Sort order (Tess, 2026-08-19: "add ability to sort by garment type or fabric
-  // type"). Default keeps the newest-first order the page loads in.
+  // type"). Default keeps the newest-first order the page loads in. A sort other
+  // than newest/name also groups the grid under labelled headers.
   const [sort, setSort] = useState("newest");
+  // Grid of swatches, or a compact list (Tess, 2026-08-19: "add list view").
+  const [view, setView] = useState<"grid" | "list">("grid");
   const [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Material | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -201,21 +211,16 @@ export default function MaterialsClient({
     const ts = typesOf(m).sort((a, b) => a.localeCompare(b));
     return ts[0] ?? "";
   }
-  // "Fabric type" is the fabric's construction (woven / knit / jersey); for a
-  // trim it is the trim type (button / zip). The kind-appropriate "what kind of
-  // thing is this" field.
-  function fabricTypeVal(m: Material): string {
-    return ((m.kind === "trim" ? m.trim_type : m.construction) ?? "").trim();
-  }
 
   const ofKind = useMemo(
     () => materials.filter((m) => (m.kind === "trim" ? "trim" : "fabric") === kind),
     [materials, kind]
   );
   const suppliers = useMemo(() => distinct(ofKind, "supplier"), [ofKind]);
-  const shown = useMemo(
-    () => {
-      const filtered = ofKind.filter((m) => {
+
+  const filtered = useMemo(
+    () =>
+      ofKind.filter((m) => {
         if (!matchMaterial(m, q)) return false;
         if (supplier && (m.supplier ?? "") !== supplier) return false;
         if (sourcingF && sourcingOf(m) !== sourcingF) return false;
@@ -228,34 +233,227 @@ export default function MaterialsClient({
           if (!typeF.some((t) => ts.has(t))) return false;
         }
         return true;
-      });
-      if (sort === "newest") return filtered; // page order is newest-first
-      // A blank sort key always sinks to the bottom, then name breaks ties, so a
-      // sorted list never buries the un-tagged ones among the tagged.
-      const keyOf =
-        sort === "name"
-          ? (m: Material) => (m.name ?? "").toLowerCase()
-          : sort === "garment"
-            ? (m: Material) => primaryGarmentType(m).toLowerCase()
-            : (m: Material) => fabricTypeVal(m).toLowerCase();
-      return [...filtered].sort((a, b) => {
-        const ka = keyOf(a);
-        const kb = keyOf(b);
-        if (!ka !== !kb) return ka ? -1 : 1; // non-empty before empty
-        const c = ka.localeCompare(kb);
-        return c !== 0 ? c : (a.name ?? "").localeCompare(b.name ?? "");
-      });
-    },
-    // typesOf/*Type helpers are derived from `products`/`typeOf`, via the closure.
+      }),
+    // typesOf is derived from `products`/`typeOf`, captured via the closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ofKind, q, supplier, sourcingF, productF, typeF, typeOf, sort]
+    [ofKind, q, supplier, sourcingF, productF, typeF, typeOf]
   );
+
+  // The sorted, grouped result. Newest and Name are flat (one unlabelled group);
+  // the type sorts divide the swatches under headers (Tess, 2026-08-19: "the
+  // results should show the swatches under labeled headers for how each is
+  // divided up"). A group has one or two levels: garment/trim sorts head one
+  // level; the fabric sort heads two — Knit / Woven / Other, then content type
+  // within ("by knit content types and woven content types").
+  const grouped = useMemo<Group[]>(() => {
+    const byName = (a: Material, b: Material) => (a.name ?? "").localeCompare(b.name ?? "");
+    const flat = (items: Material[]): Group[] => [
+      { key: "all", header: null, count: items.length, subs: [{ key: "all", header: null, items }] },
+    ];
+
+    if (sort === "newest") return flat(filtered); // page order is newest-first
+    if (sort === "name") return flat([...filtered].sort(byName));
+
+    // Bucket into an ordered map, remembering first-seen order for ties.
+    const bucket = (items: Material[], keyOf: (m: Material) => string) => {
+      const map = new Map<string, Material[]>();
+      for (const m of items) {
+        const k = keyOf(m);
+        const list = map.get(k);
+        if (list) list.push(m);
+        else map.set(k, [m]);
+      }
+      return map;
+    };
+    const BLANK = "￿"; // sorts last
+    const sortKeys = (keys: string[]) =>
+      keys.sort((a, b) => {
+        if ((a === BLANK) !== (b === BLANK)) return a === BLANK ? 1 : -1;
+        return a.localeCompare(b);
+      });
+
+    if (sort === "garment") {
+      const map = bucket(filtered, (m) => primaryGarmentType(m) || BLANK);
+      return sortKeys([...map.keys()]).map((k) => ({
+        key: k,
+        header: k === BLANK ? "No garment type" : k,
+        count: map.get(k)!.length,
+        subs: [{ key: k, header: null, items: map.get(k)!.sort(byName) }],
+      }));
+    }
+
+    // sort === "type"
+    if (kind === "trim") {
+      const map = bucket(filtered, (m) => (m.trim_type ?? "").trim() || BLANK);
+      return sortKeys([...map.keys()]).map((k) => ({
+        key: k,
+        header: k === BLANK ? "Other" : k,
+        count: map.get(k)!.length,
+        subs: [{ key: k, header: null, items: map.get(k)!.sort(byName) }],
+      }));
+    }
+
+    // Fabric: Knit / Woven / Other, each subdivided by content (composition).
+    const order: FabricClass[] = ["Knit", "Woven", "Other"];
+    const top = bucket(filtered, (m) => constructionClass(m));
+    const groups: Group[] = [];
+    for (const cls of order) {
+      const items = top.get(cls);
+      if (!items || !items.length) continue;
+      const sub = bucket(items, (m) => (m.composition ?? "").trim() || BLANK);
+      groups.push({
+        key: cls,
+        header: cls,
+        count: items.length,
+        subs: sortKeys([...sub.keys()]).map((sk) => ({
+          key: cls + "|" + sk,
+          header: sk === BLANK ? "Unspecified content" : sk,
+          items: sub.get(sk)!.sort(byName),
+        })),
+      });
+    }
+    return groups;
+    // helpers derive from products/typeOf, captured via the closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, sort, kind, typeOf]);
+
+  // One swatch as a grid card. Click opens it, or ticks it in select mode.
+  function swatchCard(m: Material) {
+    const src = cover(m);
+    const n = extraUrls(m).length + (src ? 1 : 0);
+    const isSel = selected.has(m.id);
+    const gl = materialGarments(m);
+    const gsm = gsmLabel(m.weight);
+    const sc = sourcingOf(m);
+    return (
+      <div
+        className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
+        key={m.id}
+        onClick={() => (selecting ? toggleSelect(m.id) : setDetail(m))}
+      >
+        <div className="imgwrap">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt={m.name} loading="lazy" />
+          ) : (
+            <div className="mat-noimg">
+              {m.color_hex && <span className="mat-chip" style={{ background: m.color_hex }} />}
+              No swatch
+            </div>
+          )}
+          {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
+          {/* Custom / stock badge (Tess, 2026-08-19: "add check for custom or
+              stock and include on thumbnail"). */}
+          {sc && <span className={"mat-badge " + sc}>{sourcingLabel(sc)}</span>}
+          {n > 1 && <span className="card-extra">{n}</span>}
+        </div>
+        <div className="meta">
+          <div className="d">{m.name}</div>
+          {/* Colour and GSM, up front on the thumbnail (Tess, 2026-08-19: "also
+              list color on and gsm on thumbnail"). */}
+          {(m.color || gsm) && (
+            <div className="mat-facts">
+              {m.color && (
+                <span className="mat-colorbit">
+                  {m.color_hex && <span className="mat-dot" style={{ background: m.color_hex }} />}
+                  {m.color}
+                </span>
+              )}
+              {gsm && <span className="mat-gsm">{gsm}</span>}
+            </div>
+          )}
+          {specLine(m) && <div className="s">{specLine(m)}</div>}
+          {gl.length > 0 && (
+            <div className="mat-tags">
+              {gl.slice(0, 3).map((g) => (
+                <span className="mat-tag" key={g}>{g}</span>
+              ))}
+              {gl.length > 3 && <span className="mat-tag mat-tag-more">+{gl.length - 3}</span>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // The same swatch as a compact list row — thumb, name + spec, colour/GSM, tags.
+  function swatchRow(m: Material) {
+    const src = cover(m);
+    const isSel = selected.has(m.id);
+    const gl = materialGarments(m);
+    const gsm = gsmLabel(m.weight);
+    const sc = sourcingOf(m);
+    return (
+      <div
+        className={"mat-lrow" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
+        key={m.id}
+        onClick={() => (selecting ? toggleSelect(m.id) : setDetail(m))}
+      >
+        <div className="mat-lthumb">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={src} alt={m.name} loading="lazy" />
+          ) : (
+            <span className="mat-lnoimg">
+              {m.color_hex && <span className="mat-dot" style={{ background: m.color_hex }} />}
+            </span>
+          )}
+          {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
+        </div>
+        <div className="mat-lmain">
+          <div className="mat-lname">
+            {m.name}
+            {sc && <span className={"mat-ibadge " + sc}>{sourcingLabel(sc)}</span>}
+          </div>
+          {specLine(m) && <div className="mat-lspec">{specLine(m)}</div>}
+        </div>
+        <div className="mat-lfacts">
+          {m.color && (
+            <span className="mat-colorbit">
+              {m.color_hex && <span className="mat-dot" style={{ background: m.color_hex }} />}
+              {m.color}
+            </span>
+          )}
+          {gsm && <span className="mat-gsm">{gsm}</span>}
+        </div>
+        {gl.length > 0 && (
+          <div className="mat-tags mat-ltags">
+            {gl.slice(0, 4).map((g) => (
+              <span className="mat-tag" key={g}>{g}</span>
+            ))}
+            {gl.length > 4 && <span className="mat-tag mat-tag-more">+{gl.length - 4}</span>}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="page lib-page">
       <div className="page-head">
         <h1 className="page-title display">Fabrics &amp; Trims</h1>
         <div className="spacer" />
+        {/* Grid ⇄ list (Tess, 2026-08-19: "add list view"). */}
+        <div className="mat-viewtoggle" role="group" aria-label="View">
+          <button
+            type="button"
+            className={"mat-vt" + (view === "grid" ? " on" : "")}
+            aria-pressed={view === "grid"}
+            title="Grid"
+            onClick={() => setView("grid")}
+          >
+            ▦
+          </button>
+          <button
+            type="button"
+            className={"mat-vt" + (view === "list" ? " on" : "")}
+            aria-pressed={view === "list"}
+            title="List"
+            onClick={() => setView("list")}
+          >
+            ☰
+          </button>
+        </div>
         {canEdit && selecting && (
           <button type="button" className="btn ghost sm" onClick={leaveSelect}>
             Cancel
@@ -352,75 +550,33 @@ export default function MaterialsClient({
         )}
       </div>
 
-      {shown.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="empty">
           {ofKind.length === 0
             ? `No ${kindLabel(kind).toLowerCase()}s yet.${canEdit ? ` Add one with the button above.` : ""}`
             : `No ${kindLabel(kind).toLowerCase()}s match those filters.`}
         </div>
       ) : (
-        <div className="grid dens-md">
-          {shown.map((m) => {
-            const src = cover(m);
-            const n = extraUrls(m).length + (src ? 1 : 0);
-            const isSel = selected.has(m.id);
-            const gl = materialGarments(m);
-            const gsm = gsmLabel(m.weight);
-            const sc = sourcingOf(m);
-            return (
-              <div
-                className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
-                key={m.id}
-                onClick={() => (selecting ? toggleSelect(m.id) : setDetail(m))}
-              >
-                <div className="imgwrap">
-                  {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={src} alt={m.name} loading="lazy" />
-                  ) : (
-                    <div className="mat-noimg">
-                      {m.color_hex && <span className="mat-chip" style={{ background: m.color_hex }} />}
-                      No swatch
-                    </div>
-                  )}
-                  {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
-                  {/* Custom / stock badge (Tess, 2026-08-19: "add check for
-                      custom or stock and include on thumbnail"). */}
-                  {sc && <span className={"mat-badge " + sc}>{sourcingLabel(sc)}</span>}
-                  {n > 1 && <span className="card-extra">{n}</span>}
-                </div>
-                <div className="meta">
-                  <div className="d">{m.name}</div>
-                  {/* Colour and GSM, up front on the thumbnail (Tess, 2026-08-19:
-                      "also list color on and gsm on thumbnail"). */}
-                  {(m.color || gsm) && (
-                    <div className="mat-facts">
-                      {m.color && (
-                        <span className="mat-colorbit">
-                          {m.color_hex && (
-                            <span className="mat-dot" style={{ background: m.color_hex }} />
-                          )}
-                          {m.color}
-                        </span>
-                      )}
-                      {gsm && <span className="mat-gsm">{gsm}</span>}
-                    </div>
-                  )}
-                  {specLine(m) && <div className="s">{specLine(m)}</div>}
-                  {/* The products this material is used for. */}
-                  {gl.length > 0 && (
-                    <div className="mat-tags">
-                      {gl.slice(0, 3).map((g) => (
-                        <span className="mat-tag" key={g}>{g}</span>
-                      ))}
-                      {gl.length > 3 && <span className="mat-tag mat-tag-more">+{gl.length - 3}</span>}
-                    </div>
-                  )}
-                </div>
+        grouped.map((g) => (
+          <section className="mat-group" key={g.key}>
+            {g.header && (
+              <h2 className="mat-group-h">
+                {g.header}
+                <span className="mat-group-n">{g.count}</span>
+              </h2>
+            )}
+            {g.subs.map((sub) => (
+              <div className="mat-sub" key={sub.key}>
+                {sub.header && <h3 className="mat-sub-h">{sub.header}</h3>}
+                {view === "list" ? (
+                  <div className="mat-list">{sub.items.map(swatchRow)}</div>
+                ) : (
+                  <div className="grid dens-md">{sub.items.map(swatchCard)}</div>
+                )}
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </section>
+        ))
       )}
 
       {/* The order pickbar — appears while selecting, once at least one swatch is
