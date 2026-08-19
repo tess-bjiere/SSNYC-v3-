@@ -483,6 +483,78 @@ body.notes-open .wrap{padding-right:378px}
 .mat-readfacts{margin-top:4px}
 .btn.link.arm{color:#c0392b}
 @media (max-width:640px){.mat-form{grid-template-columns:1fr}}
+.mat-modal-sm{max-width:440px;width:min(94vw,440px)}
+
+/* --- Order select mode in the library (Tess, 2026-08-18: "create an order for
+   materials from the material library"). A ticked card and a bottom pickbar. --- */
+.mat-selectable{cursor:pointer}
+.mat-selected{outline:2px solid var(--accent);outline-offset:-2px}
+.mat-check{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;
+  border:1.5px solid var(--btnfg);background:rgba(0,0,0,.35);color:var(--btnfg);
+  display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}
+.mat-selected .mat-check{background:var(--accent);border-color:var(--accent)}
+.mo-pickbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:65;
+  display:flex;align-items:center;gap:14px;min-width:min(92vw,520px);
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.28);
+  padding:10px 14px}
+.mo-pickbar-n{font-size:var(--t-sm);color:var(--ink)}
+.mo-pickbar-add{min-width:150px}
+
+/* --- Material orders (Tess, 2026-08-18). --- */
+.mo-head{align-items:flex-start;gap:12px}
+.mo-title-wrap{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mo-name{cursor:pointer;margin:0}
+.mo-name-input{font-size:var(--t-display);max-width:420px}
+.mo-sub{font-size:var(--t-meta);color:var(--faint);letter-spacing:.04em}
+.mo-status{min-width:120px}
+.mo-doc{margin-top:6px}
+.mo-group{margin:0 0 26px}
+.mo-group-head{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);
+  padding-bottom:6px;margin-bottom:6px}
+.mo-supplier{font-size:var(--t-title);font-weight:var(--w-title);color:var(--ink)}
+.mo-unassigned{color:var(--muted)}
+.mo-group-n{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+.mo-lines{display:flex;flex-direction:column}
+.mo-line{display:grid;grid-template-columns:46px minmax(0,1.6fr) 90px 76px 84px minmax(0,1.4fr) 34px;
+  align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--hair)}
+.mo-line-head{border-bottom:1px solid var(--line);padding-bottom:5px}
+.mo-line-head span{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+.mo-cell-img img{width:40px;height:40px;object-fit:cover;display:block;background:var(--chip)}
+.mo-noimg{display:block;width:40px;height:40px;background:var(--chip)}
+.mo-cell-name{display:flex;flex-direction:column;gap:1px;min-width:0}
+.mo-name-line{font-size:var(--t-body);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mo-spec{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mo-cell-ref{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mo-cell-x{text-align:right}
+.mo-qty-input{width:100%;text-align:right}
+.mo-unit-input{width:100%}
+.mo-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;max-width:720px;margin-top:22px}
+.mo-danger{grid-column:1 / -1;margin-top:4px}
+@media (max-width:720px){.mo-meta{grid-template-columns:1fr}
+  .mo-line{grid-template-columns:40px minmax(0,1fr) 64px 70px 34px;row-gap:2px}
+  .mo-cell-ref,.mo-cell-note{display:none}}
+
+/* The add-materials picker list. */
+.mo-pick-search{width:100%;margin:8px 0 12px}
+.mo-pick-list{display:flex;flex-direction:column;max-height:52vh;overflow:auto;
+  border:1px solid var(--hair)}
+.mo-pick{display:flex;align-items:center;gap:11px;padding:8px 10px;background:none;border:none;
+  border-bottom:1px solid var(--hair);text-align:left;cursor:pointer;font-family:inherit;width:100%}
+.mo-pick:hover{background:var(--chip)}
+.mo-pick.on{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.mo-pick.in{opacity:.55;cursor:default}
+.mo-pick-check{width:18px;height:18px;flex:none;border:1.5px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--accent)}
+.mo-pick.on .mo-pick-check{border-color:var(--accent)}
+.mo-pick-img img,.mo-pick-img .mo-noimg{width:36px;height:36px;object-fit:cover;display:block;background:var(--chip)}
+.mo-pick-body{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.mo-pick-name{font-size:var(--t-body);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mo-pick-spec{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mo-pick-tag{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);flex:none}
+
+/* Print-only elements are hidden on screen; @media print reveals the PO. */
+.print-only{display:none}
+
 /* Tier filter chips — All / FRED at home / Campaign. */
 .pg-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
 .pg-filter{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
@@ -3990,4 +4062,44 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-field.no-print{display:none}
   .ls-field-print{display:block;font-size:13px;color:#111;line-height:1.45}
   .ls-fact-note .ls-field-print{white-space:pre-wrap}
+}
+
+/* --- Material order → purchase order PDF (Tess, 2026-08-18). Portrait; each
+   supplier starts its own page so a supplier's portion sends as a complete PO.
+   Like the linesheet, the margins are the content's own padding, not @page
+   margins, so a "Margins: None" print still insets cleanly. --- */
+@media print{
+  @page{size:letter portrait;margin:0}
+  .mo-page{background:#fff;color:#111;padding:0}
+  .mo-page,.mo-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.notes-open .wrap{padding-right:0}
+  .print-only{display:block}
+  .mo-print-val.print-only{display:inline}
+  .mo-doc{padding:0}
+  .mo-print-head{display:flex;align-items:flex-start;justify-content:space-between;
+    gap:20px;padding:0.5in 0.6in 0.24in}
+  .mo-print-logo{height:30px;width:auto;max-width:45%;object-fit:contain}
+  .mo-print-wordmark{font-size:22px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111}
+  .mo-print-title{font-size:22px;color:#111;text-align:right;line-height:1.05}
+  .mo-print-date{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#888;text-align:right;margin-top:4px}
+  .mo-group{padding:0 0.6in;margin:0 0 18px}
+  /* Every supplier after the first starts a fresh sheet; the first rides with the
+     masthead. */
+  .mo-group + .mo-group{break-before:page;padding-top:0.5in}
+  .mo-group-head{border-color:#ccc}
+  .mo-supplier{color:#111}.mo-unassigned{color:#666}
+  .mo-group-n{color:#999}
+  .mo-line{grid-template-columns:minmax(0,1.7fr) 100px 66px 66px minmax(0,1.4fr);
+    gap:12px;border-color:#e6e6e6;color:#111;break-inside:avoid}
+  .mo-line-head{border-color:#bbb}
+  .mo-line-head span{color:#888}
+  .mo-cell-img,.mo-cell-x{display:none}
+  .mo-name-line{color:#111}
+  .mo-spec,.mo-cell-ref{color:#555}
+  .mo-print-val{color:#111;font-size:12px}
+  .mo-cell-qty .mo-print-val{font-weight:var(--w-title)}
+  .mo-group-foot{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;
+    display:flex;flex-direction:column;gap:5px}
+  .mo-foot-line{display:flex;gap:10px;font-size:11px;color:#333}
+  .mo-foot-k{min-width:60px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999}
 }

@@ -18,16 +18,36 @@ export default async function MaterialsPage() {
   if (APP.id !== "fred") notFound();
   const supabase = await createClient();
   const brand = await activeBrand();
-  const [{ data, error }, user] = await Promise.all([
+  const [{ data, error }, ordersRes, user] = await Promise.all([
     supabase
       .from("materials")
       .select("*")
       .eq("brand", brand)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
+    // Open orders (draft or sent) so a selection can be added to one — tolerates
+    // the material_orders table not existing yet, like everything else.
+    supabase
+      .from("material_orders")
+      .select("id,name,status")
+      .eq("brand", brand)
+      .is("deleted_at", null)
+      .neq("status", "received")
+      .order("updated_at", { ascending: false }),
     getSessionUser(),
   ]);
 
   const materials = (error ? [] : (data ?? [])) as Material[];
-  return <MaterialsClient materials={materials} canEdit={user?.role === "team"} />;
+  const openOrders = (ordersRes.error ? [] : (ordersRes.data ?? [])) as {
+    id: string;
+    name: string;
+    status: string;
+  }[];
+  return (
+    <MaterialsClient
+      materials={materials}
+      canEdit={user?.role === "team"}
+      openOrders={openOrders}
+    />
+  );
 }

@@ -17,6 +17,9 @@ import {
   addMaterialImages,
   softDeleteMaterial,
 } from "@/app/actions/materials";
+import { createOrder, addMaterialsToOrder } from "@/app/actions/materialOrders";
+
+export type OpenOrder = { id: string; name: string; status: string };
 
 export type Material = {
   id: string;
@@ -61,10 +64,13 @@ function extraUrls(m: Material): string[] {
 export default function MaterialsClient({
   materials,
   canEdit = false,
+  openOrders = [],
 }: {
   materials: Material[];
   canEdit?: boolean;
+  openOrders?: OpenOrder[];
 }) {
+  const router = useRouter();
   const [kind, setKind] = useState<MaterialKind>("fabric");
   const [q, setQ] = useState("");
   const [supplier, setSupplier] = useState("");
@@ -72,9 +78,46 @@ export default function MaterialsClient({
   const [detail, setDetail] = useState<Material | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Select mode — the way to build an order from the library (Tess, 2026-08-18:
+  // "add ability to create an order for materials from the material library").
+  // Off, the grid opens a swatch's detail; on, a click ticks it for an order.
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [naming, setNaming] = useState(false);
+
   function flash(m: string) {
     setToast(m);
     setTimeout(() => setToast(null), 1800);
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function leaveSelect() {
+    setSelecting(false);
+    setSelected(new Set());
+    setNaming(false);
+  }
+
+  async function createFromSelection(name: string) {
+    const fd = new FormData();
+    fd.set("name", name);
+    for (const id of selected) fd.append("material_ids", id);
+    // createOrder redirects to the new order on success.
+    await createOrder(fd);
+  }
+  async function addSelectionToOrder(orderId: string) {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const res = await addMaterialsToOrder(orderId, ids);
+    leaveSelect();
+    router.push(`/material-orders/${orderId}`);
+    flash(res.added > 0 ? `Added ${res.added} to order` : "Already on the order");
   }
 
   const ofKind = useMemo(
@@ -92,7 +135,17 @@ export default function MaterialsClient({
       <div className="page-head">
         <h1 className="page-title display">Fabrics &amp; Trims</h1>
         <div className="spacer" />
-        {canEdit && (
+        {canEdit && selecting && (
+          <button type="button" className="btn ghost sm" onClick={leaveSelect}>
+            Cancel
+          </button>
+        )}
+        {canEdit && !selecting && (
+          <button type="button" className="btn ghost sm" onClick={() => setSelecting(true)}>
+            Select for order
+          </button>
+        )}
+        {canEdit && !selecting && (
           <button type="button" className="btn" onClick={() => setAdding(true)}>
             + Add {kindLabel(kind).toLowerCase()}
           </button>
@@ -143,8 +196,13 @@ export default function MaterialsClient({
           {shown.map((m) => {
             const src = cover(m);
             const n = extraUrls(m).length + (src ? 1 : 0);
+            const isSel = selected.has(m.id);
             return (
-              <div className="card lib-card" key={m.id} onClick={() => setDetail(m)}>
+              <div
+                className={"card lib-card" + (selecting ? " mat-selectable" : "") + (isSel ? " mat-selected" : "")}
+                key={m.id}
+                onClick={() => (selecting ? toggleSelect(m.id) : setDetail(m))}
+              >
                 <div className="imgwrap">
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -155,6 +213,7 @@ export default function MaterialsClient({
                       No swatch
                     </div>
                   )}
+                  {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
                   {n > 1 && <span className="card-extra">{n}</span>}
                 </div>
                 <div className="meta">
@@ -165,6 +224,41 @@ export default function MaterialsClient({
             );
           })}
         </div>
+      )}
+
+      {/* The order pickbar — appears while selecting, once at least one swatch is
+          ticked. Create a new order (named), or drop the selection into an open
+          one. */}
+      {selecting && selected.size > 0 && (
+        <div className="mo-pickbar">
+          <span className="mo-pickbar-n">
+            {selected.size} selected
+          </span>
+          <div className="spacer" />
+          {openOrders.length > 0 && (
+            <Select
+              className="select sm mo-pickbar-add"
+              aria-label="Add to order"
+              value=""
+              onChange={(v) => v && addSelectionToOrder(v)}
+              options={[
+                { value: "", label: "Add to order…" },
+                ...openOrders.map((o) => ({ value: o.id, label: o.name })),
+              ]}
+            />
+          )}
+          <button type="button" className="btn" onClick={() => setNaming(true)}>
+            Create order
+          </button>
+        </div>
+      )}
+
+      {naming && (
+        <NameOrder
+          count={selected.size}
+          onClose={() => setNaming(false)}
+          onCreate={createFromSelection}
+        />
       )}
 
       {adding && (
@@ -275,6 +369,62 @@ function MaterialForm({
           <div className="mat-tools">
             <button type="submit" className="btn" disabled={busy}>
               {busy ? "Saving…" : "Save"}
+            </button>
+            <button type="button" className="ph-link" onClick={onClose} disabled={busy}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Name a new order built from the current selection, then create it (the server
+// action redirects to the fresh order).
+function NameOrder({
+  count,
+  onClose,
+  onCreate,
+}: {
+  count: number;
+  onClose: () => void;
+  onCreate: (name: string) => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const n = name.trim();
+    if (!n) return;
+    setBusy(true);
+    try {
+      await onCreate(n);
+    } catch {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal mat-modal mat-modal-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <span>New order · {count} {count === 1 ? "material" : "materials"}</span>
+          <button className="notes-close" onClick={onClose} title="Close">×</button>
+        </div>
+        <form className="modal-body mat-form" onSubmit={submit}>
+          <label className="mat-field mat-field-wide">
+            <span className="mat-label">Order name</span>
+            <input
+              className="input"
+              value={name}
+              autoFocus
+              placeholder="e.g. FW26 fabric buy"
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <div className="mat-tools">
+            <button type="submit" className="btn" disabled={busy || !name.trim()}>
+              {busy ? "Creating…" : "Create order"}
             </button>
             <button type="button" className="ph-link" onClick={onClose} disabled={busy}>Cancel</button>
           </div>

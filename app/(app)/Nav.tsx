@@ -100,6 +100,9 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // The fabric & trim library (Tess, 2026-08-18: "build library for fabrics
       // and trims") — the sourced materials the product side draws on.
       { href: "/materials", label: "Fabrics & Trims" },
+      // Purchase orders assembled from that library (Tess, 2026-08-18: "add
+      // ability to create an order for materials from the material library").
+      { href: "/material-orders", label: "Material Orders" },
     ],
   },
 ];
@@ -121,13 +124,14 @@ export default function Nav({
   // server too — this only keeps a talent from being shown a door they cannot
   // open. The SSYNC wordmark takes them to References, not Development.
   const isTeam = role === "team";
-  // The photographer directory and the fabric & trim library are FRED-only for
-  // now (Tess, 2026-08-18: "hide fabric and trims and photographer library on
-  // the sous sous / renggli versions of the tool"). They live in the shared
-  // codebase but only earn a nav door on the FRED deploy — the SSYNC deploy,
-  // which is what SOUS SOUS and Renggli use, doesn't show them. Route-level
-  // guards in each page back this up; this just hides the doors.
-  const FRED_ONLY = new Set(["/photographers", "/materials"]);
+  // The photographer directory, the fabric & trim library, and the material
+  // orders built from it are FRED-only for now (Tess, 2026-08-18: "hide fabric
+  // and trims and photographer library on the sous sous / renggli versions of
+  // the tool"; material orders draw on that FRED-only library). They live in the
+  // shared codebase but only earn a nav door on the FRED deploy — the SSYNC
+  // deploy, which is what SOUS SOUS and Renggli use, doesn't show them.
+  // Route-level guards in each page back this up; this just hides the doors.
+  const FRED_ONLY = new Set(["/photographers", "/materials", "/material-orders"]);
   const visibleGroups = (isTeam
     ? GROUPS
     : GROUPS.filter((g) => g.label === "Ideation")

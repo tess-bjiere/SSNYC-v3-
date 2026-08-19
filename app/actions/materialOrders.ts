@@ -1,0 +1,148 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { requireTeam } from "@/lib/access";
+import { activeBrand } from "@/lib/activeBrand";
+import {
+  addItems,
+  removeItem,
+  setItemField,
+  normalizeItems,
+  normalizeStatus,
+  type OrderLine,
+} from "@/lib/materialOrder";
+
+// Every write to a material order goes through here, matching
+// app/actions/linesheets.ts: requireTeam (the product side), read the row's
+// items jsonb, apply a pure lib/materialOrder.ts helper, write the whole list
+// back. Nothing hard-deletes.
+
+const TABLE = "material_orders";
+
+async function readItems(
+  id: string
+): Promise<{ supabase: Awaited<ReturnType<typeof createClient>>; items: OrderLine[] }> {
+  const supabase = await createClient();
+  const { data } = await supabase.from(TABLE).select("items").eq("id", id).maybeSingle();
+  return { supabase, items: normalizeItems(data?.items) };
+}
+
+async function writeItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+  items: OrderLine[]
+) {
+  await supabase.from(TABLE).update({ items, updated_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/material-orders");
+  revalidatePath(`/material-orders/${id}`);
+}
+
+// Create an order — born into the brand you are looking at, optionally seeded
+// with the materials selected in the library. `material_ids` arrives as repeated
+// form fields (the library's select mode) or is passed directly.
+export async function createOrder(form: FormData) {
+  const user = await requireTeam();
+  const name = ((form.get("name") as string) || "").trim();
+  if (!name) return;
+  const ids = form.getAll("material_ids").map((v) => String(v)).filter(Boolean);
+  const items = addItems([], ids);
+
+  const supabase = await createClient();
+  const brand = await activeBrand();
+  const { data } = await supabase
+    .from(TABLE)
+    .insert({ name, status: "draft", items, brand, created_by: user?.email ?? null })
+    .select("id")
+    .single();
+  revalidatePath("/material-orders");
+  if (data?.id) redirect(`/material-orders/${data.id}`);
+}
+
+export async function renameOrder(id: string, form: FormData) {
+  await requireTeam();
+  const name = ((form.get("name") as string) || "").trim();
+  if (!name) return;
+  const supabase = await createClient();
+  await supabase.from(TABLE).update({ name, updated_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/material-orders");
+  revalidatePath(`/material-orders/${id}`);
+}
+
+export async function setOrderStatus(id: string, status: string) {
+  await requireTeam();
+  const supabase = await createClient();
+  await supabase
+    .from(TABLE)
+    .update({ status: normalizeStatus(status), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath("/material-orders");
+  revalidatePath(`/material-orders/${id}`);
+}
+
+// The delivery address and the free-text notes on the order (both optional).
+export async function setOrderMeta(
+  id: string,
+  patch: { ship_to?: string | null; notes?: string | null }
+) {
+  await requireTeam();
+  const clean: Record<string, string | null> = {};
+  for (const k of ["ship_to", "notes"] as const) {
+    if (k in patch) {
+      const v = patch[k];
+      clean[k] = typeof v === "string" && v.trim() === "" ? null : v ?? null;
+    }
+  }
+  if (Object.keys(clean).length === 0) return;
+  const supabase = await createClient();
+  await supabase
+    .from(TABLE)
+    .update({ ...clean, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath(`/material-orders/${id}`);
+}
+
+// Add materials to an existing order (from the library's "Add to order", or the
+// detail page's own picker). Returns whether anything new landed, so a caller
+// can toast accurately.
+export async function addMaterialsToOrder(
+  id: string,
+  materialIds: string[]
+): Promise<{ added: number }> {
+  await requireTeam();
+  const { supabase, items } = await readItems(id);
+  const next = addItems(items, materialIds);
+  const added = next.length - items.length;
+  if (added > 0) await writeItems(supabase, id, next);
+  return { added };
+}
+
+export async function removeOrderLine(id: string, materialId: string) {
+  await requireTeam();
+  const { supabase, items } = await readItems(id);
+  const next = removeItem(items, materialId);
+  if (next.length === items.length) return;
+  await writeItems(supabase, id, next);
+}
+
+// A line's quantity / unit / note — what this order actually asks for.
+export async function setOrderLine(
+  id: string,
+  materialId: string,
+  patch: { qty?: string | null; unit?: string | null; note?: string | null }
+) {
+  await requireTeam();
+  const { supabase, items } = await readItems(id);
+  await writeItems(supabase, id, setItemField(items, materialId, patch));
+}
+
+// Delete an order — soft, like everything else: a deleted_at timestamp takes it
+// off the list and Restore (setting it back to null) would bring it whole.
+export async function deleteOrder(id: string) {
+  await requireTeam();
+  const supabase = await createClient();
+  await supabase.from(TABLE).update({ deleted_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath("/material-orders");
+  redirect("/material-orders");
+}
