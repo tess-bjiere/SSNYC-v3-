@@ -51,6 +51,31 @@ export async function removePhotographerImage(id: string) {
   revalidatePath("/trash");
 }
 
+// Save selected photographer images into the Campaign library (Tess, 2026-08-19:
+// "from the photographer profile, you can specifically select images you want
+// saved into the campaign library"). A roster image and a campaign image are the
+// same kind of row told apart by `type`, so this just flips the chosen ones from
+// 'roster' to 'editorial' — they enter /editorial and keep showing on the
+// photographer's profile (which lists both). Scoped to this brand's own roster
+// rows so nothing else can be reclassified. Returns how many moved.
+export async function saveImagesToCampaign(ids: string[]): Promise<{ saved: number }> {
+  await requireFredTeam();
+  const clean = Array.from(new Set(ids.filter(Boolean)));
+  if (clean.length === 0) return { saved: 0 };
+  const supabase = await createClient();
+  const brand = await activeBrand();
+  const { data } = await supabase
+    .from("references")
+    .update({ type: "editorial" })
+    .eq("brand", brand)
+    .eq("type", "roster")
+    .in("id", clean)
+    .select("id");
+  revalidatePath("/photographers");
+  revalidatePath("/editorial");
+  return { saved: data?.length ?? 0 };
+}
+
 function extFor(type: string): string {
   if (type === "image/png") return "png";
   if (type === "image/webp") return "webp";

@@ -20,6 +20,7 @@ import {
   setPhotographerMeta,
   addPhotographerImages,
   removePhotographerImage,
+  saveImagesToCampaign,
 } from "@/app/actions/photographers";
 import MultiSelect from "@/app/components/MultiSelect";
 import DetailModal from "../library/DetailModal";
@@ -616,6 +617,34 @@ function ProfileModal({
       router.refresh();
     });
   }
+  // Save-to-Campaign select mode (Tess, 2026-08-19: "from the photographer
+  // profile, you can specifically select images you want saved into the campaign
+  // library"). Off, a click opens the image; on, a click ticks it.
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  function togglePick(id: string) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function leavePick() {
+    setPicking(false);
+    setPicked(new Set());
+  }
+  function saveToCampaign() {
+    const ids = Array.from(picked);
+    if (ids.length === 0) return;
+    leavePick();
+    onToast(`Saved ${ids.length} to Campaign`);
+    start(async () => {
+      await saveImagesToCampaign(ids);
+      router.refresh();
+    });
+  }
+
   // Where this photographer sits — carried onto the images so they land in the
   // same city they do.
   const location = profile.ids.map((id) => byId.get(id)?.location).find((l) => !!l) || "";
@@ -821,12 +850,25 @@ function ProfileModal({
               >
                 {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add FRED-at-home images"}
               </button>
+              {/* Save selected images into the Campaign library (Tess,
+                  2026-08-19). Only meaningful once there are images. */}
+              {workRefs.length > 0 && (
+                <button
+                  type="button"
+                  className={"btn ghost sm" + (picking ? " on" : "")}
+                  onClick={() => (picking ? leavePick() : setPicking(true))}
+                >
+                  {picking ? "Cancel" : "Save to Campaign"}
+                </button>
+              )}
               <span className="pg-imgbar-hint">
-                {workRefs.length > 1
-                  ? "Drag to reorder — the first image is the thumbnail"
-                  : workRefs.length === 0
-                    ? "Add the 3–5 shots that feel most FRED at home — or drag them in"
-                    : ""}
+                {picking
+                  ? "Tap the images to save into the Campaign library"
+                  : workRefs.length > 1
+                    ? "Drag to reorder — the first image is the thumbnail"
+                    : workRefs.length === 0
+                      ? "Add the 3–5 shots that feel most FRED at home — or drag them in"
+                      : ""}
               </span>
             </div>
           )}
@@ -834,21 +876,29 @@ function ProfileModal({
             <div className="grid dens-md pg-profile-grid">
               {items.map((r) => {
                 const src = refThumb(r);
+                const isPicked = picked.has(r.id);
+                const draggable = canEdit && !picking;
                 return (
                   <div
-                    className={"card lib-card" + (canEdit ? " pg-drag" : "")}
+                    className={
+                      "card lib-card" +
+                      (draggable ? " pg-drag" : "") +
+                      (picking ? " mat-selectable" : "") +
+                      (isPicked ? " mat-selected" : "")
+                    }
                     key={r.id}
-                    onClick={() => onImage(r)}
-                    draggable={canEdit}
-                    onDragStart={canEdit ? () => { dragId.current = r.id; } : undefined}
-                    onDragOver={canEdit ? (e) => { e.preventDefault(); reorderTo(r.id); } : undefined}
-                    onDrop={canEdit ? (e) => { e.preventDefault(); commitOrder(); } : undefined}
-                    onDragEnd={canEdit ? commitOrder : undefined}
+                    onClick={() => (picking ? togglePick(r.id) : onImage(r))}
+                    draggable={draggable}
+                    onDragStart={draggable ? () => { dragId.current = r.id; } : undefined}
+                    onDragOver={draggable ? (e) => { e.preventDefault(); reorderTo(r.id); } : undefined}
+                    onDrop={draggable ? (e) => { e.preventDefault(); commitOrder(); } : undefined}
+                    onDragEnd={draggable ? commitOrder : undefined}
                   >
                     <div className="imgwrap">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src ?? ""} alt={r.designer || ""} loading="lazy" draggable={false} />
-                      {canEdit && (
+                      {picking && <span className="mat-check">{isPicked ? "✓" : ""}</span>}
+                      {canEdit && !picking && (
                         <button
                           type="button"
                           className="pg-img-x"
@@ -878,6 +928,16 @@ function ProfileModal({
               {ig && <> on <a href={ig} target="_blank" rel="noreferrer">Instagram</a></>}
               {site && <> · <a href={site} target="_blank" rel="noreferrer">their site</a></>}
               {canEdit && <>, then add the FRED-at-home ones with the button above.</>}
+            </div>
+          )}
+
+          {picking && picked.size > 0 && (
+            <div className="mo-pickbar">
+              <span className="mo-pickbar-n">{picked.size} selected</span>
+              <div className="spacer" />
+              <button type="button" className="btn" onClick={saveToCampaign}>
+                Save to Campaign
+              </button>
             </div>
           )}
         </div>

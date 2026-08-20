@@ -16,12 +16,16 @@ export default async function LibraryPage() {
       .select("*")
       .eq("brand", brand)
       .is("deleted_at", null)
-      // Editorial images live in the same table, told apart by `type`. They have
-      // their own view (/editorial) with their own filters, so they are kept out
-      // of the Library grid — matching the original tool, where the two are
-      // separate tabs. Rows with no `type` at all are treated as library
-      // references so nothing written before the column existed disappears.
-      .or("type.is.null,type.neq.editorial")
+      // The References library holds ONLY product/packaging references (Tess,
+      // 2026-08-19: "references should be saved for product and packaging").
+      // Campaign images (`type='editorial'`) and photographer roster images
+      // (`type='roster'`) live in the same table but have their own homes —
+      // /editorial and /photographers — so they are kept out of this grid.
+      // Filtering to reference/null (rather than "not editorial") is what stops
+      // the roster from leaking in here, which is also why a References cleanup
+      // can no longer touch the photographer directory. Rows with no `type` at
+      // all are legacy library references and still count.
+      .or("type.is.null,type.eq.reference")
       .order("created_at", { ascending: false }),
     supabase.from("moodboards").select("id,name,archived,items").eq("brand", brand).order("created_at", { ascending: true }),
     supabase.from("settings").select("key,value").in("key", ["lists", "designers"]),
