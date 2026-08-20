@@ -115,11 +115,15 @@ function extraUrls(m: Material): string[] {
 export default function MaterialsClient({
   materials,
   canEdit = false,
+  canOrder = false,
   openOrders = [],
   products = [],
 }: {
   materials: Material[];
   canEdit?: boolean;
+  // Ordering (select → create/add-to order) is FRED-only; off FRED the library
+  // is documentation only (Tess, 2026-08-19).
+  canOrder?: boolean;
   openOrders?: OpenOrder[];
   products?: Product[];
 }) {
@@ -478,12 +482,12 @@ export default function MaterialsClient({
             ☰
           </button>
         </div>
-        {canEdit && selecting && (
+        {canOrder && canEdit && selecting && (
           <button type="button" className="btn ghost sm" onClick={leaveSelect}>
             Cancel
           </button>
         )}
-        {canEdit && !selecting && (
+        {canOrder && canEdit && !selecting && (
           <button type="button" className="btn ghost sm" onClick={() => setSelecting(true)}>
             Select for order
           </button>
@@ -615,8 +619,8 @@ export default function MaterialsClient({
 
       {/* The order pickbar — appears while selecting, once at least one swatch is
           ticked. Create a new order (named), or drop the selection into an open
-          one. */}
-      {selecting && selected.size > 0 && (
+          one. FRED only. */}
+      {canOrder && selecting && selected.size > 0 && (
         <div className="mo-pickbar">
           <span className="mo-pickbar-n">
             {selected.size} selected

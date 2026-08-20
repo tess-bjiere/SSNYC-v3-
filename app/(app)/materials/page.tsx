@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { getSessionUser } from "@/lib/access";
@@ -7,15 +6,17 @@ import MaterialsClient, { type Material } from "./MaterialsClient";
 
 export const dynamic = "force-dynamic";
 
-// The materials library — fabrics and trims (Tess, 2026-08-18). Its own table,
-// scoped to the active brand, told apart by `kind`. Reads tolerate the table
-// not existing yet: on the Loyalist database, until db/p11-materials.sql is run
-// by hand, this page shows its empty state rather than erroring.
+// The materials library — fabrics, trims and packaging (Tess, 2026-08-18). Its
+// own table, scoped to the active brand, told apart by `kind`. Available on every
+// deploy: SOUS SOUS and Renggli document their (often evergreen) materials too,
+// even though only FRED ORDERS them — the factory provides theirs directly (Tess,
+// 2026-08-19). Reads tolerate the table not existing yet: until the materials
+// table is created on the Loyalist database (db/p18-materials-loyalist.sql), this
+// page shows its empty state rather than erroring.
 export default async function MaterialsPage() {
-  // FRED-only for now (Tess, 2026-08-18: "hide fabric and trims ... on the sous
-  // sous / renggli versions"). The nav hides the link on the SSYNC deploy; this
-  // makes the URL itself a 404 there so a direct link can't reach it either.
-  if (APP.id !== "fred") notFound();
+  // Ordering is FRED-only (SOUS SOUS / Renggli get materials from the factory, so
+  // there is nothing to order). The library itself is not gated.
+  const canOrder = APP.id === "fred";
   const supabase = await createClient();
   const brand = await activeBrand();
   const [{ data, error }, ordersRes, stylesRes, user] = await Promise.all([
@@ -25,15 +26,17 @@ export default async function MaterialsPage() {
       .eq("brand", brand)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
-    // Open orders (draft or sent) so a selection can be added to one — tolerates
-    // the material_orders table not existing yet, like everything else.
-    supabase
-      .from("material_orders")
-      .select("id,name,status")
-      .eq("brand", brand)
-      .is("deleted_at", null)
-      .neq("status", "received")
-      .order("updated_at", { ascending: false }),
+    // Open orders (draft or sent) so a selection can be added to one — FRED only;
+    // off FRED there is no orders table, so don't even ask.
+    canOrder
+      ? supabase
+          .from("material_orders")
+          .select("id,name,status")
+          .eq("brand", brand)
+          .is("deleted_at", null)
+          .neq("status", "received")
+          .order("updated_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null } as const),
     // The brand's products — its styles. These are the garments a fabric can be
     // used for (Tess, 2026-08-19: "the products listed on the website"), sourced
     // live so the dropdown never drifts from what's actually in the line. Each
@@ -68,6 +71,7 @@ export default async function MaterialsPage() {
     <MaterialsClient
       materials={materials}
       canEdit={user?.role === "team"}
+      canOrder={canOrder}
       openOrders={openOrders}
       products={products}
     />

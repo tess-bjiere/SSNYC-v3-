@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireFredTeam } from "@/lib/access";
+import { requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
@@ -87,7 +87,7 @@ function imageFiles(form: FormData): File[] {
 export async function createMaterial(
   form: FormData
 ): Promise<{ ok: boolean; id?: string; errors: string[] }> {
-  const user = await requireFredTeam();
+  const user = await requireTeam();
   const name = String(form.get("name") ?? "").trim();
   if (!name) return { ok: false, errors: ["A name is required."] };
   // fabric | trim | packaging (Tess, 2026-08-19: "add packaging tab" — before
@@ -134,7 +134,7 @@ export async function updateMaterial(
   patch: Record<string, string | null>,
   garments?: string[]
 ) {
-  await requireFredTeam();
+  await requireTeam();
   if (!id) return;
   const clean: Record<string, unknown> = {};
   for (const k of FIELDS) {
@@ -159,7 +159,7 @@ export async function updateMaterial(
 // view until restored (Tess, 2026-08-19: "archive a fabric or a trim or
 // packaging item").
 export async function setMaterialArchived(id: string, archived: boolean) {
-  await requireFredTeam();
+  await requireTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
@@ -174,7 +174,7 @@ export async function addMaterialImages(
   id: string,
   form: FormData
 ): Promise<{ ok: boolean; errors: string[] }> {
-  await requireFredTeam();
+  await requireTeam();
   const files = imageFiles(form);
   if (!id || files.length === 0) return { ok: false, errors: ["No image files provided."] };
   const supabase = await createClient();
@@ -203,7 +203,7 @@ export async function addMaterialImages(
 
 // Soft delete — to Trash, recoverable — like everything else in the app.
 export async function softDeleteMaterial(id: string) {
-  await requireFredTeam();
+  await requireTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
@@ -214,7 +214,7 @@ export async function softDeleteMaterial(id: string) {
 }
 
 export async function restoreMaterial(id: string) {
-  await requireFredTeam();
+  await requireTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase.from("materials").update({ deleted_at: null }).eq("id", id);

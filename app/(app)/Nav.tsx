@@ -138,22 +138,23 @@ export default function Nav({
   // server too — this only keeps a talent from being shown a door they cannot
   // open. The SSYNC wordmark takes them to References, not Development.
   const isTeam = role === "team";
-  // The photographer directory, the fabric & trim library, and the material
-  // orders built from it are FRED-only for now (Tess, 2026-08-18: "hide fabric
-  // and trims and photographer library on the sous sous / renggli versions of
-  // the tool"; material orders draw on that FRED-only library). They live in the
-  // shared codebase but only earn a nav door on the FRED deploy — the SSYNC
-  // deploy, which is what SOUS SOUS and Renggli use, doesn't show them.
-  // Route-level guards in each page back this up; this just hides the doors.
-  const FRED_ONLY = new Set(["/photographers", "/materials", "/material-orders"]);
+  // The photographer directory and material ORDERS are FRED-only. The materials
+  // library itself is NOT — SOUS SOUS and Renggli document their materials too
+  // (Tess, 2026-08-19: "for renggli / sous sous — materials may be provided
+  // directly from the factory — so you may not have to order separately … but we
+  // do want option to document materials because many will be evergreen"). So the
+  // library shows on every deploy; only ordering and the FRED-at-home
+  // photographer work stay behind the FRED door. Route-level guards back this up.
+  const FRED_ONLY = new Set(["/photographers", "/material-orders"]);
   const groups = (isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation"))
     .map((g) =>
       APP.id === "fred"
         ? g
         : { ...g, links: g.links.filter((l) => !FRED_ONLY.has(l.href)) },
     )
-    // A group whose only links were FRED-only (Materials on SSYNC) drops entirely
-    // rather than rendering an empty menu.
+    // A group left with no links (all of them FRED-only on SSYNC) drops entirely
+    // rather than rendering an empty menu. Sourcing survives on SSYNC because
+    // Materials stays — only Material Orders is filtered out there.
     .filter((g) => g.links.length > 0);
   const home = isTeam ? "/development" : "/library";
 
