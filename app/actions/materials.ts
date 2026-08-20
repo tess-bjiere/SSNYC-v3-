@@ -14,6 +14,8 @@ const FIELDS = [
   "weight", "width", "construction", "finish", "trim_type", "size", "material",
   // Packaging's own type (Tess, 2026-08-19: "add packaging tab").
   "pack_type",
+  // Customs classification (Tess, 2026-08-20: "add hs code to packaging fields").
+  "hs_code",
   "price", "moq", "lead_time", "notes",
   // 'stock' | 'custom' (Tess, 2026-08-19). Set from the add/edit form like the
   // rest; a blank clears it back to unset.

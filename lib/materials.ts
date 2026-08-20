@@ -29,6 +29,9 @@ export type MaterialLike = {
   // 2026-08-19: "add packaging tab to fabric and trims". Its dimensions and
   // make-up reuse the shared `size` and `material` columns.
   pack_type?: string | null;
+  // The customs / Harmonized System classification code (Tess, 2026-08-20: "add
+  // hs code to packaging fields"). Free text — codes vary in length by country.
+  hs_code?: string | null;
   price?: string | null;
   moq?: string | null;
   lead_time?: string | null;
@@ -86,6 +89,9 @@ export const PACKAGING_FIELDS: MaterialField[] = [
   { key: "pack_type", label: "Type" },
   { key: "size", label: "Dimensions" },
   { key: "material", label: "Material" },
+  // Customs classification, most needed on packaging that ships across borders
+  // (Tess, 2026-08-20: "add hs code to packaging fields").
+  { key: "hs_code", label: "HS code" },
 ];
 
 /** The fields a form/detail shows for a kind: the kind-specific ones first,
@@ -209,7 +215,7 @@ export function matchMaterial(m: MaterialLike, query: string): boolean {
   if (!q) return true;
   const hay = [
     m.name, m.supplier, m.supplier_ref, m.composition, m.color, m.weight, m.width,
-    m.construction, m.finish, m.trim_type, m.size, m.material, m.pack_type, m.notes,
+    m.construction, m.finish, m.trim_type, m.size, m.material, m.pack_type, m.hs_code, m.notes,
     sourcingOf(m),
     ...materialGarments(m),
   ]

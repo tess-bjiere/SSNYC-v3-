@@ -55,6 +55,7 @@ export type Material = {
   size: string | null;
   material: string | null;
   pack_type: string | null;
+  hs_code: string | null;
   price: string | null;
   moq: string | null;
   lead_time: string | null;
