@@ -312,7 +312,12 @@ export async function emptyReferenceTrash(): Promise<{
     .from("references")
     .select("id,image,thumb,image_url,thumb_url,extra_images")
     .eq("brand", brand)
-    .not("deleted_at", "is", null);
+    .not("deleted_at", "is", null)
+    // Guardrail (Tess, 2026-08-19): Empty Trash NEVER mass-purges photographer
+    // roster rows. Losing the whole directory to one click is exactly what went
+    // wrong; a trashed roster image can still be permanently removed one at a
+    // time from its own card, but the sweep leaves them be.
+    .neq("type", "roster");
   if (readErr) return { ok: false, error: readErr.message, rowsRemoved: 0, filesRemoved: 0 };
   const rows = (trashed ?? []) as (ImageBearingRow & { id: string })[];
   if (rows.length === 0) return { ok: true, rowsRemoved: 0, filesRemoved: 0 };

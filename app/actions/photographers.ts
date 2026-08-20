@@ -53,27 +53,66 @@ export async function removePhotographerImage(id: string) {
 
 // Save selected photographer images into the Campaign library (Tess, 2026-08-19:
 // "from the photographer profile, you can specifically select images you want
-// saved into the campaign library"). A roster image and a campaign image are the
-// same kind of row told apart by `type`, so this just flips the chosen ones from
-// 'roster' to 'editorial' — they enter /editorial and keep showing on the
-// photographer's profile (which lists both). Scoped to this brand's own roster
-// rows so nothing else can be reclassified. Returns how many moved.
+// saved into the campaign library").
+//
+// It makes a COPY, not a move: each chosen roster row is duplicated as an
+// 'editorial' row pointing at the same image, crediting the same photographer.
+// A copy rather than a flip so the two are decoupled (Tess, 2026-08-19: "is
+// there a way it doesn't have to show twice ... add whatever guardrails") —
+// deleting the campaign copy later never touches the photographer's roster
+// image, and the profile de-dupes by image so it still shows once. Idempotent:
+// an image already in Campaign is skipped, so saving twice can't pile up copies.
 export async function saveImagesToCampaign(ids: string[]): Promise<{ saved: number }> {
   await requireFredTeam();
   const clean = Array.from(new Set(ids.filter(Boolean)));
   if (clean.length === 0) return { saved: 0 };
   const supabase = await createClient();
   const brand = await activeBrand();
-  const { data } = await supabase
-    .from("references")
-    .update({ type: "editorial" })
-    .eq("brand", brand)
-    .eq("type", "roster")
-    .in("id", clean)
-    .select("id");
+
+  const [{ data: rows }, { data: existing }] = await Promise.all([
+    supabase.from("references").select("*").eq("brand", brand).eq("type", "roster").in("id", clean),
+    supabase
+      .from("references")
+      .select("image_url")
+      .eq("brand", brand)
+      .eq("type", "editorial")
+      .is("deleted_at", null),
+  ]);
+  const have = new Set((existing ?? []).map((e) => (e as { image_url: string | null }).image_url).filter(Boolean));
+
+  // Copy only the image + credit fields; never id / created_at / deleted_at, and
+  // never a row whose image is already in Campaign.
+  const copies = (rows ?? [])
+    .filter((r) => {
+      const u = (r as { image_url: string | null }).image_url;
+      return u && !have.has(u);
+    })
+    .map((r) => {
+      const s = r as Record<string, unknown>;
+      return {
+        brand,
+        type: "editorial",
+        designer: s.designer ?? "",
+        photographer: s.photographer ?? null,
+        photographer_ig: s.photographer_ig ?? null,
+        location: s.location ?? null,
+        link: s.link ?? null,
+        year: s.year ?? null,
+        season: s.season ?? null,
+        model: s.model ?? null,
+        image: s.image ?? null,
+        thumb: s.thumb ?? null,
+        image_url: s.image_url ?? null,
+        thumb_url: s.thumb_url ?? null,
+        extra_images: s.extra_images ?? null,
+        notes: s.notes ?? null,
+      };
+    });
+  if (copies.length === 0) return { saved: 0 };
+  await supabase.from("references").insert(copies);
   revalidatePath("/photographers");
   revalidatePath("/editorial");
-  return { saved: data?.length ?? 0 };
+  return { saved: copies.length };
 }
 
 function extFor(type: string): string {

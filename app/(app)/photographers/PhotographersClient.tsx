@@ -547,15 +547,46 @@ function ProfileModal({
   }
 
   const ig = igUrl(profile.ig);
+  // The image a row points at, used to tell a roster image from its Campaign copy
+  // (they share it) and to de-dupe the two into one tile.
+  const imgKey = (r: Reference) =>
+    (r.image_url as string | null) ||
+    (r.image as string | null) ||
+    refThumb(r) ||
+    r.id;
   // Only the refs that actually carry an image are "work"; a roster entry has
-  // none. The website is read off whichever ref carries a link.
-  const workRefsRaw = useMemo(
-    () =>
-      profile.ids
-        .map((id) => byId.get(id))
-        .filter((r): r is Reference => !!r && !!refThumb(r)),
-    [profile.ids, byId]
-  );
+  // none. Then de-dupe (Tess, 2026-08-19: "is there a way it doesn't have to show
+  // twice ... if we add to campaign"): saving an image to Campaign makes an
+  // 'editorial' copy pointing at the same picture, so the profile drops that copy
+  // in favour of the roster original — the tile shows once, and the copy is what
+  // lives in /editorial.
+  const workRefsRaw = useMemo(() => {
+    const all = profile.ids
+      .map((id) => byId.get(id))
+      .filter((r): r is Reference => !!r && !!refThumb(r));
+    const rosterKeys = new Set(all.filter((r) => r.type === "roster").map(imgKey));
+    const seen = new Set<string>();
+    const out: Reference[] = [];
+    for (const r of all) {
+      const k = imgKey(r);
+      if (r.type !== "roster" && rosterKeys.has(k)) continue; // the campaign copy of a roster image
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(r);
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.ids, byId]);
+  // Which displayed images are already in the Campaign library — for the badge.
+  const campaignKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const id of profile.ids) {
+      const r = byId.get(id);
+      if (r && r.type === "editorial") s.add(imgKey(r));
+    }
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.ids, byId]);
   // Apply the team's hand-set order; anything not in the list keeps its default
   // place at the end, so a fresh upload shows up without disturbing the order.
   const workRefs = useMemo(() => {
@@ -898,6 +929,11 @@ function ProfileModal({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src ?? ""} alt={r.designer || ""} loading="lazy" draggable={false} />
                       {picking && <span className="mat-check">{isPicked ? "✓" : ""}</span>}
+                      {!picking && campaignKeys.has(imgKey(r)) && (
+                        <span className="pg-incampaign" title="Saved to the Campaign library">
+                          In campaign
+                        </span>
+                      )}
                       {canEdit && !picking && (
                         <button
                           type="button"

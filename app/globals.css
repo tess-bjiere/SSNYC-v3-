@@ -748,6 +748,11 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .pg-profile-grid .card:hover .pg-img-x{opacity:1}
 .pg-img-x:hover{background:#c0392b;color:#fff;border-color:#c0392b}
 @media (hover:none){.pg-img-x{opacity:.9}}
+/* "In campaign" marker on a profile image already saved to the Campaign library
+   (Tess, 2026-08-19). Top-left, accent, so a saved image reads at a glance. */
+.pg-incampaign{position:absolute;top:6px;left:6px;z-index:3;font-size:var(--t-micro);
+  letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;line-height:1;
+  background:var(--accent);color:var(--btnfg);border:1px solid var(--accent)}
 .pg-profile-cities{display:flex;gap:6px;flex-wrap:wrap}
 .pg-chip{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
   border:1px solid var(--line);padding:3px 8px}
