@@ -702,20 +702,41 @@ function MaterialForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const fd = new FormData(formRef.current!);
+    const formEl = formRef.current!;
+    // Pull the selected images out of the form. They are uploaded ONE PER REQUEST
+    // — Next caps a Server Action body at 25 MB, and a handful of phone photos
+    // sent together blow past it and fail before the action even runs (Tess,
+    // 2026-08-20: "the extra images arent populating ... when i add"). So the row
+    // is created with just the first image, and the rest are added afterwards,
+    // each in its own request.
+    const fileInput = formEl.querySelector<HTMLInputElement>('input[type="file"][name="files"]');
+    const files = Array.from(fileInput?.files ?? []).filter((f) => f.type.startsWith("image/"));
+    const fd = new FormData(formEl);
     fd.set("kind", k);
     fd.set("sourcing", sourcing);
     for (const g of garments) fd.append("garments", g);
+    fd.delete("files");
+    if (files[0]) fd.append("files", files[0]);
     setBusy(true);
     setErr(null);
     try {
       const res = await createMaterial(fd);
-      if (res.ok) {
-        router.refresh();
-        onDone(k);
-      } else {
+      if (!res.ok) {
         setErr(res.errors[0] ?? "Could not save.");
+        return;
       }
+      // The rest of the images, one request each.
+      for (const f of files.slice(1)) {
+        const ifd = new FormData();
+        ifd.append("files", f);
+        try {
+          await addMaterialImages(res.id!, ifd);
+        } catch {
+          /* one image failing shouldn't lose the material or the others */
+        }
+      }
+      router.refresh();
+      onDone(k);
     } catch {
       setErr("Could not save.");
     } finally {
@@ -924,17 +945,37 @@ function MaterialDetail({
     if (!canEdit) return;
     const files = Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
     if (files.length === 0) return;
-    const fd = new FormData();
-    for (const f of files) fd.append("files", f);
     setUploading(true);
+    const added: string[] = [];
+    let failed = 0;
     try {
-      const res = await addMaterialImages(material.id, fd);
-      if (res.ok) {
-        // Show them straight away and stay put — no more closing the modal.
-        setImgs((cur) => [...cur, ...res.urls]);
+      // One request per image — several photos in a single request exceed Next's
+      // 25 MB Server-Action body limit and fail before the action runs (with no
+      // error the code can catch), which is why they used to vanish silently.
+      for (const f of files) {
+        const fd = new FormData();
+        fd.append("files", f);
+        try {
+          const res = await addMaterialImages(material.id, fd);
+          if (res.ok) added.push(...res.urls);
+          else failed++;
+        } catch {
+          failed++;
+        }
+      }
+      if (added.length) {
+        setImgs((cur) => [...cur, ...added]);
         router.refresh();
-        onToast(res.urls.length === 1 ? "Image added" : `${res.urls.length} images added`);
-      } else if (res.errors[0]) onToast(res.errors[0]);
+      }
+      onToast(
+        added.length
+          ? failed
+            ? `Added ${added.length}, ${failed} failed`
+            : added.length === 1
+              ? "Image added"
+              : `${added.length} images added`
+          : "Couldn't add — try smaller images"
+      );
     } finally {
       setUploading(false);
     }
