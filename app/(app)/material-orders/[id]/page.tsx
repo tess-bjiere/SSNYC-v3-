@@ -5,7 +5,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { APP } from "@/lib/appConfig";
 import { loadBrands } from "@/lib/brandsServer";
 import { brandName } from "@/lib/brands";
-import { specLine, kindOf } from "@/lib/materials";
+import { specLine, kindOf, materialFacts } from "@/lib/materials";
 import type { Material } from "@/app/(app)/materials/MaterialsClient";
 import {
   normalizeItems,
@@ -73,11 +73,10 @@ export default async function MaterialOrderPage({
         kind: m.kind,
         supplier: m.supplier,
         supplierRef: m.supplier_ref,
-        composition: m.composition,
-        color: m.color,
-        price: m.price,
-        moq: m.moq,
-        leadTime: m.lead_time,
+        // The full profile spec, minus what the line already shows on its own —
+        // supplier (group header), ref (its own column), the AI file (a link).
+        details: materialFacts(m, ["supplier", "supplier_ref", "ai_file"]),
+        aiFile: m.ai_file ?? null,
         thumb: cover(m) || null,
         qty: line.qty ?? null,
         unit: line.unit ?? null,

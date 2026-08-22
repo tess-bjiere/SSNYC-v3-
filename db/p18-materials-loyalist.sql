@@ -36,6 +36,7 @@ create table if not exists public.materials (
   price text,
   moq text,
   lead_time text,
+  ai_file text,           -- link to the Illustrator artwork, sent with an order
   notes text,
   sourcing text,          -- 'stock' | 'custom'
   archived boolean not null default false,
@@ -53,6 +54,7 @@ create table if not exists public.materials (
 -- Column guards, in case the table already exists from an earlier partial run.
 alter table public.materials add column if not exists pack_type text;
 alter table public.materials add column if not exists hs_code text;
+alter table public.materials add column if not exists ai_file text;
 alter table public.materials add column if not exists sourcing text;
 alter table public.materials add column if not exists archived boolean not null default false;
 alter table public.materials add column if not exists current_production boolean not null default false;

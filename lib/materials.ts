@@ -36,6 +36,8 @@ export type MaterialLike = {
   moq?: string | null;
   lead_time?: string | null;
   notes?: string | null;
+  // A link to the material's Illustrator artwork file (Tess, 2026-08-20).
+  ai_file?: string | null;
   // Custom or stock (Tess, 2026-08-19: "add check for custom or stock"). Stock is
   // an off-the-shelf material; custom is developed/made-to-order. Unset until
   // someone says which.
@@ -69,6 +71,10 @@ export const SHARED_FIELDS: MaterialField[] = [
   { key: "price", label: "Price" },
   { key: "moq", label: "MOQ" },
   { key: "lead_time", label: "Lead time" },
+  // A link to the material's Illustrator artwork (Tess, 2026-08-20: "add place
+  // for ai file on each profile … send the link … when putting together an
+  // order"). Rendered as a clickable link on the profile and the order PDF.
+  { key: "ai_file", label: "AI file (link)" },
 ];
 // A fabric is specced by weight / width / how it's built and finished.
 export const FABRIC_FIELDS: MaterialField[] = [
@@ -172,6 +178,32 @@ export function specLine(m: MaterialLike): string {
     .map((s) => (s ?? "").trim())
     .filter(Boolean)
     .join(" · ");
+}
+
+/** Every profile fact that has a value, in the order the profile shows them: the
+ *  kind's own fields, then the shared fields, then sourcing and free-text notes.
+ *  Each is `{ label, value }`, blanks dropped. Used to carry a material's full
+ *  spec onto a purchase order so the order sheet is the profile, not a couple of
+ *  columns (Tess, 2026-08-20: "orders should include all the profile details from
+ *  the profile that have been filled in"). `omit` drops field keys shown
+ *  elsewhere on the order (supplier is the group header, the ref its own column,
+ *  the AI file a link). */
+export function materialFacts(
+  m: MaterialLike,
+  omit: string[] = []
+): { label: string; value: string }[] {
+  const skip = new Set(omit);
+  const out: { label: string; value: string }[] = [];
+  for (const f of fieldsFor(kindOf(m))) {
+    if (skip.has(f.key)) continue;
+    const v = ((m[f.key as keyof MaterialLike] as string | null | undefined) ?? "").trim();
+    if (v) out.push({ label: f.label, value: v });
+  }
+  const s = sourcingLabel(sourcingOf(m));
+  if (s && !skip.has("sourcing")) out.push({ label: "Sourcing", value: s });
+  const notes = (m.notes ?? "").trim();
+  if (notes && !skip.has("notes")) out.push({ label: "Notes", value: notes });
+  return out;
 }
 
 /** The products (garments) a material is used for, read from the jsonb array

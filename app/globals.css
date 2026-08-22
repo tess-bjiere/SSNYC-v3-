@@ -508,6 +508,16 @@ body.notes-open .wrap{padding-right:378px}
    the first, a Set-cover button on the rest, and a ✕ to remove — the last two
    revealed on hover. Reuses the photographer grid's .pg-img-x for the ✕. */
 .mat-gimg:hover .pg-img-x{opacity:1}
+/* Rotate a quarter-turn — sits to the left of the ✕, same pill (Tess,
+   2026-08-20: "add ability to rotate images as well"). */
+.mat-rotate{position:absolute;top:6px;right:34px;z-index:3;width:22px;height:22px;display:flex;
+  align-items:center;justify-content:center;background:rgba(12,12,12,.72);color:var(--ink);
+  border:1px solid var(--line);border-radius:50%;font-size:14px;line-height:1;padding:0;cursor:pointer;
+  opacity:0;transition:opacity .12s,background .12s}
+.mat-gimg:hover .mat-rotate{opacity:1}
+.mat-rotate:hover{background:var(--accent);color:var(--btnfg)}
+.mat-rotate:disabled{opacity:.5;cursor:default}
+@media (hover:none){.mat-rotate{opacity:.9}}
 .mat-cover-tag{position:absolute;top:6px;left:6px;z-index:3;font-size:var(--t-micro);
   letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;line-height:1;
   background:var(--accent);color:var(--btnfg)}
@@ -515,6 +525,7 @@ body.notes-open .wrap{padding-right:378px}
   font-size:var(--t-micro);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;line-height:1;
   background:rgba(12,12,12,.72);color:var(--ink);border:1px solid var(--line);opacity:0;transition:opacity .12s}
 .mat-gimg:hover .mat-setcover{opacity:1}
+.mat-zoom{cursor:zoom-in}
 @media (hover:none){.mat-gimg .pg-img-x,.mat-gimg .mat-setcover{opacity:.85}}
 .mat-readfacts{margin-top:4px}
 .btn.link.arm{color:#c0392b}
@@ -640,6 +651,14 @@ body.notes-open .wrap{padding-right:378px}
 .mo-cell-name{display:flex;flex-direction:column;gap:1px;min-width:0}
 .mo-name-line{font-size:var(--t-body);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mo-spec{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Every filled profile fact on the order line — label + value chips that wrap, so
+   the sent PO carries the whole spec (Tess, 2026-08-20). */
+.mo-facts{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:2px}
+.mo-fact{display:inline-flex;gap:4px;font-size:var(--t-meta);min-width:0}
+.mo-fact-k{color:var(--faint);text-transform:uppercase;letter-spacing:.04em}
+.mo-fact-v{color:var(--muted)}
+.mo-ai{font-size:var(--t-meta);color:var(--accent,#2563eb);margin-top:2px;width:fit-content}
+.mo-ai-print{font-size:var(--t-meta);color:#333;margin-top:2px;word-break:break-all}
 .mo-cell-ref{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mo-cell-x{text-align:right}
 .mo-qty-input{width:100%;text-align:right}
@@ -956,6 +975,20 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .detail-edit{max-height:none}
 .detail-edit .field{margin-bottom:12px}
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--btnfg);padding:9px 16px;font-size:var(--t-sm);text-transform:none;letter-spacing:0;z-index:70}
+/* Larger-view lightbox (Tess, 2026-08-20: "ability to view image in a larger
+   view"). A full-screen viewer over everything; the image sits centred and big. */
+.lb-overlay{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+  background:rgba(8,8,8,.92);padding:40px}
+.lb-img{max-width:94vw;max-height:92vh;object-fit:contain;display:block;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.lb-close{position:absolute;top:16px;right:20px;width:40px;height:40px;background:none;border:none;
+  color:#fff;font-size:30px;line-height:1;cursor:pointer;opacity:.8}
+.lb-close:hover{opacity:1}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:72px;background:rgba(0,0,0,.3);
+  border:none;color:#fff;font-size:40px;line-height:1;cursor:pointer;opacity:.7}
+.lb-nav:hover{opacity:1;background:rgba(0,0,0,.5)}
+.lb-prev{left:14px}.lb-next{right:14px}
+.lb-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:var(--t-sm);
+  letter-spacing:.08em;opacity:.85}
 @media(max-width:760px){
   /* One column, image full-width (the 56vw cap and fixed shape are desktop
      ideas) and the modal back to full-screen. */
@@ -4286,6 +4319,9 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-cell-img,.mo-cell-x{display:none}
   .mo-name-line{color:#111}
   .mo-spec,.mo-cell-ref{color:#555}
+  .mo-fact-k{color:#888}
+  .mo-fact-v{color:#333}
+  .mo-ai-print{color:#333}
   .mo-print-val{color:#111;font-size:12px}
   .mo-cell-qty .mo-print-val{font-weight:var(--w-title)}
   .mo-group-foot{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;

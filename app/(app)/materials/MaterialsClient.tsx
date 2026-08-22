@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Select from "@/app/components/Select";
 import MultiSelect from "@/app/components/MultiSelect";
+import Lightbox from "@/app/components/Lightbox";
 import {
   fieldsFor,
   specLine,
@@ -29,6 +30,7 @@ import {
   addMaterialImages,
   removeMaterialImage,
   setMaterialCover,
+  rotateMaterialImage,
   softDeleteMaterial,
   setMaterialArchived,
 } from "@/app/actions/materials";
@@ -61,6 +63,7 @@ export type Material = {
   price: string | null;
   moq: string | null;
   lead_time: string | null;
+  ai_file: string | null;
   notes: string | null;
   sourcing: string | null;
   archived: boolean | null;
@@ -938,6 +941,8 @@ function MaterialDetail({
   const [imgs, setImgs] = useState<string[]>(() =>
     [cover(material), ...extraUrls(material)].filter(Boolean)
   );
+  // Larger-view lightbox for the gallery (Tess, 2026-08-20).
+  const [lbIndex, setLbIndex] = useState<number | null>(null);
 
   function save() {
     if (!canEdit) return;
@@ -1003,6 +1008,26 @@ function MaterialDetail({
       router.refresh();
     });
   }
+  // Rotate an image a quarter-turn clockwise, in place (Tess, 2026-08-20). The
+  // turn happens server-side; on success the URL is swapped so the new (rotated)
+  // object shows without a reload.
+  const [rotating, setRotating] = useState<string | null>(null);
+  function rotateImage(url: string) {
+    if (!canEdit || rotating) return;
+    setRotating(url);
+    start(async () => {
+      const res = await rotateMaterialImage(material.id, url, 90);
+      if (res.ok && res.url) {
+        const next = res.url;
+        setImgs((cur) => cur.map((u) => (u === url ? next : u)));
+        router.refresh();
+        onToast("Rotated");
+      } else {
+        onToast(res.error || "Couldn't rotate");
+      }
+      setRotating(null);
+    });
+  }
   function remove() {
     start(async () => {
       await softDeleteMaterial(material.id);
@@ -1042,7 +1067,14 @@ function MaterialDetail({
                 <div className="card lib-card mat-gimg" key={src}>
                   <div className="imgwrap">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={material.name} loading="lazy" />
+                    <img
+                      src={src}
+                      alt={material.name}
+                      loading="lazy"
+                      className="mat-zoom"
+                      title="View larger"
+                      onClick={() => setLbIndex(i)}
+                    />
                     {i === 0 ? (
                       <span className="mat-cover-tag">Cover</span>
                     ) : (
@@ -1060,6 +1092,18 @@ function MaterialDetail({
                     {canEdit && (
                       <button
                         type="button"
+                        className="mat-rotate"
+                        title="Rotate 90°"
+                        aria-label="Rotate image"
+                        disabled={rotating === src}
+                        onClick={() => rotateImage(src)}
+                      >
+                        ↻
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
                         className="pg-img-x"
                         title="Remove image"
                         aria-label="Remove image"
@@ -1072,6 +1116,14 @@ function MaterialDetail({
                 </div>
               ))}
             </div>
+          )}
+          {lbIndex !== null && (
+            <Lightbox
+              images={imgs}
+              index={lbIndex}
+              onIndex={setLbIndex}
+              onClose={() => setLbIndex(null)}
+            />
           )}
 
           {canEdit ? (
@@ -1159,12 +1211,21 @@ function MaterialDetail({
             <div className="mat-readfacts">
               {[{ key: "name", label: "Name" }, ...fieldsFor(k), { key: "notes", label: "Notes" }].map((f) => {
                 const v = (material[f.key as keyof Material] as string | null) ?? "";
-                return v ? (
+                if (!v) return null;
+                return (
                   <div className="pg-facts" key={f.key}>
                     <span className="k">{f.label}</span>
-                    <div className="pg-fact-val">{v}</div>
+                    <div className="pg-fact-val">
+                      {f.key === "ai_file" ? (
+                        <a href={v} target="_blank" rel="noreferrer" className="btn link sm">
+                          Open AI file ↗
+                        </a>
+                      ) : (
+                        v
+                      )}
+                    </div>
                   </div>
-                ) : null;
+                );
               })}
               {sourcingOf(material) && (
                 <div className="pg-facts">

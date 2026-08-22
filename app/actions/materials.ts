@@ -17,7 +17,10 @@ const FIELDS = [
   "pack_type",
   // Customs classification (Tess, 2026-08-20: "add hs code to packaging fields").
   "hs_code",
-  "price", "moq", "lead_time", "notes",
+  "price", "moq", "lead_time",
+  // Link to the material's Illustrator artwork (Tess, 2026-08-20).
+  "ai_file",
+  "notes",
   // 'stock' | 'custom' (Tess, 2026-08-19). Set from the add/edit form like the
   // rest; a blank clears it back to unset.
   "sourcing",
@@ -257,6 +260,43 @@ export async function removeMaterialImage(id: string, url: string) {
   const supabase = await createClient();
   const urls = (await readImages(supabase, id)).filter((u) => u !== url);
   await writeImages(supabase, id, urls);
+}
+
+// Rotate one of a material's images a quarter turn (default clockwise) and swap
+// it in place (Tess, 2026-08-20: "add ability to rotate images as well"). The
+// bytes are re-encoded server-side with sharp and stored as a fresh object, then
+// the old link is replaced in the list so the image keeps its position (and its
+// cover status). The previous object is left to Trash/purge, like a remove.
+export async function rotateMaterialImage(
+  id: string,
+  url: string,
+  deg: 90 | 180 | 270 = 90
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  await requireTeam();
+  if (!id || !url) return { ok: false, error: "Missing image." };
+  const supabase = await createClient();
+  const urls = await readImages(supabase, id);
+  if (!urls.includes(url)) return { ok: false, error: "Image not found on this material." };
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { ok: false, error: `Could not read image (${res.status}).` };
+    const input = Buffer.from(await res.arrayBuffer());
+    // rotate(angle) turns by an explicit multiple of 90 (EXIF is ignored when an
+    // angle is passed) — exactly what a manual rotate button wants.
+    const out = await sharp(input).rotate(deg).jpeg({ quality: 90 }).toBuffer();
+    const path = `${crypto.randomUUID()}/full.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from(REFERENCES_BUCKET)
+      .upload(path, out, { contentType: "image/jpeg", upsert: false });
+    if (upErr) return { ok: false, error: upErr.message };
+    const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+    const next = pub?.publicUrl;
+    if (!next) return { ok: false, error: "Upload failed." };
+    await writeImages(supabase, id, urls.map((u) => (u === url ? next : u)));
+    return { ok: true, url: next };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Rotate failed." };
+  }
 }
 
 // Make a given image the cover (the card thumbnail) — it moves to the front.

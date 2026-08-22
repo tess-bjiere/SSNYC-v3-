@@ -120,11 +120,16 @@ export type OrderEntryInput = {
   kind: string | null;
   supplier: string | null;
   supplierRef: string | null;
-  composition: string | null;
-  color: string | null;
-  price: string | null;
-  moq: string | null;
-  leadTime: string | null;
+  // Every filled-in profile fact, in the profile's own field order (label +
+  // value) — so the order sheet carries the material's full spec, not just a
+  // couple of columns (Tess, 2026-08-20: "orders should include all the profile
+  // details from the profile that have been filled in"). Supplier and ref are
+  // shown separately (group header / their own column); the AI-file link is
+  // carried as `aiFile`, so neither is repeated here.
+  details: { label: string; value: string }[];
+  // Link to the material's artwork file, carried onto the order so it can be sent
+  // with the PDF/email (Tess, 2026-08-20).
+  aiFile: string | null;
   thumb: string | null;
   qty: string | null;
   unit: string | null;

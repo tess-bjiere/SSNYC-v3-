@@ -13,7 +13,41 @@ import {
   sourcingLabel,
   constructionClass,
   kindLabelPlural,
+  materialFacts,
 } from "./materials.ts";
+
+// The order sheet carries the whole profile, so materialFacts must list every
+// filled field in display order, skip the blanks, append sourcing/notes, and
+// leave out the columns the order already shows (Tess, 2026-08-20: "orders should
+// include all the profile details from the profile that have been filled in").
+test("materialFacts lists filled fields in order, drops blanks, adds sourcing + notes", () => {
+  const facts = materialFacts({
+    kind: "fabric",
+    composition: "100% Cotton",
+    color: "Ecru",
+    weight: "220",
+    width: "", // blank — must not appear
+    price: "$6.50",
+    sourcing: "custom",
+    notes: "Milled in Portugal",
+  });
+  assert.deepEqual(facts, [
+    { label: "Weight (GSM)", value: "220" },
+    { label: "Composition", value: "100% Cotton" },
+    { label: "Colour", value: "Ecru" },
+    { label: "Price", value: "$6.50" },
+    { label: "Sourcing", value: "Custom" },
+    { label: "Notes", value: "Milled in Portugal" },
+  ]);
+});
+
+test("materialFacts omits the keys the order shows elsewhere", () => {
+  const facts = materialFacts(
+    { kind: "trim", supplier: "YKK", supplier_ref: "Z-12", material: "Corozo", ai_file: "http://x/a.ai" },
+    ["supplier", "supplier_ref", "ai_file"]
+  );
+  assert.deepEqual(facts, [{ label: "Material", value: "Corozo" }]);
+});
 
 test("kindOf defaults to fabric unless the row explicitly says trim or packaging", () => {
   assert.equal(kindOf({}), "fabric");

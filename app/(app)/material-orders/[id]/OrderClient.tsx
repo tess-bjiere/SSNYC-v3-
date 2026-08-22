@@ -339,8 +339,6 @@ function LineRow({
     setOrderLine(orderId, entry.materialId, patch);
   }
 
-  const spec = [entry.composition, entry.color].filter(Boolean).join(" · ");
-
   return (
     <div className="mo-line">
       <span className="mo-cell-img">
@@ -353,7 +351,32 @@ function LineRow({
       </span>
       <span className="mo-cell-name">
         <span className="mo-name-line">{entry.name}</span>
-        {spec && <span className="mo-spec">{spec}</span>}
+        {/* The whole profile spec, every filled field, so the sent PO carries the
+            same detail the library holds (Tess, 2026-08-20). */}
+        {entry.details.length > 0 && (
+          <span className="mo-facts">
+            {entry.details.map((d) => (
+              <span className="mo-fact" key={d.label}>
+                <span className="mo-fact-k">{d.label}</span>
+                <span className="mo-fact-v">{d.value}</span>
+              </span>
+            ))}
+          </span>
+        )}
+        {entry.aiFile && (
+          <>
+            <a
+              className="mo-ai no-print"
+              href={entry.aiFile}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open AI file ↗
+            </a>
+            {/* Printed as the bare URL so it can be copied off the PDF / email. */}
+            <span className="mo-ai-print print-only">AI file: {entry.aiFile}</span>
+          </>
+        )}
       </span>
       <span className="mo-cell-ref">{entry.supplierRef || "—"}</span>
       <span className="mo-cell-qty">
