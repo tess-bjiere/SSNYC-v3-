@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Select from "@/app/components/Select";
 import MultiSelect from "@/app/components/MultiSelect";
 import Lightbox from "@/app/components/Lightbox";
+import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import {
   fieldsFor,
   specLine,
@@ -31,6 +32,7 @@ import {
   removeMaterialImage,
   setMaterialCover,
   rotateMaterialImage,
+  cropMaterialImage,
   softDeleteMaterial,
   setMaterialArchived,
 } from "@/app/actions/materials";
@@ -952,44 +954,86 @@ function MaterialDetail({
       onToast("Saved");
     });
   }
-  async function addImages(list: FileList | null) {
+  // Crop-on-upload: chosen files queue up and are shown in the cropper one at a
+  // time (Tess, 2026-08-20: crop scope "All uploads + re-crop"). The user crops or
+  // adds as-is; each is uploaded in its own request (several photos in one request
+  // exceed Next's 25 MB Server-Action body limit and fail before the action runs,
+  // which is why they used to vanish silently).
+  const [queue, setQueue] = useState<File[]>([]);
+  const [qBusy, setQBusy] = useState(false);
+  const curFile = queue[0] ?? null;
+  const curObjUrl = useMemo(
+    () => (curFile ? URL.createObjectURL(curFile) : null),
+    [curFile]
+  );
+  useEffect(() => {
+    return () => {
+      if (curObjUrl) URL.revokeObjectURL(curObjUrl);
+    };
+  }, [curObjUrl]);
+
+  function chooseImages(list: FileList | null) {
     if (!canEdit) return;
     const files = Array.from(list ?? []).filter(isImageish);
-    if (files.length === 0) return;
+    if (files.length) setQueue(files);
+  }
+  async function uploadOne(file: File, crop: CropRect | null): Promise<void> {
+    const fd = new FormData();
+    fd.append("files", file);
+    if (crop) fd.set("crop", JSON.stringify(crop));
     setUploading(true);
-    const added: string[] = [];
-    let failed = 0;
     try {
-      // One request per image — several photos in a single request exceed Next's
-      // 25 MB Server-Action body limit and fail before the action runs (with no
-      // error the code can catch), which is why they used to vanish silently.
-      for (const f of files) {
-        const fd = new FormData();
-        fd.append("files", f);
-        try {
-          const res = await addMaterialImages(material.id, fd);
-          if (res.ok) added.push(...res.urls);
-          else failed++;
-        } catch {
-          failed++;
-        }
-      }
-      if (added.length) {
-        setImgs((cur) => [...cur, ...added]);
+      const res = await addMaterialImages(material.id, fd);
+      if (res.ok) {
+        setImgs((cur) => [...cur, ...res.urls]);
         router.refresh();
+        onToast(crop ? "Cropped & added" : "Image added");
+      } else {
+        onToast(res.errors[0] || "Couldn't add — try a smaller image");
       }
-      onToast(
-        added.length
-          ? failed
-            ? `Added ${added.length}, ${failed} failed`
-            : added.length === 1
-              ? "Image added"
-              : `${added.length} images added`
-          : "Couldn't add — try smaller images"
-      );
+    } catch {
+      onToast("Couldn't add — try a smaller image");
     } finally {
       setUploading(false);
     }
+  }
+  function nextInQueue() {
+    setQueue((q) => q.slice(1));
+  }
+  async function applyQueueCrop(rect: CropRect) {
+    if (!curFile) return;
+    setQBusy(true);
+    await uploadOne(curFile, rect);
+    setQBusy(false);
+    nextInQueue();
+  }
+  async function skipQueueCrop() {
+    if (!curFile) return;
+    setQBusy(true);
+    await uploadOne(curFile, null);
+    setQBusy(false);
+    nextInQueue();
+  }
+
+  // Re-crop an image already on the material — same cropper, applied server-side
+  // in place so the image keeps its slot and cover.
+  const [recropUrl, setRecropUrl] = useState<string | null>(null);
+  const [recropBusy, setRecropBusy] = useState(false);
+  async function applyRecrop(rect: CropRect) {
+    if (!recropUrl) return;
+    const url = recropUrl;
+    setRecropBusy(true);
+    const res = await cropMaterialImage(material.id, url, rect);
+    if (res.ok && res.url) {
+      const next = res.url;
+      setImgs((cur) => cur.map((u) => (u === url ? next : u)));
+      router.refresh();
+      onToast("Cropped");
+    } else {
+      onToast(res.error || "Couldn't crop");
+    }
+    setRecropBusy(false);
+    setRecropUrl(null);
   }
   function deleteImage(url: string) {
     if (!canEdit) return;
@@ -1092,6 +1136,17 @@ function MaterialDetail({
                     {canEdit && (
                       <button
                         type="button"
+                        className="mat-crop"
+                        title="Crop"
+                        aria-label="Crop image"
+                        onClick={() => setRecropUrl(src)}
+                      >
+                        ⌗
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
                         className="mat-rotate"
                         title="Rotate 90°"
                         aria-label="Rotate image"
@@ -1123,6 +1178,26 @@ function MaterialDetail({
               index={lbIndex}
               onIndex={setLbIndex}
               onClose={() => setLbIndex(null)}
+            />
+          )}
+          {curFile && curObjUrl && (
+            <ImageCropper
+              src={curObjUrl}
+              title={queue.length > 1 ? `Crop before adding — 1 of ${queue.length}` : "Crop before adding"}
+              busy={qBusy}
+              skipLabel="Add without cropping"
+              onSkip={skipQueueCrop}
+              onApply={applyQueueCrop}
+              onCancel={() => setQueue([])}
+            />
+          )}
+          {recropUrl && (
+            <ImageCropper
+              src={recropUrl}
+              title="Crop image"
+              busy={recropBusy}
+              onApply={applyRecrop}
+              onCancel={() => setRecropUrl(null)}
             />
           )}
 
@@ -1183,7 +1258,7 @@ function MaterialDetail({
               </label>
 
               <input ref={imgInput} type="file" accept={IMAGE_ACCEPT} multiple hidden
-                onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ""; }} />
+                onChange={(e) => { chooseImages(e.target.files); e.currentTarget.value = ""; }} />
 
               <div className="mat-tools">
                 <button type="button" className="btn" disabled={pending} onClick={save}>

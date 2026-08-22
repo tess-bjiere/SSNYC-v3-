@@ -518,6 +518,15 @@ body.notes-open .wrap{padding-right:378px}
 .mat-rotate:hover{background:var(--accent);color:var(--btnfg)}
 .mat-rotate:disabled{opacity:.5;cursor:default}
 @media (hover:none){.mat-rotate{opacity:.9}}
+/* Crop — sits left of rotate, same pill (Tess, 2026-08-20: "add ability to crop
+   images in the tool"). */
+.mat-crop{position:absolute;top:6px;right:62px;z-index:3;width:22px;height:22px;display:flex;
+  align-items:center;justify-content:center;background:rgba(12,12,12,.72);color:var(--ink);
+  border:1px solid var(--line);border-radius:50%;font-size:13px;line-height:1;padding:0;cursor:pointer;
+  opacity:0;transition:opacity .12s,background .12s}
+.mat-gimg:hover .mat-crop{opacity:1}
+.mat-crop:hover{background:var(--accent);color:var(--btnfg)}
+@media (hover:none){.mat-crop{opacity:.9}}
 .mat-cover-tag{position:absolute;top:6px;left:6px;z-index:3;font-size:var(--t-micro);
   letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;line-height:1;
   background:var(--accent);color:var(--btnfg)}
@@ -526,6 +535,7 @@ body.notes-open .wrap{padding-right:378px}
   background:rgba(12,12,12,.72);color:var(--ink);border:1px solid var(--line);opacity:0;transition:opacity .12s}
 .mat-gimg:hover .mat-setcover{opacity:1}
 .mat-zoom{cursor:zoom-in}
+.detail-zoom{cursor:zoom-in}
 @media (hover:none){.mat-gimg .pg-img-x,.mat-gimg .mat-setcover{opacity:.85}}
 .mat-readfacts{margin-top:4px}
 .btn.link.arm{color:#c0392b}
@@ -989,6 +999,34 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .lb-prev{left:14px}.lb-next{right:14px}
 .lb-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:var(--t-sm);
   letter-spacing:.08em;opacity:.85}
+/* Crop tool (Tess, 2026-08-20: "add ability to crop images"). A modal over the
+   image; a draggable box with corner handles, everything outside it dimmed. The
+   box positions in % of the image, so the same geometry reads back as a
+   normalized rect the server applies with sharp. z above the lightbox's 120. */
+.crop-overlay{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;
+  background:rgba(8,8,8,.9);padding:24px}
+.crop-modal{background:var(--panel,#141414);border:1px solid var(--line);max-width:min(94vw,900px);
+  max-height:92vh;display:flex;flex-direction:column}
+.crop-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+  border-bottom:1px solid var(--line);font-size:var(--t-sm);letter-spacing:.04em}
+.crop-stage{padding:14px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.crop-imgbox{position:relative;display:inline-block;line-height:0;touch-action:none;user-select:none}
+.crop-img{display:block;max-width:100%;max-height:66vh;width:auto;pointer-events:none}
+.crop-shade{position:absolute;background:rgba(8,8,8,.6);pointer-events:none}
+.crop-top{left:0;right:0;top:0}
+.crop-bottom{left:0;right:0}
+.crop-left{left:0}
+.crop-right{}
+.crop-box{position:absolute;border:1px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4);cursor:move;
+  touch-action:none}
+.crop-handle{position:absolute;width:14px;height:14px;background:#fff;border:1px solid #333;
+  border-radius:50%;touch-action:none}
+.crop-nw{left:-7px;top:-7px;cursor:nwse-resize}
+.crop-ne{right:-7px;top:-7px;cursor:nesw-resize}
+.crop-sw{left:-7px;bottom:-7px;cursor:nesw-resize}
+.crop-se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.crop-tools{display:flex;align-items:center;gap:14px;padding:12px 14px;border-top:1px solid var(--line)}
+
 @media(max-width:760px){
   /* One column, image full-width (the 56vw cap and fixed shape are desktop
      ideas) and the modal back to full-screen. */

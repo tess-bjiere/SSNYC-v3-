@@ -34,11 +34,35 @@ function extFor(type: string): string {
   return "jpg";
 }
 
+// A normalized crop rectangle (each value 0..1), as the client cropper reports it.
+export type CropRect = { x: number; y: number; w: number; h: number };
+
+// Apply a normalized crop to image bytes with sharp (Tess, 2026-08-20: "add
+// ability to crop images"). EXIF orientation is baked in first so the pixels
+// match what the browser showed the user when they drew the box; then the rect,
+// clamped to real pixel bounds, is extracted. A degenerate/near-full rect that
+// rounds to the whole image just re-encodes.
+async function cropBuffer(buf: Uint8Array, rect: CropRect): Promise<Uint8Array> {
+  const upright = await sharp(buf).rotate().toBuffer();
+  const meta = await sharp(upright).metadata();
+  const W = meta.width ?? 0;
+  const H = meta.height ?? 0;
+  if (!W || !H) return buf;
+  const left = Math.max(0, Math.min(W - 1, Math.round(rect.x * W)));
+  const top = Math.max(0, Math.min(H - 1, Math.round(rect.y * H)));
+  const width = Math.max(1, Math.min(W - left, Math.round(rect.w * W)));
+  const height = Math.max(1, Math.min(H - top, Math.round(rect.h * H)));
+  return await sharp(upright).extract({ left, top, width, height }).jpeg({ quality: 90 }).toBuffer();
+}
+
 // Swatch images go into the same references bucket as everything else — a
-// material's photo is a reference image like any other.
+// material's photo is a reference image like any other. `crop`, when given,
+// applies to every file uploaded in this call (uploads run one file at a time,
+// so in practice that is one image and one rect).
 async function uploadImages(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  files: File[]
+  files: File[],
+  crop?: CropRect | null
 ): Promise<{ urls: string[]; errors: string[] }> {
   const urls: string[] = [];
   const errors: string[] = [];
@@ -57,6 +81,12 @@ async function uploadImages(
       const isHeic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
       if (isHeic) {
         buf = await sharp(buf).rotate().jpeg({ quality: 85 }).toBuffer();
+        ext = "jpg";
+        contentType = "image/jpeg";
+      }
+      // A crop chosen at upload time — the result is always a JPEG.
+      if (crop) {
+        buf = await cropBuffer(buf, crop);
         ext = "jpg";
         contentType = "image/jpeg";
       }
@@ -102,6 +132,24 @@ function imageFiles(form: FormData): File[] {
   return form.getAll("files").filter((f): f is File => f instanceof File && isImageFile(f));
 }
 
+// A crop rect passed alongside an upload as a JSON `crop` field. Anything that is
+// not four finite 0..1 numbers reads as "no crop", so a malformed value can never
+// blank an image out.
+function cropFrom(form: FormData): CropRect | null {
+  const raw = form.get("crop");
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    const o = JSON.parse(raw);
+    const ok = (n: unknown): n is number => typeof n === "number" && n >= 0 && n <= 1;
+    if (ok(o.x) && ok(o.y) && ok(o.w) && ok(o.h) && o.w > 0 && o.h > 0) {
+      return { x: o.x, y: o.y, w: o.w, h: o.h };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 // Add a fabric, trim or packaging item, born into the brand you're looking at.
 export async function createMaterial(
   form: FormData
@@ -131,7 +179,7 @@ export async function createMaterial(
   const garments = uniqTrim(form.getAll("garments").map((v) => String(v)));
   if (garments.length) row.garments = garments;
 
-  const { urls, errors } = await uploadImages(supabase, imageFiles(form));
+  const { urls, errors } = await uploadImages(supabase, imageFiles(form), cropFrom(form));
   if (urls[0]) {
     row.image_url = urls[0];
     row.thumb_url = urls[0];
@@ -246,7 +294,7 @@ export async function addMaterialImages(
   if (!id || files.length === 0) return { ok: false, errors: ["No image files provided."], urls: [] };
   const supabase = await createClient();
   const current = await readImages(supabase, id);
-  const { urls, errors } = await uploadImages(supabase, files);
+  const { urls, errors } = await uploadImages(supabase, files, cropFrom(form));
   if (urls.length === 0) return { ok: false, errors, urls: [] };
   await writeImages(supabase, id, [...current, ...urls]);
   return { ok: true, errors, urls };
@@ -296,6 +344,40 @@ export async function rotateMaterialImage(
     return { ok: true, url: next };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Rotate failed." };
+  }
+}
+
+// Re-crop an existing image to a normalized rect and swap it in place (Tess,
+// 2026-08-20: crop scope "All uploads + re-crop"). Same shape as rotate: fetch the
+// stored bytes, cut with sharp, store a fresh object, replace the link so the
+// image keeps its position and cover. The old object is left to Trash/purge.
+export async function cropMaterialImage(
+  id: string,
+  url: string,
+  rect: CropRect
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  await requireTeam();
+  if (!id || !url) return { ok: false, error: "Missing image." };
+  const supabase = await createClient();
+  const urls = await readImages(supabase, id);
+  if (!urls.includes(url)) return { ok: false, error: "Image not found on this material." };
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { ok: false, error: `Could not read image (${res.status}).` };
+    const input = Buffer.from(await res.arrayBuffer());
+    const out = await cropBuffer(input, rect);
+    const path = `${crypto.randomUUID()}/full.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from(REFERENCES_BUCKET)
+      .upload(path, out, { contentType: "image/jpeg", upsert: false });
+    if (upErr) return { ok: false, error: upErr.message };
+    const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+    const next = pub?.publicUrl;
+    if (!next) return { ok: false, error: "Upload failed." };
+    await writeImages(supabase, id, urls.map((u) => (u === url ? next : u)));
+    return { ok: true, url: next };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Crop failed." };
   }
 }
 

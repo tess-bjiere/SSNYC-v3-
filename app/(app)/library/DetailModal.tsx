@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refImage, extraImageUrls, type Reference } from "@/lib/types";
+import Lightbox from "@/app/components/Lightbox";
 import {
   updateReference,
   softDeleteReference,
@@ -132,6 +133,10 @@ export default function DetailModal({
   // default while a newly-picked one loads.
   const [mainAspect, setMainAspect] = useState<string | undefined>(undefined);
   useEffect(() => setMainAspect(undefined), [active]);
+  // Click the main image for a full-screen look (Tess, 2026-08-20: "ability to
+  // view image in a larger view"). The same Lightbox the materials gallery uses;
+  // paging it also moves the modal's own selection, so closing keeps your place.
+  const [lbOpen, setLbOpen] = useState(false);
 
   // --- Develop this ------------------------------------------------------
   // A reference can be developed from the library and from a board — both are
@@ -286,6 +291,9 @@ export default function DetailModal({
                 <img
                   src={active}
                   alt={cur.designer || ""}
+                  className="detail-zoom"
+                  title="View larger"
+                  onClick={() => setLbOpen(true)}
                   onLoad={(e) => {
                     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
                     if (w && h) setMainAspect(`${w} / ${h}`);
@@ -303,6 +311,14 @@ export default function DetailModal({
               </div>
             )}
           </div>
+          {lbOpen && (
+            <Lightbox
+              images={images}
+              index={Math.max(0, images.indexOf(active))}
+              onIndex={(i) => setActive(images[i])}
+              onClose={() => setLbOpen(false)}
+            />
+          )}
 
           <div className="detail-info">
             <button className="detail-x" onClick={onClose} aria-label="Close">×</button>
