@@ -27,6 +27,8 @@ import {
   createMaterial,
   updateMaterial,
   addMaterialImages,
+  removeMaterialImage,
+  setMaterialCover,
   softDeleteMaterial,
   setMaterialArchived,
 } from "@/app/actions/materials";
@@ -903,8 +905,12 @@ function MaterialDetail({
   const [arm, setArm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInput = useRef<HTMLInputElement>(null);
-
-  const images = [cover(material), ...extraUrls(material)].filter(Boolean);
+  // The material's images as a managed gallery — cover first (Tess, 2026-08-20:
+  // "add multiple images to fabrics, trims and packaging profiles"). Local so an
+  // add / delete / set-cover shows at once without closing the modal.
+  const [imgs, setImgs] = useState<string[]>(() =>
+    [cover(material), ...extraUrls(material)].filter(Boolean)
+  );
 
   function save() {
     if (!canEdit) return;
@@ -923,11 +929,32 @@ function MaterialDetail({
     setUploading(true);
     try {
       const res = await addMaterialImages(material.id, fd);
-      if (res.ok) { router.refresh(); onToast("Images added"); onClose(); }
-      else if (res.errors[0]) onToast(res.errors[0]);
+      if (res.ok) {
+        // Show them straight away and stay put — no more closing the modal.
+        setImgs((cur) => [...cur, ...res.urls]);
+        router.refresh();
+        onToast(res.urls.length === 1 ? "Image added" : `${res.urls.length} images added`);
+      } else if (res.errors[0]) onToast(res.errors[0]);
     } finally {
       setUploading(false);
     }
+  }
+  function deleteImage(url: string) {
+    if (!canEdit) return;
+    setImgs((cur) => cur.filter((u) => u !== url));
+    start(async () => {
+      await removeMaterialImage(material.id, url);
+      router.refresh();
+    });
+  }
+  function makeCover(url: string) {
+    if (!canEdit) return;
+    setImgs((cur) => [url, ...cur.filter((u) => u !== url)]);
+    onToast("Cover set");
+    start(async () => {
+      await setMaterialCover(material.id, url);
+      router.refresh();
+    });
   }
   function remove() {
     start(async () => {
@@ -962,13 +989,38 @@ function MaterialDetail({
           <button className="notes-close" onClick={onClose} title="Close">×</button>
         </div>
         <div className="modal-body">
-          {images.length > 0 && (
+          {imgs.length > 0 && (
             <div className="grid dens-md mat-images">
-              {images.map((src, i) => (
-                <div className="card lib-card" key={i}>
+              {imgs.map((src, i) => (
+                <div className="card lib-card mat-gimg" key={src}>
                   <div className="imgwrap">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={src} alt={material.name} loading="lazy" />
+                    {i === 0 ? (
+                      <span className="mat-cover-tag">Cover</span>
+                    ) : (
+                      canEdit && (
+                        <button
+                          type="button"
+                          className="mat-setcover"
+                          title="Make this the cover"
+                          onClick={() => makeCover(src)}
+                        >
+                          Set cover
+                        </button>
+                      )
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="pg-img-x"
+                        title="Remove image"
+                        aria-label="Remove image"
+                        onClick={() => deleteImage(src)}
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

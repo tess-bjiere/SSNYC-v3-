@@ -171,36 +171,88 @@ export async function setMaterialArchived(id: string, archived: boolean) {
   revalidatePath("/materials");
 }
 
-// Attach more swatch images to a material — appended to extra_images.
+// One image row can be a plain URL string or the importer's { image_url } object.
+function extraUrlList(extra: unknown): string[] {
+  if (!Array.isArray(extra)) return [];
+  return extra
+    .map((e) =>
+      typeof e === "string"
+        ? e
+        : e && typeof e === "object"
+          ? ((e as { image_url?: string }).image_url ?? "")
+          : ""
+    )
+    .filter(Boolean);
+}
+
+// The material's full image list, cover first. Stored as image_url (the cover)
+// plus extra_images (the rest); this is the single reader both delete and
+// set-cover go through so the shape can never drift between them.
+async function readImages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string
+): Promise<string[]> {
+  const { data: row } = await supabase
+    .from("materials")
+    .select("image_url,extra_images")
+    .eq("id", id)
+    .maybeSingle();
+  const cover = (row?.image_url as string | null) || null;
+  return [cover, ...extraUrlList(row?.extra_images)].filter(Boolean) as string[];
+}
+async function writeImages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+  urls: string[]
+) {
+  await supabase
+    .from("materials")
+    .update({
+      image_url: urls[0] ?? null,
+      thumb_url: urls[0] ?? null,
+      extra_images: urls.slice(1),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  revalidatePath("/materials");
+}
+
+// Attach more swatch images to a material — appended after any it already has.
+// Returns the added urls so the open detail can show them without a reload
+// (Tess, 2026-08-20: "add multiple images to fabrics, trims and packaging").
 export async function addMaterialImages(
   id: string,
   form: FormData
-): Promise<{ ok: boolean; errors: string[] }> {
+): Promise<{ ok: boolean; errors: string[]; urls: string[] }> {
   await requireTeam();
   const files = imageFiles(form);
-  if (!id || files.length === 0) return { ok: false, errors: ["No image files provided."] };
+  if (!id || files.length === 0) return { ok: false, errors: ["No image files provided."], urls: [] };
   const supabase = await createClient();
-  const { data: row } = await supabase
-    .from("materials")
-    .select("image_url,thumb_url,extra_images")
-    .eq("id", id)
-    .maybeSingle();
-  const existing: unknown[] = Array.isArray(row?.extra_images) ? (row!.extra_images as unknown[]) : [];
+  const current = await readImages(supabase, id);
   const { urls, errors } = await uploadImages(supabase, files);
-  if (urls.length === 0) return { ok: false, errors };
-  // If the material had no cover yet, the first upload becomes it.
-  const patch: Record<string, unknown> = {};
-  let rest = urls;
-  if (!row?.image_url) {
-    patch.image_url = urls[0];
-    patch.thumb_url = urls[0];
-    rest = urls.slice(1);
-  }
-  patch.extra_images = [...existing, ...rest];
-  patch.updated_at = new Date().toISOString();
-  await supabase.from("materials").update(patch).eq("id", id);
-  revalidatePath("/materials");
-  return { ok: true, errors };
+  if (urls.length === 0) return { ok: false, errors, urls: [] };
+  await writeImages(supabase, id, [...current, ...urls]);
+  return { ok: true, errors, urls };
+}
+
+// Remove one image from a material. If it was the cover, the next image becomes
+// the cover. Storage cleanup is left to Trash/purge — this only drops the link.
+export async function removeMaterialImage(id: string, url: string) {
+  await requireTeam();
+  if (!id || !url) return;
+  const supabase = await createClient();
+  const urls = (await readImages(supabase, id)).filter((u) => u !== url);
+  await writeImages(supabase, id, urls);
+}
+
+// Make a given image the cover (the card thumbnail) — it moves to the front.
+export async function setMaterialCover(id: string, url: string) {
+  await requireTeam();
+  if (!id || !url) return;
+  const supabase = await createClient();
+  const urls = await readImages(supabase, id);
+  if (!urls.includes(url)) return;
+  await writeImages(supabase, id, [url, ...urls.filter((u) => u !== url)]);
 }
 
 // Soft delete — to Trash, recoverable — like everything else in the app.
