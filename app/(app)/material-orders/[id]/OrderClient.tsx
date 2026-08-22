@@ -340,7 +340,8 @@ function LineRow({
   }
 
   return (
-    <div className="mo-line">
+    <div className="mo-row">
+      <div className="mo-line mo-line-data">
       <span className="mo-cell-img">
         {entry.thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -351,32 +352,6 @@ function LineRow({
       </span>
       <span className="mo-cell-name">
         <span className="mo-name-line">{entry.name}</span>
-        {/* The whole profile spec, every filled field, so the sent PO carries the
-            same detail the library holds (Tess, 2026-08-20). */}
-        {entry.details.length > 0 && (
-          <span className="mo-facts">
-            {entry.details.map((d) => (
-              <span className="mo-fact" key={d.label}>
-                <span className="mo-fact-k">{d.label}</span>
-                <span className="mo-fact-v">{d.value}</span>
-              </span>
-            ))}
-          </span>
-        )}
-        {entry.aiFile && (
-          <>
-            <a
-              className="mo-ai no-print"
-              href={entry.aiFile}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open AI file ↗
-            </a>
-            {/* Printed as the bare URL so it can be copied off the PDF / email. */}
-            <span className="mo-ai-print print-only">AI file: {entry.aiFile}</span>
-          </>
-        )}
       </span>
       <span className="mo-cell-ref">{entry.supplierRef || "—"}</span>
       <span className="mo-cell-qty">
@@ -433,6 +408,39 @@ function LineRow({
           {arm ? "Remove?" : "✕"}
         </button>
       </span>
+      </div>
+
+      {/* The full profile spec on its own full-width row, indented under the name:
+          an aligned label/value grid so every field is easy to scan, with Notes
+          given the whole width since it runs long (Tess, 2026-08-20: "organize the
+          product details / notes in a clear and logical way"). */}
+      {(entry.details.length > 0 || entry.aiFile) && (
+        <div className="mo-detail">
+          {entry.details.length > 0 && (
+            <div className="mo-facts">
+              {entry.details.map((d) => (
+                <div
+                  className={"mo-fact" + (d.label === "Notes" ? " mo-fact-wide" : "")}
+                  key={d.label}
+                >
+                  <span className="mo-fact-k">{d.label}</span>
+                  <span className="mo-fact-v">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {entry.aiFile && (
+            <div className="mo-fact mo-fact-wide mo-ai-row">
+              <span className="mo-fact-k">AI file</span>
+              <a className="mo-ai no-print" href={entry.aiFile} target="_blank" rel="noreferrer">
+                Open AI file ↗
+              </a>
+              {/* Printed as the bare URL so it can be copied off the PDF / email. */}
+              <span className="mo-ai-print print-only">{entry.aiFile}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
