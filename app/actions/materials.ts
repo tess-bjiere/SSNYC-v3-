@@ -6,6 +6,7 @@ import { requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
+import sharp from "sharp";
 
 // Every column a create/edit is allowed to set — kept explicit so a stray key
 // can never touch id / created_by / deleted_at.
@@ -44,13 +45,22 @@ async function uploadImages(
       continue;
     }
     try {
-      const path = `${crypto.randomUUID()}/full.${extFor(file.type)}`;
+      let buf: Uint8Array = Buffer.from(await file.arrayBuffer());
+      let ext = extFor(file.type);
+      let contentType = file.type || "image/jpeg";
+      // HEIC/HEIF (iPhone photos) upload fine but most browsers can't display
+      // them, so convert to JPEG on the way in (Tess, 2026-08-20: "broaden to
+      // accept heic"). sharp decodes HEIF; the stored image is a normal JPEG.
+      const isHeic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+      if (isHeic) {
+        buf = await sharp(buf).rotate().jpeg({ quality: 85 }).toBuffer();
+        ext = "jpg";
+        contentType = "image/jpeg";
+      }
+      const path = `${crypto.randomUUID()}/full.${ext}`;
       const { error: upErr } = await supabase.storage
         .from(REFERENCES_BUCKET)
-        .upload(path, Buffer.from(await file.arrayBuffer()), {
-          contentType: file.type || "image/jpeg",
-          upsert: false,
-        });
+        .upload(path, buf, { contentType, upsert: false });
       if (upErr) {
         errors.push(`${file.name}: ${upErr.message}`);
         continue;
@@ -79,10 +89,14 @@ function uniqTrim(list: string[]): string[] {
   return out;
 }
 
+// A HEIC/HEIF file sometimes arrives with an empty MIME type, so accept image
+// files by extension too (Tess, 2026-08-20: "broaden to accept heic").
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif|hei[cf])$/i;
+function isImageFile(f: File): boolean {
+  return f.size > 0 && (f.type.startsWith("image/") || IMAGE_EXT.test(f.name));
+}
 function imageFiles(form: FormData): File[] {
-  return form
-    .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
+  return form.getAll("files").filter((f): f is File => f instanceof File && isImageFile(f));
 }
 
 // Add a fabric, trim or packaging item, born into the brand you're looking at.

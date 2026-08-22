@@ -101,6 +101,12 @@ function SourcingPick({
 type Sub = { key: string; header: string | null; items: Material[] };
 type Group = { key: string; header: string | null; count: number; subs: Sub[] };
 
+// Accept images by type, and HEIC/HEIF by extension since iPhone photos often
+// arrive with an empty MIME type (Tess, 2026-08-20: "broaden to accept heic").
+// They're converted to JPEG server-side so they display everywhere.
+const isImageish = (f: File) => f.type.startsWith("image/") || /\.hei[cf]$/i.test(f.name);
+const IMAGE_ACCEPT = "image/*,.heic,.heif";
+
 function cover(m: Material): string {
   return m.thumb_url || m.image_url || "";
 }
@@ -710,7 +716,7 @@ function MaterialForm({
     // is created with just the first image, and the rest are added afterwards,
     // each in its own request.
     const fileInput = formEl.querySelector<HTMLInputElement>('input[type="file"][name="files"]');
-    const files = Array.from(fileInput?.files ?? []).filter((f) => f.type.startsWith("image/"));
+    const files = Array.from(fileInput?.files ?? []).filter(isImageish);
     const fd = new FormData(formEl);
     fd.set("kind", k);
     fd.set("sourcing", sourcing);
@@ -816,7 +822,7 @@ function MaterialForm({
 
           <label className="mat-field mat-field-wide">
             <span className="mat-label">Swatch images</span>
-            <input className="input" type="file" name="files" accept="image/*" multiple />
+            <input className="input" type="file" name="files" accept={IMAGE_ACCEPT} multiple />
           </label>
 
           {err && <div className="mat-err">{err}</div>}
@@ -943,7 +949,7 @@ function MaterialDetail({
   }
   async function addImages(list: FileList | null) {
     if (!canEdit) return;
-    const files = Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+    const files = Array.from(list ?? []).filter(isImageish);
     if (files.length === 0) return;
     setUploading(true);
     const added: string[] = [];
@@ -1124,7 +1130,7 @@ function MaterialDetail({
                 />
               </label>
 
-              <input ref={imgInput} type="file" accept="image/*" multiple hidden
+              <input ref={imgInput} type="file" accept={IMAGE_ACCEPT} multiple hidden
                 onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ""; }} />
 
               <div className="mat-tools">
