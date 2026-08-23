@@ -1161,6 +1161,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             filedOnStyle={normalizePhotos(st.photos)}
             styleNotes={styleNotes}
             materialLibrary={library}
+            styleMaterialIds={styleMaterialIds}
           />
 
           {/* Everything else that is a picture of this style but is not a

@@ -400,9 +400,12 @@ function MaterialPicker({
   const chosen = new Set(selected);
   // A retired material stays offered only if THIS round already links it —
   // history is kept, but the list of things you can newly pick is current.
-  const offer = library.filter((m) => !m.deleted || chosen.has(m.id));
+  // Packaging is not tracked per sample round — it belongs to the style, not to
+  // what one sample was sewn in (Tess, 2026-08-20: "no need to include packaging
+  // on each sample round"). So the round picker offers fabrics and trims only.
+  const offer = library.filter((m) => (!m.deleted || chosen.has(m.id)) && m.kind !== "packaging");
   if (!offer.length) return null;
-  const { fabrics, trims, packaging } = splitByKind(offer);
+  const { fabrics, trims } = splitByKind(offer);
 
   const group = (label: string, items: LinkedMaterial[]) =>
     items.length ? (
@@ -429,9 +432,6 @@ function MaterialPicker({
       <label className="sr-matpick-head">From the library</label>
       {group("Fabrics", fabrics)}
       {group("Trims", trims)}
-      {/* Packaging is its own group below, not mixed into fabrics (Tess,
-          2026-08-20: "it showing packaging in the fabrics options on the sample"). */}
-      {group("Packaging", packaging)}
     </div>
   );
 }
@@ -1416,6 +1416,7 @@ export default function SampleRounds({
   filedOnStyle,
   styleNotes,
   materialLibrary = [],
+  styleMaterialIds = [],
 }: {
   styleId: string;
   samples: StyleSample[];
@@ -1436,9 +1437,24 @@ export default function SampleRounds({
   /** The fabric & trim library a round can link to. Empty on SSYNC, which has
    *  no materials table — the picker simply does not render. */
   materialLibrary?: LinkedMaterial[];
+  /** The style's overall linked materials (styles.material_ids). A new round
+   *  opens pre-filled with the style's fabric and trim; the user can override
+   *  (Tess, 2026-08-20). */
+  styleMaterialIds?: string[];
 }) {
   const [adding, setAdding] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
+
+  // A new round starts with the style's fabric and trim already ticked — what it
+  // is made in, until someone says this sample differs (Tess, 2026-08-20: "the
+  // sample should fill in the fabric and trim details used in the overall profile,
+  // user has option to override"). Packaging is deliberately left out; it is not a
+  // per-round fact. Resolved against the library so a stale id is simply skipped.
+  const matById = new Map(materialLibrary.map((m) => [m.id, m]));
+  const defaultRoundMaterialIds = styleMaterialIds.filter((id) => {
+    const m = matById.get(id);
+    return !!m && m.kind !== "packaging";
+  });
 
   // Cycle order, not insertion order. Rounds logged in one sitting share a
   // created_at, and the order Postgres returns for tied rows shifts the moment
@@ -1545,7 +1561,10 @@ export default function SampleRounds({
 
           <ContactFields s={carried} />
 
-          <MaterialFields s={carried} library={materialLibrary} />
+          <MaterialFields
+            s={{ ...carried, material_ids: defaultRoundMaterialIds }}
+            library={materialLibrary}
+          />
 
           <div className="sr-legend">Factory</div>
           <div className="row3">
