@@ -6,40 +6,58 @@ import { suggestFredNumber, fredCodeFor, fredTypesFor, FRED_CATEGORIES } from "@
 
 // FRED's category → type → style number, coordinated (Tess, 2026-08-20: auto-
 // generate the number, "garment level refinement", and a Type field that isn't
-// called "garment" because Home and Body have none). Category picks the family,
-// Type refines to the two-digit code, and the number previews live off both.
+// called "garment" because Home and Body have none; then "i want it to auto
+// populate the style number once the category and type are filled out").
 //
-// The number field is left EMPTY unless the user types an override — a blank means
-// "use the rule", so the server assigns the true next number in the code at save
-// (see createStyle), never a stale suggestion from a form left open. Category posts
-// as `category`; Type posts as `garment` (the column keeps its name, only the label
-// changed). A category with no Type yet numbers into its family anchor.
+// The number field FILLS with the generated number as soon as the category (and
+// then type) are chosen, and updates as they change — until you type your own,
+// after which it is left alone. Clearing the field re-arms the auto-fill. Category
+// posts as `category`, Type as `garment` (the column keeps its name). A category
+// with no code leaves the field for you to fill. If the field is somehow left
+// blank, createStyle still assigns the next number at save.
 export default function FredStyleNumberFields({
   existing,
 }: {
-  /** Every FRED style number already in use, so the preview reads the next one. */
+  /** Every FRED style number already in use, so the fill reads the next one. */
   existing: string[];
 }) {
   const [category, setCategory] = useState("");
   const [type, setType] = useState("");
-  const [override, setOverride] = useState("");
+  const [styleNo, setStyleNo] = useState("");
+  const [edited, setEdited] = useState(false);
 
   const types = fredTypesFor(category);
-  const code = fredCodeFor(category, type);
-  const suggestion = suggestFredNumber(existing, category, type);
 
+  // Refill the number from the current category + type, unless the user has taken
+  // the field over by typing.
+  function refill(cat: string, t: string) {
+    if (edited) return;
+    setStyleNo(suggestFredNumber(existing, cat, t) ?? "");
+  }
   function onCategory(v: string) {
     setCategory(v);
     setType(""); // the Type list changes with the family
+    refill(v, "");
+  }
+  function onType(v: string) {
+    setType(v);
+    refill(category, v);
+  }
+  function onStyleNo(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
+    setStyleNo(v);
+    // Typing takes the field over; clearing it hands control back to the auto-fill.
+    setEdited(v.trim() !== "");
   }
 
+  const code = fredCodeFor(category, type);
   const hint = !category
-    ? "Pick a category and FRED assigns the next number in its code."
+    ? "Pick a category and type — the number fills in automatically."
     : !code
-      ? "No auto-number for this category yet — type one if you need it."
-      : override.trim()
-        ? `Using your number. Auto would be ${suggestion ?? "—"} — clear the field to use it.`
-        : `Will be assigned ${suggestion ?? "—"}${type ? "" : " — pick a type to refine the code"}.`;
+      ? "No code for this category yet — enter a number."
+      : edited
+        ? "Using your number. Clear the field to auto-generate it again."
+        : `Auto-generated from category${type ? " & type" : ""} — edit to override.`;
 
   return (
     <div className="row3">
@@ -48,9 +66,9 @@ export default function FredStyleNumberFields({
         <input
           className="input"
           name="style_no"
-          value={override}
-          placeholder={suggestion ?? "FR-…"}
-          onChange={(e) => setOverride(e.target.value)}
+          value={styleNo}
+          placeholder="FR-…"
+          onChange={onStyleNo}
         />
         <div className="field-hint">{hint}</div>
       </div>
@@ -72,7 +90,7 @@ export default function FredStyleNumberFields({
           name="garment"
           aria-label="Type"
           value={type}
-          onChange={setType}
+          onChange={onType}
           disabled={types.length === 0}
           placeholder={category ? "—" : "Pick a category first"}
           options={[{ value: "", label: "—" }, ...types.map((t) => ({ value: t.label, label: t.label }))]}
