@@ -527,6 +527,16 @@ body.notes-open .wrap{padding-right:378px}
 .mat-gimg:hover .mat-crop{opacity:1}
 .mat-crop:hover{background:var(--accent);color:var(--btnfg)}
 @media (hover:none){.mat-crop{opacity:.9}}
+/* Brighten — leftmost of the edit pills (Tess, 2026-08-20: "add ability to
+   brighten images in tool"). */
+.mat-bright{position:absolute;top:6px;right:90px;z-index:3;width:22px;height:22px;display:flex;
+  align-items:center;justify-content:center;background:rgba(12,12,12,.72);color:var(--ink);
+  border:1px solid var(--line);border-radius:50%;font-size:12px;line-height:1;padding:0;cursor:pointer;
+  opacity:0;transition:opacity .12s,background .12s}
+.mat-gimg:hover .mat-bright{opacity:1}
+.mat-bright:hover{background:var(--accent);color:var(--btnfg)}
+.mat-bright:disabled{opacity:.5;cursor:default}
+@media (hover:none){.mat-bright{opacity:.9}}
 .mat-cover-tag{position:absolute;top:6px;left:6px;z-index:3;font-size:var(--t-micro);
   letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;line-height:1;
   background:var(--accent);color:var(--btnfg)}

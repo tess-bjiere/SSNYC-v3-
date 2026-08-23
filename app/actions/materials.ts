@@ -351,6 +351,43 @@ export async function rotateMaterialImage(
   }
 }
 
+// Brighten an existing image a step and swap it in place (Tess, 2026-08-20: "add
+// ability to brighten images in tool"). Same shape as rotate/crop — fetch, adjust
+// with sharp, store a fresh object, replace the link. `factor` multiplies
+// lightness (1 = no change); clicks compound because each reads the already-
+// brightened object. A darken step is the same call with a factor below 1.
+export async function brightenMaterialImage(
+  id: string,
+  url: string,
+  factor = 1.15
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  await requireTeam();
+  if (!id || !url) return { ok: false, error: "Missing image." };
+  // Guard the multiplier so a bad value can't wash an image out entirely.
+  const f = Number.isFinite(factor) ? Math.max(0.3, Math.min(2, factor)) : 1.15;
+  const supabase = await createClient();
+  const urls = await readImages(supabase, id);
+  if (!urls.includes(url)) return { ok: false, error: "Image not found on this material." };
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { ok: false, error: `Could not read image (${res.status}).` };
+    const input = Buffer.from(await res.arrayBuffer());
+    const out = await sharp(input).rotate().modulate({ brightness: f }).jpeg({ quality: 90 }).toBuffer();
+    const path = `${crypto.randomUUID()}/full.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from(REFERENCES_BUCKET)
+      .upload(path, out, { contentType: "image/jpeg", upsert: false });
+    if (upErr) return { ok: false, error: upErr.message };
+    const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+    const next = pub?.publicUrl;
+    if (!next) return { ok: false, error: "Upload failed." };
+    await writeImages(supabase, id, urls.map((u) => (u === url ? next : u)));
+    return { ok: true, url: next };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Brighten failed." };
+  }
+}
+
 // Re-crop an existing image to a normalized rect and swap it in place (Tess,
 // 2026-08-20: crop scope "All uploads + re-crop"). Same shape as rotate: fetch the
 // stored bytes, cut with sharp, store a fresh object, replace the link so the

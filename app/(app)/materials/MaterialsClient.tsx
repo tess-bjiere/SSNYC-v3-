@@ -33,6 +33,7 @@ import {
   removeMaterialImage,
   setMaterialCover,
   rotateMaterialImage,
+  brightenMaterialImage,
   cropMaterialImage,
   softDeleteMaterial,
   setMaterialArchived,
@@ -1083,6 +1084,25 @@ function MaterialDetail({
       setRotating(null);
     });
   }
+  // Brighten a step, in place (Tess, 2026-08-20). Clicks compound; the server
+  // reads the already-brightened object each time.
+  const [brightening, setBrightening] = useState<string | null>(null);
+  function brightenImage(url: string) {
+    if (!canEdit || brightening) return;
+    setBrightening(url);
+    start(async () => {
+      const res = await brightenMaterialImage(material.id, url, 1.15);
+      if (res.ok && res.url) {
+        const next = res.url;
+        setImgs((cur) => cur.map((u) => (u === url ? next : u)));
+        router.refresh();
+        onToast("Brightened");
+      } else {
+        onToast(res.error || "Couldn't brighten");
+      }
+      setBrightening(null);
+    });
+  }
   function remove() {
     start(async () => {
       await softDeleteMaterial(material.id);
@@ -1143,6 +1163,18 @@ function MaterialDetail({
                           Set cover
                         </button>
                       )
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="mat-bright"
+                        title="Brighten"
+                        aria-label="Brighten image"
+                        disabled={brightening === src}
+                        onClick={() => brightenImage(src)}
+                      >
+                        ☀
+                      </button>
                     )}
                     {canEdit && (
                       <button
