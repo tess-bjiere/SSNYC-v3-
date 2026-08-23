@@ -53,7 +53,7 @@ export default async function MaterialOrdersPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title display">Material Orders</h1>
+        <h1 className="page-title display">Orders</h1>
       </div>
 
       {/* Create an empty order here; or select materials in the library and

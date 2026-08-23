@@ -116,7 +116,7 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       { href: "/materials", label: "Materials" },
       // Purchase orders assembled from that library (Tess, 2026-08-18: "add
       // ability to create an order for materials from the material library").
-      { href: "/material-orders", label: "Material Orders" },
+      { href: "/material-orders", label: "Orders" },
     ],
   },
 ];

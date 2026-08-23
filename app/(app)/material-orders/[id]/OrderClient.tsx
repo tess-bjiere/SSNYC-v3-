@@ -67,7 +67,7 @@ export default function OrderClient({
 
   // The PDF names itself from the order — the browser suggests document.title as
   // the filename, the same trick the linesheet and fitting deck use.
-  const fileTitle = `${name} — material order`;
+  const fileTitle = `${name} — order`;
   useEffect(() => {
     const previous = document.title;
     document.title = fileTitle;
