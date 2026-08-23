@@ -93,7 +93,13 @@ export default function StyleMaterials({
       {m.deleted ? (
         <Chip m={m} />
       ) : (
-        <Link href={`/materials?m=${m.id}`} className="stmat-chiplink" title="Open in the materials library">
+        <Link
+          href={`/materials?m=${m.id}`}
+          className="stmat-chiplink"
+          title="Open in the materials library (new tab)"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Chip m={m} />
         </Link>
       )}
