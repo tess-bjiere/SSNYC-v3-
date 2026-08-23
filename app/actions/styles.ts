@@ -7,6 +7,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { requireTeam } from "@/lib/access";
 import { APP } from "@/lib/appConfig";
 import { readMaterialIds, normalizeMaterialIds } from "@/lib/sampleMaterials";
+import { suggestFredNumber } from "@/lib/fredStyleNumber";
 import {
   canDeleteComment,
   canEditComment,
@@ -88,11 +89,30 @@ export async function createStyle(form: FormData) {
   // into the brand you are looking at (multi-brand phase 1). See lib/brands.ts.
   const brand = await activeBrand();
 
+  // FRED auto-numbers a new style from its category when the number is left blank
+  // (Tess, 2026-08-20: "i want fred to auto generate style numbers based on our
+  // rules, the user would have the ability to edit if needed"). The form shows the
+  // suggestion live; a blank submission means "use the rule", so it is recomputed
+  // HERE from the brand's live numbers — the true next in the code even if the form
+  // sat open a while. A number the user typed is honoured untouched. Retired styles
+  // are included in the scan: FRED numbers are never reused, so a killed style's
+  // number must not be handed out again.
+  let styleNo = s(form, "style_no");
+  if (!styleNo && APP.id === "fred") {
+    const { data: nums } = await supabase
+      .from("styles")
+      .select("style_no")
+      .eq("brand", brand)
+      .not("style_no", "is", null);
+    const existing = (nums ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
+    styleNo = suggestFredNumber(existing, s(form, "category"));
+  }
+
   const { data, error } = await supabase
     .from("styles")
     .insert({
       name,
-      style_no: s(form, "style_no"),
+      style_no: styleNo,
       category: s(form, "category"),
       garment: s(form, "garment"),
       fabric: s(form, "fabric"),

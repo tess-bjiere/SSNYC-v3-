@@ -5,12 +5,32 @@ import { createStyle } from "@/app/actions/styles";
 import GarmentField from "@/app/components/GarmentField";
 import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES } from "@/lib/types";
 import { APP } from "@/lib/appConfig";
+import { createClient } from "@/lib/supabase/server";
+import { activeBrand } from "@/lib/activeBrand";
+import FredStyleNumberFields from "./FredStyleNumberFields";
+
+export const dynamic = "force-dynamic";
 
 export default async function NewStylePage() {
   await requireTeam(); // product side, team only
   // FRED doesn't use Season or WIP on a style (Tess, 2026-08-20), so the new-style
   // form omits them there; SOUS SOUS and Renggli keep them.
   const isFred = APP.id === "fred";
+
+  // FRED auto-generates the style number, so the form previews the next one live.
+  // Load every number already in use (retired styles included — FRED numbers are
+  // never reused) to read the next in each code.
+  let fredNumbers: string[] = [];
+  if (isFred) {
+    const supabase = await createClient();
+    const brand = await activeBrand();
+    const { data } = await supabase
+      .from("styles")
+      .select("style_no")
+      .eq("brand", brand)
+      .not("style_no", "is", null);
+    fredNumbers = (data ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
+  }
   return (
     <div className="page">
       <div className="page-head">
@@ -27,41 +47,67 @@ export default async function NewStylePage() {
           <input className="input" name="name" required placeholder="e.g. Cropped Rib Tank" />
         </div>
 
-        <div className="row">
-          <div className="field">
-            <label>Style number</label>
-            <input className="input" name="style_no" placeholder="SS-1042" />
+        {/* On FRED the style number is auto-generated from the category, so the
+            two fields travel together and preview live (Tess, 2026-08-20).
+            Elsewhere the number is a plain field the user types. */}
+        {isFred ? (
+          <>
+            <FredStyleNumberFields existing={fredNumbers} categories={STYLE_CATEGORIES} />
+            <div className="row">
+              <div className="field">
+                <label>Status</label>
+                <Select
+                  className="select"
+                  name="status"
+                  aria-label="Status"
+                  defaultValue="development"
+                  options={STYLE_STATUSES.map((s) => ({ value: s, label: STYLE_STATUS_LABELS[s] }))}
+                />
+              </div>
+              <div className="field" />
+            </div>
+          </>
+        ) : (
+          <div className="row">
+            <div className="field">
+              <label>Style number</label>
+              <input className="input" name="style_no" placeholder="SS-1042" />
+            </div>
+            <div className="field">
+              <label>Status</label>
+              {/* The label, not the key. The status values are lowercase in
+                  the database and stay that way; this was the last dropdown
+                  still showing them raw. */}
+              <Select
+                className="select"
+                name="status"
+                aria-label="Status"
+                defaultValue="development"
+                options={STYLE_STATUSES.map((s) => ({ value: s, label: STYLE_STATUS_LABELS[s] }))}
+              />
+            </div>
           </div>
-          <div className="field">
-            <label>Status</label>
-            {/* The label, not the key. The status values are lowercase in
-                the database and stay that way; this was the last dropdown
-                still showing them raw. */}
-            <Select
-              className="select"
-              name="status"
-              aria-label="Status"
-              defaultValue="development"
-              options={STYLE_STATUSES.map((s) => ({ value: s, label: STYLE_STATUS_LABELS[s] }))}
-            />
-          </div>
-        </div>
+        )}
 
         <div className="row3">
-          <div className="field">
-            <label>Category</label>
-            {/* Category is a fixed set of broad buckets now, not free text, so a
-                jacket is filed under Outerwear rather than under a category of
-                its own (Tess, 2026-08-09). Optional — the leading "—" leaves it
-                unset. */}
-            <Select
-              className="select"
-              name="category"
-              aria-label="Category"
-              defaultValue=""
-              options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
-            />
-          </div>
+          {/* Category lives up in the style-number row on FRED (they generate
+              together); elsewhere it sits here. */}
+          {!isFred && (
+            <div className="field">
+              <label>Category</label>
+              {/* Category is a fixed set of broad buckets now, not free text, so a
+                  jacket is filed under Outerwear rather than under a category of
+                  its own (Tess, 2026-08-09). Optional — the leading "—" leaves it
+                  unset. */}
+              <Select
+                className="select"
+                name="category"
+                aria-label="Category"
+                defaultValue=""
+                options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+              />
+            </div>
+          )}
           <div className="field">
             <label>Garment</label>
             {/* The specific type under the category (Tess, 2026-08-09: "garment
