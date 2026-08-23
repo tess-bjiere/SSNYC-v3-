@@ -26,7 +26,11 @@
 -- picker only renders when APP.id is "fred"; running this on Loyalist would add
 -- a column nothing writes.
 --
--- NOT YET APPLIED. Run by hand in the Supabase SQL editor, then deploy.
+-- APPLIED to FRED (vjiwcreytvmxvxasyvoo) 2026-08-20 via MCP. It had been missed
+-- when the round material picker shipped, and because sampleFields() writes
+-- material_ids on FRED, every add/update sample was silently rejected for the
+-- missing column until this ran ("when i add a sample round its not saving").
+-- Loyalist (SOUS SOUS / Renggli) does not get this column — see the note above.
 
 alter table public.style_samples
   add column if not exists material_ids jsonb not null default '[]'::jsonb;

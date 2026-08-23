@@ -836,11 +836,17 @@ export async function addSample(styleId: string, form: FormData) {
   const round = s(form, "round");
   if (!round) return;
 
-  await supabase.from("style_samples").insert({
+  // Surface a rejected write instead of swallowing it. This one bit hard (Tess,
+  // 2026-08-20: "when i add a sample round its not saving"): style_samples on FRED
+  // was missing the material_ids column sampleFields writes, so PostgREST refused
+  // every insert and the round vanished with no sign. A save that fails must say
+  // so, not look like it worked.
+  const { error } = await supabase.from("style_samples").insert({
     style_id: styleId,
     round,
     ...sampleFields(form),
   });
+  if (error) throw new Error(`Could not add the round: ${error.message}`);
 
   revalidatePath(`/styles/${styleId}`);
   revalidatePath("/factories");
@@ -855,11 +861,12 @@ export async function updateSample(styleId: string, sampleId: string, form: Form
   const supabase = await createClient();
   const round = s(form, "round");
 
-  await supabase
+  const { error } = await supabase
     .from("style_samples")
     .update({ ...(round ? { round } : {}), ...sampleFields(form) })
     .eq("id", sampleId)
     .eq("style_id", styleId);
+  if (error) throw new Error(`Could not save the round: ${error.message}`);
 
   revalidatePath(`/styles/${styleId}`);
   revalidatePath("/factories");
