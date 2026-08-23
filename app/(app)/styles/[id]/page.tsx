@@ -439,6 +439,11 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
     (st as { material_ids?: unknown }).material_ids,
   );
 
+  // FRED styles drop Season, Blank style and WIP from the profile, and read the
+  // weight row as fabric GSM instead of a shipping weight (Tess, 2026-08-20).
+  // SOUS SOUS and Renggli are untouched.
+  const isFred = APP.id === "fred";
+
   return (
     <div className="page">
       {/* A style in the Trash still has a working profile — every link anybody
@@ -778,7 +783,8 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 Category and Season beside Factory, and the two halves of every
                 question landed in different rows. */}
             <div className="kv"><span className="k">Style no.</span><span>{st.style_no || "—"}</span></div>
-            <div className="kv"><span className="k">Season</span><span>{st.season || "—"}</span></div>
+            {/* Season is dropped on FRED (Tess, 2026-08-20). */}
+            {!isFred && <div className="kv"><span className="k">Season</span><span>{st.season || "—"}</span></div>}
             <div className="kv"><span className="k">Category</span><span>{st.category || "—"}</span></div>
             <div className="kv"><span className="k">Garment</span><span>{st.garment || "—"}</span></div>
             {/* Fabric sits with the garment, not with the factory: the two of
@@ -803,7 +809,8 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             {/* The blank this is built on, where there is one. Sits with the
                 fabric because it is the same kind of fact — what the garment is
                 made of before anybody cuts it. */}
-            <div className="kv"><span className="k">Blank style</span><span>{st.blank_style || "—"}</span></div>
+            {/* Blank style is dropped on FRED (Tess, 2026-08-20). */}
+            {!isFred && <div className="kv"><span className="k">Blank style</span><span>{st.blank_style || "—"}</span></div>}
             {/* Colourways, next to the fabric for the same reason fabric sits
                 next to the garment (Tess, 2026-08-05: "Include color(s) as
                 field option(s) in details"). One line, however many colours —
@@ -823,9 +830,20 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 questioned before a shipment is costed. */}
             <div className="kv"><span className="k">HS code</span><span>{st.hs_code || "—"}</span></div>
             <div className="kv"><span className="k">Country of origin</span><span>{st.country_of_origin || "—"}</span></div>
+            {/* On FRED this row is the fabric's GSM, not a shipping weight, so it
+                is labelled Fabric GSM and shown as a plain number rather than the
+                three-decimal lbs figure (Tess, 2026-08-20: "edit weight to be
+                fabric gsm"). Same weight_lbs column behind both — a label/format
+                change, no migration. */}
             <div className="kv">
-              <span className="k">Weight (lbs)</span>
-              <span>{st.weight_lbs === null || st.weight_lbs === undefined ? "—" : Number(st.weight_lbs).toFixed(3)}</span>
+              <span className="k">{isFred ? "Fabric GSM" : "Weight (lbs)"}</span>
+              <span>
+                {st.weight_lbs === null || st.weight_lbs === undefined
+                  ? "—"
+                  : isFred
+                    ? String(Number(st.weight_lbs))
+                    : Number(st.weight_lbs).toFixed(3)}
+              </span>
             </div>
             {/* The tech pack, in the details rather than under the status
                 control (Tess, 2026-08-05: "techpack link should be viewable in
@@ -861,16 +879,20 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 style whose WIP folder you have not scrolled to. Pairing them
                 also puts the last row of the grid back to two cells, which is
                 what Tech pack was spanning the full width to avoid. */}
-            <div className="kv">
-              <span className="k">WIP</span>
-              {st.wip_url ? (
-                <a href={st.wip_url} target="_blank" rel="noreferrer" className="kv-link">
-                  Open WIP ↗
-                </a>
-              ) : (
-                <span>—</span>
-              )}
-            </div>
+            {/* WIP is dropped on FRED (Tess, 2026-08-20). Off FRED, Tech pack and
+                WIP still pair up as before. */}
+            {!isFred && (
+              <div className="kv">
+                <span className="k">WIP</span>
+                {st.wip_url ? (
+                  <a href={st.wip_url} target="_blank" rel="noreferrer" className="kv-link">
+                    Open WIP ↗
+                  </a>
+                ) : (
+                  <span>—</span>
+                )}
+              </div>
+            )}
             {/* Linked: a note is as often a tech-pack URL as a sentence, and
                 until now every one of them landed as dead text. */}
             {/* Notes runs the full width — it is prose, not a fact, and half
@@ -965,7 +987,13 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   you came to change. */}
               <div className="row3">
                 <div className="field"><label>Style no.</label><input className="input" name="style_no" defaultValue={st.style_no ?? ""} /></div>
-                <div className="field"><label>Season</label><input className="input" name="season" defaultValue={st.season ?? ""} /></div>
+                {/* Season is not edited on FRED — the input is omitted so the save
+                    leaves the column alone (Tess, 2026-08-20). */}
+                {isFred ? (
+                  <div className="field" />
+                ) : (
+                  <div className="field"><label>Season</label><input className="input" name="season" defaultValue={st.season ?? ""} /></div>
+                )}
                 {/* Category as a fixed picklist (Tess, 2026-08-09). A stored
                     value that predates the list still shows on the control, so
                     an old free-text category is never silently dropped. */}
@@ -994,7 +1022,13 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               </div>
               <div className="row3">
                 <div className="field"><label>Color(s)</label><input className="input" name="colors" defaultValue={st.colors ?? ""} placeholder="e.g. black / bone / olive" /></div>
-                <div className="field"><label>Blank style</label><input className="input" name="blank_style" defaultValue={st.blank_style ?? ""} placeholder="e.g. IND4000 + F102 - Black" /></div>
+                {/* Blank style is not edited on FRED — input omitted, column left
+                    alone on save (Tess, 2026-08-20). */}
+                {isFred ? (
+                  <div className="field" />
+                ) : (
+                  <div className="field"><label>Blank style</label><input className="input" name="blank_style" defaultValue={st.blank_style ?? ""} placeholder="e.g. IND4000 + F102 - Black" /></div>
+                )}
                 <div className="field"><label>HS code</label><input className="input" name="hs_code" defaultValue={st.hs_code ?? ""} /></div>
               </div>
               {/* Customs. These travel with a shipment rather than with a
@@ -1004,7 +1038,21 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   a figure the database would have accepted. */}
               <div className="row3">
                 <div className="field"><label>Country of origin</label><input className="input" name="country_of_origin" defaultValue={st.country_of_origin ?? ""} /></div>
-                <div className="field"><label>Weight (lbs)</label><input className="input" name="weight_lbs" type="number" step="0.001" min="0" defaultValue={st.weight_lbs ?? ""} placeholder="0.000" /></div>
+                {/* On FRED this is the fabric's GSM (whole numbers), not a lbs
+                    shipping weight (Tess, 2026-08-20: "edit weight to be fabric
+                    gsm"). Same weight_lbs column. */}
+                <div className="field">
+                  <label>{isFred ? "Fabric GSM" : "Weight (lbs)"}</label>
+                  <input
+                    className="input"
+                    name="weight_lbs"
+                    type="number"
+                    step={isFred ? "1" : "0.001"}
+                    min="0"
+                    defaultValue={st.weight_lbs ?? ""}
+                    placeholder={isFred ? "e.g. 220" : "0.000"}
+                  />
+                </div>
                 <div className="field" />
               </div>
               <div className="row3">
@@ -1026,7 +1074,11 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   saving this one leaves it exactly as it was. */}
               <div className="row">
                 <div className="field"><label>Tech pack link</label><input className="input" name="tech_pack_url" defaultValue={st.tech_pack_url ?? ""} /></div>
-                <div className="field"><label>WIP link</label><input className="input" name="wip_url" defaultValue={st.wip_url ?? ""} placeholder="https://… the live working folder" /></div>
+                {/* WIP is not edited on FRED — input omitted, column left alone on
+                    save (Tess, 2026-08-20). */}
+                {!isFred && (
+                  <div className="field"><label>WIP link</label><input className="input" name="wip_url" defaultValue={st.wip_url ?? ""} placeholder="https://… the live working folder" /></div>
+                )}
               </div>
               <div className="field"><label>Notes</label><textarea className="textarea" name="notes" defaultValue={st.notes ?? ""} /></div>
               <div className="field">

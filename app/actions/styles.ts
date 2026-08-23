@@ -143,7 +143,6 @@ export async function updateStyle(id: string, form: FormData) {
     garment: s(form, "garment"),
     fabric: s(form, "fabric"),
     material: s(form, "material"),
-    blank_style: s(form, "blank_style"),
     hs_code: s(form, "hs_code"),
     country_of_origin: s(form, "country_of_origin"),
     weight_lbs: n(form, "weight_lbs"),
@@ -153,10 +152,8 @@ export async function updateStyle(id: string, form: FormData) {
     // brand input, so writing s(form,"brand") would blank it to null on every
     // save and drop the style out of every brand's view. It is set once at
     // creation and left alone (multi-brand phase 1).
-    season: s(form, "season"),
     factory: s(form, "factory"),
     tech_pack_url: s(form, "tech_pack_url"),
-    wip_url: s(form, "wip_url"),
     notes: s(form, "notes"),
     fit_notes: s(form, "fit_notes"),
     evergreen: form.get("evergreen") === "on",
@@ -179,6 +176,15 @@ export async function updateStyle(id: string, form: FormData) {
   // "clear it". Any future form that edits a subset of a style can now do so
   // safely for this column.
   if (form.has("cover_image")) patch.cover_image = s(form, "cover_image");
+
+  // Season, Blank style and WIP are hidden on the FRED style form (Tess,
+  // 2026-08-20: "FRED style profiles should remove: blank style / WIP / season …
+  // Dont edit these on SOUS SOUS or Renggli"). Same guard as cover_image: an
+  // absent field means "leave it alone", never "clear it", so hiding a field on
+  // one brand can't blank a value another brand still edits.
+  if (form.has("season")) patch.season = s(form, "season");
+  if (form.has("blank_style")) patch.blank_style = s(form, "blank_style");
+  if (form.has("wip_url")) patch.wip_url = s(form, "wip_url");
 
   await supabase.from("styles").update(patch).eq("id", id);
 
