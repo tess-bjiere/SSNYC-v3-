@@ -1,5 +1,6 @@
 import Select from "@/app/components/Select";
 import GarmentField from "@/app/components/GarmentField";
+import FredCategoryType from "./FredCategoryType";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -987,36 +988,40 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   you came to change. */}
               <div className="row3">
                 <div className="field"><label>Style no.</label><input className="input" name="style_no" defaultValue={st.style_no ?? ""} /></div>
-                {/* Season is not edited on FRED — the input is omitted so the save
-                    leaves the column alone (Tess, 2026-08-20). */}
+                {/* On FRED, Category + Type are the taxonomy pair (Type refines the
+                    style number's code) and Season is not used; elsewhere Season
+                    then the free Category picklist. A stored value that predates a
+                    list still shows on the control, so nothing is silently dropped
+                    (Tess, 2026-08-09 / 2026-08-20). */}
                 {isFred ? (
-                  <div className="field" />
+                  <FredCategoryType category={st.category ?? ""} type={st.garment ?? ""} />
                 ) : (
-                  <div className="field"><label>Season</label><input className="input" name="season" defaultValue={st.season ?? ""} /></div>
+                  <>
+                    <div className="field"><label>Season</label><input className="input" name="season" defaultValue={st.season ?? ""} /></div>
+                    <div className="field"><label>Category</label>
+                      <Select
+                        className="select"
+                        name="category"
+                        aria-label="Category"
+                        defaultValue={st.category ?? ""}
+                        options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+                      />
+                    </div>
+                  </>
                 )}
-                {/* Category as a fixed picklist (Tess, 2026-08-09). A stored
-                    value that predates the list still shows on the control, so
-                    an old free-text category is never silently dropped. */}
-                <div className="field"><label>Category</label>
-                  <Select
-                    className="select"
-                    name="category"
-                    aria-label="Category"
-                    defaultValue={st.category ?? ""}
-                    options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
-                  />
-                </div>
               </div>
-              {/* What it is: the garment, and the two halves of what it is made
-                  from. Fabric type and Material sit side by side because they
+              {/* What it is: the garment/type, and the two halves of what it is
+                  made from. Fabric type and Material sit side by side because they
                   are one question asked twice — jersey, in 100% cotton — and a
                   row apart they read as two unrelated facts. */}
               <div className="row3">
-                {/* Garment picklist with an Other escape; a legacy off-list
-                    garment opens into Other with its text kept. */}
-                <div className="field"><label>Garment</label>
-                  <GarmentField defaultValue={st.garment ?? ""} />
-                </div>
+                {/* Garment is the free picklist off FRED; on FRED the Type field
+                    up top (in FredCategoryType) is the equivalent. */}
+                {!isFred && (
+                  <div className="field"><label>Garment</label>
+                    <GarmentField defaultValue={st.garment ?? ""} />
+                  </div>
+                )}
                 <div className="field"><label>Fabric type</label><input className="input" name="fabric" defaultValue={st.fabric ?? ""} placeholder="e.g. jersey" /></div>
                 <div className="field"><label>Material</label><input className="input" name="material" defaultValue={st.material ?? ""} placeholder="e.g. 100% cotton" /></div>
               </div>
