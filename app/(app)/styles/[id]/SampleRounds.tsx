@@ -402,7 +402,7 @@ function MaterialPicker({
   // history is kept, but the list of things you can newly pick is current.
   const offer = library.filter((m) => !m.deleted || chosen.has(m.id));
   if (!offer.length) return null;
-  const { fabrics, trims } = splitByKind(offer);
+  const { fabrics, trims, packaging } = splitByKind(offer);
 
   const group = (label: string, items: LinkedMaterial[]) =>
     items.length ? (
@@ -429,6 +429,9 @@ function MaterialPicker({
       <label className="sr-matpick-head">From the library</label>
       {group("Fabrics", fabrics)}
       {group("Trims", trims)}
+      {/* Packaging is its own group below, not mixed into fabrics (Tess,
+          2026-08-20: "it showing packaging in the fabrics options on the sample"). */}
+      {group("Packaging", packaging)}
     </div>
   );
 }

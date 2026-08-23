@@ -77,14 +77,24 @@ test("resolveMaterials on an empty round is empty, not everything", () => {
   assert.deepEqual(resolveMaterials([], [mat("a")]), []);
 });
 
-test("splitByKind puts fabric before trim regardless of pick order", () => {
-  const out = splitByKind([mat("t1", { kind: "trim" }), mat("f1"), mat("t2", { kind: "trim" })]);
-  assert.deepEqual(out.fabrics.map((m) => m.id), ["f1"]);
+test("splitByKind groups fabric, trim and packaging into their own buckets", () => {
+  const out = splitByKind([
+    mat("t1", { kind: "trim" }),
+    mat("f1"),
+    mat("p1", { kind: "packaging" }),
+    mat("t2", { kind: "trim" }),
+    mat("f2"),
+  ]);
+  assert.deepEqual(out.fabrics.map((m) => m.id), ["f1", "f2"]);
   assert.deepEqual(out.trims.map((m) => m.id), ["t1", "t2"]);
+  // Packaging is its own group, not lumped in with the fabrics (Tess,
+  // 2026-08-20: "it showing packaging in the fabrics options on the sample").
+  assert.deepEqual(out.packaging.map((m) => m.id), ["p1"]);
 });
 
 test("splitByKind treats an unknown kind as fabric rather than losing it", () => {
   const out = splitByKind([mat("x", { kind: "" })]);
   assert.deepEqual(out.fabrics.map((m) => m.id), ["x"]);
   assert.equal(out.trims.length, 0);
+  assert.equal(out.packaging.length, 0);
 });

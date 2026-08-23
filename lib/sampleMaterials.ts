@@ -75,14 +75,23 @@ export function resolveMaterials(
   return out;
 }
 
-/** Split resolved materials the way the library does, so a round shows its
- * fabric before its trims regardless of the order they were picked in. */
+/** Split resolved materials the way the library does — fabrics, then trims, then
+ * packaging — so a round groups them the same regardless of pick order. Packaging
+ * is its own bucket rather than being lumped in with fabrics (Tess, 2026-08-20:
+ * "it showing packaging in the fabrics options on the sample"). An unknown kind
+ * still reads as fabric so it is never dropped. */
 export function splitByKind(materials: readonly LinkedMaterial[]): {
   fabrics: LinkedMaterial[];
   trims: LinkedMaterial[];
+  packaging: LinkedMaterial[];
 } {
   const fabrics: LinkedMaterial[] = [];
   const trims: LinkedMaterial[] = [];
-  for (const m of materials) (m.kind === "trim" ? trims : fabrics).push(m);
-  return { fabrics, trims };
+  const packaging: LinkedMaterial[] = [];
+  for (const m of materials) {
+    if (m.kind === "trim") trims.push(m);
+    else if (m.kind === "packaging") packaging.push(m);
+    else fabrics.push(m);
+  }
+  return { fabrics, trims, packaging };
 }
