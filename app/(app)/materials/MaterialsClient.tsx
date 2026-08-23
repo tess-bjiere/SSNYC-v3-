@@ -572,15 +572,6 @@ export default function MaterialsClient({
             { value: "custom", label: "Custom" },
           ]}
         />
-        <button
-          type="button"
-          className={"btn ghost sm" + (showArchived ? " on" : "")}
-          aria-pressed={showArchived}
-          onClick={() => setShowArchived((v) => !v)}
-          title="Show archived materials"
-        >
-          Archived
-        </button>
         {typeOptions.length > 0 && (
           <MultiSelect
             className="select sm lib-sort"
@@ -603,6 +594,17 @@ export default function MaterialsClient({
             options={productOptions}
           />
         )}
+        {/* Archived is a quiet text link off to the side, not a filter chip in
+            the row (Tess, 2026-08-20: "archived can be a smaller text link that's
+            not in the main menu"). */}
+        <button
+          type="button"
+          className={"btn link sm mat-archived-link" + (showArchived ? " on" : "")}
+          aria-pressed={showArchived}
+          onClick={() => setShowArchived((v) => !v)}
+        >
+          {showArchived ? "← Current materials" : "Archived"}
+        </button>
       </div>
 
       {filtered.length === 0 ? (

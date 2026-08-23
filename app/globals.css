@@ -536,6 +536,11 @@ body.notes-open .wrap{padding-right:378px}
 .mat-gimg:hover .mat-setcover{opacity:1}
 .mat-zoom{cursor:zoom-in}
 .detail-zoom{cursor:zoom-in}
+/* The Archived toggle is a quiet link at the end of the filter bar, not a chip in
+   the middle of it (Tess, 2026-08-20). --faint until you're viewing archived. */
+.mat-archived-link{margin-left:auto;color:var(--faint)}
+.mat-archived-link:hover{color:var(--ink)}
+.mat-archived-link.on{color:var(--ink)}
 @media (hover:none){.mat-gimg .pg-img-x,.mat-gimg .mat-setcover{opacity:.85}}
 .mat-readfacts{margin-top:4px}
 .btn.link.arm{color:#c0392b}
