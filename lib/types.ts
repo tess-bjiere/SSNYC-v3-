@@ -106,6 +106,9 @@ export const STYLE_CATEGORIES = [
   "Dresses",
   "Activewear",
   "Swimwear",
+  // Tess, 2026-08-20: "add underwear and socks to category".
+  "Underwear",
+  "Socks",
   "Accessories",
   "Bags",
 ] as const;
