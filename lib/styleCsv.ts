@@ -72,39 +72,46 @@ export function csvCell(v: string): string {
   return /[",\n\r]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
 }
 
-/** The header, exactly as the receiving form names its fields. */
-export const CSV_COLUMNS = [
-  "Product Name",
-  "Product type",
-  "Style Number",
-  "Product Color",
-  "Blank Style",
-  "Fabric type",
-  "Material",
-  "Hs code",
-  "Country of Origin",
-  "Product Weight (lbs)",
-] as const;
+// Options for the export. FRED does not use Blank Style, so its CSV drops that
+// column — header and value together (Tess, 2026-08-20: "remove those from style
+// form and csv"). The default (SOUS SOUS / Renggli) is unchanged: all ten columns,
+// byte-for-byte as before.
+export type CsvOptions = { includeBlankStyle?: boolean };
 
-/** One style, in CSV_COLUMNS order, unescaped. */
-export function styleCsvValues(style: CsvStyleLike | null | undefined): string[] {
+// The columns as (header, value) pairs, in the receiving form's order. Keeping the
+// header beside its value is what lets a column be dropped without the two arrays
+// drifting out of step. `fredDrop` marks a column FRED leaves out.
+type CsvColumn = { header: string; value: (s: CsvStyleLike) => string; fredDrop?: boolean };
+const COLUMNS: CsvColumn[] = [
+  { header: "Product Name", value: (s) => text(s.name) },
+  { header: "Product type", value: (s) => text(s.garment) },
+  { header: "Style Number", value: (s) => text(s.style_no) },
+  { header: "Product Color", value: (s) => text(s.colors) },
+  { header: "Blank Style", value: (s) => text(s.blank_style), fredDrop: true },
+  // Fabric type is styles.fabric — one field, two names (Tess, 2026-08-07:
+  // "fabric is a duplicate of fabric type -- keep fabric type").
+  { header: "Fabric type", value: (s) => text(s.fabric) },
+  // Its own field again (Tess, 2026-08-07: "add material into the detials and csv
+  // export"). Fabric type is jersey, Material is 100% cotton.
+  { header: "Material", value: (s) => text(s.material) },
+  { header: "Hs code", value: (s) => text(s.hs_code) },
+  { header: "Country of Origin", value: (s) => text(s.country_of_origin) },
+  { header: "Product Weight (lbs)", value: (s) => weightText(s.weight_lbs) },
+];
+
+function columnsFor(opts?: CsvOptions): CsvColumn[] {
+  // includeBlankStyle defaults true, so no-argument callers are unchanged.
+  return opts?.includeBlankStyle === false ? COLUMNS.filter((c) => !c.fredDrop) : COLUMNS;
+}
+
+/** The header, exactly as the receiving form names its fields. The full ten; the
+ *  FRED export drops Blank Style via the option on styleCsv/styleCsvValues. */
+export const CSV_COLUMNS = COLUMNS.map((c) => c.header);
+
+/** One style, in column order, unescaped. */
+export function styleCsvValues(style: CsvStyleLike | null | undefined, opts?: CsvOptions): string[] {
   const s = style ?? {};
-  return [
-    text(s.name),
-    text(s.garment),
-    text(s.style_no),
-    text(s.colors),
-    text(s.blank_style),
-    // Fabric type is styles.fabric — one field, two names (Tess, 2026-08-07:
-    // "fabric is a duplicate of fabric type -- keep fabric type").
-    text(s.fabric),
-    // Its own field again (Tess, 2026-08-07: "add material into the detials
-    // and csv export"). Fabric type is jersey, Material is 100% cotton.
-    text(s.material),
-    text(s.hs_code),
-    text(s.country_of_origin),
-    weightText(s.weight_lbs),
-  ];
+  return columnsFor(opts).map((c) => c.value(s));
 }
 
 /**
@@ -114,9 +121,10 @@ export function styleCsvValues(style: CsvStyleLike | null | undefined): string[]
  * Windows wants; every other reader accepts them. Takes a list so that this can
  * become the export for a whole season later without the row logic moving.
  */
-export function styleCsv(styles: readonly CsvStyleLike[]): string {
-  const lines = [CSV_COLUMNS.map((c) => csvCell(c)).join(",")];
-  for (const s of styles) lines.push(styleCsvValues(s).map(csvCell).join(","));
+export function styleCsv(styles: readonly CsvStyleLike[], opts?: CsvOptions): string {
+  const cols = columnsFor(opts);
+  const lines = [cols.map((c) => csvCell(c.header)).join(",")];
+  for (const s of styles) lines.push(styleCsvValues(s, opts).map(csvCell).join(","));
   return lines.join("\r\n") + "\r\n";
 }
 

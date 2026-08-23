@@ -54,6 +54,22 @@ test("every column has a value and the row is the same length as the header", ()
   assert.equal(styleCsvValues(null).length, CSV_COLUMNS.length);
 });
 
+test("the FRED variant drops Blank Style — header and value together", () => {
+  // Tess, 2026-08-20: "remove those from style form and csv". FRED does not use
+  // Blank Style, so its export is nine columns; the default is untouched.
+  const opts = { includeBlankStyle: false };
+  const header = styleCsv([], opts).trim();
+  assert.equal(header.split(",").includes("Blank Style"), false);
+  assert.equal(header.split(",").length, 9);
+  // The value row stays aligned to the shortened header.
+  const v = styleCsvValues(FULL, opts);
+  assert.equal(v.length, 9);
+  assert.equal(v.includes("IND4000 + F102 - Black"), false);
+  // Default (no option) is unchanged — all ten, Blank Style present.
+  assert.equal(styleCsvValues(FULL).length, 10);
+  assert.equal(styleCsvValues(FULL).includes("IND4000 + F102 - Black"), true);
+});
+
 test("Fabric type and Material are separate facts and both travel", () => {
   // Fabric type is what it is made IN, Material is what it is made OF. A
   // factory quoting a price and a customs entry need different ones.

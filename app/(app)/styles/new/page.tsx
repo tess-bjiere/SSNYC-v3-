@@ -4,9 +4,13 @@ import { requireTeam } from "@/lib/access";
 import { createStyle } from "@/app/actions/styles";
 import GarmentField from "@/app/components/GarmentField";
 import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES } from "@/lib/types";
+import { APP } from "@/lib/appConfig";
 
 export default async function NewStylePage() {
   await requireTeam(); // product side, team only
+  // FRED doesn't use Season or WIP on a style (Tess, 2026-08-20), so the new-style
+  // form omits them there; SOUS SOUS and Renggli keep them.
+  const isFred = APP.id === "fred";
   return (
     <div className="page">
       <div className="page-head">
@@ -76,10 +80,13 @@ export default async function NewStylePage() {
         </div>
 
         <div className="row3">
-          <div className="field">
-            <label>Season</label>
-            <input className="input" name="season" placeholder="SS27" />
-          </div>
+          {/* Season is not used on FRED (Tess, 2026-08-20). */}
+          {!isFred && (
+            <div className="field">
+              <label>Season</label>
+              <input className="input" name="season" placeholder="SS27" />
+            </div>
+          )}
           <div className="field">
             <label>Designer</label>
             <input className="input" name="designer" />
@@ -100,11 +107,14 @@ export default async function NewStylePage() {
             <label>Tech pack link</label>
             <input className="input" name="tech_pack_url" placeholder="https://… (Drive, Dropbox, etc.)" />
           </div>
-          {/* The live working folder, beside the specification it works from. */}
-          <div className="field">
-            <label>WIP link</label>
-            <input className="input" name="wip_url" placeholder="https://… the live working folder" />
-          </div>
+          {/* The live working folder, beside the specification it works from.
+              Not used on FRED (Tess, 2026-08-20). */}
+          {!isFred && (
+            <div className="field">
+              <label>WIP link</label>
+              <input className="input" name="wip_url" placeholder="https://… the live working folder" />
+            </div>
+          )}
         </div>
 
         <div className="field">
