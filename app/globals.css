@@ -1807,6 +1807,15 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The picker, in the round form. Checkboxes so the whole selection posts
    itself; the chip beside each is the same one the card shows, so picking and
    reading look like the same object. */
+/* Inline "sub in an alternate fabric" on a sample card (Tess, 2026-08-20). A quiet
+   link that opens a compact library-fabric picker; the offer rows reuse the style
+   materials' .stmat-offer look. */
+.sr-fabswap{margin-top:8px}
+.sr-fabswap-open{padding-left:0}
+.sr-fabswap-picker{border:1px solid var(--hair);background:var(--field);padding:10px;margin-top:4px}
+.sr-fabswap-head{display:flex;gap:8px;align-items:center}
+.sr-fabswap-head .input{flex:1;padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta)}
+.sr-fabswap-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;max-height:40vh;overflow:auto}
 .sr-matpick{margin:0 0 14px}
 .sr-matpick-head{display:block;font-size:var(--t-micro);text-transform:uppercase;
   letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
@@ -2662,6 +2671,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    a style"). Linked chips reuse the round's .sr-mat look; the picker is a search
    + grouped list of what's left to add. */
 .stmat-chips{display:flex;flex-wrap:wrap;gap:8px}
+/* Packaging sits below the fabrics/trims under its own quiet label (Tess,
+   2026-08-20: "Separate packaging … Packaging can go below"). */
+.stmat-pkg{margin-top:12px;border-top:1px solid var(--hair);padding-top:10px}
+.stmat-subgroup{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;
+  color:var(--faint);margin-bottom:6px}
 .stmat-chiprow{display:inline-flex;align-items:center;gap:4px}
 /* A linked material chip is a link into the library; the underlying chip carries
    the border, so the anchor just adds the pointer and a hover lift. */

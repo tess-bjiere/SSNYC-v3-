@@ -296,6 +296,23 @@ export async function setStyleMaterials(styleId: string, ids: string[]) {
   revalidatePath("/development");
 }
 
+// The materials one sample round was sewn in (style_samples.material_ids), set on
+// its own so a sample card can sub in an alternate fabric without re-opening the
+// whole round form (Tess, 2026-08-20: "have the ability to sub in an alternate
+// fabric on one of the samples"). Same shape and FRED gate as setStyleMaterials;
+// the caller sends the full desired id set (kept trims/packaging plus the new
+// fabric), so this only normalises and writes it.
+export async function setSampleMaterials(styleId: string, sampleId: string, ids: string[]) {
+  await requireTeam();
+  if (APP.id !== "fred" || !sampleId) return;
+  const supabase = await createClient();
+  await supabase
+    .from("style_samples")
+    .update({ material_ids: normalizeMaterialIds(ids) })
+    .eq("id", sampleId);
+  revalidatePath(`/styles/${styleId}`);
+}
+
 /**
  * Send a style to the Trash, and bring it back.
  *

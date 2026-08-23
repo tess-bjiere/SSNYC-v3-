@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import CloseOnSave from "@/app/components/CloseOnSave";
 import Select from "@/app/components/Select";
 import Link from "next/link";
@@ -41,7 +42,7 @@ import {
 } from "@/lib/sampleCycle";
 import { readImages, SHOTS_KEY, type ListImage } from "@/lib/imageList";
 import { readNotes, EMPTY_NOTE, type ImageNote } from "@/lib/imageNotes";
-import { addSample, updateSample } from "@/app/actions/styles";
+import { addSample, updateSample, setSampleMaterials } from "@/app/actions/styles";
 import ImageStrip from "./ImageStrip";
 import SlotCards from "./SlotCards";
 import PhotoSlots from "./PhotoSlots";
@@ -524,13 +525,137 @@ function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name" | "contact_
  * would have been a second copy of the same twenty lines, and the two would
  * have drifted the first time a field was added to one of them.
  */
+// Sub in an alternate fabric on a single sample round (Tess, 2026-08-20: "have
+// the ability to sub in an alternate fabric on one of the samples"). A quick
+// inline picker over the library's fabrics that writes just this round's
+// material_ids — the round's trims and packaging are carried through untouched,
+// only the fabric is swapped. FRED-only, like the rest of the materials library;
+// off FRED there is no library and this renders nothing.
+const isFabricKind = (m: LinkedMaterial) => m.kind !== "trim" && m.kind !== "packaging";
+
+function SampleFabricSwap({
+  styleId,
+  sampleId,
+  library,
+  materialIds,
+}: {
+  styleId: string;
+  sampleId: string;
+  library: readonly LinkedMaterial[];
+  materialIds: readonly string[];
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [pending, start] = useTransition();
+
+  if (!library.length) return null;
+
+  const byId = new Map(library.map((m) => [m.id, m]));
+  // Everything on this round that is NOT a fabric stays; the fabric is what a
+  // sub replaces. An id whose row is gone simply drops.
+  const keep = materialIds.filter((id) => {
+    const m = byId.get(id);
+    return !!m && !isFabricKind(m);
+  });
+  const curFabricIds = materialIds.filter((id) => {
+    const m = byId.get(id);
+    return !!m && isFabricKind(m);
+  });
+
+  const query = q.trim().toLowerCase();
+  const offer = library.filter(
+    (m) =>
+      isFabricKind(m) &&
+      (!m.deleted || curFabricIds.includes(m.id)) &&
+      !curFabricIds.includes(m.id) &&
+      (!query ||
+        `${m.name} ${m.composition ?? ""} ${m.supplier ?? ""}`.toLowerCase().includes(query)),
+  );
+
+  function sub(fabricId: string) {
+    start(async () => {
+      await setSampleMaterials(styleId, sampleId, [...keep, fabricId]);
+      router.refresh();
+      setOpen(false);
+      setQ("");
+    });
+  }
+  function clearFabric() {
+    start(async () => {
+      await setSampleMaterials(styleId, sampleId, keep);
+      router.refresh();
+      setOpen(false);
+    });
+  }
+
+  const hasFabric = curFabricIds.length > 0;
+
+  return (
+    <div className="sr-fabswap">
+      {open ? (
+        <div className="sr-fabswap-picker">
+          <div className="sr-fabswap-head">
+            <input
+              className="input"
+              value={q}
+              autoFocus
+              placeholder="Search fabrics — name, composition, supplier"
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <button type="button" className="btn link" onClick={() => { setOpen(false); setQ(""); }}>
+              Done
+            </button>
+          </div>
+          {offer.length === 0 ? (
+            <div className="linkref-msg">
+              {query ? "No fabric matches that." : "No other fabric in the library."}
+            </div>
+          ) : (
+            <div className="sr-fabswap-list">
+              {offer.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="stmat-offer"
+                  disabled={pending}
+                  onClick={() => sub(m.id)}
+                >
+                  <MaterialChip m={m} />
+                  <span className="stmat-add">{hasFabric ? "Sub in" : "+ Add"}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {hasFabric && (
+            <button type="button" className="btn link sm" disabled={pending} onClick={clearFabric}>
+              Remove fabric from this sample
+            </button>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="btn link sm sr-fabswap-open"
+          disabled={pending}
+          onClick={() => setOpen(true)}
+        >
+          {hasFabric ? "Sub in an alternate fabric" : "Add a fabric from the library"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function RoundFacts({
   s,
   today,
+  styleId,
   library = [],
 }: {
   s: StyleSample;
   today: string;
+  styleId: string;
   library?: readonly LinkedMaterial[];
 }) {
   const mat = materialStatus(s, today);
@@ -563,7 +688,7 @@ function RoundFacts({
           So the dates won. One shape now — .sr-field, caption over value — for
           the fabric, the legs, the status and all three notes, on one rhythm.
           Titles are written out in full: "Material notes", not "Material". */}
-      {(matLine || mat.state !== "none" || linked.length > 0) && (
+      {(matLine || mat.state !== "none" || linked.length > 0 || library.length > 0) && (
         <div className="sr-field">
           <span className="k">Raw material</span>
           {matLine && <div className="v">{matLine}</div>}
@@ -578,6 +703,15 @@ function RoundFacts({
             </div>
           )}
           {mat.state !== "none" && <div className={"sr-material " + mat.state}>{mat.label}</div>}
+          {/* Sub in an alternate fabric on just this sample, without opening the
+              whole round form (Tess, 2026-08-20). FRED-only — renders nothing when
+              there is no library. Trims/packaging on the round are left alone. */}
+          <SampleFabricSwap
+            styleId={styleId}
+            sampleId={s.id}
+            library={library}
+            materialIds={normalizeMaterialIds((s as { material_ids?: unknown }).material_ids)}
+          />
         </div>
       )}
 
@@ -960,7 +1094,7 @@ function FullRound({
             scrolls on its own if it has to, so the view itself never does. */}
         <div className="modal-body sr-full-body">
           <div className="sr-full-side">
-            <RoundFacts s={s} today={today} library={library} />
+            <RoundFacts s={s} today={today} styleId={styleId} library={library} />
           </div>
 
           {images.length === 0 ? (
@@ -1223,7 +1357,7 @@ function RoundCard({
       {open ? (
         <RoundForm styleId={styleId} s={s} onDone={() => setOpen(false)} library={library} />
       ) : (
-        <RoundFacts s={s} today={today} library={library} />
+        <RoundFacts s={s} today={today} styleId={styleId} library={library} />
       )}
 
       {/* The photography standard, on the round it is a photograph of. The

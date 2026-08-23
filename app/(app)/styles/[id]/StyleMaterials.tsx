@@ -85,40 +85,50 @@ export default function StyleMaterials({
     [library, ids, query],
   );
 
+  // Click a linked material to open it in the library (Tess, 2026-08-20: "you
+  // should be able to click into the material and trims list"). A retired material
+  // has no live page to open, so it stays plain text.
+  const chipRow = (m: LinkedMaterial) => (
+    <span className="stmat-chiprow" key={m.id}>
+      {m.deleted ? (
+        <Chip m={m} />
+      ) : (
+        <Link href={`/materials?m=${m.id}`} className="stmat-chiplink" title="Open in the materials library">
+          <Chip m={m} />
+        </Link>
+      )}
+      <button
+        type="button"
+        className="stmat-x"
+        title="Remove from this style"
+        aria-label="Remove"
+        disabled={pending}
+        onClick={() => remove(m.id)}
+      >
+        ×
+      </button>
+    </span>
+  );
+
+  // Packaging is kept apart from the fabrics and trims and shown below them (Tess,
+  // 2026-08-20: "Separate packaging from materials and trims … Packaging can go
+  // below"). Fabric and trim are what the garment is made of; packaging is how it
+  // ships, a different question.
+  const madeOf = chosen.filter((m) => m.kind !== "packaging");
+  const packaging = chosen.filter((m) => m.kind === "packaging");
+
   return (
     <div className="stmat">
       {chosen.length > 0 ? (
-        <div className="stmat-chips">
-          {chosen.map((m) => (
-            <span className="stmat-chiprow" key={m.id}>
-              {/* Click a linked material to open it in the library (Tess,
-                  2026-08-20: "you should be able to click into the material and
-                  trims list"). A retired material has no live page to open, so it
-                  stays plain text. */}
-              {m.deleted ? (
-                <Chip m={m} />
-              ) : (
-                <Link
-                  href={`/materials?m=${m.id}`}
-                  className="stmat-chiplink"
-                  title="Open in the materials library"
-                >
-                  <Chip m={m} />
-                </Link>
-              )}
-              <button
-                type="button"
-                className="stmat-x"
-                title="Remove from this style"
-                aria-label="Remove"
-                disabled={pending}
-                onClick={() => remove(m.id)}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
+        <>
+          {madeOf.length > 0 && <div className="stmat-chips">{madeOf.map(chipRow)}</div>}
+          {packaging.length > 0 && (
+            <div className="stmat-pkg">
+              <div className="stmat-subgroup">Packaging</div>
+              <div className="stmat-chips">{packaging.map(chipRow)}</div>
+            </div>
+          )}
+        </>
       ) : (
         <div style={{ color: "var(--muted)", fontSize: 13 }}>
           Nothing linked yet. Add the fabrics, trims or packaging this style is made in.
