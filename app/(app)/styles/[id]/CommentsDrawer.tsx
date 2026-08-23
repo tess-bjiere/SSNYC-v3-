@@ -21,6 +21,7 @@ import {
   type PhotoNoteEntry,
 } from "@/lib/photoNotes";
 import { canDeleteComment, canEditComment } from "@/lib/commentEdit";
+import { APP } from "@/lib/appConfig";
 import Linked from "@/app/components/Linked";
 import { SCOPE_EVENT } from "./commentScope";
 import { requestPhotoFocus } from "./photoFocus";
@@ -350,8 +351,13 @@ export default function CommentsDrawer({
   // open"). Desktop, where the drawer sits beside the content, opens it on
   // mount. Server + first client render both render closed — no hydration
   // mismatch — and the desktop open happens a tick later.
+  //
+  // On FRED it stays closed even on desktop until you open it (Tess, 2026-08-20:
+  // "comment drawer should be closed on style profiles when you initially click
+  // page open for fred").
   const [open, setOpen] = useState(false);
   useEffect(() => {
+    if (APP.id === "fred") return;
     if (window.matchMedia("(min-width: 901px)").matches) setOpen(true);
   }, []);
   const [scope, setScope] = useState<CommentScope>("all");
