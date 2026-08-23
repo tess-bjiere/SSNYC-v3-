@@ -1802,7 +1802,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-note .k{display:inline-block;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-right:8px;vertical-align:1px}
 .sr-form{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
 .sr-form.add{border-top:none;padding-top:0;margin-top:14px}
-.sr-legend{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:2px 0 10px}
+.sr-legend{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:16px 0 10px}
+/* No top gap on the first legend in a form — the form's own padding already sets
+   it off; the 16px is for the space BETWEEN sections. */
+.sr-form > .sr-legend:first-child,
+.sr-form-inline > .sr-legend:first-child{margin-top:0}
 .sr-today{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:14px}
 
 /* Fabric & trim links on a round (Tess, 2026-08-19: "on the sample profile --
@@ -2827,8 +2831,12 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-form-inline .row{gap:12px}
 .sr-form-inline .field label{font-size:var(--t-micro);letter-spacing:.14em}
 /* Cancel sits beside Save, not under it — leaving the form is as ordinary an
-   act as saving it and should cost the same one click in the same place. */
-.sr-form-inline .sr-form-actions{display:flex;gap:var(--sp-ctl);align-items:center;margin-top:14px}
+   act as saving it and should cost the same one click in the same place. The
+   rule is general, not scoped to the inline edit form: the Add-round form uses
+   the same actions row and was landing with no gap and the button flush against
+   Cancel (Tess, 2026-08-20: "buttons and text on sample rounds ... look too
+   jumbled -- not enough white space"). */
+.sr-form-actions{display:flex;gap:var(--sp-ctl);align-items:center;margin-top:20px}
 
 /* --- A round, full screen ------------------------------------------------
    Tess: "there should be a full screen view of sample rounds on desktop that
