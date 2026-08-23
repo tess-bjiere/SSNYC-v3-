@@ -657,12 +657,12 @@ body.notes-open .wrap{padding-right:378px}
    inside the same ruled band as the material they belong to (Tess, 2026-08-20). */
 .mo-row{border-bottom:1px solid var(--hair);padding:9px 0}
 .mo-row:last-child{border-bottom:none}
-.mo-line{display:grid;grid-template-columns:46px minmax(0,1.6fr) 90px 76px 84px minmax(0,1.4fr) 34px;
+.mo-line{display:grid;grid-template-columns:64px minmax(0,1.6fr) 90px 76px 84px minmax(0,1.4fr) 34px;
   align-items:center;gap:10px}
 .mo-line-head{border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:2px}
 .mo-line-head span{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
-.mo-cell-img img{width:40px;height:40px;object-fit:cover;display:block;background:var(--chip)}
-.mo-noimg{display:block;width:40px;height:40px;background:var(--chip)}
+.mo-cell-img img{width:64px;height:64px;object-fit:cover;display:block;background:var(--chip)}
+.mo-noimg{display:block;width:64px;height:64px;background:var(--chip)}
 .mo-cell-name{display:flex;flex-direction:column;gap:1px;min-width:0}
 .mo-name-line{font-size:var(--t-body);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mo-spec{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -671,7 +671,7 @@ body.notes-open .wrap{padding-right:378px}
    field is easy to scan; Notes takes the whole width since it runs long (Tess,
    2026-08-20: "organize the product details / notes in a clear and logical way
    with appropriate spacing"). */
-.mo-detail{padding-left:56px;margin-top:7px}
+.mo-detail{padding-left:74px;margin-top:7px}
 .mo-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px 22px}
 .mo-fact{display:flex;flex-direction:column;gap:2px;min-width:0}
 .mo-fact-wide{grid-column:1 / -1}
@@ -687,7 +687,7 @@ body.notes-open .wrap{padding-right:378px}
 .mo-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;max-width:720px;margin-top:22px}
 .mo-danger{grid-column:1 / -1;margin-top:4px}
 @media (max-width:720px){.mo-meta{grid-template-columns:1fr}
-  .mo-line{grid-template-columns:40px minmax(0,1fr) 64px 70px 34px;row-gap:2px}
+  .mo-line{grid-template-columns:52px minmax(0,1fr) 64px 70px 34px;row-gap:2px}
   .mo-cell-ref,.mo-cell-note{display:none}
   /* Full width for the details on a phone — no room to indent. */
   .mo-detail{padding-left:0}
