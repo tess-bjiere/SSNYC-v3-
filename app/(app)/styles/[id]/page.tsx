@@ -900,6 +900,24 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               </div>
             )}
             </div>
+            {/* Materials & trims, inside Details rather than a section at the
+                bottom of the page (Tess, 2026-08-20: "can that be moved into the
+                details of the profile? ... it shouldnt be at the bottom"). It is
+                a fact about the style — what it is made in — so it belongs with
+                the fabric and the factory. FRED-only, like the library. */}
+            {APP.id === "fred" && (
+              <div className="profile-details-mats">
+                <div className="stmat-subhead">
+                  Materials &amp; trims
+                  <span className="ph-progress">
+                    {styleMaterialIds.length === 0
+                      ? "none linked"
+                      : `${styleMaterialIds.length} linked`}
+                  </span>
+                </div>
+                <StyleMaterials styleId={st.id} library={library} linked={styleMaterialIds} />
+              </div>
+            )}
           </div>
 
           {/* Pull from WIP stood here and has been taken off the page (Tess,
@@ -1139,25 +1157,6 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               because the materials library is; collapsed like Reference(s), with
               the count on the summary. This is the style-level list — a sample
               round keeps its own, for what that specific sample was sewn in. */}
-          {APP.id === "fred" && (
-            // Open by default so the "Add materials from library" button is in
-            // plain sight — collapsed-and-empty, it was impossible to find (Tess,
-            // 2026-08-20: "i want to be able to add materials and trims from
-            // library to a specific style in sampling or production"). Still a
-            // <details>, so it collapses on a tap once it is full.
-            <details className="section" open>
-              <summary className="section-toggle">
-                Materials &amp; trims{" "}
-                <span className="ph-progress">
-                  {styleMaterialIds.length === 0
-                    ? "none linked"
-                    : `${styleMaterialIds.length} linked`}
-                </span>
-              </summary>
-              <StyleMaterials styleId={st.id} library={library} linked={styleMaterialIds} />
-            </details>
-          )}
-
           {/* Reference(s) — the library references behind this style.
               Renamed from "Developed from" (Tess, 2026-08-05). Collapsed by
               default now (Tess, 2026-08-11: "have reference section collapsed") —

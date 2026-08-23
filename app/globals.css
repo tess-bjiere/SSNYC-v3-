@@ -1373,6 +1373,12 @@ body.nav-open .notes-tab{display:none}
    Edit on the right. */
 .profile-details-head{display:contents}
 .profile-details-edit{display:none}
+/* Materials & trims lives at the foot of the Details block, set off from the
+   facts grid by a hairline (Tess, 2026-08-20: moved into Details, off the page
+   bottom). */
+.profile-details-mats{margin-top:14px;border-top:1px solid var(--hair);padding-top:12px}
+.stmat-subhead{display:flex;align-items:baseline;gap:8px;font-size:var(--t-cap);
+  text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin-bottom:8px}
 .profile .cover{position:relative;aspect-ratio:3/4;background:var(--panel);border:1px solid var(--line);overflow:hidden;margin:0}
 .profile .cover img{width:100%;height:100%;object-fit:cover;display:block}
 
