@@ -71,6 +71,26 @@ function n(form: FormData, key: string): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+// The next FRED style number for a given category/type, read from the brand's
+// live numbers — retired styles included, since FRED numbers are never reused.
+// Null off FRED (nothing to number) or when the category has no code. Shared by
+// create, repurpose and duplicate so all three number by the same rule.
+async function nextFredNumber(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  brand: string,
+  category: string | null,
+  type: string | null
+): Promise<string | null> {
+  if (APP.id !== "fred") return null;
+  const { data: nums } = await supabase
+    .from("styles")
+    .select("style_no")
+    .eq("brand", brand)
+    .not("style_no", "is", null);
+  const existing = (nums ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
+  return suggestFredNumber(existing, category, type);
+}
+
 export async function createStyle(form: FormData) {
   const supabase = await createClient();
   const user = await requireTeam();
@@ -438,10 +458,25 @@ export async function repurposeStyle(styleId: string, form: FormData) {
   if (!src) return;
 
   const season = s(form, "season");
+  // A repurposed style is a new product (new season, usually new fabric), so on
+  // FRED it takes a fresh number from its category/type when the field is left
+  // blank — you can still type one to override (Tess, 2026-08-20: "duplicate /
+  // repurposed should create a new style number"). Off FRED, blank stays blank as
+  // before.
+  const srcMeta = src as { brand?: string | null; category?: string | null; garment?: string | null };
+  let styleNo = s(form, "style_no");
+  if (!styleNo) {
+    styleNo = await nextFredNumber(
+      supabase,
+      srcMeta.brand ?? (await activeBrand()),
+      srcMeta.category ?? null,
+      srcMeta.garment ?? null
+    );
+  }
   const draft = repurposeDraft(src as StyleSeed, {
     name: s(form, "name"),
     season,
-    style_no: s(form, "style_no"),
+    style_no: styleNo,
   });
 
   const { data: made, error } = await supabase
@@ -523,9 +558,26 @@ export async function duplicateStyle(styleId: string, form: FormData) {
 
   const sketch = pickPhotoSlots((src as { photos?: unknown }).photos, DESIGN_SLOTS.map((sl) => sl.id));
 
+  // On FRED a duplicate takes its OWN new number by default (Tess, 2026-08-20:
+  // "duplicate / repurposed should create a new style number"). This differs from
+  // the SSYNC model, where a duplicate keeps the number so the two profiles read
+  // as siblings of one style — so the modal's number field still lets you type the
+  // original number back to keep them linked. Off FRED, blank keeps the source
+  // number exactly as before (duplicateDraft falls back to src.style_no).
+  const srcMeta = src as { brand?: string | null; category?: string | null; garment?: string | null };
+  let styleNo = s(form, "style_no");
+  if (!styleNo) {
+    styleNo = await nextFredNumber(
+      supabase,
+      srcMeta.brand ?? (await activeBrand()),
+      srcMeta.category ?? null,
+      srcMeta.garment ?? null
+    );
+  }
+
   const draft = duplicateDraft(src as DuplicateSeed, {
     name: s(form, "name"),
-    style_no: s(form, "style_no"),
+    style_no: styleNo,
     season: s(form, "season"),
     factory: s(form, "factory"),
     colors: s(form, "colors"),

@@ -23,6 +23,7 @@
 // X or save") — see ModalButton.tsx for the reasoning, including a11y.
 
 import { useEffect, useRef, useState } from "react";
+import { APP } from "@/lib/appConfig";
 
 export default function RepurposeButton({
   action,
@@ -82,7 +83,11 @@ export default function RepurposeButton({
                   </div>
                   <div className="field">
                     <label>Style no. (optional)</label>
-                    <input className="input" name="style_no" placeholder="blank unless you have one" />
+                    <input
+                      className="input"
+                      name="style_no"
+                      placeholder={APP.id === "fred" ? "new number if left blank" : "blank unless you have one"}
+                    />
                   </div>
                 </div>
                 <button className="btn" type="submit">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { APP } from "@/lib/appConfig";
 import type { StyleVersion } from "@/lib/types";
 import type { VariationStyle } from "@/lib/variations";
 import Variations, { type VariationSource } from "./Variations";
@@ -234,7 +235,15 @@ export default function VersionStrip({
               </div>
               <div className="field">
                 <label>Style no. (optional)</label>
-                <input className="input" name="style_no" placeholder="the same number if left blank" />
+                <input
+                  className="input"
+                  name="style_no"
+                  placeholder={
+                    APP.id === "fred"
+                      ? "new number if blank — type the original to keep them linked"
+                      : "the same number if left blank"
+                  }
+                />
               </div>
             </div>
             <button className="btn" type="submit">
