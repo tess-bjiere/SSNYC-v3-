@@ -630,6 +630,30 @@ body.notes-open .wrap{padding-right:378px}
   .mat-lfacts,.mat-ltags{display:none}
 }
 
+/* Development / Style Library list view (Tess, 2026-08-20: "create list view for
+   development and style library"). A row per style: thumb, name + style-no ·
+   garment · factory, the round/rating, and the status badges — the card's facts
+   on one line. Mirrors the materials list. */
+.dev-list{display:flex;flex-direction:column;border-top:1px solid var(--hair)}
+.dev-lrow{display:grid;grid-template-columns:44px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.4fr);
+  align-items:center;gap:12px;padding:7px 6px;border-bottom:1px solid var(--hair);cursor:pointer;
+  text-decoration:none;color:inherit}
+.dev-lrow:hover{background:var(--chip)}
+.dev-lthumb{position:relative;width:40px;height:40px;background:var(--chip);overflow:hidden}
+.dev-lthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.dev-lnoimg{display:block;width:100%;height:100%;background:var(--chip)}
+.dev-lmain{min-width:0}
+.dev-lname{font-size:var(--t-body);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-lsub{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-lround{display:flex;align-items:center;gap:6px;font-size:var(--t-meta);color:var(--muted);min-width:0}
+.dev-lround > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-ltags{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;justify-content:flex-end}
+.dev-lrow .card-check{top:4px;left:4px}
+@media (max-width:720px){
+  .dev-lrow{grid-template-columns:40px minmax(0,1fr) auto}
+  .dev-lround{display:none}
+}
+
 /* --- Order select mode in the library (Tess, 2026-08-18: "create an order for
    materials from the material library"). A ticked card and a bottom pickbar. --- */
 .mat-selectable{cursor:pointer}

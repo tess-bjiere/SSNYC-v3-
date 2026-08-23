@@ -149,6 +149,10 @@ export default function DevTabs({
   // 2026-08-11: "development view on mobile should allow you to toggle between
   // multi column views for the style thumbnails"). 4 / 2 / 1 columns on a phone.
   const [size, setSize] = useState("md");
+  // Grid of cards, or a compact list — the same choice the materials library
+  // offers (Tess, 2026-08-20: "create list view for development and style
+  // library"). Shared by both, since both render this component.
+  const [view, setView] = useState<"grid" | "list">("grid");
   // Multi-select for the fitting deck (Tess, 2026-08-10: "select multiple
   // products to include into a recent beautiful fitting deck"). Off by default,
   // so the grid stays a grid of links; turning it on makes a card a checkbox
@@ -391,7 +395,29 @@ export default function DevTabs({
               between Status and Season (Tess, 2026-08-11: "the placement of the
               toggle is not logical at all"). It rides after the hint, which
               carries margin-left:auto, so the pair floats to the right. */}
-          <SizeToggle value={size} onChange={setSize} />
+          {/* Density only matters for the card grid; in list view it does
+              nothing, so it steps aside. */}
+          {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
+          <div className="mat-viewtoggle" role="group" aria-label="View">
+            <button
+              type="button"
+              className={"mat-vt" + (view === "grid" ? " on" : "")}
+              aria-pressed={view === "grid"}
+              title="Grid"
+              onClick={() => setView("grid")}
+            >
+              ▦
+            </button>
+            <button
+              type="button"
+              className={"mat-vt" + (view === "list" ? " on" : "")}
+              aria-pressed={view === "list"}
+              title="List"
+              onClick={() => setView("list")}
+            >
+              ☰
+            </button>
+          </div>
         </div>
       </div>
 
@@ -446,7 +472,7 @@ export default function DevTabs({
           )}
         </div>
       ) : (
-        <div className={"grid dens-" + size}>
+        <div className={view === "list" ? "dev-list" : "grid dens-" + size}>
           {shown.map((s) => {
             const sum = summaries[s.id] ?? null;
             const roundLabel = sum?.roundLabel ?? "";
@@ -458,6 +484,61 @@ export default function DevTabs({
             const approved = sum?.etaState === "landed" && isApprovedStatus(sum.status);
             const thumb = styleCoverUrl(s);
             const isPicked = picked.has(s.id);
+
+            // Compact list row — same facts as the card, one line (Tess,
+            // 2026-08-20). Picking, the ETA badge, the rating dot and the status
+            // badges all behave as they do on the card.
+            if (view === "list") {
+              return (
+                <Link
+                  className={"dev-lrow" + (picking ? " picking" : "") + (isPicked ? " picked" : "")}
+                  key={s.id}
+                  href={`/styles/${s.id}`}
+                  onClick={picking ? (e) => { e.preventDefault(); togglePick(s.id); } : undefined}
+                >
+                  <div className="dev-lthumb">
+                    {thumb ? <img src={thumb} alt={s.name} loading="lazy" /> : <span className="dev-lnoimg" />}
+                    {picking && (
+                      <span className={"card-check" + (isPicked ? " on" : "")} aria-hidden="true">
+                        {isPicked ? "✓" : ""}
+                      </span>
+                    )}
+                  </div>
+                  <div className="dev-lmain">
+                    <div className="dev-lname">{s.name}</div>
+                    <div className="dev-lsub">
+                      {[s.style_no, s.garment, s.factory].filter(Boolean).join(" · ") || "—"}
+                    </div>
+                  </div>
+                  <div className="dev-lround">
+                    {sum?.rating && (
+                      <span className={"sib-dot " + sum.rating} title={`Came back ${sum.rating}`} />
+                    )}
+                    {(roundLabel || statusShort) && (
+                      <span>
+                        {roundLabel}
+                        {roundLabel && statusShort ? " · " : ""}
+                        {statusShort && (
+                          <span className={approved ? "card-status-ok" : undefined}>{statusShort}</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <div className="dev-ltags">
+                    {sum && sum.etaState !== "none" && sum.etaState !== "landed" && (
+                      <span className={"badge" + (sum.etaState === "late" ? " warn" : "")}>
+                        {sum.etaLabel}
+                      </span>
+                    )}
+                    {s.status !== tab && <StatusBadge s={s.status} />}
+                    {s.evergreen && <span className="badge ever">Evergreen</span>}
+                    {tab === "evergreen" && s.season && <span className="badge">{s.season}</span>}
+                    {sum?.readyForFitting && <span className="badge fit">Ready for fitting</span>}
+                  </div>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 className={"card" + (picking ? " picking" : "") + (isPicked ? " picked" : "")}
