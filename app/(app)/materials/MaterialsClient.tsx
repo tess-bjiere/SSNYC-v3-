@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Select from "@/app/components/Select";
 import MultiSelect from "@/app/components/MultiSelect";
 import Lightbox from "@/app/components/Lightbox";
@@ -168,6 +168,24 @@ export default function MaterialsClient({
   const [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Material | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Deep link: /materials?m=<id> opens that material's detail, so the linked
+  // chips on a style profile click straight through to the fabric/trim (Tess,
+  // 2026-08-20: "you should be able to click into the material and trims list").
+  // A ref makes it fire once — a later router.refresh must not reopen a modal the
+  // user has closed.
+  const searchParams = useSearchParams();
+  const openId = searchParams.get("m");
+  const openedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openId || openedFor.current === openId) return;
+    const m = materials.find((x) => x.id === openId);
+    if (m) {
+      setKind(kindOf(m)); // show the matching tab behind the modal
+      setDetail(m);
+    }
+    openedFor.current = openId;
+  }, [openId, materials]);
 
   // Select mode — the way to build an order from the library (Tess, 2026-08-18:
   // "add ability to create an order for materials from the material library").

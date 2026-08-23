@@ -2663,6 +2663,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    + grouped list of what's left to add. */
 .stmat-chips{display:flex;flex-wrap:wrap;gap:8px}
 .stmat-chiprow{display:inline-flex;align-items:center;gap:4px}
+/* A linked material chip is a link into the library; the underlying chip carries
+   the border, so the anchor just adds the pointer and a hover lift. */
+.stmat-chiplink{display:inline-flex;text-decoration:none;color:inherit;cursor:pointer}
+.stmat-chiplink:hover .sr-mat{border-color:var(--ink)}
+.stmat-chiplink:hover .sr-mat-name{text-decoration:underline}
 .stmat-x{background:none;border:none;color:var(--faint);font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
 .stmat-x:hover{color:#c0392b}
 .stmat-picker{margin-top:14px;border:1px solid var(--hair);background:var(--field);padding:12px}

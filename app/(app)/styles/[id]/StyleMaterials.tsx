@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { resolveMaterials, type LinkedMaterial } from "@/lib/sampleMaterials";
 import { setStyleMaterials } from "@/app/actions/styles";
 
@@ -90,7 +91,21 @@ export default function StyleMaterials({
         <div className="stmat-chips">
           {chosen.map((m) => (
             <span className="stmat-chiprow" key={m.id}>
-              <Chip m={m} />
+              {/* Click a linked material to open it in the library (Tess,
+                  2026-08-20: "you should be able to click into the material and
+                  trims list"). A retired material has no live page to open, so it
+                  stays plain text. */}
+              {m.deleted ? (
+                <Chip m={m} />
+              ) : (
+                <Link
+                  href={`/materials?m=${m.id}`}
+                  className="stmat-chiplink"
+                  title="Open in the materials library"
+                >
+                  <Chip m={m} />
+                </Link>
+              )}
               <button
                 type="button"
                 className="stmat-x"
