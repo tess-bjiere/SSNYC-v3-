@@ -105,7 +105,9 @@ export async function createStyle(form: FormData) {
       .eq("brand", brand)
       .not("style_no", "is", null);
     const existing = (nums ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
-    styleNo = suggestFredNumber(existing, s(form, "category"));
+    // The Type (stored in the `garment` column) refines the code within the family
+    // — Tops + Shirting → 21, not the anchor 20.
+    styleNo = suggestFredNumber(existing, s(form, "category"), s(form, "garment"));
   }
 
   const { data, error } = await supabase

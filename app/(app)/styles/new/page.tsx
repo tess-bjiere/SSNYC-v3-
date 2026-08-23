@@ -52,7 +52,7 @@ export default async function NewStylePage() {
             Elsewhere the number is a plain field the user types. */}
         {isFred ? (
           <>
-            <FredStyleNumberFields existing={fredNumbers} categories={STYLE_CATEGORIES} />
+            <FredStyleNumberFields existing={fredNumbers} />
             <div className="row">
               <div className="field">
                 <label>Status</label>
@@ -90,31 +90,34 @@ export default async function NewStylePage() {
         )}
 
         <div className="row3">
-          {/* Category lives up in the style-number row on FRED (they generate
-              together); elsewhere it sits here. */}
+          {/* On FRED, Category and Type live up in the style-number row (all three
+              generate the number together), so only fabric/material sit here.
+              Elsewhere Category and Garment are the usual free picklists. */}
           {!isFred && (
-            <div className="field">
-              <label>Category</label>
-              {/* Category is a fixed set of broad buckets now, not free text, so a
-                  jacket is filed under Outerwear rather than under a category of
-                  its own (Tess, 2026-08-09). Optional — the leading "—" leaves it
-                  unset. */}
-              <Select
-                className="select"
-                name="category"
-                aria-label="Category"
-                defaultValue=""
-                options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
-              />
-            </div>
+            <>
+              <div className="field">
+                <label>Category</label>
+                {/* Category is a fixed set of broad buckets now, not free text, so a
+                    jacket is filed under Outerwear rather than under a category of
+                    its own (Tess, 2026-08-09). Optional — the leading "—" leaves it
+                    unset. */}
+                <Select
+                  className="select"
+                  name="category"
+                  aria-label="Category"
+                  defaultValue=""
+                  options={[{ value: "", label: "—" }, ...STYLE_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+                />
+              </div>
+              <div className="field">
+                <label>Garment</label>
+                {/* The specific type under the category (Tess, 2026-08-09: "garment
+                    should be a picklist too"), with an Other escape for the long
+                    tail. Optional. */}
+                <GarmentField />
+              </div>
+            </>
           )}
-          <div className="field">
-            <label>Garment</label>
-            {/* The specific type under the category (Tess, 2026-08-09: "garment
-                should be a picklist too"), with an Other escape for the long
-                tail. Optional. */}
-            <GarmentField />
-          </div>
           <div className="field">
             <label>Fabric type</label>
             <input className="input" name="fabric" placeholder="e.g. jersey" />
