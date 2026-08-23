@@ -96,7 +96,10 @@ export const TRIM_FIELDS: MaterialField[] = [
   { key: "size", label: "Size" },
   { key: "material", label: "Material" },
   { key: "background_color", label: "Background colour" },
-  { key: "print_color", label: "Print colour" },
+  // On a trim this is the detail/foreground, not a print (Tess, 2026-08-20:
+  // "instead of print colour on trim it should be detail or foreground
+  // color(s)"). Same `print_color` column as packaging — only the label differs.
+  { key: "print_color", label: "Detail / foreground colour(s)" },
 ];
 // Packaging by what it is, its dimensions, and its make-up (Tess, 2026-08-19).
 // Same shape as a trim — its own `pack_type`, then the shared size/material.
