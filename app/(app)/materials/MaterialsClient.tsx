@@ -6,6 +6,7 @@ import Select from "@/app/components/Select";
 import MultiSelect from "@/app/components/MultiSelect";
 import Lightbox from "@/app/components/Lightbox";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
+import { downscaleImage } from "@/app/components/downscaleImage";
 import {
   fieldsFor,
   specLine,
@@ -727,7 +728,10 @@ function MaterialForm({
     fd.set("sourcing", sourcing);
     for (const g of garments) fd.append("garments", g);
     fd.delete("files");
-    if (files[0]) fd.append("files", files[0]);
+    // Shrink oversize photos in the browser first — a big camera JPEG would be
+    // refused by the 25 MB request limit before the action ever ran (Tess,
+    // 2026-08-20: "keeps saying the images are too big").
+    if (files[0]) fd.append("files", await downscaleImage(files[0]));
     setBusy(true);
     setErr(null);
     try {
@@ -739,7 +743,7 @@ function MaterialForm({
       // The rest of the images, one request each.
       for (const f of files.slice(1)) {
         const ifd = new FormData();
-        ifd.append("files", f);
+        ifd.append("files", await downscaleImage(f));
         try {
           await addMaterialImages(res.id!, ifd);
         } catch {
@@ -978,8 +982,11 @@ function MaterialDetail({
     if (files.length) setQueue(files);
   }
   async function uploadOne(file: File, crop: CropRect | null): Promise<void> {
+    // Shrink oversize photos in the browser before sending — a 40 MB camera JPEG
+    // would otherwise be refused by the 25 MB request limit.
+    const toSend = await downscaleImage(file);
     const fd = new FormData();
-    fd.append("files", file);
+    fd.append("files", toSend);
     if (crop) fd.set("crop", JSON.stringify(crop));
     setUploading(true);
     try {
