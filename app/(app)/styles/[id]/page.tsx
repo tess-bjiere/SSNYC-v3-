@@ -1140,9 +1140,14 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               the count on the summary. This is the style-level list — a sample
               round keeps its own, for what that specific sample was sewn in. */}
           {APP.id === "fred" && (
-            <details className="section">
+            // Open by default so the "Add materials from library" button is in
+            // plain sight — collapsed-and-empty, it was impossible to find (Tess,
+            // 2026-08-20: "i want to be able to add materials and trims from
+            // library to a specific style in sampling or production"). Still a
+            // <details>, so it collapses on a tap once it is full.
+            <details className="section" open>
               <summary className="section-toggle">
-                Materials{" "}
+                Materials &amp; trims{" "}
                 <span className="ph-progress">
                   {styleMaterialIds.length === 0
                     ? "none linked"
