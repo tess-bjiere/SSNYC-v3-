@@ -31,6 +31,8 @@ create table if not exists public.materials (
   trim_type text,         -- trim: button / zip / label / …
   size text,              -- trim / packaging: dimensions
   material text,          -- trim / packaging: brass / horn / LDPE / …
+  background_color text,   -- trim / packaging: the stock / base colour
+  print_color text,        -- trim / packaging: the printed-ink colour
   pack_type text,         -- packaging: poly bag / box / hangtag / …
   hs_code text,           -- packaging: customs / HS classification code
   price text,
@@ -54,6 +56,8 @@ create table if not exists public.materials (
 -- Column guards, in case the table already exists from an earlier partial run.
 alter table public.materials add column if not exists pack_type text;
 alter table public.materials add column if not exists hs_code text;
+alter table public.materials add column if not exists background_color text;
+alter table public.materials add column if not exists print_color text;
 alter table public.materials add column if not exists ai_file text;
 alter table public.materials add column if not exists sourcing text;
 alter table public.materials add column if not exists archived boolean not null default false;

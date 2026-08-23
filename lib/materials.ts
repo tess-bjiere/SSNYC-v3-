@@ -25,6 +25,12 @@ export type MaterialLike = {
   trim_type?: string | null;
   size?: string | null;
   material?: string | null;
+  // A trim or a piece of packaging is often two colours: the stock/base it is
+  // made in and the ink printed on it (Tess, 2026-08-20: "add background colour
+  // and print colour as field on packaging and trims"). Kept separate from the
+  // shared `color` so a printed hangtag can record both.
+  background_color?: string | null;
+  print_color?: string | null;
   // Packaging's own "type" (poly bag / box / mailer / hangtag / …) — Tess,
   // 2026-08-19: "add packaging tab to fabric and trims". Its dimensions and
   // make-up reuse the shared `size` and `material` columns.
@@ -83,11 +89,14 @@ export const FABRIC_FIELDS: MaterialField[] = [
   { key: "construction", label: "Construction" },
   { key: "finish", label: "Finish" },
 ];
-// A trim by what it is, its size, and what it's made of.
+// A trim by what it is, its size, what it's made of, and — when printed — its two
+// colours (Tess, 2026-08-20: "add background colour and print colour").
 export const TRIM_FIELDS: MaterialField[] = [
   { key: "trim_type", label: "Type" },
   { key: "size", label: "Size" },
   { key: "material", label: "Material" },
+  { key: "background_color", label: "Background colour" },
+  { key: "print_color", label: "Print colour" },
 ];
 // Packaging by what it is, its dimensions, and its make-up (Tess, 2026-08-19).
 // Same shape as a trim — its own `pack_type`, then the shared size/material.
@@ -95,6 +104,8 @@ export const PACKAGING_FIELDS: MaterialField[] = [
   { key: "pack_type", label: "Type" },
   { key: "size", label: "Dimensions" },
   { key: "material", label: "Material" },
+  { key: "background_color", label: "Background colour" },
+  { key: "print_color", label: "Print colour" },
   // Customs classification, most needed on packaging that ships across borders
   // (Tess, 2026-08-20: "add hs code to packaging fields").
   { key: "hs_code", label: "HS code" },
@@ -247,7 +258,8 @@ export function matchMaterial(m: MaterialLike, query: string): boolean {
   if (!q) return true;
   const hay = [
     m.name, m.supplier, m.supplier_ref, m.composition, m.color, m.weight, m.width,
-    m.construction, m.finish, m.trim_type, m.size, m.material, m.pack_type, m.hs_code, m.notes,
+    m.construction, m.finish, m.trim_type, m.size, m.material,
+    m.background_color, m.print_color, m.pack_type, m.hs_code, m.notes,
     sourcingOf(m),
     ...materialGarments(m),
   ]

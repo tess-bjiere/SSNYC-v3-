@@ -74,6 +74,12 @@ test("fieldsFor shows kind-specific fields first, then the shared set", () => {
   assert.ok(!fab.includes("trim_type")); // no cross-contamination
   assert.ok(!trim.includes("weight"));
   assert.ok(!pack.includes("trim_type") && !pack.includes("weight"));
+  // Background/print colour belong to a printed trim or hangtag, not a fabric
+  // (Tess, 2026-08-20: "add background colour and print colour ... on packaging
+  // and trims").
+  assert.ok(trim.includes("background_color") && trim.includes("print_color"));
+  assert.ok(pack.includes("background_color") && pack.includes("print_color"));
+  assert.ok(!fab.includes("background_color") && !fab.includes("print_color"));
 });
 
 test("specLine for packaging reads material · cost · supplier", () => {

@@ -13,6 +13,10 @@ import sharp from "sharp";
 const FIELDS = [
   "name", "supplier", "supplier_ref", "composition", "color", "color_hex",
   "weight", "width", "construction", "finish", "trim_type", "size", "material",
+  // A trim/packaging item's stock colour and its printed-ink colour (Tess,
+  // 2026-08-20: "add background colour and print colour as field on packaging
+  // and trims").
+  "background_color", "print_color",
   // Packaging's own type (Tess, 2026-08-19: "add packaging tab").
   "pack_type",
   // Customs classification (Tess, 2026-08-20: "add hs code to packaging fields").

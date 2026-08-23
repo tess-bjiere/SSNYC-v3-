@@ -61,6 +61,8 @@ export type Material = {
   trim_type: string | null;
   size: string | null;
   material: string | null;
+  background_color: string | null;
+  print_color: string | null;
   pack_type: string | null;
   hs_code: string | null;
   price: string | null;
