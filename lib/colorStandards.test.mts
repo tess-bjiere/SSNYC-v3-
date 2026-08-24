@@ -7,6 +7,13 @@ import {
   normalizeApprovals,
   normalizeStandard,
   normalizeStandards,
+  approvalFor,
+  standardForMaterial,
+  rollup,
+  setApproval,
+  removeApproval,
+  specLine,
+  type ColorStandard,
 } from "./colorStandards.ts";
 
 test("normalizeStatus defaults to pending and only accepts the known keys", () => {
@@ -106,4 +113,85 @@ test("normalizeStandards drops the rows that do not survive", () => {
   ]);
   assert.deepEqual(list.map((s) => s.name), ["Standard A"]);
   assert.deepEqual(normalizeStandards(undefined), []);
+});
+
+function std(over: Partial<ColorStandard> = {}): ColorStandard {
+  return {
+    id: "s1", name: "Standard A", label: "", kind: "", pantone: "", hex: "",
+    swatch_url: "", master_location: "", approved_on: "", approved_by: "",
+    spec: "", brightener: null, notes: "", approvals: [], archived: false,
+    ...over,
+  };
+}
+
+test("approvalFor finds the material's entry or returns null", () => {
+  const s = std({ approvals: [{ material_id: "m1", status: "approved" }] });
+  assert.equal(approvalFor(s, "m1")?.status, "approved");
+  assert.equal(approvalFor(s, "m2"), null);
+});
+
+// The materials page needs the other direction: given a material, which standard
+// claims it. A material belongs to at most one standard; the first wins.
+test("standardForMaterial inverts the map", () => {
+  const a = std({ id: "a", name: "A", approvals: [{ material_id: "m1", status: "pending" }] });
+  const b = std({ id: "b", name: "B", approvals: [{ material_id: "m2", status: "pending" }] });
+  assert.equal(standardForMaterial([a, b], "m2")?.name, "B");
+  assert.equal(standardForMaterial([a, b], "m9"), null);
+});
+
+test("rollup counts by status", () => {
+  const s = std({ approvals: [
+    { material_id: "m1", status: "approved" },
+    { material_id: "m2", status: "approved" },
+    { material_id: "m3", status: "pending" },
+    { material_id: "m4", status: "rejected" },
+  ] });
+  assert.deepEqual(rollup(s), { approved: 2, pending: 1, rejected: 1, total: 4 });
+});
+
+// A material that was soft-deleted leaves its approval behind. It must not be
+// counted or shown as a broken row, but the entry stays so restoring the
+// material restores its approval.
+test("rollup ignores approvals whose material no longer resolves", () => {
+  const s = std({ approvals: [
+    { material_id: "m1", status: "approved" },
+    { material_id: "gone", status: "approved" },
+  ] });
+  assert.deepEqual(rollup(s, new Set(["m1"])), { approved: 1, pending: 0, rejected: 0, total: 1 });
+});
+
+test("setApproval adds a new entry and patches an existing one without mutating", () => {
+  const s = std({ approvals: [{ material_id: "m1", status: "pending" }] });
+  const added = setApproval(s, "m2", { status: "approved", light: "Daylight" });
+  assert.deepEqual(added.map((a) => a.material_id), ["m1", "m2"]);
+  assert.equal(added[1].status, "approved");
+  assert.equal(s.approvals.length, 1, "original untouched");
+
+  const patched = setApproval(s, "m1", { judged_by: "tess@theloyalist.com" });
+  assert.equal(patched[0].status, "pending", "unspecified fields survive");
+  assert.equal(patched[0].judged_by, "tess@theloyalist.com");
+});
+
+// Clearing a field is a real edit — passing "" must remove it, not be ignored.
+test("setApproval clears a field when given an empty string", () => {
+  const s = std({ approvals: [{ material_id: "m1", status: "approved", note: "old" }] });
+  assert.equal(setApproval(s, "m1", { note: "" })[0].note, undefined);
+});
+
+test("removeApproval drops just that material", () => {
+  const s = std({ approvals: [
+    { material_id: "m1", status: "pending" },
+    { material_id: "m2", status: "pending" },
+  ] });
+  assert.deepEqual(removeApproval(s, "m1").map((a) => a.material_id), ["m2"]);
+  assert.deepEqual(removeApproval(s, "nope").map((a) => a.material_id), ["m1", "m2"]);
+});
+
+test("specLine joins what is set and stays empty when nothing is", () => {
+  assert.equal(specLine(std()), "");
+  assert.equal(
+    specLine(std({ label: "Cold / optic", pantone: "11-0601 TCX", brightener: true })),
+    "Cold / optic · 11-0601 TCX · Optical brightener",
+  );
+  assert.equal(specLine(std({ label: "Soft", brightener: false })), "Soft · No brightener");
 });

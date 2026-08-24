@@ -167,3 +167,75 @@ export function normalizeStandards(raw: unknown): ColorStandard[] {
   }
   return out;
 }
+
+export function approvalFor(s: ColorStandard, materialId: string): Approval | null {
+  return s.approvals.find((a) => a.material_id === materialId) ?? null;
+}
+
+// The materials page needs the other direction — given a material, which standard
+// claims it. A material belongs to at most one standard; if two claim it that is
+// a data bug and the first wins rather than the page guessing.
+export function standardForMaterial(
+  standards: ColorStandard[],
+  materialId: string,
+): ColorStandard | null {
+  return standards.find((s) => s.approvals.some((a) => a.material_id === materialId)) ?? null;
+}
+
+// `liveIds`, when given, is the set of material ids that still resolve. An
+// approval for a soft-deleted material is skipped rather than counted — but the
+// entry itself is left in the row, so restoring the material restores it.
+export function rollup(
+  s: ColorStandard,
+  liveIds?: Set<string> | null,
+): { approved: number; pending: number; rejected: number; total: number } {
+  const out = { approved: 0, pending: 0, rejected: 0, total: 0 };
+  for (const a of s.approvals) {
+    if (liveIds && !liveIds.has(a.material_id)) continue;
+    out[a.status] += 1;
+    out.total += 1;
+  }
+  return out;
+}
+
+// Add or patch one material's approval, returning a new list. An empty string
+// CLEARS a field — "" is how the form says "remove this", and dropping it would
+// make a note impossible to delete.
+export function setApproval(
+  s: ColorStandard,
+  materialId: string,
+  patch: Partial<Omit<Approval, "material_id">>,
+): Approval[] {
+  const id = materialId.trim();
+  if (!id) return s.approvals.map((a) => ({ ...a }));
+  const next = s.approvals.map((a) => ({ ...a }));
+  const at = next.findIndex((a) => a.material_id === id);
+  const base: Approval = at >= 0 ? next[at] : { material_id: id, status: "pending" };
+  const merged: Approval = { ...base };
+  if (patch.status !== undefined) merged.status = normalizeStatus(patch.status);
+  for (const key of ["judged_on", "judged_by", "light", "lab_dip_url", "note"] as const) {
+    if (patch[key] === undefined) continue;
+    const v = str(patch[key], 2048);
+    if (v) merged[key] = v;
+    else delete merged[key];
+  }
+  if (at >= 0) next[at] = merged;
+  else next.push(merged);
+  return next;
+}
+
+export function removeApproval(s: ColorStandard, materialId: string): Approval[] {
+  return s.approvals.filter((a) => a.material_id !== materialId).map((a) => ({ ...a }));
+}
+
+// The one line under the name, in the list and at the top of the detail. Same
+// job as materials' specLine: say what this thing IS in as few words as the
+// filled-in fields allow.
+export function specLine(s: ColorStandard): string {
+  const parts: string[] = [];
+  if (s.label) parts.push(s.label);
+  if (s.pantone) parts.push(s.pantone);
+  if (s.brightener === true) parts.push("Optical brightener");
+  if (s.brightener === false) parts.push("No brightener");
+  return parts.join(" · ");
+}
