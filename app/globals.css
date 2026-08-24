@@ -2584,6 +2584,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The file picker on the add-round form (Tess, 2026-08-24) — native control, just
    sized to sit on the form without clipping. */
 .sr-add-files{height:auto;padding:6px 8px;font-size:var(--t-meta);cursor:pointer}
+/* The tucked-away Customs group on the edit-details form (Tess, 2026-08-24). A
+   quiet disclosure — the shipping fields are there when a shipment needs them and
+   out of the way the rest of the time. */
+.edit-customs{margin:2px 0 6px}
+.edit-customs > summary{cursor:pointer;list-style:none;padding:6px 0;font-size:var(--t-cap);
+  text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+.edit-customs > summary::-webkit-details-marker{display:none}
+.edit-customs > summary::before{content:"▸";margin-right:6px;font-size:.85em}
+.edit-customs[open] > summary::before{content:"▾"}
+.edit-customs > summary:hover{color:var(--muted)}
 .linked-list{margin:2px 0;padding-left:1.15em;list-style:disc}
 .linked-list li{margin:1px 0}
 .linked-list li::marker{color:var(--faint)}

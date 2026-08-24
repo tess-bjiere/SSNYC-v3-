@@ -1041,32 +1041,37 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 ) : (
                   <div className="field"><label>Blank style</label><input className="input" name="blank_style" defaultValue={st.blank_style ?? ""} placeholder="e.g. IND4000 + F102 - Black" /></div>
                 )}
-                <div className="field"><label>HS code</label><input className="input" name="hs_code" defaultValue={st.hs_code ?? ""} /></div>
+                {/* On FRED the fabric's GSM stays on the main form — it is a fabric
+                    spec, not a shipping fact (Tess, 2026-08-24). Off FRED the weight
+                    is a customs figure and moves into the Customs section below. */}
+                {isFred && (
+                  <div className="field">
+                    <label>Fabric GSM</label>
+                    <input className="input" name="weight_lbs" type="number" step="1" min="0" defaultValue={st.weight_lbs ?? ""} placeholder="e.g. 220" />
+                  </div>
+                )}
               </div>
-              {/* Customs. These travel with a shipment rather than with a
-                  design, and they get filled in one sitting the week something
-                  ships. step="0.001" so the browser's own validation agrees
-                  with the three places the column stores, instead of rejecting
-                  a figure the database would have accepted. */}
-              <div className="row3">
-                <div className="field"><label>Country of origin</label><input className="input" name="country_of_origin" defaultValue={st.country_of_origin ?? ""} /></div>
-                {/* On FRED this is the fabric's GSM (whole numbers), not a lbs
-                    shipping weight (Tess, 2026-08-20: "edit weight to be fabric
-                    gsm"). Same weight_lbs column. */}
-                <div className="field">
-                  <label>{isFred ? "Fabric GSM" : "Weight (lbs)"}</label>
-                  <input
-                    className="input"
-                    name="weight_lbs"
-                    type="number"
-                    step={isFred ? "1" : "0.001"}
-                    min="0"
-                    defaultValue={st.weight_lbs ?? ""}
-                    placeholder={isFred ? "e.g. 220" : "0.000"}
-                  />
+              {/* Customs — HS code, country of origin and (off FRED) the shipping
+                  weight. Tucked into a collapsed section because they travel with a
+                  shipment, get filled the week something ships, and clutter the
+                  design-stage form the rest of the time (Tess, 2026-08-24 field
+                  audit: "tuck HS code / Country / Weight into a Customs
+                  sub-section"). Collapsed inputs still post, so nothing is blanked.
+                  step="0.001" keeps the browser's validation in step with the three
+                  decimals the column stores. */}
+              <details className="edit-customs">
+                <summary>Customs</summary>
+                <div className="row3">
+                  <div className="field"><label>HS code</label><input className="input" name="hs_code" defaultValue={st.hs_code ?? ""} /></div>
+                  <div className="field"><label>Country of origin</label><input className="input" name="country_of_origin" defaultValue={st.country_of_origin ?? ""} /></div>
+                  {!isFred && (
+                    <div className="field">
+                      <label>Weight (lbs)</label>
+                      <input className="input" name="weight_lbs" type="number" step="0.001" min="0" defaultValue={st.weight_lbs ?? ""} placeholder="0.000" />
+                    </div>
+                  )}
                 </div>
-                <div className="field" />
-              </div>
+              </details>
               <div className="row3">
                 <div className="field"><label>Designer</label><input className="input" name="designer" defaultValue={st.designer ?? ""} /></div>
                 <div className="field"><label>Factory</label><input className="input" name="factory" defaultValue={st.factory ?? ""} /></div>

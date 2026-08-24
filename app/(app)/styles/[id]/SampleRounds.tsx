@@ -178,11 +178,9 @@ function Field({
 function StatusField({
   value,
   fittingDate,
-  notesSentDate,
 }: {
   value?: string | null;
   fittingDate?: string | null;
-  notesSentDate?: string | null;
 }) {
   const cur = (value ?? "").trim();
   const known = SAMPLE_STATUSES.includes(cur as SampleStatus);
@@ -228,18 +226,10 @@ function StatusField({
           defaultValue={(fittingDate ?? "").slice(0, 10)}
         />
       </label>
-      {/* The day corrections went back to the factory (Tess, 2026-08-10, a new
-          manual field). Always rendered for the same reason as the fitting date:
-          a field that unmounts blanks its column on the next save. */}
-      <label className="field-sub" htmlFor={undefined}>
-        <span>Date notes sent</span>
-        <input
-          className="input sm"
-          type="date"
-          name="notes_sent_date"
-          defaultValue={(notesSentDate ?? "").slice(0, 10)}
-        />
-      </label>
+      {/* "Date notes sent" removed from the form (Tess, 2026-08-24 field audit —
+          rarely filled). sampleFields no longer writes notes_sent_date, so any
+          date already on a round is left exactly as it was; only the input is
+          gone. Put it back by restoring this block and the column in sampleFields. */}
     </div>
   );
 }
@@ -344,26 +334,12 @@ function LocationField({ value }: { value?: string | null }) {
   );
 }
 
-// The courier reference (Tess, 2026-08-06: "add a place for tracking number").
-//
-// One free-text field, no carrier dropdown. What actually happens is that a
-// tracking number arrives pasted into a message, usually with the carrier's
-// name already sitting in front of it, and the thing anybody does with it is
-// read it out or paste it somewhere else. A second field to name the carrier
-// would be a second thing to fill in that nobody needs filled in.
-function TrackingField({ value }: { value?: string | null }) {
-  return (
-    <div className="field">
-      <label>Tracking number</label>
-      <input
-        className="input"
-        name="tracking_number"
-        defaultValue={value ?? ""}
-        placeholder="courier reference"
-      />
-    </div>
-  );
-}
+// Tracking number was a per-round field (Tess, 2026-08-06: "add a place for
+// tracking number"); removed from the form 2026-08-24 (field audit — rarely
+// filled). sampleFields no longer writes tracking_number, so any number already on
+// a round is preserved and still shown read-only on the card; only the input is
+// gone. Restore by putting this component back, its two call sites, and the column
+// in sampleFields.
 
 // One material, as it reads on a round — the library's own shorthand, so a chip
 // here and a row there say the same thing about the same cloth.
@@ -499,7 +475,7 @@ function MaterialFields({
 // exactly what a per-round field records and a shared contact record destroys.
 // Typed by what it reads, not by where the values came from, so the same
 // component serves a saved round and the defaults a new one opens with.
-function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name" | "contact_email"> }) {
+function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name"> }) {
   return (
     <div className="row">
       <Field
@@ -508,13 +484,9 @@ function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name" | "contact_
         defaultValue={s?.contact_name ?? ""}
         placeholder="who at the factory"
       />
-      <Field
-        label="Contact email"
-        name="contact_email"
-        type="email"
-        defaultValue={s?.contact_email ?? ""}
-        placeholder="used to address the export"
-      />
+      {/* Contact email removed from the form (Tess, 2026-08-24 field audit —
+          rarely filled). sampleFields no longer writes contact_email, so an
+          address already on a round is preserved; only the input is gone. */}
     </div>
   );
 }
@@ -889,20 +861,12 @@ function RoundForm({
           />
         </div>
         <Field label="Factory" name="factory" defaultValue={s.factory ?? ""} />
-        <StatusField value={s.status} fittingDate={s.fitting_date} notesSentDate={s.notes_sent_date} />
+        <StatusField value={s.status} fittingDate={s.fitting_date} />
       </div>
       <div className="row3">
         <LocationField value={s.location} />
-        {/* Beside the location because it is the answer to the same question
-            asked about the one location that is not a place (Tess, 2026-08-06:
-            "add in transit as an option add a place for tracking number").
-
-            Always shown, never revealed by choosing "In transit". A field that
-            unmounts stops posting, and a field that stops posting blanks its
-            column on the next save — so a number typed on Tuesday would vanish
-            the moment somebody marked the box as arrived on Thursday, which is
-            exactly when you still want to be able to look up what happened. */}
-        <TrackingField value={s.tracking_number} />
+        {/* Tracking number removed from the form here (Tess, 2026-08-24 field
+            audit); still shown read-only on the card when a round has one. */}
       </div>
       <div className="row3">
         <RatingField value={s.rating} name="rating" />
@@ -1624,7 +1588,7 @@ export default function SampleRounds({
           </div>
           <div className="row3">
             <LocationField />
-            <TrackingField />
+            {/* Tracking number removed from the add form (Tess, 2026-08-24). */}
           </div>
           <div className="row3">
             <RatingField name="rating" />

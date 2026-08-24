@@ -862,18 +862,17 @@ function sampleFields(form: FormData) {
     // somebody moved the status on, which is exactly when you still want to
     // know when it was fitted.
     fitting_date: s(form, "fitting_date"),
-    // The day corrections were sent back to the factory (Tess, 2026-08-10). Read
-    // the same way as the fitting date, and for the same reason.
-    notes_sent_date: s(form, "notes_sent_date"),
+    // notes_sent_date, tracking_number and contact_email were trimmed from the
+    // round forms (Tess, 2026-08-24 field audit — rarely filled) and, like the
+    // four material_*_date columns below, are deliberately NOT listed here:
+    // leaving a column out of this object means a save from the trimmed form
+    // cannot blank a value an existing round already holds. Their columns remain.
     // Where the physical garment is right now (Tess, 2026-08-05: "add 'current
     // sample location' into sample rounds"). Free text on the way in as well as
     // in the column: the form offers the five places the studio actually sends
     // things and a Custom box, and whichever of the two was used posts the same
     // field. Nothing here needs to know which.
     location: s(form, "location"),
-    // The courier reference for the leg it is on (Tess, 2026-08-06). Read on
-    // both paths, so a number can be added the day after the box goes out.
-    tracking_number: s(form, "tracking_number"),
     // How the sample came out — good / workable / poor (Tess, 2026-08-05: "add
     // a rating to each sample round as good - green, workable - yellow, poor -
     // red"). The "Not rated" radio posts an empty string, which s() turns into
@@ -882,7 +881,6 @@ function sampleFields(form: FormData) {
     // Who at the factory this round is with. Read by both add and update so a
     // contact can be filled in later on a round that started without one.
     contact_name: s(form, "contact_name"),
-    contact_email: s(form, "contact_email"),
     comments: s(form, "comments"),
     fit_notes: s(form, "fit_notes"),
     // The material, in words. The four material_*_date columns are no longer
