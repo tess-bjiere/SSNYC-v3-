@@ -907,26 +907,34 @@ function sampleFields(form: FormData) {
   };
 }
 
-export async function addSample(styleId: string, form: FormData) {
+// Returns the new round's id so the add form can attach photos to it straight
+// away (Tess, 2026-08-24: "Ability to add sample images to sample round right
+// away"). A round with no `round` name still returns {} rather than throwing.
+export async function addSample(styleId: string, form: FormData): Promise<{ id?: string }> {
   await requireTeam();
   const supabase = await createClient();
   const round = s(form, "round");
-  if (!round) return;
+  if (!round) return {};
 
   // Surface a rejected write instead of swallowing it. This one bit hard (Tess,
   // 2026-08-20: "when i add a sample round its not saving"): style_samples on FRED
   // was missing the material_ids column sampleFields writes, so PostgREST refused
   // every insert and the round vanished with no sign. A save that fails must say
   // so, not look like it worked.
-  const { error } = await supabase.from("style_samples").insert({
-    style_id: styleId,
-    round,
-    ...sampleFields(form),
-  });
+  const { data, error } = await supabase
+    .from("style_samples")
+    .insert({
+      style_id: styleId,
+      round,
+      ...sampleFields(form),
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(`Could not add the round: ${error.message}`);
 
   revalidatePath(`/styles/${styleId}`);
   revalidatePath("/factories");
+  return { id: data?.id as string | undefined };
 }
 
 // A round is logged when it is submitted and finished weeks later, so editing an

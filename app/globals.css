@@ -2581,6 +2581,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* Bullet lists inside notes (Tess, 2026-08-24: "Ability to add bullets"). Typing a
    line that starts with -, * or • renders it as a bullet; runs group into a list.
    Quiet indent and a normal disc, sized to the surrounding text. */
+/* The file picker on the add-round form (Tess, 2026-08-24) — native control, just
+   sized to sit on the form without clipping. */
+.sr-add-files{height:auto;padding:6px 8px;font-size:var(--t-meta);cursor:pointer}
 .linked-list{margin:2px 0;padding-left:1.15em;list-style:disc}
 .linked-list li{margin:1px 0}
 .linked-list li::marker{color:var(--faint)}

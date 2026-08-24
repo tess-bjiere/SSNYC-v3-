@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import CloseOnSave from "@/app/components/CloseOnSave";
 import Select from "@/app/components/Select";
@@ -42,7 +42,7 @@ import {
 } from "@/lib/sampleCycle";
 import { readImages, SHOTS_KEY, type ListImage } from "@/lib/imageList";
 import { readNotes, EMPTY_NOTE, type ImageNote } from "@/lib/imageNotes";
-import { addSample, updateSample, setSampleMaterials } from "@/app/actions/styles";
+import { addSample, updateSample, setSampleMaterials, addSampleShot } from "@/app/actions/styles";
 import ImageStrip from "./ImageStrip";
 import SlotCards from "./SlotCards";
 import PhotoSlots from "./PhotoSlots";
@@ -1476,6 +1476,46 @@ export default function SampleRounds({
   // — the round photos carry the round's own factory/fit date instead (2026-08-24).
   const styleMeta = { name: styleName, styleNo, factory: defaultFactory };
 
+  // Adding a round now also takes its first photos in one gesture (Tess,
+  // 2026-08-24: "Ability to add sample images to sample round right away"). The
+  // round is created first — addSample returns its id — then each chosen file is
+  // uploaded onto it, so the shots land on the round that has just been made.
+  const router = useRouter();
+  const [submitting, startSubmit] = useTransition();
+  const addFileRef = useRef<HTMLInputElement | null>(null);
+  const [addError, setAddError] = useState("");
+  function submitAdd(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const files = Array.from(addFileRef.current?.files ?? []);
+    setAddError("");
+    startSubmit(async () => {
+      let made: { id?: string };
+      try {
+        made = await addSample(styleId, fd);
+      } catch (err) {
+        setAddError(err instanceof Error ? err.message : "Couldn't add the round.");
+        return;
+      }
+      const newId = made.id;
+      if (newId && files.length) {
+        // One request per image — the body-size ceiling is per request, and one
+        // oversized photo should not lose the round or the other shots.
+        for (const f of files) {
+          const ifd = new FormData();
+          ifd.set("file", f);
+          try {
+            await addSampleShot(styleId, newId, ifd);
+          } catch {
+            /* keep going — a failed shot must not sink the whole round */
+          }
+        }
+      }
+      router.refresh();
+      setAdding(false);
+    });
+  }
+
   // A new round starts with the style's fabric and trim already ticked — what it
   // is made in, until someone says this sample differs (Tess, 2026-08-20: "the
   // sample should fill in the fabric and trim details used in the overall profile,
@@ -1562,7 +1602,7 @@ export default function SampleRounds({
       </div>
 
       {adding ? (
-        <form className="sr-form add" action={addSample.bind(null, styleId)}>
+        <form className="sr-form add" onSubmit={submitAdd}>
           <div className="row3">
             <div className="field">
               <label>Round</label>
@@ -1618,18 +1658,30 @@ export default function SampleRounds({
             <textarea className="textarea" name="comments" />
           </div>
 
+          {/* First photos of the round, attached the moment it is created (Tess,
+              2026-08-24). Optional; the round's slots and "Anything else" strip
+              are there afterwards for the rest. */}
+          <div className="field">
+            <label>Sample images</label>
+            <input ref={addFileRef} type="file" accept="image/*" multiple className="input sr-add-files" />
+            <div className="field-hint">Added to the round as soon as it is created — more can be added after.</div>
+          </div>
+
+          {addError && <div className="ph-error">{addError}</div>}
+
           <div className="sr-form-actions">
-            <button className="btn sm" type="submit">
-              Add sample round
+            <button className="btn sm" type="submit" disabled={submitting}>
+              {submitting ? "Adding…" : "Add sample round"}
             </button>
-            <button className="btn link" type="button" onClick={() => setAdding(false)}>
+            <button
+              className="btn link"
+              type="button"
+              disabled={submitting}
+              onClick={() => setAdding(false)}
+            >
               Cancel
             </button>
           </div>
-          {/* Same again for adding: the new round appears in the list above the
-              moment it saves, so leaving the empty form open underneath it only
-              invites a second one. */}
-          <CloseOnSave onDone={() => setAdding(false)} />
         </form>
       ) : null}
 
