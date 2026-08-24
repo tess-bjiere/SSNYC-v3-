@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import CloseOnSave from "@/app/components/CloseOnSave";
 import Select from "@/app/components/Select";
@@ -42,7 +42,7 @@ import {
 } from "@/lib/sampleCycle";
 import { readImages, SHOTS_KEY, type ListImage } from "@/lib/imageList";
 import { readNotes, EMPTY_NOTE, type ImageNote } from "@/lib/imageNotes";
-import { addSample, updateSample, setSampleMaterials } from "@/app/actions/styles";
+import { addSample, updateSample, setSampleMaterials, addSampleShot } from "@/app/actions/styles";
 import ImageStrip from "./ImageStrip";
 import SlotCards from "./SlotCards";
 import PhotoSlots from "./PhotoSlots";
@@ -178,11 +178,9 @@ function Field({
 function StatusField({
   value,
   fittingDate,
-  notesSentDate,
 }: {
   value?: string | null;
   fittingDate?: string | null;
-  notesSentDate?: string | null;
 }) {
   const cur = (value ?? "").trim();
   const known = SAMPLE_STATUSES.includes(cur as SampleStatus);
@@ -228,18 +226,10 @@ function StatusField({
           defaultValue={(fittingDate ?? "").slice(0, 10)}
         />
       </label>
-      {/* The day corrections went back to the factory (Tess, 2026-08-10, a new
-          manual field). Always rendered for the same reason as the fitting date:
-          a field that unmounts blanks its column on the next save. */}
-      <label className="field-sub" htmlFor={undefined}>
-        <span>Date notes sent</span>
-        <input
-          className="input sm"
-          type="date"
-          name="notes_sent_date"
-          defaultValue={(notesSentDate ?? "").slice(0, 10)}
-        />
-      </label>
+      {/* "Date notes sent" removed from the form (Tess, 2026-08-24 field audit —
+          rarely filled). sampleFields no longer writes notes_sent_date, so any
+          date already on a round is left exactly as it was; only the input is
+          gone. Put it back by restoring this block and the column in sampleFields. */}
     </div>
   );
 }
@@ -344,26 +334,12 @@ function LocationField({ value }: { value?: string | null }) {
   );
 }
 
-// The courier reference (Tess, 2026-08-06: "add a place for tracking number").
-//
-// One free-text field, no carrier dropdown. What actually happens is that a
-// tracking number arrives pasted into a message, usually with the carrier's
-// name already sitting in front of it, and the thing anybody does with it is
-// read it out or paste it somewhere else. A second field to name the carrier
-// would be a second thing to fill in that nobody needs filled in.
-function TrackingField({ value }: { value?: string | null }) {
-  return (
-    <div className="field">
-      <label>Tracking number</label>
-      <input
-        className="input"
-        name="tracking_number"
-        defaultValue={value ?? ""}
-        placeholder="courier reference"
-      />
-    </div>
-  );
-}
+// Tracking number was a per-round field (Tess, 2026-08-06: "add a place for
+// tracking number"); removed from the form 2026-08-24 (field audit — rarely
+// filled). sampleFields no longer writes tracking_number, so any number already on
+// a round is preserved and still shown read-only on the card; only the input is
+// gone. Restore by putting this component back, its two call sites, and the column
+// in sampleFields.
 
 // One material, as it reads on a round — the library's own shorthand, so a chip
 // here and a row there say the same thing about the same cloth.
@@ -499,7 +475,7 @@ function MaterialFields({
 // exactly what a per-round field records and a shared contact record destroys.
 // Typed by what it reads, not by where the values came from, so the same
 // component serves a saved round and the defaults a new one opens with.
-function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name" | "contact_email"> }) {
+function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name"> }) {
   return (
     <div className="row">
       <Field
@@ -508,13 +484,9 @@ function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name" | "contact_
         defaultValue={s?.contact_name ?? ""}
         placeholder="who at the factory"
       />
-      <Field
-        label="Contact email"
-        name="contact_email"
-        type="email"
-        defaultValue={s?.contact_email ?? ""}
-        placeholder="used to address the export"
-      />
+      {/* Contact email removed from the form (Tess, 2026-08-24 field audit —
+          rarely filled). sampleFields no longer writes contact_email, so an
+          address already on a round is preserved; only the input is gone. */}
     </div>
   );
 }
@@ -889,20 +861,12 @@ function RoundForm({
           />
         </div>
         <Field label="Factory" name="factory" defaultValue={s.factory ?? ""} />
-        <StatusField value={s.status} fittingDate={s.fitting_date} notesSentDate={s.notes_sent_date} />
+        <StatusField value={s.status} fittingDate={s.fitting_date} />
       </div>
       <div className="row3">
         <LocationField value={s.location} />
-        {/* Beside the location because it is the answer to the same question
-            asked about the one location that is not a place (Tess, 2026-08-06:
-            "add in transit as an option add a place for tracking number").
-
-            Always shown, never revealed by choosing "In transit". A field that
-            unmounts stops posting, and a field that stops posting blanks its
-            column on the next save — so a number typed on Tuesday would vanish
-            the moment somebody marked the box as arrived on Thursday, which is
-            exactly when you still want to be able to look up what happened. */}
-        <TrackingField value={s.tracking_number} />
+        {/* Tracking number removed from the form here (Tess, 2026-08-24 field
+            audit); still shown read-only on the card when a round has one. */}
       </div>
       <div className="row3">
         <RatingField value={s.rating} name="rating" />
@@ -1027,6 +991,8 @@ function roundImages(slotPhotos: PhotoMap, shots: ListImage[], notes: Record<str
  */
 function FullRound({
   styleId,
+  styleName,
+  styleNo,
   s,
   today,
   images,
@@ -1034,12 +1000,15 @@ function FullRound({
   library = [],
 }: {
   styleId: string;
+  styleName?: string | null;
+  styleNo?: string | null;
   s: StyleSample;
   today: string;
   images: { url: string; label: string; note: ImageNote }[];
   onClose: () => void;
   library?: readonly LinkedMaterial[];
 }) {
+  const roundMeta = { name: styleName, styleNo, factory: s.factory, fitDate: s.fitting_date };
   /** Which photograph is being marked, by url. Null is the review screen. */
   const [editing, setEditing] = useState<string | null>(null);
   // Which fit comment to land on when that photograph opens — set when a fit
@@ -1210,6 +1179,7 @@ function FullRound({
             url={open.url}
             label={open.label}
             note={open.note}
+            meta={roundMeta}
             position={`${at + 1} of ${images.length}`}
             // No caption box on a fit photo — the slot label already says what
             // the picture is, and this viewer only ever shows a round's photos
@@ -1241,12 +1211,16 @@ function FullRound({
 
 function RoundCard({
   styleId,
+  styleName,
+  styleNo,
   s,
   today,
   comments,
   library = [],
 }: {
   styleId: string;
+  styleName?: string | null;
+  styleNo?: string | null;
   s: StyleSample;
   today: string;
   /** How many comments are filed against this round. */
@@ -1260,6 +1234,14 @@ function RoundCard({
   const eta = sampleEta(s, today);
   const shots = readImages(s.photos, SHOTS_KEY);
   const slotPhotos: PhotoMap = normalizePhotos(s.photos);
+  // Context for the full-screen viewer (Tess, 2026-08-24): style, its number, the
+  // round's factory, and the fit date on this round.
+  const roundMeta = {
+    name: styleName,
+    styleNo,
+    factory: s.factory,
+    fitDate: s.fitting_date,
+  };
   // Read once for the whole round rather than once per picture: the five slots
   // and the strip below them all live in this one jsonb object, and a round with
   // nine shots should not walk it nine times.
@@ -1378,6 +1360,7 @@ function RoundCard({
           photos={slotPhotos}
           slots={PHOTO_SLOTS}
           notes={imageNotes}
+          meta={roundMeta}
         />
       </div>
 
@@ -1391,11 +1374,14 @@ function RoundCard({
         title="Anything else"
         addLabel="Add images"
         notes={imageNotes}
+        meta={roundMeta}
       />
 
       {full && (
         <FullRound
           styleId={styleId}
+          styleName={styleName}
+          styleNo={styleNo}
           s={s}
           today={today}
           images={roundImages(slotPhotos, shots, imageNotes)}
@@ -1409,6 +1395,8 @@ function RoundCard({
 
 export default function SampleRounds({
   styleId,
+  styleName,
+  styleNo,
   samples,
   defaultFactory,
   today,
@@ -1419,6 +1407,10 @@ export default function SampleRounds({
   styleMaterialIds = [],
 }: {
   styleId: string;
+  /** The style's name and number, for the full-screen viewer's context line
+   *  (Tess, 2026-08-24). */
+  styleName?: string | null;
+  styleNo?: string | null;
   samples: StyleSample[];
   defaultFactory: string;
   today: string;
@@ -1444,6 +1436,49 @@ export default function SampleRounds({
 }) {
   const [adding, setAdding] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
+  // Context for the full-screen viewer on the style's own (filed-on-style) photos
+  // — the round photos carry the round's own factory/fit date instead (2026-08-24).
+  const styleMeta = { name: styleName, styleNo, factory: defaultFactory };
+
+  // Adding a round now also takes its first photos in one gesture (Tess,
+  // 2026-08-24: "Ability to add sample images to sample round right away"). The
+  // round is created first — addSample returns its id — then each chosen file is
+  // uploaded onto it, so the shots land on the round that has just been made.
+  const router = useRouter();
+  const [submitting, startSubmit] = useTransition();
+  const addFileRef = useRef<HTMLInputElement | null>(null);
+  const [addError, setAddError] = useState("");
+  function submitAdd(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const files = Array.from(addFileRef.current?.files ?? []);
+    setAddError("");
+    startSubmit(async () => {
+      let made: { id?: string };
+      try {
+        made = await addSample(styleId, fd);
+      } catch (err) {
+        setAddError(err instanceof Error ? err.message : "Couldn't add the round.");
+        return;
+      }
+      const newId = made.id;
+      if (newId && files.length) {
+        // One request per image — the body-size ceiling is per request, and one
+        // oversized photo should not lose the round or the other shots.
+        for (const f of files) {
+          const ifd = new FormData();
+          ifd.set("file", f);
+          try {
+            await addSampleShot(styleId, newId, ifd);
+          } catch {
+            /* keep going — a failed shot must not sink the whole round */
+          }
+        }
+      }
+      router.refresh();
+      setAdding(false);
+    });
+  }
 
   // A new round starts with the style's fabric and trim already ticked — what it
   // is made in, until someone says this sample differs (Tess, 2026-08-20: "the
@@ -1531,7 +1566,7 @@ export default function SampleRounds({
       </div>
 
       {adding ? (
-        <form className="sr-form add" action={addSample.bind(null, styleId)}>
+        <form className="sr-form add" onSubmit={submitAdd}>
           <div className="row3">
             <div className="field">
               <label>Round</label>
@@ -1553,7 +1588,7 @@ export default function SampleRounds({
           </div>
           <div className="row3">
             <LocationField />
-            <TrackingField />
+            {/* Tracking number removed from the add form (Tess, 2026-08-24). */}
           </div>
           <div className="row3">
             <RatingField name="rating" />
@@ -1587,18 +1622,30 @@ export default function SampleRounds({
             <textarea className="textarea" name="comments" />
           </div>
 
+          {/* First photos of the round, attached the moment it is created (Tess,
+              2026-08-24). Optional; the round's slots and "Anything else" strip
+              are there afterwards for the rest. */}
+          <div className="field">
+            <label>Sample images</label>
+            <input ref={addFileRef} type="file" accept="image/*" multiple className="input sr-add-files" />
+            <div className="field-hint">Added to the round as soon as it is created — more can be added after.</div>
+          </div>
+
+          {addError && <div className="ph-error">{addError}</div>}
+
           <div className="sr-form-actions">
-            <button className="btn sm" type="submit">
-              Add sample round
+            <button className="btn sm" type="submit" disabled={submitting}>
+              {submitting ? "Adding…" : "Add sample round"}
             </button>
-            <button className="btn link" type="button" onClick={() => setAdding(false)}>
+            <button
+              className="btn link"
+              type="button"
+              disabled={submitting}
+              onClick={() => setAdding(false)}
+            >
               Cancel
             </button>
           </div>
-          {/* Same again for adding: the new round appears in the list above the
-              moment it saves, so leaving the empty form open underneath it only
-              invites a second one. */}
-          <CloseOnSave onDone={() => setAdding(false)} />
         </form>
       ) : null}
 
@@ -1614,11 +1661,13 @@ export default function SampleRounds({
               piece, a carry-over, a garment already hanging in the studio can
               all be shot before anybody logs a proto. So the standard sits
               here, open, until there is a round to move it onto. */}
-          <PhotoSlots styleId={styleId} photos={filedOnStyle ?? {}} notes={styleNotes} hasRounds={false} />
+          <PhotoSlots styleId={styleId} photos={filedOnStyle ?? {}} notes={styleNotes} hasRounds={false} meta={styleMeta} />
         </>
       ) : (
         <RoundCard
           styleId={styleId}
+          styleName={styleName}
+          styleNo={styleNo}
           s={current}
           today={today}
           comments={commentCounts[current.id] ?? 0}
@@ -1659,6 +1708,8 @@ export default function SampleRounds({
               <RoundCard
                 key={s.id}
                 styleId={styleId}
+                styleName={styleName}
+                styleNo={styleNo}
                 s={s}
                 today={today}
                 comments={commentCounts[s.id] ?? 0}
@@ -1676,7 +1727,7 @@ export default function SampleRounds({
           a round on the page; the no-round case is handled above, in live
           mode, and the two must never both be on screen. */}
       {current && filedOnStyle && (
-        <PhotoSlots styleId={styleId} photos={filedOnStyle} notes={styleNotes} />
+        <PhotoSlots styleId={styleId} photos={filedOnStyle} notes={styleNotes} meta={styleMeta} />
       )}
     </div>
   );

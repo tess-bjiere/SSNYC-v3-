@@ -1,12 +1,15 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useTransition } from "react";
-import type { ListImage } from "@/lib/imageList";
+import { type ListImage, GALLERY_KEY, COLORWAYS_KEY, SHOTS_KEY } from "@/lib/imageList";
 import type { ImageNote } from "@/lib/imageNotes";
 import { EMPTY_NOTE } from "@/lib/imageNotes";
 import ImageNotes from "./ImageNotes";
+import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import { PHOTO_FOCUS_EVENT, takePhotoFocus } from "./photoFocus";
 import {
+  cropStyleImage,
+  cropSampleImage,
   addStyleImage,
   removeStyleImage,
   captionStyleImage,
@@ -51,9 +54,12 @@ export default function ImageStrip({
   hint,
   addLabel = "Add image",
   notes,
+  meta,
 }: {
   styleId: string;
   sampleId?: string | null;
+  /** Style context shown in the full-screen viewer (Tess, 2026-08-24). */
+  meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
   /**
    * Which list on the style this strip edits. Ignored when a sampleId is
    * passed, because a round only has one.
@@ -202,6 +208,31 @@ export default function ImageStrip({
     });
   }
 
+  // Crop one image in place (Tess, 2026-08-24). The list key is resolved the same
+  // way the add/remove actions above resolve theirs, so nothing the client sends
+  // names a jsonb key; the server validates it again.
+  const [cropId, setCropId] = useState<string | null>(null);
+  const [cropBusy, setCropBusy] = useState(false);
+  const cropSrc = images.find((im) => im.id === cropId)?.url ?? null;
+  function applyCrop(rect: CropRect) {
+    const id = cropId;
+    if (!id) return;
+    setCropBusy(true);
+    setError("");
+    start(async () => {
+      const target = {
+        listKey: sampleId ? SHOTS_KEY : list === "colorways" ? COLORWAYS_KEY : GALLERY_KEY,
+        imageId: id,
+      };
+      const res = sampleId
+        ? await cropSampleImage(styleId, sampleId, target, rect)
+        : await cropStyleImage(styleId, target, rect);
+      setCropBusy(false);
+      setCropId(null);
+      if (!res.ok) setError(res.error || "Couldn't crop that image.");
+    });
+  }
+
   return (
     <div
       className={"img-strip" + (dragging ? " dragging" : "")}
@@ -312,6 +343,14 @@ export default function ImageStrip({
                     type="button"
                     className="ph-link"
                     disabled={working}
+                    onClick={() => setCropId(im.id)}
+                  >
+                    Crop
+                  </button>
+                  <button
+                    type="button"
+                    className="ph-link"
+                    disabled={working}
                     onClick={() => setNoteOpen((n) => (n === im.id ? null : im.id))}
                   >
                     {noteOpen === im.id
@@ -353,6 +392,7 @@ export default function ImageStrip({
                 url={im.url}
                 label={im.caption || `Image ${i + 1}`}
                 note={note}
+                meta={meta}
                 caption={false}
                 position={`${i + 1} of ${images.length}`}
                 full={full}
@@ -398,6 +438,15 @@ export default function ImageStrip({
             return if it is ever asked for. */}
       </div>
 
+      {cropId && cropSrc && (
+        <ImageCropper
+          src={cropSrc}
+          title="Crop image"
+          busy={cropBusy}
+          onApply={applyCrop}
+          onCancel={() => setCropId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -21,11 +21,14 @@ import {
   COLORWAYS_KEY,
   GALLERY_KEY,
   SHOTS_KEY,
+  readImages,
   withImageAdded,
   withImageCaption,
   withImageMoved,
   withImageRemoved,
+  withImageUrl,
 } from "@/lib/imageList";
+import sharp from "sharp";
 import {
   withImageNoteCaption,
   withImagePin,
@@ -859,18 +862,17 @@ function sampleFields(form: FormData) {
     // somebody moved the status on, which is exactly when you still want to
     // know when it was fitted.
     fitting_date: s(form, "fitting_date"),
-    // The day corrections were sent back to the factory (Tess, 2026-08-10). Read
-    // the same way as the fitting date, and for the same reason.
-    notes_sent_date: s(form, "notes_sent_date"),
+    // notes_sent_date, tracking_number and contact_email were trimmed from the
+    // round forms (Tess, 2026-08-24 field audit — rarely filled) and, like the
+    // four material_*_date columns below, are deliberately NOT listed here:
+    // leaving a column out of this object means a save from the trimmed form
+    // cannot blank a value an existing round already holds. Their columns remain.
     // Where the physical garment is right now (Tess, 2026-08-05: "add 'current
     // sample location' into sample rounds"). Free text on the way in as well as
     // in the column: the form offers the five places the studio actually sends
     // things and a Custom box, and whichever of the two was used posts the same
     // field. Nothing here needs to know which.
     location: s(form, "location"),
-    // The courier reference for the leg it is on (Tess, 2026-08-06). Read on
-    // both paths, so a number can be added the day after the box goes out.
-    tracking_number: s(form, "tracking_number"),
     // How the sample came out — good / workable / poor (Tess, 2026-08-05: "add
     // a rating to each sample round as good - green, workable - yellow, poor -
     // red"). The "Not rated" radio posts an empty string, which s() turns into
@@ -879,7 +881,6 @@ function sampleFields(form: FormData) {
     // Who at the factory this round is with. Read by both add and update so a
     // contact can be filled in later on a round that started without one.
     contact_name: s(form, "contact_name"),
-    contact_email: s(form, "contact_email"),
     comments: s(form, "comments"),
     fit_notes: s(form, "fit_notes"),
     // The material, in words. The four material_*_date columns are no longer
@@ -904,26 +905,34 @@ function sampleFields(form: FormData) {
   };
 }
 
-export async function addSample(styleId: string, form: FormData) {
+// Returns the new round's id so the add form can attach photos to it straight
+// away (Tess, 2026-08-24: "Ability to add sample images to sample round right
+// away"). A round with no `round` name still returns {} rather than throwing.
+export async function addSample(styleId: string, form: FormData): Promise<{ id?: string }> {
   await requireTeam();
   const supabase = await createClient();
   const round = s(form, "round");
-  if (!round) return;
+  if (!round) return {};
 
   // Surface a rejected write instead of swallowing it. This one bit hard (Tess,
   // 2026-08-20: "when i add a sample round its not saving"): style_samples on FRED
   // was missing the material_ids column sampleFields writes, so PostgREST refused
   // every insert and the round vanished with no sign. A save that fails must say
   // so, not look like it worked.
-  const { error } = await supabase.from("style_samples").insert({
-    style_id: styleId,
-    round,
-    ...sampleFields(form),
-  });
+  const { data, error } = await supabase
+    .from("style_samples")
+    .insert({
+      style_id: styleId,
+      round,
+      ...sampleFields(form),
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(`Could not add the round: ${error.message}`);
 
   revalidatePath(`/styles/${styleId}`);
   revalidatePath("/factories");
+  return { id: data?.id as string | undefined };
 }
 
 // A round is logged when it is submitted and finished weeks later, so editing an
@@ -1209,6 +1218,173 @@ async function writeSamplePhotos(styleId: string, sampleId: string, next: Record
     .eq("style_id", styleId);
   revalidatePath(`/styles/${styleId}`);
   return error?.message;
+}
+
+// ---------------------------------------------------------------------------
+// Cropping a style / sample image (Tess, 2026-08-24: "Add ability to crop images
+// loaded into style profile or samples").
+//
+// The client cropper (app/components/ImageCropper.tsx) only ever computes a
+// normalized rectangle; the pixels are cut here with sharp — same shape as the
+// materials crop. A crop writes a FRESH object and swaps the URL in place, so the
+// slot / list entry keeps its id, caption and position, and the rest of the
+// photos jsonb map is carried through untouched by writePhotos / withImageUrl.
+// ---------------------------------------------------------------------------
+
+/** A normalized crop rectangle, each value 0..1, as the client cropper reports it. */
+export type CropRect = { x: number; y: number; w: number; h: number };
+
+/** Where in a photos map an image lives: a fixed slot, or an entry in one of the
+ *  ordered lists. The list key is validated against the known constants before any
+ *  write — a client can never hand in an arbitrary jsonb key. */
+export type PhotoTarget = { slot: string } | { listKey: string; imageId: string };
+
+const STYLE_LIST_KEYS = new Set<string>([GALLERY_KEY, COLORWAYS_KEY]);
+const SAMPLE_LIST_KEYS = new Set<string>([SHOTS_KEY]);
+
+function asPhotoMap(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+}
+
+// Bake EXIF orientation first so the cut matches what the browser showed, then
+// extract the clamped rectangle. A degenerate rect just re-encodes.
+async function cropBuffer(input: Uint8Array, rect: CropRect): Promise<Uint8Array> {
+  const upright = await sharp(input).rotate().toBuffer();
+  const meta = await sharp(upright).metadata();
+  const W = meta.width ?? 0;
+  const H = meta.height ?? 0;
+  if (!W || !H) return input;
+  const left = Math.max(0, Math.min(W - 1, Math.round(rect.x * W)));
+  const top = Math.max(0, Math.min(H - 1, Math.round(rect.y * H)));
+  const width = Math.max(1, Math.min(W - left, Math.round(rect.w * W)));
+  const height = Math.max(1, Math.min(H - top, Math.round(rect.h * H)));
+  return await sharp(upright).extract({ left, top, width, height }).jpeg({ quality: 90 }).toBuffer();
+}
+
+// Sit the picture centred on a white 3:4 canvas (Tess, 2026-08-24: "Ability to
+// resize sketch on white background for the style profile image"). The sketch is
+// scaled to fit within 88% of the canvas — leaving a white margin so it doesn't
+// touch the edges — then composited onto solid white. A transparent PNG comes out
+// clean; a photo just gets padded to the cover's shape.
+async function fitOnWhiteBuffer(input: Uint8Array): Promise<Uint8Array> {
+  const W = 1200;
+  const H = 1600; // 3:4, the cover's aspect
+  const inner = await sharp(input)
+    .rotate()
+    .resize(Math.round(W * 0.88), Math.round(H * 0.88), { fit: "inside" })
+    .toBuffer();
+  const meta = await sharp(inner).metadata();
+  const iw = meta.width ?? W;
+  const ih = meta.height ?? H;
+  return await sharp({
+    create: { width: W, height: H, channels: 3, background: { r: 255, g: 255, b: 255 } },
+  })
+    .composite([{ input: inner, left: Math.round((W - iw) / 2), top: Math.round((H - ih) / 2) }])
+    .jpeg({ quality: 92 })
+    .toBuffer();
+}
+
+// Fetch a stored image, run a sharp transform over it, store a fresh object under
+// the style's prefix, return its public URL — or null on any failure. Shared by
+// crop and fit-on-white.
+async function transformToNewUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  styleId: string,
+  url: string,
+  transform: (input: Uint8Array) => Promise<Uint8Array>
+): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const out = await transform(Buffer.from(await res.arrayBuffer()));
+    const path = `${PHOTO_PREFIX}/${styleId}/edit-${crypto.randomUUID()}.jpg`;
+    const { error } = await supabase.storage
+      .from(REFERENCES_BUCKET)
+      .upload(path, out, { contentType: "image/jpeg", upsert: false });
+    if (error) return null;
+    const { data } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+    return data?.publicUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function validRect(rect: CropRect): boolean {
+  const ok = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
+  return ok(rect.x) && ok(rect.y) && ok(rect.w) && ok(rect.h) && rect.w > 0 && rect.h > 0;
+}
+
+// Resolve the current URL for a target and validate it in one place — a slot must
+// be a real photo slot, a list key one of the known constants.
+function urlForTarget(raw: unknown, target: PhotoTarget, listKeys: Set<string>): string | null {
+  if ("slot" in target) {
+    if (!isPhotoSlot(target.slot)) return null;
+    const v = asPhotoMap(raw)[target.slot];
+    return typeof v === "string" && v.trim() ? v : null;
+  }
+  if (!listKeys.has(target.listKey)) return null;
+  return readImages(raw, target.listKey).find((im) => im.id === target.imageId)?.url ?? null;
+}
+
+function writeTarget(raw: unknown, target: PhotoTarget, url: string): Record<string, unknown> {
+  return "slot" in target
+    ? writePhotos(raw, target.slot, url)
+    : withImageUrl(raw, target.listKey, target.imageId, url);
+}
+
+export async function cropStyleImage(
+  styleId: string,
+  target: PhotoTarget,
+  rect: CropRect
+): Promise<PhotoResult> {
+  await requireTeam();
+  const supabase = await createClient();
+  const raw = await readStylePhotos(styleId);
+  if (raw === null) return { ok: false, error: "That style no longer exists." };
+  if (!validRect(rect)) return { ok: false, error: "That crop isn't valid." };
+  const url = urlForTarget(raw, target, STYLE_LIST_KEYS);
+  if (!url) return { ok: false, error: "Image not found." };
+  const next = await transformToNewUrl(supabase, styleId, url, (buf) => cropBuffer(buf, rect));
+  if (!next) return { ok: false, error: "Couldn't crop that image." };
+  const err = await writeStylePhotos(styleId, writeTarget(raw, target, next));
+  return err ? { ok: false, error: err } : { ok: true };
+}
+
+// Resize the style image onto a white 3:4 background (the sketch → cover case).
+// FRED and SOUS SOUS alike — this is a product-side tool, not brand-specific.
+export async function fitStyleImageOnWhite(
+  styleId: string,
+  target: PhotoTarget
+): Promise<PhotoResult> {
+  await requireTeam();
+  const supabase = await createClient();
+  const raw = await readStylePhotos(styleId);
+  if (raw === null) return { ok: false, error: "That style no longer exists." };
+  const url = urlForTarget(raw, target, STYLE_LIST_KEYS);
+  if (!url) return { ok: false, error: "Image not found." };
+  const next = await transformToNewUrl(supabase, styleId, url, fitOnWhiteBuffer);
+  if (!next) return { ok: false, error: "Couldn't resize that image." };
+  const err = await writeStylePhotos(styleId, writeTarget(raw, target, next));
+  return err ? { ok: false, error: err } : { ok: true };
+}
+
+export async function cropSampleImage(
+  styleId: string,
+  sampleId: string,
+  target: PhotoTarget,
+  rect: CropRect
+): Promise<PhotoResult> {
+  await requireTeam();
+  const supabase = await createClient();
+  const raw = await readSamplePhotos(styleId, sampleId);
+  if (raw === null) return { ok: false, error: "That round no longer exists." };
+  if (!validRect(rect)) return { ok: false, error: "That crop isn't valid." };
+  const url = urlForTarget(raw, target, SAMPLE_LIST_KEYS);
+  if (!url) return { ok: false, error: "Image not found." };
+  const next = await transformToNewUrl(supabase, styleId, url, (buf) => cropBuffer(buf, rect));
+  if (!next) return { ok: false, error: "Couldn't crop that image." };
+  const err = await writeSamplePhotos(styleId, sampleId, writeTarget(raw, target, next));
+  return err ? { ok: false, error: err } : { ok: true };
 }
 
 /**

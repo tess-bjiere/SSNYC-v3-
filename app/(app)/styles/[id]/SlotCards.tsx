@@ -6,12 +6,16 @@ import { visibleSlots } from "@/lib/photoSlots";
 import type { ImageNote } from "@/lib/imageNotes";
 import { EMPTY_NOTE, noteCountLabel } from "@/lib/imageNotes";
 import ImageNotes from "./ImageNotes";
+import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import { PHOTO_FOCUS_EVENT, takePhotoFocus } from "./photoFocus";
 import {
   setStylePhoto,
   clearStylePhoto,
   setSamplePhoto,
   clearSamplePhoto,
+  cropStyleImage,
+  cropSampleImage,
+  fitStyleImageOnWhite,
 } from "@/app/actions/styles";
 
 // The grid of fixed, named image slots.
@@ -51,12 +55,19 @@ export default function SlotCards({
   slots,
   notes,
   comments = true,
+  meta,
+  whiteFit = false,
 }: {
   styleId: string;
   /** When set, the slots belong to this sample round rather than to the style. */
   sampleId?: string;
   photos: PhotoMap;
   slots: readonly PhotoSlot[];
+  /** Style context shown in the full-screen viewer (Tess, 2026-08-24). */
+  meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
+  /** Offer "Fit to white" — sits the picture on a white 3:4 canvas. On the sketch
+   *  (the style's profile image), not the photography slots (Tess, 2026-08-24). */
+  whiteFit?: boolean;
   /**
    * Everything written about these pictures, keyed by image URL.
    *
@@ -156,6 +167,63 @@ export default function SlotCards({
       if (sampleId) await clearSamplePhoto(styleId, sampleId, slotId);
       else await clearStylePhoto(styleId, slotId);
       setBusySlot(null);
+    });
+  }
+
+  // Crop a slot's picture in place (Tess, 2026-08-24: "Add ability to crop images
+  // loaded into style profile or samples"). The cropper reports a rectangle; the
+  // pixels are cut server-side and the slot's URL is swapped, so its caption and
+  // marks (keyed by the new URL after a re-shoot anyway) and the rest of the
+  // photos map are untouched. The revalidate flows the new picture back in.
+  const [cropSlot, setCropSlot] = useState<string | null>(null);
+  const [cropBusy, setCropBusy] = useState(false);
+  function applyCrop(rect: CropRect) {
+    const slotId = cropSlot;
+    if (!slotId) return;
+    setCropBusy(true);
+    setError("");
+    start(async () => {
+      const res = sampleId
+        ? await cropSampleImage(styleId, sampleId, { slot: slotId }, rect)
+        : await cropStyleImage(styleId, { slot: slotId }, rect);
+      setCropBusy(false);
+      setCropSlot(null);
+      if (!res.ok) setError(res.error || "Couldn't crop that image.");
+    });
+  }
+
+  // Paste an image from the clipboard straight into a slot (Tess, 2026-08-24:
+  // "Ability to paste a sketch into the style profile image"). Reads the clipboard
+  // for an image and uploads it through the same path as a file — so it lands
+  // wherever Upload would.
+  async function pasteInto(slotId: string) {
+    setError("");
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        const ext = type.split("/")[1] || "png";
+        const fd = new FormData();
+        fd.set("file", new File([blob], `pasted.${ext}`, { type }));
+        upload(slotId, fd);
+        return;
+      }
+      setError("No image on the clipboard to paste.");
+    } catch {
+      setError("Couldn't read the clipboard. Copy the image again, or use Upload.");
+    }
+  }
+
+  // Sit the sketch on a white 3:4 background (the profile-image case). Style only.
+  function fitWhite(slotId: string) {
+    setBusySlot(slotId);
+    setError("");
+    start(async () => {
+      const res = await fitStyleImageOnWhite(styleId, { slot: slotId });
+      setBusySlot(null);
+      if (!res.ok) setError(res.error || "Couldn't resize that image.");
     });
   }
 
@@ -289,6 +357,36 @@ export default function SlotCards({
                 >
                   {src ? "Replace" : "Upload"}
                 </button>
+                <button
+                  type="button"
+                  className="ph-link"
+                  disabled={busy}
+                  title="Paste an image from the clipboard"
+                  onClick={() => pasteInto(slot.id)}
+                >
+                  Paste
+                </button>
+                {src && (
+                  <button
+                    type="button"
+                    className="ph-link"
+                    disabled={busy}
+                    onClick={() => setCropSlot(slot.id)}
+                  >
+                    Crop
+                  </button>
+                )}
+                {src && whiteFit && !sampleId && (
+                  <button
+                    type="button"
+                    className="ph-link"
+                    disabled={busy}
+                    title="Sit the sketch on a white background"
+                    onClick={() => fitWhite(slot.id)}
+                  >
+                    Fit to white
+                  </button>
+                )}
                 {/* The "URL" button used to sit here (Tess, 2026-08-05:
                     "remove url option from photos upload"). Uploading is the
                     gesture everyone actually uses — a photograph starts life
@@ -357,6 +455,7 @@ export default function SlotCards({
                 url={src}
                 label={slot.label}
                 note={note}
+                meta={meta}
                 position={`${at + 1} of ${shot.length}`}
                 full={full}
                 onFull={(v) => {
@@ -383,6 +482,16 @@ export default function SlotCards({
           );
         })}
       </div>
+
+      {cropSlot && photos[cropSlot] && (
+        <ImageCropper
+          src={photos[cropSlot]}
+          title="Crop image"
+          busy={cropBusy}
+          onApply={applyCrop}
+          onCancel={() => setCropSlot(null)}
+        />
+      )}
     </>
   );
 }

@@ -108,6 +108,7 @@ export default function ImageNotes({
   caption = true,
   openPinId = null,
   onOpenedPin,
+  meta,
 }: {
   styleId: string;
   /** Null when the picture hangs off the style rather than off a round. */
@@ -115,6 +116,14 @@ export default function ImageNotes({
   url: string;
   label: string;
   note: ImageNote;
+  /**
+   * What this picture is OF — shown as a context line in the full-screen view so
+   * you know the style, its number, the factory and (on a round) the fit date
+   * without leaving the enlarged image (Tess, 2026-08-24: "Add more details to
+   * full screen view — show title, style number, factory fit date etc"). All
+   * optional; a blank part is dropped.
+   */
+  meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
   onClose: () => void;
   /**
    * Move to the neighbouring picture in the list this one belongs to, or null
@@ -409,6 +418,27 @@ export default function ImageNotes({
         >
           Done
         </button>
+
+        {/* Context line, its own full-width row under the header controls: what
+            style this is, its number, the factory, and the fit date on a round. */}
+        {meta &&
+          (() => {
+            const parts = [
+              { v: (meta.name ?? "").trim(), title: true },
+              { v: (meta.styleNo ?? "").trim() },
+              { v: (meta.factory ?? "").trim() },
+              { v: (meta.fitDate ?? "").trim() ? `Fit ${meta.fitDate}` : "" },
+            ].filter((p) => p.v);
+            return parts.length ? (
+              <div className="ann-meta">
+                {parts.map((p, i) => (
+                  <span key={i} className={p.title ? "ann-meta-title" : undefined}>
+                    {p.v}
+                  </span>
+                ))}
+              </div>
+            ) : null;
+          })()}
       </div>
 
       {error && <div className="ph-error">{error}</div>}

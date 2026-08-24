@@ -1962,6 +1962,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    the frame — which is exactly where a fit note matters. */
 .ann{grid-column:1/-1;border:1px solid var(--line);background:var(--panel);padding:14px}
 .ann-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+/* The context strip on its own full-width line under the header controls (Tess,
+   2026-08-24): style · number · factory · fit date. */
+.ann-meta{flex-basis:100%;display:flex;flex-wrap:wrap;gap:3px 14px;font-size:var(--t-meta);color:var(--muted)}
+.ann-meta-title{color:var(--ink);font-weight:var(--w-mid)}
 .ann-head .l{font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.12em;color:var(--ink)}
 .ann-head .h{font-size:var(--t-sm);color:var(--muted)}
 .ann-head .spacer{flex:1}
@@ -2574,6 +2578,25 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    Underlined rather than coloured: these sit inside sentences on a page with
    almost no colour in it, and a coloured word in the middle of a factory note
    reads as a status, not a link. lib/linkify.ts decides what is one. */
+/* Bullet lists inside notes (Tess, 2026-08-24: "Ability to add bullets"). Typing a
+   line that starts with -, * or • renders it as a bullet; runs group into a list.
+   Quiet indent and a normal disc, sized to the surrounding text. */
+/* The file picker on the add-round form (Tess, 2026-08-24) — native control, just
+   sized to sit on the form without clipping. */
+.sr-add-files{height:auto;padding:6px 8px;font-size:var(--t-meta);cursor:pointer}
+/* The tucked-away Customs group on the edit-details form (Tess, 2026-08-24). A
+   quiet disclosure — the shipping fields are there when a shipment needs them and
+   out of the way the rest of the time. */
+.edit-customs{margin:2px 0 6px}
+.edit-customs > summary{cursor:pointer;list-style:none;padding:6px 0;font-size:var(--t-cap);
+  text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
+.edit-customs > summary::-webkit-details-marker{display:none}
+.edit-customs > summary::before{content:"▸";margin-right:6px;font-size:.85em}
+.edit-customs[open] > summary::before{content:"▾"}
+.edit-customs > summary:hover{color:var(--muted)}
+.linked-list{margin:2px 0;padding-left:1.15em;list-style:disc}
+.linked-list li{margin:1px 0}
+.linked-list li::marker{color:var(--faint)}
 .linkified{color:inherit;text-decoration:underline;text-underline-offset:2px;
   text-decoration-color:var(--line);word-break:break-word}
 .linkified:hover{text-decoration-color:var(--ink);color:var(--ink)}

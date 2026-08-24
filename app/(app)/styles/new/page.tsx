@@ -146,10 +146,11 @@ export default async function NewStylePage() {
           </div>
         </div>
 
-        <div className="field">
-          <label>Cover image URL</label>
-          <input className="input" name="cover_image" placeholder="https://…" />
-        </div>
+        {/* Cover image URL removed (Tess, 2026-08-24 field audit; the edit form
+            dropped it 2026-08-05 for the same reason — the sketch and photos are
+            the cover, and a URL field edits something you can't see on the page).
+            createStyle still accepts the column, so nothing stored is affected and
+            the field can return as one line if ever wanted. */}
 
         <div className="row">
           <div className="field">
