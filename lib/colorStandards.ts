@@ -15,11 +15,10 @@
 // row owning an `approvals` list with one entry per material, the same way
 // material_orders owns its `items`.
 //
-// Pure like the rest of lib/. The one import is `normalizeHex` from ./palette.ts,
-// which already does exactly this job; hex parsing should have one implementation
-// rather than two that drift.
-
-import { normalizeHex } from "./palette.ts";
+// Pure like the rest of lib/. Imports nothing at runtime — a unit-tested lib
+// module runs under `node --experimental-strip-types` with no build step.
+// `normalizeHex` is inlined rather than imported, kept byte-identical to
+// lib/palette.ts's version so the two cannot drift apart in behaviour.
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
@@ -58,6 +57,21 @@ const MAX_APPROVALS = 200;
 
 function str(v: unknown, max: number): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+
+// Inlined rather than imported from ./palette.ts, which exports the same
+// function. A unit-tested lib module imports nothing at runtime — the test runs
+// under `node --experimental-strip-types` with no build step, and a value import
+// would need either a `.ts` specifier (TS5097) or an extensionless one node
+// cannot resolve. Kept byte-identical to palette.ts's so the two cannot drift
+// apart in behaviour.
+function normalizeHex(input: unknown): string {
+  if (typeof input !== "string") return "";
+  let s = input.trim().toLowerCase();
+  if (s.startsWith("#")) s = s.slice(1);
+  if (/^[0-9a-f]{3}$/.test(s)) s = s.split("").map((c) => c + c).join("");
+  if (/^[0-9a-f]{6}$/.test(s)) return "#" + s;
+  return "";
 }
 
 export function normalizeApproval(raw: unknown): Approval | null {
