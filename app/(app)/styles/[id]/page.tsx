@@ -53,6 +53,10 @@ import DeleteStyleButton from "./DeleteStyleButton";
 import SlotCards from "./SlotCards";
 import ImageStrip from "./ImageStrip";
 import CommentsDrawer, { type RoundOption } from "./CommentsDrawer";
+import StyleReview, {
+  type ReviewImage,
+  type ReviewThread,
+} from "./StyleReview";
 import StatusControl from "./StatusControl";
 import SampleRounds from "./SampleRounds";
 import VersionStrip from "./VersionStrip";
@@ -327,6 +331,43 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
   const faces = styleFaces(withRoundPhotos(st, currentRound?.photos));
   const coverUrl = faces.front?.url ?? faces.back?.url ?? null;
 
+  // The full-screen review view (StyleReview): the style's pictures large beside
+  // its notes thread, for a fit review read off one screen. Built here from data
+  // already loaded — faces, the gallery and colourways for the pictures; the
+  // comment threads (mapped to a plain, serialisable shape) for the notes. The
+  // round label is stamped on so a comment filed against a round says which one.
+  // Read-only, so no ids or scopes travel past what a reader needs to see.
+  const roundLabelById: Record<string, string> = {};
+  for (const r of roundOptions) roundLabelById[r.id] = r.label;
+  const reviewImages: ReviewImage[] = [
+    faces.front ? { url: faces.front.url, caption: "Front" } : null,
+    faces.back ? { url: faces.back.url, caption: "Back" } : null,
+    ...readImages(st.photos, GALLERY_KEY).map((g) => ({
+      url: g.url,
+      caption: g.caption || "",
+    })),
+    ...readImages(st.photos, COLORWAYS_KEY).map((c) => ({
+      url: c.url,
+      caption: c.caption || "Colourway",
+    })),
+  ].filter((x): x is ReviewImage => x !== null);
+  const reviewThreads: ReviewThread[] = threads.map((t) => ({
+    comment: {
+      id: t.comment.id,
+      author: t.comment.author ?? null,
+      body: t.comment.body ?? null,
+      created_at: t.comment.created_at ?? null,
+      round: t.comment.sample_id ? roundLabelById[t.comment.sample_id] ?? "Round" : null,
+    },
+    replies: t.replies.map((r) => ({
+      id: r.id,
+      author: r.author ?? null,
+      body: r.body ?? null,
+      created_at: r.created_at ?? null,
+      round: null,
+    })),
+  }));
+
   // Everything written on the style's own pictures — the sketch, the flats, the
   // gallery below them — keyed by image URL. Read once here rather than in each
   // component, because all of it comes out of the one styles.photos object.
@@ -480,6 +521,19 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
           ← Development
         </Link>
         <div className="spacer" />
+        {/* Full-screen review: the pictures beside the notes thread, for talking
+            a style through on one screen. Stays on mobile — it reads well on a
+            phone and is the one place a fit review is easy to follow there. */}
+        <StyleReview
+          name={st.name}
+          styleNo={st.style_no}
+          garment={st.garment}
+          factory={st.factory}
+          status={st.status}
+          images={reviewImages}
+          threads={reviewThreads}
+          count={commentTotal}
+        />
         {/* The whole history on one page, black on white, ready to paste into a
             Google Doc or print. See lib/styleExport.ts. */}
         {/* The one control on this page that makes something new, at the top
