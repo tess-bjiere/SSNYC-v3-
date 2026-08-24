@@ -14,6 +14,7 @@ import {
   setItemColors,
   normalizeItems,
   normalizeKind,
+  normalizeLayout,
   type LinesheetItem,
   type LinesheetColorName,
 } from "@/lib/linesheet";
@@ -115,15 +116,28 @@ export async function reorderLinesheet(id: string, orderedIds: string[]) {
 }
 
 // The per-item merchandising fields the style row does not carry: Estimated
-// Retail and the positioning note.
+// Retail, the positioning note, and the delivery date (Tess, 2026-08-24).
 export async function setLinesheetItem(
   id: string,
   styleId: string,
-  patch: { price?: string | null; note?: string | null }
+  patch: { price?: string | null; note?: string | null; delivery?: string | null }
 ) {
   await requireUser();
   const { supabase, items } = await readItems(id);
   await writeItems(supabase, id, setItemField(items, styleId, patch));
+}
+
+// Which page layout the whole sheet's Detail export uses (Tess, 2026-08-24: "have
+// options for page layouts"). Writes the `layout` column; before that column is
+// added the update simply no-ops on it, and the reader defaults to "flats".
+export async function setLinesheetLayout(id: string, layout: string) {
+  await requireUser();
+  const supabase = await createClient();
+  await supabase
+    .from(TABLE)
+    .update({ layout: normalizeLayout(layout), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath(`/linesheets/${id}`);
 }
 
 // The style's colours on this sheet — edited here without touching the style row

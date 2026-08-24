@@ -4270,28 +4270,41 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-cell.dragging,.ls-entry.dragging{opacity:.4}
 
 /* --- Detail (one product per page) --- */
+/* The Detail view, reworked so image and text sit in their own zones and never
+   jumble (Tess, 2026-08-24). Image column left, the market anatomy right. What
+   fills the image column is the sheet's chosen layout: .ls-lay-flats /
+   .ls-lay-model / .ls-lay-colorways. */
 .ls-detail{display:flex;flex-direction:column;gap:40px}
-.ls-entry{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:34px;align-items:start}
-.ls-entry-fig{display:flex;gap:14px;align-items:flex-start;text-decoration:none;
-  background:var(--field);border:1px solid var(--hair);padding:14px;min-height:120px}
-.ls-entry-fig.none{background:repeating-linear-gradient(45deg,var(--field),var(--field) 7px,transparent 7px,transparent 14px)}
-.ls-entry-fig img{width:100%;max-height:60vh;object-fit:contain;display:block}
-.ls-entry-back{max-width:34%}
-.ls-entry-info{min-width:0}
-.ls-entry-head{margin-bottom:16px;position:relative}
-.ls-entry-name{font-size:var(--t-display);font-weight:var(--w-mid);color:var(--ink);
-  text-decoration:none;letter-spacing:.01em}
+.ls-entry{position:relative;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:40px;align-items:start}
+.ls-visual{display:block;text-decoration:none;min-width:0}
+.ls-visual.none{min-height:120px;background:repeating-linear-gradient(45deg,var(--field),var(--field) 7px,transparent 7px,transparent 14px)}
+.ls-hero{width:100%;max-height:64vh;object-fit:contain;display:block}
+.ls-flats{display:flex;gap:16px;align-items:flex-start}
+.ls-flats img{width:100%;max-height:52vh;object-fit:contain;display:block}
+.ls-cw-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.ls-cw-grid img{width:100%;max-height:30vh;object-fit:contain;display:block;background:var(--field)}
+.ls-flats-mini{display:flex;gap:10px;margin:0 0 18px}
+.ls-flats-mini img{height:104px;width:auto;object-fit:contain;border:1px solid var(--hair);background:var(--field)}
+.ls-entry-info{min-width:0;display:flex;flex-direction:column}
+/* A serif title for the buyer-facing page — a deliberate market-deck flourish,
+   system serif so nothing has to load (Tess's SOUS SOUS deck uses Playfair). */
+.ls-eyebrow{font-size:var(--t-micro);letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}
+.ls-entry-head{margin-bottom:18px;position:relative}
+.ls-entry-name{font-family:Georgia,"Times New Roman",serif;font-size:28px;font-weight:500;
+  color:var(--ink);text-decoration:none;letter-spacing:.005em;line-height:1.05}
 .ls-entry-name:hover{text-decoration:underline}
-.ls-entry-sub{font-size:var(--t-micro);letter-spacing:.12em;text-transform:uppercase;
-  color:var(--faint);margin:4px 0 0}
-.ls-facts{display:flex;flex-direction:column;gap:14px;margin:0}
+.ls-eno{display:block;font-size:var(--t-micro);letter-spacing:.1em;color:var(--faint);margin-top:6px}
+.ls-facts{display:flex;flex-direction:column;gap:16px;margin:0}
 .ls-fact dt{font-size:var(--t-micro);letter-spacing:.14em;text-transform:uppercase;
   color:var(--faint);margin-bottom:5px}
 .ls-fact dd{margin:0;font-size:var(--t-body);color:var(--ink);line-height:1.5}
+.ls-fabric{margin-bottom:4px}
 .ls-sample{display:flex;align-items:center;gap:8px}
 .ls-field{width:100%;max-width:280px}
 .ls-note{min-height:64px;max-width:100%}
 .ls-field-print{display:none}
+.ls-wordmark{margin-top:auto;padding-top:26px;font-size:var(--t-meta);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint)}
 .ls-entry-head .ls-remove{position:static;opacity:1;margin-top:8px;display:inline-block}
 
 /* --- Add-styles picker --- */
@@ -4315,7 +4328,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 
 /* When a style opens the factories modal instead of linking, the opener is a
    button — strip the default chrome so it reads exactly like the link did. */
-button.ls-card-style,button.ls-entry-name,button.ls-entry-fig{
+button.ls-card-style,button.ls-entry-name,button.ls-visual{
   appearance:none;-webkit-appearance:none;background:none;font-family:inherit;color:inherit;
   cursor:pointer;text-align:left}
 button.ls-card-style,button.ls-entry-name{border:none;padding:0}
@@ -4346,7 +4359,7 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
 
 @media(max-width:760px){
   .ls-entry{grid-template-columns:1fr;gap:16px}
-  .ls-entry-fig img{max-height:44vh}
+  .ls-hero,.ls-flats img{max-height:44vh}
   .ls-head{align-items:flex-start}
   /* Density on a phone maps straight to the toggle glyph: 1×1 → one column,
      2×2 → two, 3×3 → three. */
@@ -4432,24 +4445,32 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   /* The cover already broke to a new page, so the first product must not force a
      second, blank one before it. */
   .ls-detail .ls-entry:first-child{break-before:avoid}
-  .ls-entry-fig{background:none;border:none;padding:0;align-items:center;gap:0.2in;min-height:0}
-  .ls-entry-fig img{width:100%;max-height:7in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
-  .ls-entry-back{max-width:34%}
-  .ls-entry-head{margin-bottom:0}
-  .ls-entry-name{font-size:30px;font-weight:400;color:#111;line-height:1.05}
-  .ls-entry-sub{font-size:10px;letter-spacing:.14em;color:#9a9a9a;margin-top:7px}
-  .ls-facts{display:grid;grid-template-columns:1fr 1fr;gap:18px 34px;margin-top:26px}
+  /* Image zone — the layout decides what it holds. Full-height and self-contained
+     so a picture never overruns the facts. */
+  .ls-visual{align-self:center}
+  .ls-hero{width:100%;max-height:7.4in;object-fit:contain}
+  .ls-flats{display:flex;gap:0.2in;align-items:center}
+  .ls-flats img{width:100%;max-height:6.4in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  .ls-cw-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.14in}
+  .ls-cw-grid img{width:100%;max-height:3.3in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  .ls-flats-mini{display:flex;gap:0.12in;margin:0 0 0.22in}
+  .ls-flats-mini img{height:1in;width:auto;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  /* Text zone — the market anatomy. */
+  .ls-entry-info{justify-content:flex-start}
+  .ls-eyebrow{font-size:9px;letter-spacing:.18em;color:#9a9a9a;margin:0 0 10px}
+  .ls-entry-head{margin-bottom:0.16in}
+  .ls-entry-name{font-family:Georgia,"Times New Roman",serif;font-size:34px;font-weight:500;color:#111;line-height:1.02;letter-spacing:0}
+  .ls-facts{display:flex;flex-direction:column;gap:16px;margin-top:0.1in}
   .ls-fact dt{font-size:9px;letter-spacing:.15em;color:#9a9a9a;margin-bottom:4px}
-  .ls-fact dd{font-size:13px;color:#111;line-height:1.45}
-  .ls-fact-note{grid-column:1 / -1}
-  /* A description/notes block with nothing in it is dropped from the export
-     (Tess, 2026-08-12: "supress in export if no text added"). */
-  .ls-fact-note.ls-empty{display:none}
+  .ls-fact dd{font-size:12.5px;color:#111;line-height:1.5}
+  .ls-fabric{margin-bottom:3px;font-size:12.5px;color:#111}
   .ls-color-chip{border-color:#ddd;background:#f2f2f2;width:13px;height:13px}
   /* The editable field is hidden; its saved value prints as text. */
   .ls-field.no-print{display:none}
-  .ls-field-print{display:block;font-size:13px;color:#111;line-height:1.45}
-  .ls-fact-note .ls-field-print{white-space:pre-wrap}
+  .ls-field-print{display:block;font-size:12.5px;color:#111;line-height:1.5}
+  .ls-fact-details .ls-field-print{white-space:normal}
+  .ls-wordmark{margin-top:0.35in;font-size:11px;letter-spacing:.2em;color:#111;font-weight:600}
+  .ls-wordmark, .ls-eyebrow{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
 /* --- Material order → purchase order PDF (Tess, 2026-08-18). Portrait; each

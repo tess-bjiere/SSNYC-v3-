@@ -3,19 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { sampleRatingLabel } from "@/lib/types";
-import { groupByColor, swatchForColor, baseColorNames } from "@/lib/linesheet";
+import { groupByColor, swatchForColor, baseColorNames, LINESHEET_LAYOUTS } from "@/lib/linesheet";
 import SizeToggle from "@/app/components/SizeToggle";
+import Select from "@/app/components/Select";
+import Linked from "@/app/components/Linked";
 import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
   LinesheetStanding,
   LinesheetColorName,
+  LinesheetLayout,
 } from "@/lib/linesheet";
 import {
   addStylesToLinesheet,
   removeStyleFromLinesheet,
   setLinesheetItem,
   setLinesheetColors,
+  setLinesheetLayout,
   renameLinesheet,
   reorderLinesheet,
   deleteLinesheet,
@@ -361,8 +365,17 @@ export default function Linesheet({
     await removeStyleFromLinesheet(id, styleId);
   }
 
-  async function saveField(styleId: string, field: "price" | "note", value: string) {
+  async function saveField(styleId: string, field: "price" | "note" | "delivery", value: string) {
     await setLinesheetItem(id, styleId, { [field]: value });
+  }
+
+  // The whole sheet's Detail export layout (Tess, 2026-08-24). Optimistic so the
+  // pages re-flow at once; the server revalidation re-seeds from the saved column.
+  const [layout, setLayout] = useState<LinesheetLayout>(sheet.layout);
+  useEffect(() => setLayout(sheet.layout), [sheet.layout]);
+  async function chooseLayout(next: LinesheetLayout) {
+    setLayout(next);
+    await setLinesheetLayout(id, next);
   }
 
   // Per-sheet colour edits, applied optimistically so a chip appears/disappears
@@ -488,6 +501,16 @@ export default function Linesheet({
             </button>
           )}
           {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
+          {view === "detail" && (
+            <Select
+              className="select sm ls-layout"
+              aria-label="Page layout"
+              value={layout}
+              onChange={(v) => chooseLayout(v as LinesheetLayout)}
+              options={LINESHEET_LAYOUTS.map((l) => ({ value: l.key, label: l.label }))}
+              title="How each product page is laid out in the export"
+            />
+          )}
           <button type="button" className="btn ghost sm" onClick={() => setPicking(true)}>
             + Add styles
           </button>
@@ -557,7 +580,7 @@ export default function Linesheet({
           <div className={"ls-grid dens-" + size}>{ordered.map((e) => cell(e))}</div>
         )
       ) : (
-        <div className="ls-detail">
+        <div className={"ls-detail ls-lay-" + layout}>
           {ordered.map((e) => (
             <section
               className={"ls-entry" + (dragId === e.styleId ? " dragging" : "")}
@@ -565,23 +588,52 @@ export default function Linesheet({
               {...dropProps(e.styleId)}
             >
               {dragHandle(e.styleId)}
+
+              {/* IMAGE ZONE — kept apart from the text so the two never jumble
+                  (Tess, 2026-08-24: "Rework detail line sheet exports so images are
+                  not jumbled with text"). What fills it is the sheet's chosen
+                  layout: colourway photos as a grid, a model hero, or the flats. */}
               <StyleOpener
                 styleId={e.styleId}
                 multi={multi(e.styleId)}
                 onOpen={setOpenStyle}
-                className={"ls-entry-fig" + (e.empty ? " none" : "")}
+                className={"ls-visual" + (e.empty && !e.modelUrl ? " none" : "")}
               >
-                {e.sketchUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={e.sketchUrl} alt={e.name} />
-                )}
-                {e.backUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="ls-entry-back" src={e.backUrl} alt={`${e.name} — back`} />
+                {layout === "colorways" ? (
+                  e.colorways.length > 0 ? (
+                    <div className="ls-cw-grid">
+                      {e.colorways.map((c, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={i} src={c.url} alt={c.name || e.name} title={c.name} />
+                      ))}
+                    </div>
+                  ) : e.sketchUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="ls-hero" src={e.sketchUrl} alt={e.name} />
+                  ) : null
+                ) : layout === "model" ? (
+                  (e.modelUrl || e.sketchUrl) && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="ls-hero" src={(e.modelUrl || e.sketchUrl) ?? ""} alt={e.name} />
+                  )
+                ) : (
+                  <div className="ls-flats">
+                    {e.sketchUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={e.sketchUrl} alt={e.name} />
+                    )}
+                    {e.backUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={e.backUrl} alt={`${e.name} — back`} />
+                    )}
+                  </div>
                 )}
               </StyleOpener>
 
+              {/* TEXT ZONE — the market anatomy: eyebrow, serif title, the facts,
+                  the wordmark. */}
               <div className="ls-entry-info">
+                <p className="ls-eyebrow">{sheet.subtitle || sheet.kindLabel}</p>
                 <header className="ls-entry-head">
                   <StyleOpener
                     styleId={e.styleId}
@@ -589,22 +641,9 @@ export default function Linesheet({
                     onOpen={setOpenStyle}
                     className="ls-entry-name"
                   >
-                    {e.name}
+                    {e.name}.
                   </StyleOpener>
-                  {(e.styleNo || e.subtitle) && (
-                    <p className="ls-entry-sub">
-                      {/* Style no kept on screen for the merchandiser, dropped from
-                          the export (Tess, 2026-08-12: "export doesnt need style
-                          number"). */}
-                      {e.styleNo && (
-                        <span className="ls-eno">
-                          {e.styleNo}
-                          {e.subtitle ? " · " : ""}
-                        </span>
-                      )}
-                      {e.subtitle}
-                    </p>
-                  )}
+                  {e.styleNo && <span className="ls-eno no-print">{e.styleNo}</span>}
                   <button
                     type="button"
                     className={"ls-remove no-print" + (armed === e.styleId ? " armed" : "")}
@@ -615,37 +654,37 @@ export default function Linesheet({
                   </button>
                 </header>
 
+                {/* On the model layout the flats sit small beside the facts (PDF
+                    layout 1), so the drawing still ships without stealing the hero. */}
+                {layout === "model" && (e.sketchUrl || e.backUrl) && (
+                  <div className="ls-flats-mini">
+                    {e.sketchUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={e.sketchUrl} alt="" />
+                    )}
+                    {e.backUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={e.backUrl} alt="" />
+                    )}
+                  </div>
+                )}
+
                 <dl className="ls-facts">
                   <div className="ls-fact">
-                    <dt>Estimated Retail</dt>
+                    <dt>Retail</dt>
                     <dd>
                       <input
                         className="input sm ls-field no-print"
                         defaultValue={e.price ?? ""}
                         placeholder="—"
                         onBlur={(ev) => saveField(e.styleId, "price", ev.target.value)}
-                        aria-label="Estimated retail"
+                        aria-label="Retail"
                       />
                       <span className="ls-field-print">{e.price || "—"}</span>
                     </dd>
                   </div>
-                  {e.fabric && (
-                    <div className="ls-fact">
-                      <dt>Fabric</dt>
-                      <dd>{e.fabric}</dd>
-                    </div>
-                  )}
-                  {(e.factory || e.roundLabel || e.rating) && (
-                    <div className="ls-fact">
-                      <dt>Sample</dt>
-                      <dd className="ls-sample">
-                        <RatingDot rating={e.rating} />
-                        {[e.roundLabel, e.factory].filter(Boolean).join(" · ") || "—"}
-                      </dd>
-                    </div>
-                  )}
                   <div className="ls-fact">
-                    <dt>Colors</dt>
+                    <dt>Color</dt>
                     <dd>
                       <ColorsEditor
                         entry={withColors(e)}
@@ -656,23 +695,51 @@ export default function Linesheet({
                       </div>
                     </dd>
                   </div>
-                  <div className={"ls-fact ls-fact-note" + (e.note ? "" : " ls-empty")}>
-                    {/* Renamed from "Positioning" and suppressed in the export when
-                        blank (Tess, 2026-08-12: "change positioning to description
-                        / notes. supress in export if no text added"). */}
-                    <dt>Description / Notes</dt>
+                  <div className="ls-fact ls-fact-details">
+                    <dt>Fabric / Details</dt>
                     <dd>
+                      {e.fabric && <div className="ls-fabric">{e.fabric}</div>}
                       <textarea
                         className="textarea ls-field ls-note no-print"
                         defaultValue={e.note ?? ""}
-                        placeholder="How this piece sits in the range…"
+                        placeholder="Fabric make-up and detail points — one per line, use “- ” for bullets."
                         onBlur={(ev) => saveField(e.styleId, "note", ev.target.value)}
-                        aria-label="Description / notes"
+                        aria-label="Fabric / details"
                       />
-                      {e.note && <p className="ls-field-print">{e.note}</p>}
+                      {e.note && (
+                        <div className="ls-field-print">
+                          <Linked text={e.note} block />
+                        </div>
+                      )}
                     </dd>
                   </div>
+                  <div className="ls-fact">
+                    <dt>Delivery</dt>
+                    <dd>
+                      <input
+                        className="input sm ls-field no-print"
+                        defaultValue={e.delivery ?? ""}
+                        placeholder="e.g. February 15"
+                        onBlur={(ev) => saveField(e.styleId, "delivery", ev.target.value)}
+                        aria-label="Delivery"
+                      />
+                      <span className="ls-field-print">{e.delivery || "—"}</span>
+                    </dd>
+                  </div>
+                  {/* Sample / factory is internal — on screen for the merchandiser,
+                      never in the buyer-facing export. */}
+                  {(e.factory || e.roundLabel || e.rating) && (
+                    <div className="ls-fact ls-sample-fact no-print">
+                      <dt>Sample</dt>
+                      <dd className="ls-sample">
+                        <RatingDot rating={e.rating} />
+                        {[e.roundLabel, e.factory].filter(Boolean).join(" · ") || "—"}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
+
+                <div className="ls-wordmark">{cover.brandLabel}</div>
               </div>
             </section>
           ))}

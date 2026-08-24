@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   normalizeItems,
   normalizeKind,
+  normalizeLayout,
   addItems,
   removeItem,
   reorderItems,
@@ -238,4 +239,36 @@ test("normalizeKind only ever yields the two kinds", () => {
   assert.equal(normalizeKind("seasonal"), "seasonal");
   assert.equal(normalizeKind("nonsense"), "seasonal");
   assert.equal(normalizeKind(undefined), "seasonal");
+});
+
+test("normalizeLayout yields a known layout, defaulting to flats", () => {
+  assert.equal(normalizeLayout("model"), "model");
+  assert.equal(normalizeLayout("colorways"), "colorways");
+  assert.equal(normalizeLayout("flats"), "flats");
+  assert.equal(normalizeLayout("nonsense"), "flats");
+  assert.equal(normalizeLayout(null), "flats");
+});
+
+test("a per-item delivery reads in and clears like price", () => {
+  assert.deepEqual(normalizeItems([{ style_id: "a", delivery: " Feb 15 " }]), [
+    { style_id: "a", delivery: "Feb 15" },
+  ]);
+  const items: LinesheetItem[] = [{ style_id: "a" }];
+  assert.deepEqual(setItemField(items, "a", { delivery: "Drop 2" }), [
+    { style_id: "a", delivery: "Drop 2" },
+  ]);
+  assert.deepEqual(setItemField([{ style_id: "a", delivery: "x" }], "a", { delivery: "  " }), [
+    { style_id: "a" },
+  ]);
+});
+
+test("buildLinesheet carries the layout; buildEntry carries delivery and the model hero", () => {
+  const sheet = buildLinesheet({ name: "FW26", kind: "seasonal", layout: "model" }, [
+    { styleId: "a", name: "Anorak", delivery: "February 15", modelUrl: "u-model", sketchUrl: "u-sk" },
+  ]);
+  assert.equal(sheet.layout, "model");
+  assert.equal(sheet.entries[0].delivery, "February 15");
+  assert.equal(sheet.entries[0].modelUrl, "u-model");
+  // An unknown layout falls back to flats.
+  assert.equal(buildLinesheet({ name: "x", kind: "seasonal" }, []).layout, "flats");
 });

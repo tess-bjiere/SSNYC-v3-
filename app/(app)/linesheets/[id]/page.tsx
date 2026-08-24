@@ -15,8 +15,9 @@ import {
   type StyleSample,
 } from "@/lib/types";
 import { sortSamples, latestSample } from "@/lib/sampleCycle";
-import { styleCoverUrl, styleFaces } from "@/lib/styleCover";
-import { readImages, COLORWAYS_KEY } from "@/lib/imageList";
+import { styleCoverUrl, styleFaces, withRoundPhotos } from "@/lib/styleCover";
+import { readImages, COLORWAYS_KEY, GALLERY_KEY } from "@/lib/imageList";
+import { normalizePhotos } from "@/lib/photoSlots";
 import { siblingsOf, type SiblingStyleLike } from "@/lib/styleSiblings";
 import { latestRating } from "@/lib/factories";
 import {
@@ -108,6 +109,16 @@ export default async function LinesheetPage({
         url: c.url,
         name: c.caption,
       }));
+      // A styled / model photo for the "model" layout's hero: a model shot from
+      // the latest round (overlaid onto the style's map the way the profile cover
+      // is), else the first gallery image. Null falls back to the sketch.
+      const merged = normalizePhotos(withRoundPhotos(st, round?.photos).photos);
+      const modelUrl =
+        merged.model_front ||
+        merged.model_side ||
+        merged.model_back ||
+        readImages(st.photos, GALLERY_KEY)[0]?.url ||
+        null;
       return {
         styleId: st.id,
         name: st.name,
@@ -116,12 +127,14 @@ export default async function LinesheetPage({
         season: st.season,
         price: item.price ?? null,
         note: item.note ?? null,
+        delivery: item.delivery ?? null,
         fabric: st.fabric,
         colors: st.colors,
         colorOverride: item.colors ?? null,
         colorways,
         sketchUrl: faces.front?.url ?? faces.back?.url ?? st.cover_image ?? null,
         backUrl: faces.front && faces.back ? faces.back.url : null,
+        modelUrl,
         roundLabel: round ? SAMPLE_ROUND_LABELS[round.round as SampleRound] ?? round.round : null,
         factory: round?.factory ?? st.factory,
         rating: round?.rating ?? "",
@@ -130,7 +143,13 @@ export default async function LinesheetPage({
     .filter((x): x is LinesheetEntryInput => x !== null);
 
   const sheet = buildLinesheet(
-    { name: row.name, kind: normalizeKind(row.kind), subtitle: row.subtitle ?? row.season },
+    {
+      name: row.name,
+      kind: normalizeKind(row.kind),
+      subtitle: row.subtitle ?? row.season,
+      // `layout` may not exist as a column yet (db/p12); the reader defaults it.
+      layout: (row as { layout?: unknown }).layout,
+    },
     inputs
   );
 

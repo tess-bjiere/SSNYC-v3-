@@ -15,6 +15,26 @@ export const LINESHEET_KINDS: { key: LinesheetKind; label: string }[] = [
   { key: "evergreen", label: "Evergreen" },
 ];
 
+// The page layout the whole sheet's Detail export uses (Tess, 2026-08-24: "have
+// options for page layouts"). One choice per sheet. Each is the same market page
+// — eyebrow, serif title, the Retail / Colour / Fabric / Delivery facts, the
+// wordmark — differing only in the image zone:
+//   flats     — the front/back technical sketches (works for every style)
+//   model     — a styled/model photo as the hero, the flats small beside the facts
+//   colorways — the colourway product photos as a grid
+export type LinesheetLayout = "flats" | "model" | "colorways";
+
+export const LINESHEET_LAYOUTS: { key: LinesheetLayout; label: string; hint: string }[] = [
+  { key: "flats", label: "Flats", hint: "Front & back technical sketches" },
+  { key: "model", label: "Model + flats", hint: "A styled photo, sketches beside the facts" },
+  { key: "colorways", label: "Colorways", hint: "The colourway photos as a grid" },
+];
+
+/** Any input becomes one of the known layouts; unknown/absent reads as flats. */
+export function normalizeLayout(raw: unknown): LinesheetLayout {
+  return raw === "model" || raw === "colorways" ? raw : "flats";
+}
+
 // One entry in a linesheet's ordered contents. `style_id` is the only required
 // part; a linesheet carries the merchandising facts the style row does not —
 // `price` (Estimated Retail; styles have no price column) and `note` (the
@@ -24,6 +44,10 @@ export type LinesheetItem = {
   style_id: string;
   price?: string;
   note?: string;
+  // When this product ships, printed on the market page (Tess, 2026-08-24:
+  // "Delivery: per product"). Free text — "February 15", "Drop 2", a date — since
+  // a style has no delivery column; a blank removes it.
+  delivery?: string;
   colorways?: string[];
   // A per-linesheet colour list, edited on the sheet without touching the style
   // (Tess, 2026-08-12: "add ability to add / remove colors from styles on line
@@ -57,12 +81,17 @@ export type LinesheetEntry = {
   colorways: LinesheetColor[];
   sketchUrl: string | null;
   backUrl: string | null;
+  /** A styled / model photo used as the hero on the "model" layout; null falls
+   *  back to the sketch. */
+  modelUrl: string | null;
   roundLabel: string | null;
   factory: string | null;
   /** "" | "good" | "workable" | "poor" — drives the rating dot; "" draws none. */
   rating: string;
   /** Per-item positioning note. */
   note: string | null;
+  /** When this product ships, on the market page. */
+  delivery: string | null;
   /** Nothing to show visually — no sketch and no colorway image. */
   empty: boolean;
 };
@@ -80,10 +109,12 @@ export type LinesheetEntryInput = {
   colorways?: LinesheetColor[];
   sketchUrl?: string | null;
   backUrl?: string | null;
+  modelUrl?: string | null;
   roundLabel?: string | null;
   factory?: string | null;
   rating?: string | null;
   note?: string | null;
+  delivery?: string | null;
 };
 
 export type Linesheet = {
@@ -92,6 +123,8 @@ export type Linesheet = {
   kindLabel: string;
   /** The optional free-text label under the title (was "season"). */
   subtitle: string | null;
+  /** Which Detail page layout the whole sheet exports in. */
+  layout: LinesheetLayout;
   entries: LinesheetEntry[];
   count: number;
 };
@@ -275,6 +308,7 @@ export function normalizeItems(raw: unknown): LinesheetItem[] {
     const item: LinesheetItem = { style_id: styleId };
     if (typeof r.price === "string" && r.price.trim()) item.price = r.price.trim().slice(0, 40);
     if (typeof r.note === "string" && r.note.trim()) item.note = r.note.trim().slice(0, 2000);
+    if (typeof r.delivery === "string" && r.delivery.trim()) item.delivery = r.delivery.trim().slice(0, 60);
     if (Array.isArray(r.colorways)) {
       const cw = r.colorways.filter((x): x is string => typeof x === "string" && x.length > 0);
       if (cw.length) item.colorways = cw;
@@ -331,7 +365,7 @@ export function reorderItems(items: LinesheetItem[], orderedIds: string[]): Line
 export function setItemField(
   items: LinesheetItem[],
   styleId: string,
-  patch: { price?: string | null; note?: string | null }
+  patch: { price?: string | null; note?: string | null; delivery?: string | null }
 ): LinesheetItem[] {
   return items.map((i) => {
     if (i.style_id !== styleId) return i;
@@ -345,6 +379,11 @@ export function setItemField(
       const n = t(patch.note);
       if (n) next.note = n.slice(0, 2000);
       else delete next.note;
+    }
+    if ("delivery" in patch) {
+      const d = t(patch.delivery);
+      if (d) next.delivery = d.slice(0, 60);
+      else delete next.delivery;
     }
     return next;
   });
@@ -380,10 +419,12 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
     colorways: colorways.map((c) => ({ url: c.url, name: t(c.name) ?? "" })),
     sketchUrl,
     backUrl: t(input.backUrl),
+    modelUrl: t(input.modelUrl),
     roundLabel: t(input.roundLabel),
     factory: t(input.factory),
     rating: (input.rating ?? "").trim(),
     note: t(input.note),
+    delivery: t(input.delivery),
     // A style with no drawing and no colorway photo still lists (its name, price
     // and colours read fine) — the flag just lets a view show a placeholder
     // rather than a blank tile.
@@ -392,7 +433,7 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
 }
 
 export function buildLinesheet(
-  opts: { name: string; kind: LinesheetKind; subtitle?: string | null },
+  opts: { name: string; kind: LinesheetKind; subtitle?: string | null; layout?: unknown },
   inputs: LinesheetEntryInput[]
 ): Linesheet {
   const entries = inputs.map(buildEntry);
@@ -401,6 +442,7 @@ export function buildLinesheet(
     kind: opts.kind,
     kindLabel: kindLabel(opts.kind),
     subtitle: t(opts.subtitle),
+    layout: normalizeLayout(opts.layout),
     entries,
     count: entries.length,
   };
