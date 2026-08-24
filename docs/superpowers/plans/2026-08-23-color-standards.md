@@ -652,11 +652,11 @@ Run (via the Supabase MCP `execute_sql` against `vjiwcreytvmxvxasyvoo`):
 ```sql
 select count(*) as rows,
        (select count(*) from information_schema.columns
-         where table_name = 'color_standards') as cols
+         where table_name = 'color_standards' and table_schema = 'public') as cols
 from public.color_standards;
 ```
 
-Expected: `rows` = 0, `cols` = 19.
+Expected: `rows` = 0, `cols` = 20.
 
 - [ ] **Step 4: Commit**
 
@@ -1172,7 +1172,7 @@ where deleted_at is null and notes like '%Colour standard: see Sourcing%'
 order by kind, name;
 ```
 
-Expected: `block_gone_should_be_false` false for every row, `pointer_added` true for all nine, `own_notes_kept` true for the rows that had duties or "next order" lines before (all except the two Sidogras rows, which keep their contact lines and should also read true).
+Expected: `block_gone_should_be_false` false for every row, `pointer_added` true for all nine, `own_notes_kept` true for all nine rows — every one carries a Duties, Next order, or Original fabric line.
 
 - [ ] **Step 5: Record the work**
 
