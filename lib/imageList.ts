@@ -155,6 +155,28 @@ export function withImageRemoved(raw: unknown, key: string, id: string): Record<
   );
 }
 
+/**
+ * Replace one image's URL in place, keeping its id, caption and position. Crop /
+ * rotate write a fresh file and swap the URL in — the entry is otherwise the same
+ * shot (Tess, 2026-08-24: crop images in the style profile / samples). A blank
+ * url, or an id not in the list, is a no-op rather than a corruption.
+ */
+export function withImageUrl(
+  raw: unknown,
+  key: string,
+  id: string,
+  url: string | null | undefined
+): Record<string, unknown> {
+  const want = str(id);
+  const next = str(url);
+  if (!want || !next) return asObject(raw);
+  const list = readImages(raw, key);
+  const at = list.findIndex((im) => im.id === want);
+  if (at === -1) return asObject(raw);
+  list[at] = { ...list[at], url: next };
+  return withList(raw, key, list);
+}
+
 /** Re-caption one image. A blank caption clears it rather than storing "". */
 export function withImageCaption(
   raw: unknown,

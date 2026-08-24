@@ -6,12 +6,15 @@ import { visibleSlots } from "@/lib/photoSlots";
 import type { ImageNote } from "@/lib/imageNotes";
 import { EMPTY_NOTE, noteCountLabel } from "@/lib/imageNotes";
 import ImageNotes from "./ImageNotes";
+import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import { PHOTO_FOCUS_EVENT, takePhotoFocus } from "./photoFocus";
 import {
   setStylePhoto,
   clearStylePhoto,
   setSamplePhoto,
   clearSamplePhoto,
+  cropStyleImage,
+  cropSampleImage,
 } from "@/app/actions/styles";
 
 // The grid of fixed, named image slots.
@@ -159,6 +162,28 @@ export default function SlotCards({
     });
   }
 
+  // Crop a slot's picture in place (Tess, 2026-08-24: "Add ability to crop images
+  // loaded into style profile or samples"). The cropper reports a rectangle; the
+  // pixels are cut server-side and the slot's URL is swapped, so its caption and
+  // marks (keyed by the new URL after a re-shoot anyway) and the rest of the
+  // photos map are untouched. The revalidate flows the new picture back in.
+  const [cropSlot, setCropSlot] = useState<string | null>(null);
+  const [cropBusy, setCropBusy] = useState(false);
+  function applyCrop(rect: CropRect) {
+    const slotId = cropSlot;
+    if (!slotId) return;
+    setCropBusy(true);
+    setError("");
+    start(async () => {
+      const res = sampleId
+        ? await cropSampleImage(styleId, sampleId, { slot: slotId }, rect)
+        : await cropStyleImage(styleId, { slot: slotId }, rect);
+      setCropBusy(false);
+      setCropSlot(null);
+      if (!res.ok) setError(res.error || "Couldn't crop that image.");
+    });
+  }
+
   // The cards to draw: every required slot, every optional slot with a picture
   // on it, and one spare per family (Tess, 2026-08-05: "have 4 detail shots and
   // 2 then 2 layflat shots"). The full eleven exist in the standard; showing
@@ -289,6 +314,16 @@ export default function SlotCards({
                 >
                   {src ? "Replace" : "Upload"}
                 </button>
+                {src && (
+                  <button
+                    type="button"
+                    className="ph-link"
+                    disabled={busy}
+                    onClick={() => setCropSlot(slot.id)}
+                  >
+                    Crop
+                  </button>
+                )}
                 {/* The "URL" button used to sit here (Tess, 2026-08-05:
                     "remove url option from photos upload"). Uploading is the
                     gesture everyone actually uses — a photograph starts life
@@ -383,6 +418,16 @@ export default function SlotCards({
           );
         })}
       </div>
+
+      {cropSlot && photos[cropSlot] && (
+        <ImageCropper
+          src={photos[cropSlot]}
+          title="Crop image"
+          busy={cropBusy}
+          onApply={applyCrop}
+          onCancel={() => setCropSlot(null)}
+        />
+      )}
     </>
   );
 }

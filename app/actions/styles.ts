@@ -21,11 +21,14 @@ import {
   COLORWAYS_KEY,
   GALLERY_KEY,
   SHOTS_KEY,
+  readImages,
   withImageAdded,
   withImageCaption,
   withImageMoved,
   withImageRemoved,
+  withImageUrl,
 } from "@/lib/imageList";
+import sharp from "sharp";
 import {
   withImageNoteCaption,
   withImagePin,
@@ -1209,6 +1212,126 @@ async function writeSamplePhotos(styleId: string, sampleId: string, next: Record
     .eq("style_id", styleId);
   revalidatePath(`/styles/${styleId}`);
   return error?.message;
+}
+
+// ---------------------------------------------------------------------------
+// Cropping a style / sample image (Tess, 2026-08-24: "Add ability to crop images
+// loaded into style profile or samples").
+//
+// The client cropper (app/components/ImageCropper.tsx) only ever computes a
+// normalized rectangle; the pixels are cut here with sharp — same shape as the
+// materials crop. A crop writes a FRESH object and swaps the URL in place, so the
+// slot / list entry keeps its id, caption and position, and the rest of the
+// photos jsonb map is carried through untouched by writePhotos / withImageUrl.
+// ---------------------------------------------------------------------------
+
+/** A normalized crop rectangle, each value 0..1, as the client cropper reports it. */
+export type CropRect = { x: number; y: number; w: number; h: number };
+
+/** Where in a photos map an image lives: a fixed slot, or an entry in one of the
+ *  ordered lists. The list key is validated against the known constants before any
+ *  write — a client can never hand in an arbitrary jsonb key. */
+export type PhotoTarget = { slot: string } | { listKey: string; imageId: string };
+
+const STYLE_LIST_KEYS = new Set<string>([GALLERY_KEY, COLORWAYS_KEY]);
+const SAMPLE_LIST_KEYS = new Set<string>([SHOTS_KEY]);
+
+function asPhotoMap(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+}
+
+// Bake EXIF orientation first so the cut matches what the browser showed, then
+// extract the clamped rectangle. A degenerate rect just re-encodes.
+async function cropBuffer(input: Uint8Array, rect: CropRect): Promise<Uint8Array> {
+  const upright = await sharp(input).rotate().toBuffer();
+  const meta = await sharp(upright).metadata();
+  const W = meta.width ?? 0;
+  const H = meta.height ?? 0;
+  if (!W || !H) return input;
+  const left = Math.max(0, Math.min(W - 1, Math.round(rect.x * W)));
+  const top = Math.max(0, Math.min(H - 1, Math.round(rect.y * H)));
+  const width = Math.max(1, Math.min(W - left, Math.round(rect.w * W)));
+  const height = Math.max(1, Math.min(H - top, Math.round(rect.h * H)));
+  return await sharp(upright).extract({ left, top, width, height }).jpeg({ quality: 90 }).toBuffer();
+}
+
+// Fetch a stored image, crop it, store a fresh object under the style's prefix,
+// return its public URL — or null on any failure.
+async function cropToNewUrl(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  styleId: string,
+  url: string,
+  rect: CropRect
+): Promise<string | null> {
+  const ok = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
+  if (!ok(rect.x) || !ok(rect.y) || !ok(rect.w) || !ok(rect.h) || rect.w <= 0 || rect.h <= 0) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const out = await cropBuffer(Buffer.from(await res.arrayBuffer()), rect);
+    const path = `${PHOTO_PREFIX}/${styleId}/crop-${crypto.randomUUID()}.jpg`;
+    const { error } = await supabase.storage
+      .from(REFERENCES_BUCKET)
+      .upload(path, out, { contentType: "image/jpeg", upsert: false });
+    if (error) return null;
+    const { data } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
+    return data?.publicUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Resolve the current URL for a target and validate it in one place — a slot must
+// be a real photo slot, a list key one of the known constants.
+function urlForTarget(raw: unknown, target: PhotoTarget, listKeys: Set<string>): string | null {
+  if ("slot" in target) {
+    if (!isPhotoSlot(target.slot)) return null;
+    const v = asPhotoMap(raw)[target.slot];
+    return typeof v === "string" && v.trim() ? v : null;
+  }
+  if (!listKeys.has(target.listKey)) return null;
+  return readImages(raw, target.listKey).find((im) => im.id === target.imageId)?.url ?? null;
+}
+
+function writeTarget(raw: unknown, target: PhotoTarget, url: string): Record<string, unknown> {
+  return "slot" in target
+    ? writePhotos(raw, target.slot, url)
+    : withImageUrl(raw, target.listKey, target.imageId, url);
+}
+
+export async function cropStyleImage(
+  styleId: string,
+  target: PhotoTarget,
+  rect: CropRect
+): Promise<PhotoResult> {
+  await requireTeam();
+  const supabase = await createClient();
+  const raw = await readStylePhotos(styleId);
+  if (raw === null) return { ok: false, error: "That style no longer exists." };
+  const url = urlForTarget(raw, target, STYLE_LIST_KEYS);
+  if (!url) return { ok: false, error: "Image not found." };
+  const next = await cropToNewUrl(supabase, styleId, url, rect);
+  if (!next) return { ok: false, error: "Couldn't crop that image." };
+  const err = await writeStylePhotos(styleId, writeTarget(raw, target, next));
+  return err ? { ok: false, error: err } : { ok: true };
+}
+
+export async function cropSampleImage(
+  styleId: string,
+  sampleId: string,
+  target: PhotoTarget,
+  rect: CropRect
+): Promise<PhotoResult> {
+  await requireTeam();
+  const supabase = await createClient();
+  const raw = await readSamplePhotos(styleId, sampleId);
+  if (raw === null) return { ok: false, error: "That round no longer exists." };
+  const url = urlForTarget(raw, target, SAMPLE_LIST_KEYS);
+  if (!url) return { ok: false, error: "Image not found." };
+  const next = await cropToNewUrl(supabase, styleId, url, rect);
+  if (!next) return { ok: false, error: "Couldn't crop that image." };
+  const err = await writeSamplePhotos(styleId, sampleId, writeTarget(raw, target, next));
+  return err ? { ok: false, error: err } : { ok: true };
 }
 
 /**

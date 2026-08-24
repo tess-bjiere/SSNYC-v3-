@@ -9,8 +9,28 @@ import {
   withImageRemoved,
   withImageCaption,
   withImageMoved,
+  withImageUrl,
   imageCountLabel,
 } from "./imageList.ts";
+
+test("withImageUrl swaps the url in place, keeping id, caption, position and the other keys", () => {
+  const raw = {
+    // A photography slot alongside the gallery — it must survive a gallery crop.
+    front: "https://slot/front.jpg",
+    gallery: [
+      { id: "a", url: "https://old/a.jpg", caption: "Front" },
+      { id: "b", url: "https://old/b.jpg", caption: "Back" },
+    ],
+  };
+  const next = withImageUrl(raw, GALLERY_KEY, "a", "https://new/a-cropped.jpg");
+  assert.equal((next.front as string), "https://slot/front.jpg"); // slot untouched
+  const list = readImages(next, GALLERY_KEY);
+  assert.deepEqual(list[0], { id: "a", url: "https://new/a-cropped.jpg", caption: "Front" });
+  assert.deepEqual(list[1], { id: "b", url: "https://old/b.jpg", caption: "Back" }); // order kept
+  // A blank url or an unknown id changes nothing.
+  assert.deepEqual(readImages(withImageUrl(raw, GALLERY_KEY, "a", "  "), GALLERY_KEY), readImages(raw, GALLERY_KEY));
+  assert.deepEqual(readImages(withImageUrl(raw, GALLERY_KEY, "zzz", "x"), GALLERY_KEY), readImages(raw, GALLERY_KEY));
+});
 
 test("nothing stored reads as an empty list rather than throwing", () => {
   for (const raw of [null, undefined, {}, [], "nonsense", 7, { gallery: null }, { gallery: "x" }]) {
