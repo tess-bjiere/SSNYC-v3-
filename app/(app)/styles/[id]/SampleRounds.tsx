@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import CloseOnSave from "@/app/components/CloseOnSave";
+import NotesField from "@/app/components/NotesField";
 import Select from "@/app/components/Select";
 import Link from "next/link";
 import {
@@ -450,8 +451,7 @@ function MaterialFields({
       </div>
       <div className="field">
         <label>Material notes</label>
-        <textarea
-          className="textarea"
+        <NotesField
           name="material_notes"
           defaultValue={s?.material_notes ?? ""}
           placeholder="Dates, lead times, dye lot, anything the next person needs."
@@ -907,11 +907,11 @@ function RoundForm({
 
       <div className="field">
         <label>Fit notes — how this round fitted</label>
-        <textarea className="textarea" name="fit_notes" defaultValue={s.fit_notes ?? ""} />
+        <NotesField name="fit_notes" defaultValue={s.fit_notes} />
       </div>
       <div className="field">
         <label>Factory comments that came with samples</label>
-        <textarea className="textarea" name="comments" defaultValue={s.comments ?? ""} />
+        <NotesField name="comments" defaultValue={s.comments} />
       </div>
 
       {/* Rounds logged before material went from dates to words still hold
@@ -1615,11 +1615,11 @@ export default function SampleRounds({
 
           <div className="field">
             <label>Fit notes</label>
-            <textarea className="textarea" name="fit_notes" />
+            <NotesField name="fit_notes" />
           </div>
           <div className="field">
             <label>Factory comments that came with samples</label>
-            <textarea className="textarea" name="comments" />
+            <NotesField name="comments" />
           </div>
 
           {/* First photos of the round, attached the moment it is created (Tess,

@@ -1,5 +1,5 @@
 import { linkify } from "@/lib/linkify";
-import { hasBullets, parseNoteBlocks } from "@/lib/noteBlocks";
+import { hasBullets, parseNoteBlocks, type BulletItem } from "@/lib/noteBlocks";
 
 // One line's worth of text, with any URLs in it made clickable — the same
 // segment rendering the plain path uses, so a link inside a bullet behaves
@@ -54,21 +54,28 @@ export default function Linked({
   /** false renders an inline <span> — for a note that sits inside a line. */
   block?: boolean;
 }) {
-  // Notes that use bullet lines render as paragraphs and lists (Tess, 2026-08-24:
-  // "Ability to add bullets"). Lists are block-level, so this path always uses a
-  // <div> — a <ul> inside a <span> is invalid — which is why the plain path below
-  // stays exactly as it was for the inline (block=false) callers with no bullets.
+  // Notes that use bullet lines render as paragraphs and (nested) lists (Tess,
+  // 2026-08-24: bullets and sub-bullets). Lists are block-level, so this path
+  // always uses a <div> — a <ul> inside a <span> is invalid — which is why the
+  // plain path below stays exactly as it was for inline (block=false) callers with
+  // no bullets.
   if (hasBullets(text)) {
     const blocks = parseNoteBlocks(text);
+    const renderList = (items: BulletItem[], key: string) => (
+      <ul className="linked-list" key={key}>
+        {items.map((item, j) => (
+          <li key={j}>
+            {lineNodes(item.text, `${key}-${j}`)}
+            {item.children.length > 0 && renderList(item.children, `${key}-${j}c`)}
+          </li>
+        ))}
+      </ul>
+    );
     return (
       <div className={className}>
         {blocks.map((b, i) =>
           b.kind === "list" ? (
-            <ul className="linked-list" key={i}>
-              {b.items.map((item, j) => (
-                <li key={j}>{lineNodes(item, `l${i}-${j}`)}</li>
-              ))}
-            </ul>
+            renderList(b.items, `l${i}`)
           ) : (
             <div key={i} style={{ whiteSpace: "pre-wrap" }}>
               {lineNodes(b.text, `t${i}`)}

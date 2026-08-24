@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hasBullets, parseNoteBlocks } from "./noteBlocks.ts";
+import { hasBullets, parseNoteBlocks, type BulletItem } from "./noteBlocks.ts";
+
+// A tiny helper so the expectations read as trees, not nested object literals.
+function leaf(text: string): BulletItem {
+  return { text, children: [] };
+}
 
 test("plain text with no bullets is one text block, line breaks intact", () => {
   assert.equal(hasBullets("just a note\nsecond line"), false);
@@ -9,30 +14,60 @@ test("plain text with no bullets is one text block, line breaks intact", () => {
   ]);
 });
 
-test("a run of dash lines becomes one list; the marker and its space are stripped", () => {
+test("a run of top-level dashes becomes one flat list", () => {
   assert.equal(hasBullets("- one\n- two"), true);
   assert.deepEqual(parseNoteBlocks("- one\n- two\n- three"), [
-    { kind: "list", items: ["one", "two", "three"] },
+    { kind: "list", items: [leaf("one"), leaf("two"), leaf("three")] },
   ]);
 });
 
-test("*, - and • all count, and indentation before the marker is allowed", () => {
-  assert.deepEqual(parseNoteBlocks("* star\n  - dash\n• dot"), [
-    { kind: "list", items: ["star", "dash", "dot"] },
+test("indented bullets nest under the one above — two spaces OR a tab per level", () => {
+  const spaces = parseNoteBlocks("- top\n  - sub a\n  - sub b\n- next");
+  assert.deepEqual(spaces, [
+    {
+      kind: "list",
+      items: [
+        { text: "top", children: [leaf("sub a"), leaf("sub b")] },
+        leaf("next"),
+      ],
+    },
+  ]);
+  // A tab indents the same as two spaces.
+  const tabs = parseNoteBlocks("- top\n\t- sub");
+  assert.deepEqual(tabs, [
+    { kind: "list", items: [{ text: "top", children: [leaf("sub")] }] },
+  ]);
+});
+
+test("three levels deep", () => {
+  const out = parseNoteBlocks("- a\n  - b\n    - c");
+  assert.deepEqual(out, [
+    {
+      kind: "list",
+      items: [{ text: "a", children: [{ text: "b", children: [leaf("c")] }] }],
+    },
+  ]);
+});
+
+test("*, - and • all count as markers", () => {
+  assert.deepEqual(parseNoteBlocks("* star\n- dash\n• dot"), [
+    { kind: "list", items: [leaf("star"), leaf("dash"), leaf("dot")] },
   ]);
 });
 
 test("text and lists interleave, in order", () => {
-  const blocks = parseNoteBlocks("Fit notes:\n- shoulder too wide\n- hem uneven\nOtherwise good");
+  const blocks = parseNoteBlocks("Fit notes:\n- shoulder too wide\n  - re-cut the yoke\nOtherwise good");
   assert.deepEqual(blocks, [
     { kind: "text", text: "Fit notes:" },
-    { kind: "list", items: ["shoulder too wide", "hem uneven"] },
+    {
+      kind: "list",
+      items: [{ text: "shoulder too wide", children: [leaf("re-cut the yoke")] }],
+    },
     { kind: "text", text: "Otherwise good" },
   ]);
 });
 
 test("a bare dash with no space is NOT a bullet — a minus sign stays text", () => {
-  // "-2cm" is a measurement, not a list.
   assert.equal(hasBullets("-2cm at the waist"), false);
   assert.deepEqual(parseNoteBlocks("-2cm at the waist"), [
     { kind: "text", text: "-2cm at the waist" },

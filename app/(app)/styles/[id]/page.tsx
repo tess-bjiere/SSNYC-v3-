@@ -1,5 +1,6 @@
 import Select from "@/app/components/Select";
 import GarmentField from "@/app/components/GarmentField";
+import NotesField from "@/app/components/NotesField";
 import FredCategoryType from "./FredCategoryType";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -1095,10 +1096,10 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   <div className="field"><label>WIP link</label><input className="input" name="wip_url" defaultValue={st.wip_url ?? ""} placeholder="https://… the live working folder" /></div>
                 )}
               </div>
-              <div className="field"><label>Notes</label><textarea className="textarea" name="notes" defaultValue={st.notes ?? ""} /></div>
+              <div className="field"><label>Notes</label><NotesField name="notes" defaultValue={st.notes} /></div>
               <div className="field">
                 <label>Fit notes — the running story across rounds</label>
-                <textarea className="textarea" name="fit_notes" defaultValue={st.fit_notes ?? ""} />
+                <NotesField name="fit_notes" defaultValue={st.fit_notes} />
               </div>
               <div className="row">
                 <div className="field">
