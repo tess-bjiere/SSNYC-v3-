@@ -54,7 +54,17 @@ function pick(patch: Record<string, unknown>): Record<string, unknown> {
 
 async function readStandard(id: string): Promise<ColorStandard | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from(TABLE).select("*").eq("id", id).maybeSingle();
+  const brand = await activeBrand();
+  // Scoped to the active brand and to live rows: a soft-deleted standard must
+  // read as gone so saveApproval/dropApproval/addStandardImage — all of which
+  // call this — refuse to write to it (Finding 2, whole-branch review).
+  const { data } = await supabase
+    .from(TABLE)
+    .select("*")
+    .eq("id", id)
+    .eq("brand", brand)
+    .is("deleted_at", null)
+    .maybeSingle();
   return normalizeStandard(data);
 }
 
@@ -95,10 +105,17 @@ export async function createStandard(form: FormData) {
 export async function updateStandard(id: string, patch: Record<string, unknown>) {
   await requireFredTeam();
   const supabase = await createClient();
+  const brand = await activeBrand();
+  // Scoped to the active brand, and to live rows: this is the direct write the
+  // edit form calls, so it does not go through readStandard — without its own
+  // deleted_at guard, pressing Back to a removed standard's URL and hitting
+  // Save would silently revive it (Finding 2, whole-branch review).
   await supabase
     .from(TABLE)
     .update({ ...pick(patch), updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("brand", brand)
+    .is("deleted_at", null);
   revalidatePath("/color-standards");
   revalidatePath(`/color-standards/${id}`);
   revalidatePath("/materials");
@@ -145,6 +162,7 @@ export async function addStandardImage(
   if (slot === "lab_dip" && !materialId) return;
 
   const supabase = await createClient();
+  const brand = await activeBrand();
   const ext = extFor(file.type);
   const path = `${crypto.randomUUID()}/full.${ext}`;
   const { error } = await supabase.storage.from(REFERENCES_BUCKET).upload(path, file, { upsert: false });
@@ -154,10 +172,14 @@ export async function addStandardImage(
   if (!url) return;
 
   if (slot === "swatch") {
+    // Direct write, not routed through readStandard, so it needs its own brand
+    // and deleted_at guard (Findings 1 and 2).
     await supabase
       .from(TABLE)
       .update({ swatch_url: url, updated_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("brand", brand)
+      .is("deleted_at", null);
     revalidatePath("/color-standards");
     revalidatePath(`/color-standards/${id}`);
     revalidatePath("/materials");
@@ -172,10 +194,12 @@ export async function addStandardImage(
 export async function archiveStandard(id: string, archived: boolean) {
   await requireFredTeam();
   const supabase = await createClient();
+  const brand = await activeBrand();
   await supabase
     .from(TABLE)
     .update({ archived, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("brand", brand);
   revalidatePath("/color-standards");
   revalidatePath(`/color-standards/${id}`);
   revalidatePath("/materials");
@@ -184,10 +208,12 @@ export async function archiveStandard(id: string, archived: boolean) {
 export async function softDeleteStandard(id: string) {
   await requireFredTeam();
   const supabase = await createClient();
+  const brand = await activeBrand();
   await supabase
     .from(TABLE)
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("brand", brand);
   revalidatePath("/color-standards");
   revalidatePath(`/color-standards/${id}`);
   revalidatePath("/materials");

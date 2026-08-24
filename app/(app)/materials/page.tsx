@@ -50,17 +50,20 @@ export default async function MaterialsPage() {
       .order("name", { ascending: true }),
     getSessionUser(),
     // Colour standards are FRED-only (Tess, 2026-08-23: "can you create a color
-    // standard that lives in the tool for fred?"), but this query runs on every
-    // deploy — the `color_standards` table does not exist on the Loyalist
-    // database and never will. normalizeStandards(null) is what makes that safe:
-    // nothing here touches the raw query result before it, so a missing table
-    // (data: null, error set) degrades straight to an empty list instead of
-    // throwing.
-    supabase
-      .from("color_standards")
-      .select("*")
-      .eq("brand", brand)
-      .is("deleted_at", null),
+    // standard that lives in the tool for fred?") — the `color_standards` table
+    // does not exist on the Loyalist database and never will, so this query is
+    // gated behind canOrder (the same FRED-only flag material_orders above uses)
+    // rather than run unconditionally. normalizeStandards(null) is kept as the
+    // safety net below regardless: nothing sits between the query result and
+    // that call, so if the gate is ever wrong a missing table still degrades to
+    // an empty list instead of throwing.
+    canOrder
+      ? supabase
+          .from("color_standards")
+          .select("*")
+          .eq("brand", brand)
+          .is("deleted_at", null)
+      : Promise.resolve({ data: [], error: null } as const),
   ]);
 
   const materials = (error ? [] : (data ?? [])) as Material[];

@@ -295,9 +295,16 @@ export default function MaterialsClient({
   // but FRED, so this is a no-op find over an empty array there.
   const stdFor = (id: string) => standardForMaterial(standards, id);
   const NO_STANDARD = "No standard";
+  // Archived means "kept but out of the way" here, same as materials' own
+  // Archive: an archived standard is not offered as a fresh choice, in the
+  // filter or in the picker below, but a material already linked to one keeps
+  // showing its chip (that lookup stays on the full `standards` list via
+  // stdFor, not this filtered one) — hiding it there would make an assigned
+  // material look unassigned.
+  const activeStandards = useMemo(() => standards.filter((s) => !s.archived), [standards]);
   const standardOptions = useMemo(
-    () => [...standards.map((s) => ({ value: s.name, label: s.name })), { value: NO_STANDARD, label: NO_STANDARD }],
-    [standards]
+    () => [...activeStandards.map((s) => ({ value: s.name, label: s.name })), { value: NO_STANDARD, label: NO_STANDARD }],
+    [activeStandards]
   );
   // Selected is the set of names ticked in the Standard MultiSelect; empty = no
   // filtering, matching how the other filters in this bar behave.
@@ -1029,6 +1036,12 @@ function MaterialDetail({
   // The standard currently claiming this material, if any — recomputed from
   // props each render so a save/drop below shows up immediately after refresh.
   const currentStd = standardForMaterial(standards, material.id);
+  // Archived standards are not offered as a new choice, but if this material
+  // is already linked to one that has since been archived, that standard stays
+  // in the picker's own options so the Select still shows it selected rather
+  // than falling back to blank (same "stays visible once linked" rule as the
+  // chip and read-only fact below).
+  const pickerStandards = standards.filter((s) => !s.archived || s.id === currentStd?.id);
   // Choosing a standard from the picker calls saveApproval on the new one;
   // choosing the blank option calls dropApproval on the current one. Moving
   // between two standards is both in sequence — drop the old, then save the
@@ -1390,7 +1403,7 @@ function MaterialDetail({
                     onChange={changeStandard}
                     options={[
                       { value: "", label: "—" },
-                      ...standards.map((s) => ({ value: s.id, label: s.name })),
+                      ...pickerStandards.map((s) => ({ value: s.id, label: s.name })),
                     ]}
                   />
                 </div>
