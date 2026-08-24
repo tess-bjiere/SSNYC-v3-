@@ -54,9 +54,12 @@ export default function ImageStrip({
   hint,
   addLabel = "Add image",
   notes,
+  meta,
 }: {
   styleId: string;
   sampleId?: string | null;
+  /** Style context shown in the full-screen viewer (Tess, 2026-08-24). */
+  meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
   /**
    * Which list on the style this strip edits. Ignored when a sampleId is
    * passed, because a round only has one.
@@ -389,6 +392,7 @@ export default function ImageStrip({
                 url={im.url}
                 label={im.caption || `Image ${i + 1}`}
                 note={note}
+                meta={meta}
                 caption={false}
                 position={`${i + 1} of ${images.length}`}
                 full={full}

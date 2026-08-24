@@ -1027,6 +1027,8 @@ function roundImages(slotPhotos: PhotoMap, shots: ListImage[], notes: Record<str
  */
 function FullRound({
   styleId,
+  styleName,
+  styleNo,
   s,
   today,
   images,
@@ -1034,12 +1036,15 @@ function FullRound({
   library = [],
 }: {
   styleId: string;
+  styleName?: string | null;
+  styleNo?: string | null;
   s: StyleSample;
   today: string;
   images: { url: string; label: string; note: ImageNote }[];
   onClose: () => void;
   library?: readonly LinkedMaterial[];
 }) {
+  const roundMeta = { name: styleName, styleNo, factory: s.factory, fitDate: s.fitting_date };
   /** Which photograph is being marked, by url. Null is the review screen. */
   const [editing, setEditing] = useState<string | null>(null);
   // Which fit comment to land on when that photograph opens — set when a fit
@@ -1210,6 +1215,7 @@ function FullRound({
             url={open.url}
             label={open.label}
             note={open.note}
+            meta={roundMeta}
             position={`${at + 1} of ${images.length}`}
             // No caption box on a fit photo — the slot label already says what
             // the picture is, and this viewer only ever shows a round's photos
@@ -1241,12 +1247,16 @@ function FullRound({
 
 function RoundCard({
   styleId,
+  styleName,
+  styleNo,
   s,
   today,
   comments,
   library = [],
 }: {
   styleId: string;
+  styleName?: string | null;
+  styleNo?: string | null;
   s: StyleSample;
   today: string;
   /** How many comments are filed against this round. */
@@ -1260,6 +1270,14 @@ function RoundCard({
   const eta = sampleEta(s, today);
   const shots = readImages(s.photos, SHOTS_KEY);
   const slotPhotos: PhotoMap = normalizePhotos(s.photos);
+  // Context for the full-screen viewer (Tess, 2026-08-24): style, its number, the
+  // round's factory, and the fit date on this round.
+  const roundMeta = {
+    name: styleName,
+    styleNo,
+    factory: s.factory,
+    fitDate: s.fitting_date,
+  };
   // Read once for the whole round rather than once per picture: the five slots
   // and the strip below them all live in this one jsonb object, and a round with
   // nine shots should not walk it nine times.
@@ -1378,6 +1396,7 @@ function RoundCard({
           photos={slotPhotos}
           slots={PHOTO_SLOTS}
           notes={imageNotes}
+          meta={roundMeta}
         />
       </div>
 
@@ -1391,11 +1410,14 @@ function RoundCard({
         title="Anything else"
         addLabel="Add images"
         notes={imageNotes}
+        meta={roundMeta}
       />
 
       {full && (
         <FullRound
           styleId={styleId}
+          styleName={styleName}
+          styleNo={styleNo}
           s={s}
           today={today}
           images={roundImages(slotPhotos, shots, imageNotes)}
@@ -1409,6 +1431,8 @@ function RoundCard({
 
 export default function SampleRounds({
   styleId,
+  styleName,
+  styleNo,
   samples,
   defaultFactory,
   today,
@@ -1419,6 +1443,10 @@ export default function SampleRounds({
   styleMaterialIds = [],
 }: {
   styleId: string;
+  /** The style's name and number, for the full-screen viewer's context line
+   *  (Tess, 2026-08-24). */
+  styleName?: string | null;
+  styleNo?: string | null;
   samples: StyleSample[];
   defaultFactory: string;
   today: string;
@@ -1444,6 +1472,9 @@ export default function SampleRounds({
 }) {
   const [adding, setAdding] = useState(false);
   const [showPrevious, setShowPrevious] = useState(false);
+  // Context for the full-screen viewer on the style's own (filed-on-style) photos
+  // — the round photos carry the round's own factory/fit date instead (2026-08-24).
+  const styleMeta = { name: styleName, styleNo, factory: defaultFactory };
 
   // A new round starts with the style's fabric and trim already ticked — what it
   // is made in, until someone says this sample differs (Tess, 2026-08-20: "the
@@ -1614,11 +1645,13 @@ export default function SampleRounds({
               piece, a carry-over, a garment already hanging in the studio can
               all be shot before anybody logs a proto. So the standard sits
               here, open, until there is a round to move it onto. */}
-          <PhotoSlots styleId={styleId} photos={filedOnStyle ?? {}} notes={styleNotes} hasRounds={false} />
+          <PhotoSlots styleId={styleId} photos={filedOnStyle ?? {}} notes={styleNotes} hasRounds={false} meta={styleMeta} />
         </>
       ) : (
         <RoundCard
           styleId={styleId}
+          styleName={styleName}
+          styleNo={styleNo}
           s={current}
           today={today}
           comments={commentCounts[current.id] ?? 0}
@@ -1659,6 +1692,8 @@ export default function SampleRounds({
               <RoundCard
                 key={s.id}
                 styleId={styleId}
+                styleName={styleName}
+                styleNo={styleNo}
                 s={s}
                 today={today}
                 comments={commentCounts[s.id] ?? 0}
@@ -1676,7 +1711,7 @@ export default function SampleRounds({
           a round on the page; the no-round case is handled above, in live
           mode, and the two must never both be on screen. */}
       {current && filedOnStyle && (
-        <PhotoSlots styleId={styleId} photos={filedOnStyle} notes={styleNotes} />
+        <PhotoSlots styleId={styleId} photos={filedOnStyle} notes={styleNotes} meta={styleMeta} />
       )}
     </div>
   );

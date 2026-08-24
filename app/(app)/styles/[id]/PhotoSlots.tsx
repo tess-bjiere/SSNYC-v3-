@@ -47,6 +47,7 @@ export default function PhotoSlots({
   styleId,
   photos,
   notes,
+  meta,
   /** True once the style has at least one sample round. */
   hasRounds = true,
 }: {
@@ -54,6 +55,8 @@ export default function PhotoSlots({
   photos: PhotoMap;
   /** Marks and captions written on these pictures, keyed by image URL. */
   notes?: Record<string, ImageNote>;
+  /** Style context for the full-screen viewer (Tess, 2026-08-24). */
+  meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
   hasRounds?: boolean;
 }) {
   if (!hasRounds) {
@@ -66,7 +69,7 @@ export default function PhotoSlots({
           Shot against the style for now. Log a sample round and photography moves onto it, so each
           proto keeps its own pictures — these stay exactly where they are.
         </p>
-        <SlotCards styleId={styleId} photos={photos} slots={PHOTO_SLOTS} notes={notes} />
+        <SlotCards styleId={styleId} photos={photos} slots={PHOTO_SLOTS} notes={notes} meta={meta} />
       </div>
     );
   }
@@ -86,7 +89,7 @@ export default function PhotoSlots({
         Shot before photography moved onto the sample rounds. Still here, still yours — replace or
         remove any of them, or re-upload it onto the round it belongs to and this list gets shorter.
       </p>
-      <SlotCards styleId={styleId} photos={photos} slots={filled} notes={notes} />
+      <SlotCards styleId={styleId} photos={photos} slots={filled} notes={notes} meta={meta} />
     </details>
   );
 }

@@ -54,12 +54,15 @@ export default function SlotCards({
   slots,
   notes,
   comments = true,
+  meta,
 }: {
   styleId: string;
   /** When set, the slots belong to this sample round rather than to the style. */
   sampleId?: string;
   photos: PhotoMap;
   slots: readonly PhotoSlot[];
+  /** Style context shown in the full-screen viewer (Tess, 2026-08-24). */
+  meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
   /**
    * Everything written about these pictures, keyed by image URL.
    *
@@ -392,6 +395,7 @@ export default function SlotCards({
                 url={src}
                 label={slot.label}
                 note={note}
+                meta={meta}
                 position={`${at + 1} of ${shot.length}`}
                 full={full}
                 onFull={(v) => {

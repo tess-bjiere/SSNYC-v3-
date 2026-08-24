@@ -445,6 +445,12 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
   // SOUS SOUS and Renggli are untouched.
   const isFred = APP.id === "fred";
 
+  // What the full-screen image viewer shows as context (Tess, 2026-08-24: "Add
+  // more details to full screen view — show title, style number, factory fit date
+  // etc"). Style-level images carry the style's own factory; round images carry
+  // the round's factory and fit date, threaded in SampleRounds.
+  const styleMeta = { name: st.name, styleNo: st.style_no, factory: st.factory };
+
   return (
     <div className="page">
       {/* A style in the Trash still has a working profile — every link anybody
@@ -564,7 +570,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             title="Sketch — front and back"
             openOnHash="sketch"
           >
-            <SlotCards styleId={st.id} photos={designPhotos} slots={DESIGN_SLOTS} notes={styleNotes} comments={false} />
+            <SlotCards styleId={st.id} photos={designPhotos} slots={DESIGN_SLOTS} notes={styleNotes} comments={false} meta={styleMeta} />
 
             {/* Colourways live in the sketch box (Tess, 2026-08-07: "maybe it's
                 an option in the sketch profile section to upload other
@@ -590,6 +596,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               title="Colorways"
               hint="The caption is the color name."
               addLabel="Add colorways"
+              meta={styleMeta}
             />
           </ModalButton>
           </span>
@@ -1159,6 +1166,8 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               database is indistinguishable afterwards from a fact. */}
           <SampleRounds
             styleId={st.id}
+            styleName={st.name}
+            styleNo={st.style_no}
             samples={sm}
             defaultFactory={st.factory ?? ""}
             today={studioToday()}
@@ -1206,6 +1215,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               images={gallery}
               addLabel="Add images"
               notes={styleNotes}
+              meta={styleMeta}
             />
           </details>
 

@@ -1962,6 +1962,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    the frame — which is exactly where a fit note matters. */
 .ann{grid-column:1/-1;border:1px solid var(--line);background:var(--panel);padding:14px}
 .ann-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+/* The context strip on its own full-width line under the header controls (Tess,
+   2026-08-24): style · number · factory · fit date. */
+.ann-meta{flex-basis:100%;display:flex;flex-wrap:wrap;gap:3px 14px;font-size:var(--t-meta);color:var(--muted)}
+.ann-meta-title{color:var(--ink);font-weight:var(--w-mid)}
 .ann-head .l{font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.12em;color:var(--ink)}
 .ann-head .h{font-size:var(--t-sm);color:var(--muted)}
 .ann-head .spacer{flex:1}
