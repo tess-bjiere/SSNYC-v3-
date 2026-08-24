@@ -817,8 +817,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             {/* The blank this is built on, where there is one. Sits with the
                 fabric because it is the same kind of fact — what the garment is
                 made of before anybody cuts it. */}
-            {/* Blank style is dropped on FRED (Tess, 2026-08-20). */}
-            {!isFred && <div className="kv"><span className="k">Blank style</span><span>{st.blank_style || "—"}</span></div>}
+            {/* Blank style dropped from the profile entirely (Tess, 2026-08-24:
+                "remove blank style from style profile"). The blank_style column
+                stays and existing values are untouched — only the row is gone. */}
             {/* Colourways, next to the fabric for the same reason fabric sits
                 next to the garment (Tess, 2026-08-05: "Include color(s) as
                 field option(s) in details"). One line, however many colours —
@@ -1034,13 +1035,10 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               </div>
               <div className="row3">
                 <div className="field"><label>Color(s)</label><input className="input" name="colors" defaultValue={st.colors ?? ""} placeholder="e.g. black / bone / olive" /></div>
-                {/* Blank style is not edited on FRED — input omitted, column left
-                    alone on save (Tess, 2026-08-20). */}
-                {isFred ? (
-                  <div className="field" />
-                ) : (
-                  <div className="field"><label>Blank style</label><input className="input" name="blank_style" defaultValue={st.blank_style ?? ""} placeholder="e.g. IND4000 + F102 - Black" /></div>
-                )}
+                {/* Blank style input removed for every brand (Tess, 2026-08-24:
+                    "remove blank style from style profile"). updateStyle only
+                    writes blank_style when the form carries it, so a value an
+                    existing style holds is left exactly as it was. */}
                 {/* On FRED the fabric's GSM stays on the main form — it is a fabric
                     spec, not a shipping fact (Tess, 2026-08-24). Off FRED the weight
                     is a customs figure and moves into the Customs section below. */}
