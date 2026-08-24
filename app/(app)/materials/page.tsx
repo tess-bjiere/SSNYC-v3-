@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { getSessionUser } from "@/lib/access";
 import { APP } from "@/lib/appConfig";
+import { normalizeStandards } from "@/lib/colorStandards";
 import MaterialsClient, { type Material } from "./MaterialsClient";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function MaterialsPage() {
   const canOrder = APP.id === "fred";
   const supabase = await createClient();
   const brand = await activeBrand();
-  const [{ data, error }, ordersRes, stylesRes, user] = await Promise.all([
+  const [{ data, error }, ordersRes, stylesRes, user, stdsRes] = await Promise.all([
     supabase
       .from("materials")
       .select("*")
@@ -48,6 +49,18 @@ export default async function MaterialsPage() {
       .is("deleted_at", null)
       .order("name", { ascending: true }),
     getSessionUser(),
+    // Colour standards are FRED-only (Tess, 2026-08-23: "can you create a color
+    // standard that lives in the tool for fred?"), but this query runs on every
+    // deploy — the `color_standards` table does not exist on the Loyalist
+    // database and never will. normalizeStandards(null) is what makes that safe:
+    // nothing here touches the raw query result before it, so a missing table
+    // (data: null, error set) degrades straight to an empty list instead of
+    // throwing.
+    supabase
+      .from("color_standards")
+      .select("*")
+      .eq("brand", brand)
+      .is("deleted_at", null),
   ]);
 
   const materials = (error ? [] : (data ?? [])) as Material[];
@@ -67,6 +80,11 @@ export default async function MaterialsPage() {
       products.push({ name, type: (s.garment ?? "").trim() || null });
     }
   }
+  // normalizeStandards(null) → [] is the whole mechanism: nothing sits between
+  // the query and this call, so a missing table on Loyalist (stdsRes.data is
+  // null there, not an array) can never throw — it just yields no standards,
+  // and the client hides the chip and filter entirely when the list is empty.
+  const standards = normalizeStandards(stdsRes.data);
   return (
     <MaterialsClient
       materials={materials}
@@ -74,6 +92,7 @@ export default async function MaterialsPage() {
       canOrder={canOrder}
       openOrders={openOrders}
       products={products}
+      standards={standards}
     />
   );
 }
