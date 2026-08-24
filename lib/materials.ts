@@ -41,7 +41,12 @@ export type MaterialLike = {
   price?: string | null;
   moq?: string | null;
   lead_time?: string | null;
+  // Internal notes. NEVER printed on a purchase order — see materialFacts.
   notes?: string | null;
+  // The supplier-facing half of the old single `notes` field (Tess, 2026-08-23:
+  // "split internal from supplier-facing"). This is what prints on a PO: print
+  // method, hole counts, spacing, the instruction to carry into the next run.
+  supplier_notes?: string | null;
   // A link to the material's Illustrator artwork file (Tess, 2026-08-20).
   ai_file?: string | null;
   // Custom or stock (Tess, 2026-08-19: "add check for custom or stock"). Stock is
@@ -195,7 +200,8 @@ export function specLine(m: MaterialLike): string {
 }
 
 /** Every profile fact that has a value, in the order the profile shows them: the
- *  kind's own fields, then the shared fields, then sourcing and free-text notes.
+ *  kind's own fields, then the shared fields, then sourcing and the SUPPLIER-facing
+ *  note.
  *  Each is `{ label, value }`, blanks dropped. Used to carry a material's full
  *  spec onto a purchase order so the order sheet is the profile, not a couple of
  *  columns (Tess, 2026-08-20: "orders should include all the profile details from
@@ -215,8 +221,18 @@ export function materialFacts(
   }
   const s = sourcingLabel(sourcingOf(m));
   if (s && !skip.has("sourcing")) out.push({ label: "Sourcing", value: s });
-  const notes = (m.notes ?? "").trim();
-  if (notes && !skip.has("notes")) out.push({ label: "Notes", value: notes });
+  // `notes` is deliberately absent here, and this is the whole point of the split
+  // (Tess, 2026-08-23: "split internal from supplier-facing"). It used to be
+  // appended with a `!skip.has("notes")` guard, which made exclusion opt-IN per
+  // call site — and the order page never opted out, so duty percentages and
+  // supplier contact emails printed on the PDFs sent to suppliers. Making
+  // materialFacts blind to `notes` means no future call site can reintroduce that
+  // by forgetting a skip key. Internal notes reach a PO only if someone adds them
+  // here on purpose.
+  const supplierNotes = (m.supplier_notes ?? "").trim();
+  if (supplierNotes && !skip.has("supplier_notes")) {
+    out.push({ label: "Spec / instructions", value: supplierNotes });
+  }
   return out;
 }
 
@@ -262,7 +278,7 @@ export function matchMaterial(m: MaterialLike, query: string): boolean {
   const hay = [
     m.name, m.supplier, m.supplier_ref, m.composition, m.color, m.weight, m.width,
     m.construction, m.finish, m.trim_type, m.size, m.material,
-    m.background_color, m.print_color, m.pack_type, m.hs_code, m.notes,
+    m.background_color, m.print_color, m.pack_type, m.hs_code, m.notes, m.supplier_notes,
     sourcingOf(m),
     ...materialGarments(m),
   ]

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { getSessionUser } from "@/lib/access";
 import { APP } from "@/lib/appConfig";
+import { normalizeStandards } from "@/lib/colorStandards";
 import MaterialsClient, { type Material } from "./MaterialsClient";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function MaterialsPage() {
   const canOrder = APP.id === "fred";
   const supabase = await createClient();
   const brand = await activeBrand();
-  const [{ data, error }, ordersRes, stylesRes, user] = await Promise.all([
+  const [{ data, error }, ordersRes, stylesRes, user, stdsRes] = await Promise.all([
     supabase
       .from("materials")
       .select("*")
@@ -48,6 +49,21 @@ export default async function MaterialsPage() {
       .is("deleted_at", null)
       .order("name", { ascending: true }),
     getSessionUser(),
+    // Colour standards are FRED-only (Tess, 2026-08-23: "can you create a color
+    // standard that lives in the tool for fred?") — the `color_standards` table
+    // does not exist on the Loyalist database and never will, so this query is
+    // gated behind canOrder (the same FRED-only flag material_orders above uses)
+    // rather than run unconditionally. normalizeStandards(null) is kept as the
+    // safety net below regardless: nothing sits between the query result and
+    // that call, so if the gate is ever wrong a missing table still degrades to
+    // an empty list instead of throwing.
+    canOrder
+      ? supabase
+          .from("color_standards")
+          .select("*")
+          .eq("brand", brand)
+          .is("deleted_at", null)
+      : Promise.resolve({ data: [], error: null } as const),
   ]);
 
   const materials = (error ? [] : (data ?? [])) as Material[];
@@ -67,6 +83,11 @@ export default async function MaterialsPage() {
       products.push({ name, type: (s.garment ?? "").trim() || null });
     }
   }
+  // normalizeStandards(null) → [] is the whole mechanism: nothing sits between
+  // the query and this call, so a missing table on Loyalist (stdsRes.data is
+  // null there, not an array) can never throw — it just yields no standards,
+  // and the client hides the chip and filter entirely when the list is empty.
+  const standards = normalizeStandards(stdsRes.data);
   return (
     <MaterialsClient
       materials={materials}
@@ -74,6 +95,7 @@ export default async function MaterialsPage() {
       canOrder={canOrder}
       openOrders={openOrders}
       products={products}
+      standards={standards}
     />
   );
 }

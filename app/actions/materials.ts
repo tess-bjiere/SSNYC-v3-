@@ -24,7 +24,10 @@ const FIELDS = [
   "price", "moq", "lead_time",
   // Link to the material's Illustrator artwork (Tess, 2026-08-20).
   "ai_file",
+  // Internal notes, never printed on a purchase order, and the supplier-facing
+  // half that IS printed (Tess, 2026-08-23: "split internal from supplier-facing").
   "notes",
+  "supplier_notes",
   // 'stock' | 'custom' (Tess, 2026-08-19). Set from the add/edit form like the
   // rest; a blank clears it back to unset.
   "sourcing",

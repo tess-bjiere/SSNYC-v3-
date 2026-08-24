@@ -39,6 +39,19 @@ import {
   setMaterialArchived,
 } from "@/app/actions/materials";
 import { createOrder, addMaterialsToOrder } from "@/app/actions/materialOrders";
+// Colour standards (Tess, 2026-08-23: "can you create a color standard that
+// lives in the tool for fred?") — FRED-only, but this file also renders on
+// SSYNC, where `standards` always arrives as []. `lib/materials.ts` already
+// exports a `specLine`, imported above; this file does not need colorStandards'
+// own specLine, so there's nothing to alias here (see task-5's StandardClient
+// for the collision when both are needed).
+import {
+  standardForMaterial,
+  approvalFor,
+  statusLabel,
+  type ColorStandard,
+} from "@/lib/colorStandards";
+import { saveApproval, dropApproval } from "@/app/actions/colorStandards";
 
 export type OpenOrder = { id: string; name: string; status: string };
 // A product the brand sells (a style), with its garment type — the options for
@@ -71,6 +84,7 @@ export type Material = {
   lead_time: string | null;
   ai_file: string | null;
   notes: string | null;
+  supplier_notes: string | null;
   sourcing: string | null;
   archived: boolean | null;
   current_production: boolean | null;
@@ -136,6 +150,7 @@ export default function MaterialsClient({
   canOrder = false,
   openOrders = [],
   products = [],
+  standards = [],
 }: {
   materials: Material[];
   canEdit?: boolean;
@@ -144,6 +159,10 @@ export default function MaterialsClient({
   canOrder?: boolean;
   openOrders?: OpenOrder[];
   products?: Product[];
+  // Colour standards (Tess, 2026-08-23). Empty on every deploy but FRED — the
+  // page already reduced a missing table to [] via normalizeStandards, so an
+  // empty list here just means "this deploy doesn't have the feature."
+  standards?: ColorStandard[];
 }) {
   const router = useRouter();
   const [kind, setKind] = useState<MaterialKind>("fabric");
@@ -156,6 +175,10 @@ export default function MaterialsClient({
   const [typeF, setTypeF] = useState<string[]>([]);
   // Custom / stock filter (Tess, 2026-08-19). "" = either.
   const [sourcingF, setSourcingF] = useState<Sourcing | "">("");
+  // Colour-standard filter (Tess, 2026-08-23). Selected standard names, plus
+  // the synthetic "No standard" option; empty = no filtering, same idiom as
+  // productF/typeF. Stays empty and unused when `standards` is [] (SSYNC).
+  const [stdF, setStdF] = useState<string[]>([]);
   // Archived are hidden by default; the toggle shows the archived ones instead
   // (Tess, 2026-08-19: "archive a fabric or a trim or packaging item").
   const [showArchived, setShowArchived] = useState(false);
@@ -269,6 +292,29 @@ export default function MaterialsClient({
   );
   const suppliers = useMemo(() => distinct(ofKind, "supplier"), [ofKind]);
 
+  // The standard claiming a material, once. `standards` is [] on every deploy
+  // but FRED, so this is a no-op find over an empty array there.
+  const stdFor = (id: string) => standardForMaterial(standards, id);
+  const NO_STANDARD = "No standard";
+  // Archived means "kept but out of the way" here, same as materials' own
+  // Archive: an archived standard is not offered as a fresh choice, in the
+  // filter or in the picker below, but a material already linked to one keeps
+  // showing its chip (that lookup stays on the full `standards` list via
+  // stdFor, not this filtered one) — hiding it there would make an assigned
+  // material look unassigned.
+  const activeStandards = useMemo(() => standards.filter((s) => !s.archived), [standards]);
+  const standardOptions = useMemo(
+    () => [...activeStandards.map((s) => ({ value: s.name, label: s.name })), { value: NO_STANDARD, label: NO_STANDARD }],
+    [activeStandards]
+  );
+  // Selected is the set of names ticked in the Standard MultiSelect; empty = no
+  // filtering, matching how the other filters in this bar behave.
+  function matchesStandard(m: Material): boolean {
+    if (!stdF.length) return true;
+    const s = stdFor(m.id);
+    return stdF.includes(s ? s.name : NO_STANDARD);
+  }
+
   const filtered = useMemo(
     () =>
       ofKind.filter((m) => {
@@ -285,11 +331,13 @@ export default function MaterialsClient({
           const ts = new Set(typesOf(m));
           if (!typeF.some((t) => ts.has(t))) return false;
         }
+        if (!matchesStandard(m)) return false;
         return true;
       }),
-    // typesOf is derived from `products`/`typeOf`, captured via the closure.
+    // typesOf/matchesStandard are derived from `products`/`typeOf`/`standards`,
+    // captured via the closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ofKind, q, supplier, sourcingF, showArchived, productF, typeF, typeOf]
+    [ofKind, q, supplier, sourcingF, showArchived, productF, typeF, typeOf, stdF, standards]
   );
 
   // The sorted, grouped result. Newest and Name are flat (one unlabelled group);
@@ -372,6 +420,20 @@ export default function MaterialsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, sort, kind, typeOf]);
 
+  // Beside the name, never on the image — the thumbnail already carries the
+  // sourcing chip and the in-production badge and was deliberately kept
+  // uncrowded (Tess, 2026-08-19). Same `.mat-ibadge` the sourcing chip uses, so
+  // nothing new goes onto the swatch. Returns null whenever there's no standard
+  // claiming this material, which — on every deploy but FRED — is always,
+  // since `standards` arrives empty.
+  function standardChip(materialId: string) {
+    const s = stdFor(materialId);
+    if (!s) return null;
+    const a = approvalFor(s, materialId);
+    const suffix = a && a.status !== "pending" ? ` · ${statusLabel(a.status)}` : "";
+    return <span className="mat-ibadge">{s.name}{suffix}</span>;
+  }
+
   // One swatch as a grid card. Click opens it, or ticks it in select mode.
   function swatchCard(m: Material) {
     const src = cover(m);
@@ -411,6 +473,7 @@ export default function MaterialsClient({
           <div className="d">
             <span className="mat-dname">{m.name}</span>
             {sc && <span className={"mat-ibadge " + sc}>{sourcingLabel(sc)}</span>}
+            {standards.length > 0 && standardChip(m.id)}
           </div>
           {/* Colour and GSM, up front on the thumbnail (Tess, 2026-08-19: "also
               list color on and gsm on thumbnail"). */}
@@ -468,6 +531,7 @@ export default function MaterialsClient({
             {m.name}
             {inProduction(m) && <span className="mat-ibadge prod">In production</span>}
             {sc && <span className={"mat-ibadge " + sc}>{sourcingLabel(sc)}</span>}
+            {standards.length > 0 && standardChip(m.id)}
           </div>
           {specLine(m) && <div className="mat-lspec">{specLine(m)}</div>}
         </div>
@@ -613,6 +677,20 @@ export default function MaterialsClient({
             options={productOptions}
           />
         )}
+        {/* Colour standard (Tess, 2026-08-23). standards is [] on every deploy
+            but FRED, so this whole filter — not just an empty options list —
+            is skipped there: no dangling label, no empty dropdown. */}
+        {standards.length > 0 && (
+          <MultiSelect
+            className="select sm lib-sort"
+            aria-label="Standard"
+            placeholder="All standards"
+            allLabel="standards"
+            values={stdF}
+            onChange={setStdF}
+            options={standardOptions}
+          />
+        )}
         {/* Archived is a quiet text link off to the side, not a filter chip in
             the row (Tess, 2026-08-20: "archived can be a smaller text link that's
             not in the main menu"). */}
@@ -704,6 +782,7 @@ export default function MaterialsClient({
           material={detail}
           canEdit={canEdit}
           products={products}
+          standards={standards}
           onClose={() => setDetail(null)}
           onToast={flash}
         />
@@ -848,8 +927,12 @@ function MaterialForm({
           )}
 
           <label className="mat-field mat-field-wide">
-            <span className="mat-label">Notes</span>
+            <span className="mat-label">Internal notes — never printed on orders</span>
             <textarea className="textarea" name="notes" rows={2} />
+          </label>
+          <label className="mat-field mat-field-wide">
+            <span className="mat-label">Spec / instructions — prints on orders</span>
+            <textarea className="textarea" name="supplier_notes" rows={2} />
           </label>
 
           <label className="mat-field mat-field-wide">
@@ -940,18 +1023,45 @@ function MaterialDetail({
   material,
   canEdit,
   products,
+  standards,
   onClose,
   onToast,
 }: {
   material: Material;
   canEdit: boolean;
   products: Product[];
+  // Colour standards (Tess, 2026-08-23). [] on every deploy but FRED.
+  standards: ColorStandard[];
   onClose: () => void;
   onToast: (m: string) => void;
 }) {
   const router = useRouter();
   const k: MaterialKind = kindOf(material);
   const [pending, start] = useTransition();
+  // The standard currently claiming this material, if any — recomputed from
+  // props each render so a save/drop below shows up immediately after refresh.
+  const currentStd = standardForMaterial(standards, material.id);
+  // Archived standards are not offered as a new choice, but if this material
+  // is already linked to one that has since been archived, that standard stays
+  // in the picker's own options so the Select still shows it selected rather
+  // than falling back to blank (same "stays visible once linked" rule as the
+  // chip and read-only fact below).
+  const pickerStandards = standards.filter((s) => !s.archived || s.id === currentStd?.id);
+  // Choosing a standard from the picker calls saveApproval on the new one;
+  // choosing the blank option calls dropApproval on the current one. Moving
+  // between two standards is both in sequence — drop the old, then save the
+  // new — per task-6-brief.md.
+  function changeStandard(newId: string) {
+    if (!canEdit) return;
+    const oldId = currentStd?.id ?? "";
+    if (newId === oldId) return;
+    start(async () => {
+      if (oldId) await dropApproval(oldId, material.id);
+      if (newId) await saveApproval(newId, material.id, {});
+      router.refresh();
+      onToast("Saved");
+    });
+  }
   const [draft, setDraft] = useState<Record<string, string>>(() => {
     const d: Record<string, string> = { name: material.name ?? "" };
     for (const f of fieldsFor(k)) d[f.key] = (material[f.key as keyof Material] as string | null) ?? "";
@@ -1283,6 +1393,26 @@ function MaterialDetail({
                 />
                 <span>Current production</span>
               </label>
+              {/* Colour standard (Tess, 2026-08-23: "can you create a color
+                  standard that lives in the tool for fred?"). standards is []
+                  on every deploy but FRED, so this row — like the chip and the
+                  filter above — is skipped there rather than showing an empty
+                  picker. */}
+              {standards.length > 0 && (
+                <div className="mat-field">
+                  <span className="mat-label">Colour standard</span>
+                  <Select
+                    className="select"
+                    aria-label="Colour standard"
+                    value={currentStd?.id ?? ""}
+                    onChange={changeStandard}
+                    options={[
+                      { value: "", label: "—" },
+                      ...pickerStandards.map((s) => ({ value: s.id, label: s.name })),
+                    ]}
+                  />
+                </div>
+              )}
               {fieldsFor(k).map((f) => (
                 <label className="mat-field" key={f.key}>
                   <span className="mat-label">{f.label}</span>
@@ -1308,13 +1438,28 @@ function MaterialDetail({
                 </div>
               )}
 
+              {/* Two free-text fields, deliberately labelled by WHO READS THEM rather
+                  than by what they hold (Tess, 2026-08-23: "split internal from
+                  supplier-facing"). The old single Notes field printed verbatim on
+                  supplier POs, carrying duty percentages and supplier contact
+                  emails with it. */}
               <label className="mat-field mat-field-wide">
-                <span className="mat-label">Notes</span>
+                <span className="mat-label">Internal notes — never printed on orders</span>
                 <textarea
                   className="textarea"
                   rows={2}
                   value={draft.notes ?? ""}
                   onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                />
+              </label>
+
+              <label className="mat-field mat-field-wide">
+                <span className="mat-label">Spec / instructions — prints on orders</span>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  value={draft.supplier_notes ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, supplier_notes: e.target.value }))}
                 />
               </label>
 
@@ -1345,7 +1490,12 @@ function MaterialDetail({
             </div>
           ) : (
             <div className="mat-readfacts">
-              {[{ key: "name", label: "Name" }, ...fieldsFor(k), { key: "notes", label: "Notes" }].map((f) => {
+              {[
+                { key: "name", label: "Name" },
+                ...fieldsFor(k),
+                { key: "supplier_notes", label: "Spec / instructions (prints on orders)" },
+                { key: "notes", label: "Internal notes (never printed)" },
+              ].map((f) => {
                 const v = (material[f.key as keyof Material] as string | null) ?? "";
                 if (!v) return null;
                 return (
@@ -1367,6 +1517,12 @@ function MaterialDetail({
                 <div className="pg-facts">
                   <span className="k">Sourcing</span>
                   <div className="pg-fact-val">{sourcingLabel(sourcingOf(material))}</div>
+                </div>
+              )}
+              {standards.length > 0 && currentStd && (
+                <div className="pg-facts">
+                  <span className="k">Colour standard</span>
+                  <div className="pg-fact-val">{currentStd.name}</div>
                 </div>
               )}
               {garments.length > 0 && (

@@ -114,6 +114,10 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // for fabrics and trims"; 2026-08-19: "add packaging tab" + "rename to
       // materials").
       { href: "/materials", label: "Materials" },
+      // The approved physical colour references materials are matched to (Tess,
+      // 2026-08-23: "can you create a color standard that lives in the tool for
+      // fred?"). FRED-only, like Orders.
+      { href: "/color-standards", label: "Colour Standards" },
       // Purchase orders assembled from that library (Tess, 2026-08-18: "add
       // ability to create an order for materials from the material library").
       { href: "/material-orders", label: "Orders" },
@@ -145,7 +149,7 @@ export default function Nav({
   // do want option to document materials because many will be evergreen"). So the
   // library shows on every deploy; only ordering and the FRED-at-home
   // photographer work stay behind the FRED door. Route-level guards back this up.
-  const FRED_ONLY = new Set(["/photographers", "/material-orders"]);
+  const FRED_ONLY = new Set(["/photographers", "/material-orders", "/color-standards"]);
   const groups = (isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation"))
     .map((g) =>
       APP.id === "fred"
