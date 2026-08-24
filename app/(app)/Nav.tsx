@@ -168,13 +168,28 @@ export default function Nav({
   // and the ONLY thing that changes which is clicking another group. It does not
   // close when you click into the page, follow a link, or navigate — so the
   // options you opened stay put. It starts on the group holding the current page.
-  const activeGroupLabel =
-    groups.find((g) =>
-      g.links.some((l) => pathname === l.href || pathname.startsWith(l.href + "/")),
-    )?.label ??
-    groups[0]?.label ??
+  // Some pages belong to a section without being a top-level link. A style profile
+  // (/styles/[id], /styles/new) opens from Development / Style Library / a
+  // linesheet, so it is Product even though nothing in the bar points straight at
+  // it — without this it fell through to groups[0] (Ideation) and the wrong menu
+  // showed (Tess, 2026-08-24: "if you're on a product tab, the nav should keep
+  // product open").
+  const SECTION_OF: { prefix: string; group: string }[] = [{ prefix: "/styles", group: "Product" }];
+  const groupForPath = (p: string): string | null =>
+    groups.find((g) => g.links.some((l) => p === l.href || p.startsWith(l.href + "/")))?.label ??
+    SECTION_OF.find((s) => p === s.prefix || p.startsWith(s.prefix + "/"))?.group ??
     null;
+  const activeGroupLabel = groupForPath(pathname) ?? groups[0]?.label ?? null;
   const [openGroup, setOpenGroup] = useState<string | null>(activeGroupLabel);
+  // Follow the section you're in as you navigate, so a product page always shows
+  // the Product menu open. Clicking a group trigger still overrides until the next
+  // navigation (Tess, 2026-08-24).
+  useEffect(() => {
+    const g = groupForPath(pathname);
+    if (g) setOpenGroup(g);
+    // groupForPath is derived from `groups`, which is stable for a given render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Below 1200px the full bar cannot hold six links plus the switcher, Setup,
   // the email and Sign out without clipping (Tess, 2026-08-11: "plan out how to
