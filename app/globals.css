@@ -3081,15 +3081,22 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      300px matches the ~38vh the desktop landscape page already gives them. */
   .deck-shots img{max-height:300px}
 }
-.paper-shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:8px}
+/* A wrapping row of equal-height shots (Tess, 2026-08-24: "Size images the same
+   heights on the exports"), the way the sketch pair above already sits. A grid of
+   two fixed columns let a portrait and a landscape shot share a row at wildly
+   different heights; sizing by height instead lines every shot up on the same
+   baseline and packs them by their natural width. */
+.paper-shots{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;align-items:flex-start}
 .paper-shots figure{margin:0;break-inside:avoid}
 
 /* The frame shrink-wraps the photograph, exactly, because the marks are drawn
    on it in per cent — a frame one pixel bigger than the picture puts every mark
-   in the wrong place. Hence inline-block, line-height:0 and a width-driven
-   image, and deliberately no object-fit. */
-.paper-shot-frame{position:relative;display:inline-block;width:100%;line-height:0}
-.paper-shots img{width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}
+   in the wrong place (the round export draws them; the style export doesn't).
+   Hence inline-block, line-height:0 and — now — a HEIGHT-driven image with width
+   auto, which keeps the frame equal to the picture while making every shot the
+   same height. Still deliberately no object-fit. */
+.paper-shot-frame{position:relative;display:inline-block;max-width:100%;line-height:0}
+.paper-shots img{height:230px;width:auto;max-width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}
 .paper-pin{
   position:absolute;transform:translate(-50%,-50%);
   min-width:17px;height:17px;padding:0 4px;border-radius:999px;
