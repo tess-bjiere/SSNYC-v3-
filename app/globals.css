@@ -2578,6 +2578,12 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    Underlined rather than coloured: these sit inside sentences on a page with
    almost no colour in it, and a coloured word in the middle of a factory note
    reads as a status, not a link. lib/linkify.ts decides what is one. */
+/* Bullet lists inside notes (Tess, 2026-08-24: "Ability to add bullets"). Typing a
+   line that starts with -, * or • renders it as a bullet; runs group into a list.
+   Quiet indent and a normal disc, sized to the surrounding text. */
+.linked-list{margin:2px 0;padding-left:1.15em;list-style:disc}
+.linked-list li{margin:1px 0}
+.linked-list li::marker{color:var(--faint)}
 .linkified{color:inherit;text-decoration:underline;text-underline-offset:2px;
   text-decoration-color:var(--line);word-break:break-word}
 .linkified:hover{text-decoration-color:var(--ink);color:var(--ink)}

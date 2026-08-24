@@ -1,4 +1,26 @@
 import { linkify } from "@/lib/linkify";
+import { hasBullets, parseNoteBlocks } from "@/lib/noteBlocks";
+
+// One line's worth of text, with any URLs in it made clickable — the same
+// segment rendering the plain path uses, so a link inside a bullet behaves
+// exactly like a link in a paragraph.
+function lineNodes(text: string, keyBase: string) {
+  return linkify(text).map((seg, i) =>
+    seg.kind === "link" ? (
+      <a
+        key={`${keyBase}-${i}`}
+        href={seg.href}
+        className="linkified"
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+      >
+        {seg.text}
+      </a>
+    ) : (
+      <span key={`${keyBase}-${i}`}>{seg.text}</span>
+    )
+  );
+}
 
 // Text that somebody typed, with the URLs in it made clickable.
 //
@@ -32,6 +54,31 @@ export default function Linked({
   /** false renders an inline <span> — for a note that sits inside a line. */
   block?: boolean;
 }) {
+  // Notes that use bullet lines render as paragraphs and lists (Tess, 2026-08-24:
+  // "Ability to add bullets"). Lists are block-level, so this path always uses a
+  // <div> — a <ul> inside a <span> is invalid — which is why the plain path below
+  // stays exactly as it was for the inline (block=false) callers with no bullets.
+  if (hasBullets(text)) {
+    const blocks = parseNoteBlocks(text);
+    return (
+      <div className={className}>
+        {blocks.map((b, i) =>
+          b.kind === "list" ? (
+            <ul className="linked-list" key={i}>
+              {b.items.map((item, j) => (
+                <li key={j}>{lineNodes(item, `l${i}-${j}`)}</li>
+              ))}
+            </ul>
+          ) : (
+            <div key={i} style={{ whiteSpace: "pre-wrap" }}>
+              {lineNodes(b.text, `t${i}`)}
+            </div>
+          )
+        )}
+      </div>
+    );
+  }
+
   const segments = linkify(text);
   if (segments.length === 0) return null;
 
