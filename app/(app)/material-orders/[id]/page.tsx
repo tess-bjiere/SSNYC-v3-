@@ -6,6 +6,7 @@ import { APP } from "@/lib/appConfig";
 import { loadBrands } from "@/lib/brandsServer";
 import { brandName } from "@/lib/brands";
 import { specLine, kindOf, materialFacts } from "@/lib/materials";
+import { normalizeStandards, standardForMaterial, standardPoValue } from "@/lib/colorStandards";
 import type { Material } from "@/app/(app)/materials/MaterialsClient";
 import {
   normalizeItems,
@@ -60,6 +61,16 @@ export default async function MaterialOrderPage({
   const materials = (matRows ?? []) as Material[];
   const byId = new Map(materials.map((m) => [m.id, m]));
 
+  // The colour standards these materials are matched to (Tess, 2026-08-23: "make
+  // PO print linked colour standard"). This page is FRED-only, so the table is
+  // always present here; normalizeStandards still degrades a null to [] on its own.
+  const { data: stdRows } = await supabase
+    .from("color_standards")
+    .select("*")
+    .eq("brand", brand)
+    .is("deleted_at", null);
+  const standards = normalizeStandards(stdRows);
+
   const items = normalizeItems(row.items);
 
   // Lines in the order's own order; a material since deleted simply drops.
@@ -73,9 +84,16 @@ export default async function MaterialOrderPage({
         kind: m.kind,
         supplier: m.supplier,
         supplierRef: m.supplier_ref,
-        // The full profile spec, minus what the line already shows on its own —
-        // supplier (group header), ref (its own column), the AI file (a link).
-        details: materialFacts(m, ["supplier", "supplier_ref", "ai_file"]),
+        // The full profile spec, plus the colour standard this material is
+        // matched to. standardPoValue prints the name and the objective facts
+        // only — never the standard's spec/notes/master_location, which are
+        // written in internal voice.
+        details: (() => {
+          const facts = materialFacts(m, ["supplier", "supplier_ref", "ai_file"]);
+          const std = standardForMaterial(standards, m.id);
+          if (std) facts.push({ label: "Colour standard", value: standardPoValue(std) });
+          return facts;
+        })(),
         aiFile: m.ai_file ?? null,
         thumb: cover(m) || null,
         qty: line.qty ?? null,

@@ -239,3 +239,20 @@ export function specLine(s: ColorStandard): string {
   if (s.brightener === false) parts.push("No brightener");
   return parts.join(" · ");
 }
+
+/** What a colour standard is allowed to say on a SUPPLIER purchase order (Tess,
+ *  2026-08-23: "make PO print linked colour standard"): its name plus the
+ *  objective facts a mill needs — the label, the Pantone, whether an optical
+ *  brightener is required.
+ *
+ *  It deliberately reads NONE of `spec`, `notes` or `master_location`. Those are
+ *  written in internal voice: Standard A's spec explains our own sequencing ("the
+ *  ELASTIC is the reference ... reverses next round when the tape is re-run less
+ *  blue") and master_location says which binder in the studio holds the swatch.
+ *  Excluding them structurally rather than by a skip key is the same lesson
+ *  materialFacts learned the hard way — internal notes printed on supplier POs
+ *  for months because exclusion was opt-in per call site. */
+export function standardPoValue(s: ColorStandard): string {
+  const facts = specLine(s);
+  return facts ? `${s.name} — ${facts}` : s.name;
+}

@@ -13,6 +13,7 @@ import {
   setApproval,
   removeApproval,
   specLine,
+  standardPoValue,
   type ColorStandard,
 } from "./colorStandards.ts";
 
@@ -194,4 +195,41 @@ test("specLine joins what is set and stays empty when nothing is", () => {
     "Cold / optic · 11-0601 TCX · Optical brightener",
   );
   assert.equal(specLine(std({ label: "Soft", brightener: false })), "Soft · No brightener");
+});
+
+// What a colour standard is allowed to say on a SUPPLIER purchase order (Tess,
+// 2026-08-23: "make PO print linked colour standard", structured facts only).
+// The regression guard that matters: `spec`, `notes` and `master_location` are
+// written in internal voice — Standard A's spec explains OUR sequencing ("the
+// ELASTIC is the reference ... reverses next round when the tape is re-run less
+// blue") and master_location says where our binder is. None of that belongs on a
+// Vilartex PO. standardPoValue never reads them, so no call site can leak them.
+test("standardPoValue names the standard and its objective facts", () => {
+  assert.equal(
+    standardPoValue(std({ name: "Standard A", label: "Cold / optic", brightener: true })),
+    "Standard A — Cold / optic · Optical brightener",
+  );
+  assert.equal(
+    standardPoValue(std({ name: "Standard C", label: "Neutral", pantone: "11-0601 TCX" })),
+    "Standard C — Neutral · 11-0601 TCX",
+  );
+});
+
+test("standardPoValue falls back to the bare name when nothing else is set", () => {
+  assert.equal(standardPoValue(std({ name: "Standard B" })), "Standard B");
+});
+
+test("standardPoValue NEVER emits spec, notes or master_location", () => {
+  const v = standardPoValue(std({
+    name: "Standard A",
+    label: "Cold / optic",
+    brightener: true,
+    spec: "Referenced to the existing cold elastic waistband, which is locked for this round. Reverses next round when the tape is re-run less blue.",
+    notes: "chase Vilartex about the guarantee",
+    master_location: "studio, white binder, second shelf",
+  }));
+  assert.equal(v, "Standard A — Cold / optic · Optical brightener");
+  for (const leak of ["Reverses", "elastic waistband", "chase Vilartex", "binder", "studio"]) {
+    assert.equal(v.includes(leak), false, `leaked: ${leak}`);
+  }
 });
