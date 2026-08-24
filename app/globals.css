@@ -4456,3 +4456,65 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-foot-line{display:flex;gap:10px;font-size:11px;color:#333}
   .mo-foot-k{min-width:60px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999}
 }
+
+/* --- Colour standards (Tess, 2026-08-23: "can you create a color standard
+   that lives in the tool for fred?"). The `cs-` prefix is this feature's own,
+   parallel to `mat-` for materials and `mo-` for orders. Reuses .mat-form /
+   .mat-field / .mat-label / .pg-filters / .modal-* / .mo-pick* wholesale — only
+   the swatch chip, the index card and the approvals table are new shapes. --- */
+.cs-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.cs-card{display:flex;align-items:center;gap:14px;padding:14px 16px;
+  border:1px solid var(--hair);text-decoration:none;color:inherit}
+.cs-card:hover{border-color:var(--line)}
+.cs-card-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cs-card-name{font-size:var(--t-title);font-weight:var(--w-title);color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-card-spec{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.cs-card-rollup{font-size:var(--t-micro);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--faint)}
+
+/* The physical master's screen approximation — an uploaded photo, else a hex
+   chip, else an empty outline (lib/colorStandards.ts: hex is a thumbnail, never
+   the standard itself). Sized small on the index card, larger on the detail
+   masthead via .cs-swatch-lg. */
+.cs-swatch{width:40px;height:40px;flex:none;border:1px solid var(--line);
+  object-fit:cover;display:block;background:var(--field)}
+.cs-swatch-lg{width:56px;height:56px}
+.cs-swatch-empty{background:none;border-style:dashed}
+
+.cs-head-body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cs-sub{font-size:var(--t-meta);color:var(--muted)}
+.cs-archived-tag{font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint)}
+
+/* The kind / brightener radio pills in the add-modal (SampleRounds.tsx's
+   RatingField idiom: real radios, not buttons with client state, so the group
+   posts correctly with no JS). Same look as .pg-filter, keyed off :has() since
+   there is no client state driving an "on" class here. */
+.cs-seg-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.cs-seg{position:relative;border:1px solid var(--line);color:var(--muted);
+  font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.08em;
+  padding:5px 12px;cursor:pointer}
+.cs-seg input{position:absolute;opacity:0;width:0;height:0}
+.cs-seg:hover{color:var(--ink);border-color:var(--muted)}
+.cs-seg:has(input:checked){background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
+.cs-seg:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+
+.cs-master{margin-bottom:30px}
+
+/* The approvals table — one row per material judged against the master. Seven
+   columns: who, status, when, who judged it, what light, a note, and remove. */
+.cs-approvals-head{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.cs-approvals-head h2{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint)}
+.cs-approvals-n{font-size:var(--t-meta);color:var(--muted)}
+.cs-table{display:flex;flex-direction:column;border-top:1px solid var(--hair)}
+.cs-row{display:grid;grid-template-columns:1.6fr .8fr .9fr 1fr 1fr 1.3fr 28px;
+  gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--hair)}
+.cs-row-head{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;
+  color:var(--faint)}
+.cs-row-mat{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cs-mat-name{font-size:var(--t-sm);color:var(--ink)}
+.cs-mat-spec{font-size:var(--t-micro);color:var(--faint);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
