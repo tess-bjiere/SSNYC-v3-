@@ -84,6 +84,7 @@ export type Material = {
   lead_time: string | null;
   ai_file: string | null;
   notes: string | null;
+  supplier_notes: string | null;
   sourcing: string | null;
   archived: boolean | null;
   current_production: boolean | null;
@@ -926,8 +927,12 @@ function MaterialForm({
           )}
 
           <label className="mat-field mat-field-wide">
-            <span className="mat-label">Notes</span>
+            <span className="mat-label">Internal notes — never printed on orders</span>
             <textarea className="textarea" name="notes" rows={2} />
+          </label>
+          <label className="mat-field mat-field-wide">
+            <span className="mat-label">Spec / instructions — prints on orders</span>
+            <textarea className="textarea" name="supplier_notes" rows={2} />
           </label>
 
           <label className="mat-field mat-field-wide">
@@ -1433,13 +1438,28 @@ function MaterialDetail({
                 </div>
               )}
 
+              {/* Two free-text fields, deliberately labelled by WHO READS THEM rather
+                  than by what they hold (Tess, 2026-08-23: "split internal from
+                  supplier-facing"). The old single Notes field printed verbatim on
+                  supplier POs, carrying duty percentages and supplier contact
+                  emails with it. */}
               <label className="mat-field mat-field-wide">
-                <span className="mat-label">Notes</span>
+                <span className="mat-label">Internal notes — never printed on orders</span>
                 <textarea
                   className="textarea"
                   rows={2}
                   value={draft.notes ?? ""}
                   onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                />
+              </label>
+
+              <label className="mat-field mat-field-wide">
+                <span className="mat-label">Spec / instructions — prints on orders</span>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  value={draft.supplier_notes ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d, supplier_notes: e.target.value }))}
                 />
               </label>
 
@@ -1470,7 +1490,12 @@ function MaterialDetail({
             </div>
           ) : (
             <div className="mat-readfacts">
-              {[{ key: "name", label: "Name" }, ...fieldsFor(k), { key: "notes", label: "Notes" }].map((f) => {
+              {[
+                { key: "name", label: "Name" },
+                ...fieldsFor(k),
+                { key: "supplier_notes", label: "Spec / instructions (prints on orders)" },
+                { key: "notes", label: "Internal notes (never printed)" },
+              ].map((f) => {
                 const v = (material[f.key as keyof Material] as string | null) ?? "";
                 if (!v) return null;
                 return (

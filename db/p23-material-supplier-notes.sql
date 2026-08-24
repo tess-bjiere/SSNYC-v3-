@@ -1,0 +1,26 @@
+-- Split the materials free-text note in two (Tess, 2026-08-23: "split internal
+-- from supplier-facing").
+--
+-- WHY: `materials.notes` printed verbatim on the supplier purchase-order PDF.
+-- materialFacts() appended it with a `!skip.has("notes")` guard, which made
+-- exclusion opt-IN per call site — and app/(app)/material-orders/[id]/page.tsx
+-- never opted out. So every PO sent to Vilartex, Sidogras or ID Orient carried
+-- our duty percentages ("Duties: 9% to 18%") and our other suppliers' contact
+-- emails (jason.boyles@actonfabrics.com, aszucs@sidogras.com).
+--
+-- The fix is structural rather than a skip key: materialFacts no longer knows
+-- about `notes` at all, and appends this new column instead, labelled
+-- "Spec / instructions". No future call site can reintroduce the leak by
+-- forgetting to skip.
+--
+-- NO DATA MIGRATION IS NEEDED. `notes` BECOMES the internal field, so everything
+-- already in it is already in the right place; `supplier_notes` starts empty and
+-- is filled in per material. That also means the first PO after this change
+-- carries no free text until the supplier-facing content is entered — which is
+-- the safe direction to fail.
+--
+-- APPLY: FRED (vjiwcreytvmxvxasyvoo) via the Supabase MCP. Nothing to run on the
+-- Loyalist DB, which has no `materials` table yet — fold this column into
+-- db/p18-materials-loyalist.sql if that is ever run.
+
+alter table public.materials add column if not exists supplier_notes text;

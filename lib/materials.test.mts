@@ -17,10 +17,11 @@ import {
 } from "./materials.ts";
 
 // The order sheet carries the whole profile, so materialFacts must list every
-// filled field in display order, skip the blanks, append sourcing/notes, and
-// leave out the columns the order already shows (Tess, 2026-08-20: "orders should
-// include all the profile details from the profile that have been filled in").
-test("materialFacts lists filled fields in order, drops blanks, adds sourcing + notes", () => {
+// filled field in display order, skip the blanks, append sourcing and the
+// SUPPLIER-facing note, and leave out the columns the order already shows (Tess,
+// 2026-08-20: "orders should include all the profile details from the profile
+// that have been filled in").
+test("materialFacts lists filled fields in order, drops blanks, adds sourcing + supplier note", () => {
   const facts = materialFacts({
     kind: "fabric",
     composition: "100% Cotton",
@@ -29,7 +30,8 @@ test("materialFacts lists filled fields in order, drops blanks, adds sourcing + 
     width: "", // blank — must not appear
     price: "$6.50",
     sourcing: "custom",
-    notes: "Milled in Portugal",
+    notes: "Duties 9-18%. Ordered via Jason.", // internal — must NOT appear
+    supplier_notes: "Milled in Portugal",
   });
   assert.deepEqual(facts, [
     { label: "Weight (GSM)", value: "220" },
@@ -37,8 +39,51 @@ test("materialFacts lists filled fields in order, drops blanks, adds sourcing + 
     { label: "Colour", value: "Ecru" },
     { label: "Price", value: "$6.50" },
     { label: "Sourcing", value: "Custom" },
-    { label: "Notes", value: "Milled in Portugal" },
+    { label: "Spec / instructions", value: "Milled in Portugal" },
   ]);
+});
+
+// The whole point of the split (Tess, 2026-08-23: "split internal from
+// supplier-facing"). Internal notes used to ride along on every purchase order
+// because materialFacts appended them and each CALL SITE had to remember to opt
+// out — app/(app)/material-orders/[id]/page.tsx never did, so duty percentages
+// and supplier contact emails printed on the PDFs sent to suppliers. materialFacts
+// no longer knows about `notes` at all: the exclusion is structural, so no future
+// call site can reintroduce the leak by forgetting a skip key.
+test("materialFacts NEVER emits internal notes, even unskipped and fully populated", () => {
+  const facts = materialFacts({
+    kind: "fabric",
+    composition: "100% Cotton",
+    notes: "Duties: 9% to 18%. Ordered from jason.boyles@actonfabrics.com",
+  });
+  assert.deepEqual(facts, [{ label: "Composition", value: "100% Cotton" }]);
+  assert.equal(
+    facts.some((f) => f.value.includes("Duties") || f.value.includes("@")),
+    false,
+  );
+});
+
+test("materialFacts emits supplier_notes and can still be skipped by key", () => {
+  const m = { kind: "packaging", supplier_notes: "1C printed BLACK + DEBOSSED" };
+  assert.deepEqual(materialFacts(m), [
+    { label: "Spec / instructions", value: "1C printed BLACK + DEBOSSED" },
+  ]);
+  assert.deepEqual(materialFacts(m, ["supplier_notes"]), []);
+});
+
+// matchMaterial documents itself as searching "every field that carries words",
+// and the supplier-facing note carries plenty — hole counts, print methods,
+// spacing. Someone hunting "deboss" should find the hangtag.
+test("matchMaterial searches the supplier-facing note too", () => {
+  const m = { kind: "packaging", name: "Hangtag", supplier_notes: "1C printed BLACK + DEBOSSED" };
+  assert.equal(matchMaterial(m, "debossed"), true);
+  assert.equal(matchMaterial(m, "hangtag debossed"), true);
+  assert.equal(matchMaterial(m, "embroidered"), false);
+});
+
+test("materialFacts drops a blank or whitespace-only supplier note", () => {
+  assert.deepEqual(materialFacts({ kind: "fabric", supplier_notes: "   " }), []);
+  assert.deepEqual(materialFacts({ kind: "fabric" }), []);
 });
 
 test("materialFacts omits the keys the order shows elsewhere", () => {
