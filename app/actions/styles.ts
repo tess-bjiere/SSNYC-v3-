@@ -1263,21 +1263,43 @@ async function cropBuffer(input: Uint8Array, rect: CropRect): Promise<Uint8Array
   return await sharp(upright).extract({ left, top, width, height }).jpeg({ quality: 90 }).toBuffer();
 }
 
-// Fetch a stored image, crop it, store a fresh object under the style's prefix,
-// return its public URL — or null on any failure.
-async function cropToNewUrl(
+// Sit the picture centred on a white 3:4 canvas (Tess, 2026-08-24: "Ability to
+// resize sketch on white background for the style profile image"). The sketch is
+// scaled to fit within 88% of the canvas — leaving a white margin so it doesn't
+// touch the edges — then composited onto solid white. A transparent PNG comes out
+// clean; a photo just gets padded to the cover's shape.
+async function fitOnWhiteBuffer(input: Uint8Array): Promise<Uint8Array> {
+  const W = 1200;
+  const H = 1600; // 3:4, the cover's aspect
+  const inner = await sharp(input)
+    .rotate()
+    .resize(Math.round(W * 0.88), Math.round(H * 0.88), { fit: "inside" })
+    .toBuffer();
+  const meta = await sharp(inner).metadata();
+  const iw = meta.width ?? W;
+  const ih = meta.height ?? H;
+  return await sharp({
+    create: { width: W, height: H, channels: 3, background: { r: 255, g: 255, b: 255 } },
+  })
+    .composite([{ input: inner, left: Math.round((W - iw) / 2), top: Math.round((H - ih) / 2) }])
+    .jpeg({ quality: 92 })
+    .toBuffer();
+}
+
+// Fetch a stored image, run a sharp transform over it, store a fresh object under
+// the style's prefix, return its public URL — or null on any failure. Shared by
+// crop and fit-on-white.
+async function transformToNewUrl(
   supabase: Awaited<ReturnType<typeof createClient>>,
   styleId: string,
   url: string,
-  rect: CropRect
+  transform: (input: Uint8Array) => Promise<Uint8Array>
 ): Promise<string | null> {
-  const ok = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
-  if (!ok(rect.x) || !ok(rect.y) || !ok(rect.w) || !ok(rect.h) || rect.w <= 0 || rect.h <= 0) return null;
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
-    const out = await cropBuffer(Buffer.from(await res.arrayBuffer()), rect);
-    const path = `${PHOTO_PREFIX}/${styleId}/crop-${crypto.randomUUID()}.jpg`;
+    const out = await transform(Buffer.from(await res.arrayBuffer()));
+    const path = `${PHOTO_PREFIX}/${styleId}/edit-${crypto.randomUUID()}.jpg`;
     const { error } = await supabase.storage
       .from(REFERENCES_BUCKET)
       .upload(path, out, { contentType: "image/jpeg", upsert: false });
@@ -1287,6 +1309,11 @@ async function cropToNewUrl(
   } catch {
     return null;
   }
+}
+
+function validRect(rect: CropRect): boolean {
+  const ok = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
+  return ok(rect.x) && ok(rect.y) && ok(rect.w) && ok(rect.h) && rect.w > 0 && rect.h > 0;
 }
 
 // Resolve the current URL for a target and validate it in one place — a slot must
@@ -1316,10 +1343,29 @@ export async function cropStyleImage(
   const supabase = await createClient();
   const raw = await readStylePhotos(styleId);
   if (raw === null) return { ok: false, error: "That style no longer exists." };
+  if (!validRect(rect)) return { ok: false, error: "That crop isn't valid." };
   const url = urlForTarget(raw, target, STYLE_LIST_KEYS);
   if (!url) return { ok: false, error: "Image not found." };
-  const next = await cropToNewUrl(supabase, styleId, url, rect);
+  const next = await transformToNewUrl(supabase, styleId, url, (buf) => cropBuffer(buf, rect));
   if (!next) return { ok: false, error: "Couldn't crop that image." };
+  const err = await writeStylePhotos(styleId, writeTarget(raw, target, next));
+  return err ? { ok: false, error: err } : { ok: true };
+}
+
+// Resize the style image onto a white 3:4 background (the sketch → cover case).
+// FRED and SOUS SOUS alike — this is a product-side tool, not brand-specific.
+export async function fitStyleImageOnWhite(
+  styleId: string,
+  target: PhotoTarget
+): Promise<PhotoResult> {
+  await requireTeam();
+  const supabase = await createClient();
+  const raw = await readStylePhotos(styleId);
+  if (raw === null) return { ok: false, error: "That style no longer exists." };
+  const url = urlForTarget(raw, target, STYLE_LIST_KEYS);
+  if (!url) return { ok: false, error: "Image not found." };
+  const next = await transformToNewUrl(supabase, styleId, url, fitOnWhiteBuffer);
+  if (!next) return { ok: false, error: "Couldn't resize that image." };
   const err = await writeStylePhotos(styleId, writeTarget(raw, target, next));
   return err ? { ok: false, error: err } : { ok: true };
 }
@@ -1334,9 +1380,10 @@ export async function cropSampleImage(
   const supabase = await createClient();
   const raw = await readSamplePhotos(styleId, sampleId);
   if (raw === null) return { ok: false, error: "That round no longer exists." };
+  if (!validRect(rect)) return { ok: false, error: "That crop isn't valid." };
   const url = urlForTarget(raw, target, SAMPLE_LIST_KEYS);
   if (!url) return { ok: false, error: "Image not found." };
-  const next = await cropToNewUrl(supabase, styleId, url, rect);
+  const next = await transformToNewUrl(supabase, styleId, url, (buf) => cropBuffer(buf, rect));
   if (!next) return { ok: false, error: "Couldn't crop that image." };
   const err = await writeSamplePhotos(styleId, sampleId, writeTarget(raw, target, next));
   return err ? { ok: false, error: err } : { ok: true };

@@ -15,6 +15,7 @@ import {
   clearSamplePhoto,
   cropStyleImage,
   cropSampleImage,
+  fitStyleImageOnWhite,
 } from "@/app/actions/styles";
 
 // The grid of fixed, named image slots.
@@ -55,6 +56,7 @@ export default function SlotCards({
   notes,
   comments = true,
   meta,
+  whiteFit = false,
 }: {
   styleId: string;
   /** When set, the slots belong to this sample round rather than to the style. */
@@ -63,6 +65,9 @@ export default function SlotCards({
   slots: readonly PhotoSlot[];
   /** Style context shown in the full-screen viewer (Tess, 2026-08-24). */
   meta?: { name?: string | null; styleNo?: string | null; factory?: string | null; fitDate?: string | null };
+  /** Offer "Fit to white" — sits the picture on a white 3:4 canvas. On the sketch
+   *  (the style's profile image), not the photography slots (Tess, 2026-08-24). */
+  whiteFit?: boolean;
   /**
    * Everything written about these pictures, keyed by image URL.
    *
@@ -184,6 +189,41 @@ export default function SlotCards({
       setCropBusy(false);
       setCropSlot(null);
       if (!res.ok) setError(res.error || "Couldn't crop that image.");
+    });
+  }
+
+  // Paste an image from the clipboard straight into a slot (Tess, 2026-08-24:
+  // "Ability to paste a sketch into the style profile image"). Reads the clipboard
+  // for an image and uploads it through the same path as a file — so it lands
+  // wherever Upload would.
+  async function pasteInto(slotId: string) {
+    setError("");
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        const ext = type.split("/")[1] || "png";
+        const fd = new FormData();
+        fd.set("file", new File([blob], `pasted.${ext}`, { type }));
+        upload(slotId, fd);
+        return;
+      }
+      setError("No image on the clipboard to paste.");
+    } catch {
+      setError("Couldn't read the clipboard. Copy the image again, or use Upload.");
+    }
+  }
+
+  // Sit the sketch on a white 3:4 background (the profile-image case). Style only.
+  function fitWhite(slotId: string) {
+    setBusySlot(slotId);
+    setError("");
+    start(async () => {
+      const res = await fitStyleImageOnWhite(styleId, { slot: slotId });
+      setBusySlot(null);
+      if (!res.ok) setError(res.error || "Couldn't resize that image.");
     });
   }
 
@@ -317,6 +357,15 @@ export default function SlotCards({
                 >
                   {src ? "Replace" : "Upload"}
                 </button>
+                <button
+                  type="button"
+                  className="ph-link"
+                  disabled={busy}
+                  title="Paste an image from the clipboard"
+                  onClick={() => pasteInto(slot.id)}
+                >
+                  Paste
+                </button>
                 {src && (
                   <button
                     type="button"
@@ -325,6 +374,17 @@ export default function SlotCards({
                     onClick={() => setCropSlot(slot.id)}
                   >
                     Crop
+                  </button>
+                )}
+                {src && whiteFit && !sampleId && (
+                  <button
+                    type="button"
+                    className="ph-link"
+                    disabled={busy}
+                    title="Sit the sketch on a white background"
+                    onClick={() => fitWhite(slot.id)}
+                  >
+                    Fit to white
                   </button>
                 )}
                 {/* The "URL" button used to sit here (Tess, 2026-08-05:

@@ -570,7 +570,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             title="Sketch — front and back"
             openOnHash="sketch"
           >
-            <SlotCards styleId={st.id} photos={designPhotos} slots={DESIGN_SLOTS} notes={styleNotes} comments={false} meta={styleMeta} />
+            <SlotCards styleId={st.id} photos={designPhotos} slots={DESIGN_SLOTS} notes={styleNotes} comments={false} meta={styleMeta} whiteFit />
 
             {/* Colourways live in the sketch box (Tess, 2026-08-07: "maybe it's
                 an option in the sketch profile section to upload other
