@@ -29,6 +29,14 @@ const FIELDS = [
   "master_location", "approved_on", "approved_by", "spec", "notes",
 ] as const;
 
+function extFor(type: string): string {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  if (type === "image/gif") return "gif";
+  if (type === "image/avif") return "avif";
+  return "jpg";
+}
+
 function pick(patch: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const f of FIELDS) {
@@ -97,7 +105,10 @@ export async function updateStandard(id: string, patch: Record<string, unknown>)
 }
 
 // Add or patch one material's approval against this standard. Named saveApproval
-// so it does not shadow the pure setApproval it calls.
+// so it does not shadow the pure setApproval it calls. This is a read-modify-write
+// on the approvals list: two concurrent calls on the same standard can lose one
+// approval. This is accepted at this scale and matches the precedent in
+// app/actions/materialOrders.ts.
 export async function saveApproval(
   id: string,
   materialId: string,
@@ -128,9 +139,15 @@ export async function addStandardImage(
   await requireFredTeam();
   const file = form.get("file") as File | null;
   if (!file || !file.size) return;
+
+  // A lab dip belongs to one material's approval, not to the standard. Validate
+  // and bail before uploading, so no orphaned files are left in storage.
+  if (slot === "lab_dip" && !materialId) return;
+
   const supabase = await createClient();
-  const path = `color-standards/${id}/${slot}-${Date.now()}-${file.name}`;
-  const { error } = await supabase.storage.from(REFERENCES_BUCKET).upload(path, file, { upsert: true });
+  const ext = extFor(file.type);
+  const path = `${crypto.randomUUID()}/full.${ext}`;
+  const { error } = await supabase.storage.from(REFERENCES_BUCKET).upload(path, file, { upsert: false });
   if (error) return;
   const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
   const url = pub?.publicUrl;
@@ -146,11 +163,10 @@ export async function addStandardImage(
     revalidatePath("/materials");
     return;
   }
-  // A lab dip belongs to one material's approval, not to the standard.
-  if (!materialId) return;
+  // Lab dip: materialId is guaranteed to exist by the check above.
   const std = await readStandard(id);
   if (!std) return;
-  await writeApprovals(id, setApproval(std, materialId, { lab_dip_url: url }));
+  await writeApprovals(id, setApproval(std, materialId!, { lab_dip_url: url }));
 }
 
 export async function archiveStandard(id: string, archived: boolean) {
@@ -161,6 +177,8 @@ export async function archiveStandard(id: string, archived: boolean) {
     .update({ archived, updated_at: new Date().toISOString() })
     .eq("id", id);
   revalidatePath("/color-standards");
+  revalidatePath(`/color-standards/${id}`);
+  revalidatePath("/materials");
 }
 
 export async function softDeleteStandard(id: string) {
@@ -171,5 +189,7 @@ export async function softDeleteStandard(id: string) {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   revalidatePath("/color-standards");
+  revalidatePath(`/color-standards/${id}`);
+  revalidatePath("/materials");
   redirect("/color-standards");
 }
