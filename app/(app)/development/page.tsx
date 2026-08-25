@@ -14,7 +14,7 @@ export default async function DevelopmentPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title display">Development</h1>
+        <h1 className="page-title display">Style Development</h1>
         <div className="spacer" />
         <Link href="/styles/new" className="btn sm">
           + New Style

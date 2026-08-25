@@ -48,7 +48,7 @@ export default async function GuidePage() {
           <h2>Product — making the styles</h2>
           <ul>
             <li>
-              <b>Development</b> — styles in progress.
+              <b>Style Development</b> — styles in progress.
             </li>
             <li>
               <b>Styles by Factory</b> — the same work, grouped by who is making

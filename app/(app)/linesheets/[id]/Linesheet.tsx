@@ -566,8 +566,8 @@ export default function Linesheet({
 
       {empty ? (
         <div className="empty no-print">
-          No styles yet. Use <strong>+ Add styles</strong> to pull styles from Development or the
-          Style Library onto this linesheet.
+          No styles yet. Use <strong>+ Add styles</strong> to pull styles from Style Development or
+          the Style Library onto this linesheet.
         </div>
       ) : view === "grid" ? (
         groupColor ? (

@@ -80,7 +80,7 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
   {
     label: "Product",
     links: [
-      { href: "/development", label: "Development" },
+      { href: "/development", label: "Style Development" },
       // Tess, 2026-08-06: "in navigation, factories should be 'styles by
       // factory'". The page is not a directory of factories — it is the work,
       // grouped by who is doing it — and the old word sent people looking for

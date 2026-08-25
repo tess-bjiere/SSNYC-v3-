@@ -503,7 +503,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
 
       <div className="page-head">
         <Link href="/development" className="count">
-          ← Development
+          ← Style Development
         </Link>
         <div className="spacer" />
         {/* Opens the round the style is on in the full-screen review — the same

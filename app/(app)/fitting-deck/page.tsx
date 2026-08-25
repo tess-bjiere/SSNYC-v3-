@@ -134,7 +134,7 @@ export default async function FittingDeckPage({
     <div className="page deck-page">
       <div className="page-head no-print">
         <Link href="/development" className="count">
-          ← Development
+          ← Style Development
         </Link>
       </div>
 
