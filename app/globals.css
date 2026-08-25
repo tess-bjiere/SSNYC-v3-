@@ -2613,8 +2613,8 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    deeper (Tess, 2026-08-24: "indents need to be more pronounced for sub bullets";
    "clean-up bullets ... improve consistency"). Comfortable vertical rhythm so a
    list of fit notes does not crowd; the marker is muted so the words lead. */
-.linked-list{margin:5px 0;padding-left:1.3em;list-style:disc}
-.linked-list li{margin:4px 0;line-height:1.45}
+.linked-list{margin:6px 0;padding-left:1.4em;list-style:disc}
+.linked-list li{margin:5px 0;line-height:1.45;padding-left:0.15em}
 .linked-list li::marker{color:var(--faint)}
 /* Each level down is a dash, hung a full step further left-to-right than its
    parent — the 2.4em pad is what makes the step read at a glance. Levels three
@@ -2626,11 +2626,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    older — which is what put a stray dot where the dash should be. list-style:none
    + an absolutely-positioned ::before renders the same dash in every browser. */
 .linked-list .linked-list,
-.linked-list .linked-list .linked-list{margin:4px 0;padding-left:2.4em;list-style:none}
+.linked-list .linked-list .linked-list{margin:5px 0;padding-left:2.7em;list-style:none}
 .linked-list .linked-list > li{position:relative}
 .linked-list .linked-list > li::marker{content:""}
-.linked-list .linked-list > li::before{content:"–";position:absolute;left:-1.15em;
-  color:var(--muted);font-weight:400}
+.linked-list .linked-list > li::before{content:"–";position:absolute;left:-1.25em;
+  color:var(--muted);font-weight:600}
 /* The bullet-aware notes editor (Tess, 2026-08-24). A quiet toolbar over the
    textarea; the textarea itself keeps the plain .textarea look. */
 .notes-field{display:flex;flex-direction:column;gap:3px}
