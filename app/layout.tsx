@@ -15,11 +15,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* ONE FAMILY (Tess, 2026-08-06: "change all fonts to barlow").
-            Instrument Serif is gone — it was the display face on page titles,
-            the library modal's heading and the AI summary sentence, and it is
-            a second webfont fetched on every page load to set about nine
-            words. Barlow Semi Condensed now carries the whole app, and the
+        {/* ONE FAMILY for the app (Tess, 2026-08-06: "change all fonts to
+            barlow"). Barlow Semi Condensed carries the whole interface, and the
             weights it loads are the hierarchy: 300 for the one light lead
             sentence, 400 body, 500 for emphasis inside prose, 600 for titles
             and captions. Nothing is set in a weight that is not in this list —
@@ -27,6 +24,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             text look slightly different in different corners of the page. */}
         <link
           href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap"
+          rel="stylesheet"
+        />
+        {/* The one serif, back on purpose (Tess, 2026-08-24: "serifs should be
+            instrument"). Not the app's display face this time — only the
+            deliberate serif accents: the buyer-facing linesheet product title
+            and the round-review title. Instrument Serif ships a single weight,
+            so it is a small fetch, and it is confined to var(--serif) in
+            globals.css so nothing else can quietly pick it up. */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
           rel="stylesheet"
         />
       </head>
