@@ -797,18 +797,14 @@ export default function Linesheet({
                 )}
               </div>
 
-              {/* The brand mark at the foot of the page, bottom-LEFT, on every
-                  reference page (Tess, 2026-08-24: "use Sous Sous logo small on
-                  bottom of page"). A section-level child so it sits under the
-                  left image, not inside the text column. */}
-              <div className="ls-wordmark">
-                {cover.brandLogo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={cover.brandLogo} alt={cover.brandLabel} />
-                ) : (
-                  cover.brandLabel
-                )}
-              </div>
+              {/* The brand mark at the foot of the page, bottom-LEFT, flush with
+                  the image's left edge (Tess, 2026-08-24: "add sous sous logo
+                  small in black to the bottom left corner ... left align with edge
+                  of image"). Rendered as the wordmark TEXT, not the uploaded logo
+                  image — that logo is the light version for the dark app UI and
+                  prints invisibly on white, so the deck sets the name in black
+                  itself. */}
+              <div className="ls-wordmark">{cover.brandLabel}</div>
             </section>
             );
           })}

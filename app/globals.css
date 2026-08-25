@@ -4620,10 +4620,15 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-swatches{display:flex;flex-wrap:wrap;gap:0.1in;margin-top:0.3in}
   .ls-swatches img{width:0.62in;height:0.62in;object-fit:cover;border:1px solid #ececec;background:#fafafa}
 
-  /* The brand mark, bottom-left of every page. */
-  .ls-wordmark{position:absolute;left:0.65in;bottom:0.42in;margin:0;
-    font-size:11px;letter-spacing:.2em;color:#111;font-weight:600}
-  .ls-wordmark img{height:0.26in;width:auto;display:block}
+  /* The brand mark, small and black, bottom-left, its left edge flush with the
+     image column's (both start at the 0.65in page inset). The serif wordmark, to
+     match the reference deck's own "SOUS SOUS" mark. */
+  /* grid-column:auto resets the screen rule's 1/-1 span, so the absolute
+     wordmark's containing block is the entry's padding box (not the content box)
+     and left:0.65in lands exactly on the image's left edge instead of doubling
+     the inset. */
+  .ls-wordmark{position:absolute;grid-column:auto;left:0.65in;bottom:0.42in;margin:0;
+    font-family:var(--serif);font-size:15px;letter-spacing:.05em;color:#000;font-weight:400}
   .ls-wordmark, .ls-eyebrow{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
