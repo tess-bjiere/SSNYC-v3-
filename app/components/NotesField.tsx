@@ -18,6 +18,22 @@ import { useRef } from "react";
 
 const INDENT = "  "; // two spaces per level, matched by lib/noteBlocks indentUnits
 const BULLET_RE = /^([ \t]*)([-*•])([ \t]+)(.*)$/;
+// One marker, everywhere (Tess, 2026-08-24: "the bullet functionality is not
+// creating bullets consistently it's doing dashes and looks messy"). The button,
+// Enter-continue and a typed "- " all resolve to this, and any -/* already in a
+// note is shown as this in the box, so a list never mixes dashes and dots.
+const MARK = "• ";
+
+/** Show every bullet marker as the dot, whatever it was typed as. Only a real
+ *  marker — a -,*, or • at the start of the line followed by a space — is
+ *  touched, so a dash inside prose ("well-made") or a leading minus ("-5°") is
+ *  left alone. */
+function normalizeBullets(s: string): string {
+  return s
+    .split("\n")
+    .map((l) => l.replace(/^([ \t]*)[-*•]([ \t])/, "$1•$2"))
+    .join("\n");
+}
 
 export default function NotesField({
   name,
@@ -62,10 +78,26 @@ export default function NotesField({
         // Empty bullet → drop the marker and its indent, ending the list.
         apply(el, el.value.slice(0, start) + el.value.slice(end), start);
       } else {
-        const insert = "\n" + m[1] + m[2] + " ";
+        // Continue with the dot, at the same indent — never inherit a dash the
+        // line happened to be typed with.
+        const insert = "\n" + m[1] + MARK;
         apply(el, el.value.slice(0, pos) + insert + el.value.slice(pos), pos + insert.length);
       }
       return;
+    }
+
+    // Typing "- " or "* " at the head of a line becomes "• " (the autoformat
+    // people expect from a bulleting editor), so a dash never survives to render.
+    if (e.key === " " && pos === el.selectionEnd) {
+      const { start } = lineBounds(el, pos);
+      const before = el.value.slice(start, pos);
+      const mm = before.match(/^([ \t]*)[-*•]$/);
+      if (mm) {
+        e.preventDefault();
+        const insert = mm[1] + MARK;
+        apply(el, el.value.slice(0, start) + insert + el.value.slice(pos), start + insert.length);
+        return;
+      }
     }
 
     if (e.key === "Tab") {
@@ -97,8 +129,8 @@ export default function NotesField({
       caret = Math.max(start, pos - (m[2].length + m[3].length));
     } else {
       const ws = line.match(/^[ \t]*/)?.[0] ?? "";
-      nextLine = ws + "- " + line.slice(ws.length);
-      caret = pos + 2;
+      nextLine = ws + MARK + line.slice(ws.length);
+      caret = pos + MARK.length;
     }
     apply(el, el.value.slice(0, start) + nextLine + el.value.slice(end), caret);
   }
@@ -122,7 +154,7 @@ export default function NotesField({
         name={name}
         rows={rows}
         placeholder={placeholder}
-        defaultValue={defaultValue ?? ""}
+        defaultValue={normalizeBullets(defaultValue ?? "")}
         aria-label={ariaLabel}
         onKeyDown={onKeyDown}
       />

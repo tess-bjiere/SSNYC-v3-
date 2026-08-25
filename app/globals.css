@@ -4522,20 +4522,28 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      the fitting deck's slides. The image column takes the larger share and the
      drawing runs nearly the full page height; the facts sit centred beside it. */
   .ls-detail{gap:0;padding:0;box-sizing:border-box}
+  /* minmax(0,…), not a bare fr (Tess, 2026-08-24: "export of the linesheets is
+     still really wonky"). A raster sketch (a real PNG/JPG flat) has an intrinsic
+     width that floors min-width:auto, so a plain `fr` track could not shrink
+     below it — two flats then overran their column and overlapped the facts. The
+     zero-min track lets the images size down to their share; the screen rule
+     always used minmax(0,…) and the print rule had quietly dropped it. */
   .ls-entry{break-before:page;break-inside:avoid;min-height:98vh;box-sizing:border-box;
-    grid-template-columns:1.3fr 1fr;gap:0.7in;align-items:center;align-content:center;
-    padding:0.55in 0.75in;border-top:none}
+    grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0.7in;
+    align-items:center;align-content:center;padding:0.55in 0.75in;border-top:none}
   /* The cover already broke to a new page, so the first product must not force a
      second, blank one before it. */
   .ls-detail .ls-entry:first-child{break-before:avoid}
   /* Image zone — the layout decides what it holds. Full-height and self-contained
      so a picture never overruns the facts. */
-  .ls-visual{align-self:center}
-  .ls-hero{width:100%;max-height:7.4in;object-fit:contain}
-  .ls-flats{display:flex;gap:0.2in;align-items:center}
-  .ls-flats img{width:100%;max-height:6.4in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
-  .ls-cw-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.14in}
-  .ls-cw-grid img{width:100%;max-height:3.3in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  /* min-width:0 on every image zone and its images so a raster picture shrinks
+     to its box instead of forcing it wider (the flats overlap fix, 2026-08-24). */
+  .ls-visual{align-self:center;min-width:0}
+  .ls-hero{width:100%;max-height:7.4in;object-fit:contain;min-width:0}
+  .ls-flats{display:flex;gap:0.2in;align-items:center;min-width:0}
+  .ls-flats img{flex:1 1 0;min-width:0;max-width:100%;max-height:6.4in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  .ls-cw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.14in;min-width:0}
+  .ls-cw-grid img{width:100%;min-width:0;max-height:3.3in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
   .ls-flats-mini{display:flex;gap:0.12in;margin:0 0 0.22in}
   .ls-flats-mini img{height:1in;width:auto;object-fit:contain;border:1px solid #ececec;background:#fafafa}
   /* Text zone — the market anatomy. */
