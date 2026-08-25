@@ -2612,11 +2612,15 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .linked-list{margin:2px 0;padding-left:1.15em;list-style:disc}
 .linked-list li{margin:1px 0}
 .linked-list li::marker{color:var(--faint)}
-/* Sub-bullets: a lighter marker and no extra gap, so a nested list reads as a
-   level down rather than a new list (Tess, 2026-08-24: bullets and sub-bullets). */
-.linked-list .linked-list{margin:1px 0}
-.linked-list .linked-list{list-style:circle}
-.linked-list .linked-list .linked-list{list-style:square}
+/* Sub-bullets read as a dash and sit indented further than the dotted top level
+   (Tess, 2026-08-24: "sub bullets should be indented further and with dashes").
+   The dash is the list marker itself (a string list-style-type), so it keeps the
+   muted ::marker colour and the hanging indent a real bullet has. */
+/* Sub-bullets: a dash marker, and a deeper hang than the top level, so a nested
+   list reads clearly as a level down (Tess, 2026-08-24: "sub bullets should be
+   indented further and with dashes"). */
+.linked-list .linked-list{margin:1px 0;padding-left:1.7em;list-style-type:"–  "}
+.linked-list .linked-list .linked-list{padding-left:1.7em;list-style-type:"–  "}
 /* The bullet-aware notes editor (Tess, 2026-08-24). A quiet toolbar over the
    textarea; the textarea itself keeps the plain .textarea look. */
 .notes-field{display:flex;flex-direction:column;gap:3px}
