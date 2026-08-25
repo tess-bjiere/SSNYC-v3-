@@ -2910,6 +2910,28 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-full-side .sr-facts{grid-template-columns:1fr 1fr;gap:12px 18px}
 .sr-full-side .sr-field .v{font-size:var(--t-body);line-height:1.5}
 .sr-full-side .sr-field .k{font-size:var(--t-micro)}
+
+/* The panel header — what is being reviewed. The name in the display face, then
+   a caption row of the number, the factory and the fit date (Tess, 2026-08-24).
+   Set off from the facts below by the same hairline the facts use between
+   bands. */
+.sr-full-head{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--hair)}
+.sr-full-title{font-family:Georgia,"Times New Roman",serif;font-size:var(--t-display);
+  color:var(--ink);line-height:1.15}
+.sr-full-idrow{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;
+  font-size:var(--t-meta);color:var(--muted);letter-spacing:.02em}
+
+/* The round's comment thread in the side panel — reuses the drawer's .note*
+   run, set off from the facts above it. The add / reply boxes are the page's
+   textarea, kept compact. */
+.sr-full-comments{margin-top:18px;padding-top:16px;border-top:1px solid var(--hair)}
+.sr-full-comments .note{margin-top:14px}
+.sr-full-comments .note:first-of-type{margin-top:10px}
+.sr-cmt-none{font-size:var(--t-sm);color:var(--faint);margin-top:8px}
+.sr-cmt-form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.sr-cmt-row{display:flex;align-items:center;gap:14px}
+.sr-cmt-add{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
+
 .sr-full-shot{margin:0}
 .sr-full-shot figcaption{margin-top:10px}
 .sr-full-shot figcaption .k{display:block;font-size:var(--t-cap);text-transform:uppercase;
@@ -3469,9 +3491,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-full-frame{position:relative;display:inline-block;line-height:0;flex:none;
   padding:0;border:0;background:none;font:inherit;color:inherit;cursor:zoom-in}
 .sr-full-frame:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* One height for every shot on the rail (Tess, 2026-08-24: "height of images
+   should be the same"). A fixed height with width:auto keeps each picture's own
+   aspect ratio while landing them all on the same top and bottom line, so a
+   front and a back read as a pair instead of two mismatched heights. The frame
+   still shrink-wraps the image exactly — height is set on the image, not a box
+   it sits inside — so the per-cent pins stay on the garment. A wide shot simply
+   takes more of the rail's horizontal scroll; nothing is letterboxed. */
 .sr-full-frame img{
-  display:block;width:auto;height:auto;
-  max-width:min(560px,68vw);max-height:calc(100vh - 300px);
+  display:block;height:calc(100vh - 320px);width:auto;
+  max-width:none;max-height:none;
   background:var(--chip);
 }
 .sr-full-rail figcaption{

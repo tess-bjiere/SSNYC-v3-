@@ -58,7 +58,7 @@ import StyleReview, {
   type ReviewThread,
 } from "./StyleReview";
 import StatusControl from "./StatusControl";
-import SampleRounds from "./SampleRounds";
+import SampleRounds, { type FullThread } from "./SampleRounds";
 import VersionStrip from "./VersionStrip";
 import SiblingStrip from "./SiblingStrip";
 import type { VariationSource } from "./Variations";
@@ -367,6 +367,31 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
       round: null,
     })),
   }));
+
+  // The comment threads filed against each round, keyed by sample id, for the
+  // round's full-screen viewer to read, add to and reply to (Tess, 2026-08-24:
+  // "the ability to add or respond to comments"). The same threads the drawer
+  // shows — a thread belongs to a round when its root comment carries that
+  // round's sample_id — mapped to the viewer's plain shape.
+  const roundComments: Record<string, FullThread[]> = {};
+  for (const t of threads) {
+    const sid = t.comment.sample_id;
+    if (!sid) continue;
+    (roundComments[sid] ??= []).push({
+      comment: {
+        id: t.comment.id,
+        author: t.comment.author ?? null,
+        body: t.comment.body ?? null,
+        created_at: t.comment.created_at ?? null,
+      },
+      replies: t.replies.map((r) => ({
+        id: r.id,
+        author: r.author ?? null,
+        body: r.body ?? null,
+        created_at: r.created_at ?? null,
+      })),
+    });
+  }
 
   // Everything written on the style's own pictures — the sketch, the flats, the
   // gallery below them — keyed by image URL. Read once here rather than in each
@@ -1230,6 +1255,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             defaultFactory={st.factory ?? ""}
             today={studioToday()}
             commentCounts={roundCommentCounts}
+            roundComments={roundComments}
             filedOnStyle={normalizePhotos(st.photos)}
             styleNotes={styleNotes}
             materialLibrary={library}

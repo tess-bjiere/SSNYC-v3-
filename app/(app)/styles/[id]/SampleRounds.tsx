@@ -43,7 +43,7 @@ import {
 } from "@/lib/sampleCycle";
 import { readImages, SHOTS_KEY, type ListImage } from "@/lib/imageList";
 import { readNotes, EMPTY_NOTE, type ImageNote } from "@/lib/imageNotes";
-import { addSample, updateSample, setSampleMaterials, addSampleShot } from "@/app/actions/styles";
+import { addSample, updateSample, setSampleMaterials, addSampleShot, addComment } from "@/app/actions/styles";
 import ImageStrip from "./ImageStrip";
 import SlotCards from "./SlotCards";
 import PhotoSlots from "./PhotoSlots";
@@ -989,6 +989,145 @@ function roundImages(slotPhotos: PhotoMap, shots: ListImage[], notes: Record<str
  * Escape closes. The backdrop closes. No native dialog anywhere — a confirm()
  * would freeze the page and there is nothing here worth confirming.
  */
+/* A comment and its replies, filed against a round — the plain, serialisable
+   shape the full-screen viewer needs. Built on the page from the same threads
+   the drawer reads, filtered to this round's sample_id, so the two can never
+   disagree about what has been said. */
+export type FullComment = {
+  id: string;
+  author: string | null;
+  body: string | null;
+  created_at: string | null;
+};
+export type FullThread = { comment: FullComment; replies: FullComment[] };
+
+function commentWhen(iso: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function FullCommentLine({ c }: { c: FullComment }) {
+  return (
+    <>
+      <div className="note-meta">
+        <span className="note-by">{c.author || "Someone"}</span>
+        <span className="note-when" suppressHydrationWarning>
+          {commentWhen(c.created_at)}
+        </span>
+      </div>
+      <Linked className="note-text" text={c.body} />
+    </>
+  );
+}
+
+/**
+ * The round's comment thread, inside the full-screen viewer — read it, add to
+ * it, reply to it, without leaving the review (Tess, 2026-08-24: "the ability
+ * to add or respond to comments").
+ *
+ * The same style_comments the drawer writes, scoped to this round: a new
+ * comment carries the round's sample_id, a reply carries only its parent_id and
+ * inherits the scope server-side (see addComment). Editing and deleting are
+ * deliberately left to the drawer — this panel is for the two things a fit
+ * review actually needs, saying something new and answering something said.
+ */
+function RoundComments({
+  styleId,
+  sampleId,
+  threads,
+}: {
+  styleId: string;
+  sampleId: string;
+  threads: FullThread[];
+}) {
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+
+  return (
+    <div className="sr-full-comments">
+      <div className="sr-legend">Comments</div>
+
+      {threads.length === 0 && (
+        <p className="sr-cmt-none">No comments on this round yet.</p>
+      )}
+
+      {threads.map((t) => (
+        <div className="note" key={t.comment.id}>
+          <FullCommentLine c={t.comment} />
+
+          {t.replies.length > 0 && (
+            <div className="note-replies">
+              {t.replies.map((r) => (
+                <div className="note-reply" key={r.id}>
+                  <FullCommentLine c={r} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {replyTo === t.comment.id ? (
+            <form
+              action={async (fd) => {
+                await addComment(styleId, fd);
+                setReplyTo(null);
+              }}
+              className="sr-cmt-form"
+            >
+              <input type="hidden" name="parent_id" value={t.comment.id} />
+              <textarea
+                className="textarea"
+                name="body"
+                placeholder="Reply…"
+                autoFocus
+                style={{ minHeight: 52 }}
+              />
+              <div className="sr-cmt-row">
+                <button className="btn sm" type="submit">
+                  Reply
+                </button>
+                <button
+                  type="button"
+                  className="note-act"
+                  onClick={() => setReplyTo(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className="note-act"
+              onClick={() => setReplyTo(t.comment.id)}
+            >
+              Reply
+            </button>
+          )}
+        </div>
+      ))}
+
+      {/* New comment on this round. The sample_id rides with it, so posting from
+          this viewer files the comment against the round being reviewed — the
+          same filing the drawer does when a round is picked. React resets the
+          box on a successful action, so there is nothing to clear by hand. */}
+      <form action={addComment.bind(null, styleId)} className="sr-cmt-form sr-cmt-add">
+        <input type="hidden" name="sample_id" value={sampleId} />
+        <textarea
+          className="textarea"
+          name="body"
+          placeholder="Add a comment on this round…"
+          required
+          style={{ minHeight: 56 }}
+        />
+        <button className="btn sm" type="submit">
+          Comment
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function FullRound({
   styleId,
   styleName,
@@ -996,6 +1135,7 @@ function FullRound({
   s,
   today,
   images,
+  comments = [],
   onClose,
   library = [],
 }: {
@@ -1005,6 +1145,7 @@ function FullRound({
   s: StyleSample;
   today: string;
   images: { url: string; label: string; note: ImageNote }[];
+  comments?: FullThread[];
   onClose: () => void;
   library?: readonly LinkedMaterial[];
 }) {
@@ -1066,7 +1207,24 @@ function FullRound({
             scrolls on its own if it has to, so the view itself never does. */}
         <div className="modal-body sr-full-body">
           <div className="sr-full-side">
+            {/* What is being reviewed, at the top of the panel (Tess,
+                2026-08-24: "this view needs more info on the left side panel
+                including title, factory, fit date"). The style name leads;
+                its number, the factory the round is with, and the fit date
+                sit under it as a compact caption row. The header already
+                carries the round and its rating, so those are not repeated. */}
+            <div className="sr-full-head">
+              <div className="sr-full-title">{styleName || "Untitled"}</div>
+              <div className="sr-full-idrow">
+                {styleNo && <span>{styleNo}</span>}
+                {s.factory && <span>{s.factory}</span>}
+                {s.fitting_date && <span>Fit {shortDate(s.fitting_date)}</span>}
+              </div>
+            </div>
+
             <RoundFacts s={s} today={today} styleId={styleId} library={library} />
+
+            <RoundComments styleId={styleId} sampleId={s.id} threads={comments} />
           </div>
 
           {images.length === 0 ? (
@@ -1216,6 +1374,7 @@ function RoundCard({
   s,
   today,
   comments,
+  commentThreads = [],
   library = [],
 }: {
   styleId: string;
@@ -1225,6 +1384,8 @@ function RoundCard({
   today: string;
   /** How many comments are filed against this round. */
   comments: number;
+  /** The round's comment threads, for the full-screen viewer's Comments panel. */
+  commentThreads?: FullThread[];
   library?: readonly LinkedMaterial[];
 }) {
   const [open, setOpen] = useState(false);
@@ -1385,6 +1546,7 @@ function RoundCard({
           s={s}
           today={today}
           images={roundImages(slotPhotos, shots, imageNotes)}
+          comments={commentThreads}
           onClose={() => setFull(false)}
           library={library}
         />
@@ -1401,6 +1563,7 @@ export default function SampleRounds({
   defaultFactory,
   today,
   commentCounts = {},
+  roundComments = {},
   filedOnStyle,
   styleNotes,
   materialLibrary = [],
@@ -1416,6 +1579,9 @@ export default function SampleRounds({
   today: string;
   /** sample id → number of comments filed against that round. */
   commentCounts?: Record<string, number>;
+  /** sample id → the round's comment threads, for the full-screen viewer's
+   *  Comments panel (add + reply). Read off the same threads the drawer uses. */
+  roundComments?: Record<string, FullThread[]>;
   /** Shoot slots stored on the style, from before photography moved onto rounds. */
   filedOnStyle?: PhotoMap;
   /**
@@ -1671,6 +1837,7 @@ export default function SampleRounds({
           s={current}
           today={today}
           comments={commentCounts[current.id] ?? 0}
+          commentThreads={roundComments[current.id] ?? []}
           library={materialLibrary}
         />
       )}
@@ -1713,6 +1880,7 @@ export default function SampleRounds({
                 s={s}
                 today={today}
                 comments={commentCounts[s.id] ?? 0}
+                commentThreads={roundComments[s.id] ?? []}
                 library={materialLibrary}
               />
             ))}
