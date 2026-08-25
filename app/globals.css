@@ -2609,18 +2609,19 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .edit-customs > summary::before{content:"▸";margin-right:6px;font-size:.85em}
 .edit-customs[open] > summary::before{content:"▾"}
 .edit-customs > summary:hover{color:var(--muted)}
-.linked-list{margin:2px 0;padding-left:1.15em;list-style:disc}
-.linked-list li{margin:1px 0}
+/* Bullet lists in notes. A dotted top level, and a DASHED sub level set clearly
+   deeper (Tess, 2026-08-24: "indents need to be more pronounced for sub bullets";
+   "clean-up bullets ... improve consistency"). Comfortable vertical rhythm so a
+   list of fit notes does not crowd; the marker is muted so the words lead. */
+.linked-list{margin:5px 0;padding-left:1.3em;list-style:disc}
+.linked-list li{margin:4px 0;line-height:1.45}
 .linked-list li::marker{color:var(--faint)}
-/* Sub-bullets read as a dash and sit indented further than the dotted top level
-   (Tess, 2026-08-24: "sub bullets should be indented further and with dashes").
-   The dash is the list marker itself (a string list-style-type), so it keeps the
-   muted ::marker colour and the hanging indent a real bullet has. */
-/* Sub-bullets: a dash marker, and a deeper hang than the top level, so a nested
-   list reads clearly as a level down (Tess, 2026-08-24: "sub bullets should be
-   indented further and with dashes"). */
-.linked-list .linked-list{margin:1px 0;padding-left:1.7em;list-style-type:"–  "}
-.linked-list .linked-list .linked-list{padding-left:1.7em;list-style-type:"–  "}
+/* Each level down is a dash, hung a full step further left-to-right than its
+   parent — the 2.4em pad is what makes the step read at a glance. Levels three
+   and beyond keep the same dash rather than inventing new marks. */
+.linked-list .linked-list{margin:4px 0;padding-left:2.4em;list-style-type:"–  "}
+.linked-list .linked-list .linked-list{padding-left:2.4em;list-style-type:"–  "}
+.linked-list .linked-list > li::marker{color:var(--muted)}
 /* The bullet-aware notes editor (Tess, 2026-08-24). A quiet toolbar over the
    textarea; the textarea itself keeps the plain .textarea look. */
 .notes-field{display:flex;flex-direction:column;gap:3px}
