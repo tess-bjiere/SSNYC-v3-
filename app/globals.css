@@ -2618,10 +2618,19 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .linked-list li::marker{color:var(--faint)}
 /* Each level down is a dash, hung a full step further left-to-right than its
    parent — the 2.4em pad is what makes the step read at a glance. Levels three
-   and beyond keep the same dash rather than inventing new marks. */
-.linked-list .linked-list{margin:4px 0;padding-left:2.4em;list-style-type:"–  "}
-.linked-list .linked-list .linked-list{padding-left:2.4em;list-style-type:"–  "}
-.linked-list .linked-list > li::marker{color:var(--muted)}
+   and beyond keep the same dash rather than inventing new marks.
+
+   The dash is drawn with ::before, NOT a string list-style-type (Tess,
+   2026-08-24: bullets "still rendering very weird and messy"). A `list-style-type:
+   "–"` needs a very recent browser and silently falls back to a dot on anything
+   older — which is what put a stray dot where the dash should be. list-style:none
+   + an absolutely-positioned ::before renders the same dash in every browser. */
+.linked-list .linked-list,
+.linked-list .linked-list .linked-list{margin:4px 0;padding-left:2.4em;list-style:none}
+.linked-list .linked-list > li{position:relative}
+.linked-list .linked-list > li::marker{content:""}
+.linked-list .linked-list > li::before{content:"–";position:absolute;left:-1.15em;
+  color:var(--muted);font-weight:400}
 /* The bullet-aware notes editor (Tess, 2026-08-24). A quiet toolbar over the
    textarea; the textarea itself keeps the plain .textarea look. */
 .notes-field{display:flex;flex-direction:column;gap:3px}
