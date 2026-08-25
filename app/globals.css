@@ -308,7 +308,14 @@ body.notes-open .wrap{padding-right:378px}
   letter-spacing:.12em;color:var(--faint);white-space:nowrap;line-height:1;
   padding:calc(4px + .21em) 0 4px}
 .nav-menu-link:hover{color:var(--muted)}
-.nav-menu-link.active{color:var(--ink)}
+/* The page you are on is white AND underlined (Tess, 2026-08-24: "navigation
+   should underline the active page were on as well"). This is not the 2026-08-06
+   underline that came off — that one sat under the nav SELECT control and drew on
+   every tab; this draws only under the one link that is the current page, so the
+   line is a marker of where you are, not chrome on everything. Offset so it clears
+   the small-caps letterforms. */
+.nav-menu-link.active{color:var(--ink);text-decoration:underline;
+  text-decoration-thickness:1.5px;text-underline-offset:5px}
 /* Tess, 2026-08-06: "remove underline on select in nav-- just change to white".
    The rule is gone entirely rather than left transparent, so nothing in the bar
    is reserving space for a line that will never be drawn. Which tab you are on
@@ -325,8 +332,9 @@ body.notes-open .wrap{padding-right:378px}
    separate pass. */
 .nav-link{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding:calc(4px + .21em) 0 4px;line-height:1;white-space:nowrap}
 .nav-link:hover{color:var(--muted)}
-.nav-link.active{color:var(--ink)}
-.nav-link.active:hover{color:var(--ink)}
+/* Same active-page underline on the talent bar's plain links (Tess, 2026-08-24). */
+.nav-link.active,.nav-link.active:hover{color:var(--ink);text-decoration:underline;
+  text-decoration-thickness:1.5px;text-underline-offset:5px}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
 .who{font-size:var(--t-cap);color:var(--faint);text-transform:uppercase;letter-spacing:.12em;line-height:1;padding-top:.21em}
 
