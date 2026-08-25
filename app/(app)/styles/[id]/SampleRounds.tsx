@@ -51,6 +51,7 @@ import ImageNotes from "./ImageNotes";
 import Linked from "@/app/components/Linked";
 import { requestCommentScope } from "./commentScope";
 import { PHOTO_FOCUS_EVENT, peekPhotoFocus } from "./photoFocus";
+import { REVIEW_LATEST_EVENT } from "./reviewLatest";
 import {
   normalizeMaterialIds,
   resolveMaterials,
@@ -1375,6 +1376,7 @@ function RoundCard({
   today,
   comments,
   commentThreads = [],
+  isLatest = false,
   library = [],
 }: {
   styleId: string;
@@ -1386,10 +1388,23 @@ function RoundCard({
   comments: number;
   /** The round's comment threads, for the full-screen viewer's Comments panel. */
   commentThreads?: FullThread[];
+  /** The round the style is on. Only this card answers "Review latest round"
+   *  from the page head (Tess, 2026-08-24) — the history cards ignore it. */
+  isLatest?: boolean;
   library?: readonly LinkedMaterial[];
 }) {
   const [open, setOpen] = useState(false);
   const [full, setFull] = useState(false);
+
+  // The page-head "Review latest round" button opens this round full screen,
+  // when this is the round the style is on. A window event carries the click
+  // across the tree (see reviewLatest.ts).
+  useEffect(() => {
+    if (!isLatest) return;
+    const openFull = () => setFull(true);
+    window.addEventListener(REVIEW_LATEST_EVENT, openFull);
+    return () => window.removeEventListener(REVIEW_LATEST_EVENT, openFull);
+  }, [isLatest]);
 
   const state = sampleState(s);
   const eta = sampleEta(s, today);
@@ -1838,6 +1853,7 @@ export default function SampleRounds({
           today={today}
           comments={commentCounts[current.id] ?? 0}
           commentThreads={roundComments[current.id] ?? []}
+          isLatest
           library={materialLibrary}
         />
       )}
