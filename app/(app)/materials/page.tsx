@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
 import { getSessionUser } from "@/lib/access";
-import { APP } from "@/lib/appConfig";
+import { ordersEnabled } from "@/lib/appConfig";
 import { normalizeStandards } from "@/lib/colorStandards";
 import MaterialsClient, { type Material } from "./MaterialsClient";
 
@@ -15,11 +15,12 @@ export const dynamic = "force-dynamic";
 // table is created on the Loyalist database (db/p18-materials-loyalist.sql), this
 // page shows its empty state rather than erroring.
 export default async function MaterialsPage() {
-  // Ordering is FRED-only (SOUS SOUS / Renggli get materials from the factory, so
-  // there is nothing to order). The library itself is not gated.
-  const canOrder = APP.id === "fred";
   const supabase = await createClient();
   const brand = await activeBrand();
+  // Ordering follows the brand now: FRED plus SOUS SOUS and Renggli (Tess,
+  // 2026-08-24: "add the orders tab to sourcing on the sous sous and renggli
+  // versions"). The library itself is not gated — every brand documents materials.
+  const canOrder = ordersEnabled(brand);
   const [{ data, error }, ordersRes, stylesRes, user, stdsRes] = await Promise.all([
     supabase
       .from("materials")

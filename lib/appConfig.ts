@@ -76,3 +76,19 @@ function resolveAppId(raw: string | null | undefined): AppId {
  * constant at runtime, safe to read on the server and the client alike.
  */
 export const APP: AppConfig = APPS[resolveAppId(process.env.NEXT_PUBLIC_APP)];
+
+/**
+ * Whether the material-ordering feature (the Orders tab, and "create order" on
+ * the materials library) is on for this deploy and brand.
+ *
+ * FRED always orders its own materials. On the Loyalist deploy it started FRED-
+ * only — SOUS SOUS and Renggli said their materials often come straight from the
+ * factory — but both now want the option too (Tess, 2026-08-24: "add the orders
+ * tab to sourcing on the sous sous and renggli versions"). It is keyed to the
+ * BRAND, not the whole deploy, so a brand that genuinely does not order can be
+ * left off by simply not being in this list. The Materials library itself stays
+ * on for every brand regardless.
+ */
+export function ordersEnabled(brand: string | null | undefined): boolean {
+  return APP.id === "fred" || brand === "sous-sous" || brand === "renggli";
+}

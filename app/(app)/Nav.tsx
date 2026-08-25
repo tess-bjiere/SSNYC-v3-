@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type Brand } from "@/lib/brands";
-import { APP } from "@/lib/appConfig";
+import { APP, ordersEnabled } from "@/lib/appConfig";
 import BrandSwitcher from "./BrandSwitcher";
 
 // The top row, in two named halves.
@@ -149,16 +149,24 @@ export default function Nav({
   // do want option to document materials because many will be evergreen"). So the
   // library shows on every deploy; only ordering and the FRED-at-home
   // photographer work stay behind the FRED door. Route-level guards back this up.
-  const FRED_ONLY = new Set(["/photographers", "/material-orders", "/color-standards"]);
+  // Still FRED-only on the Loyalist deploy: the FRED-at-home photographer
+  // directory and the colour standards. Material Orders is NO LONGER here — it is
+  // gated by brand (ordersEnabled) so SOUS SOUS and Renggli get it too (Tess,
+  // 2026-08-24: "add the orders tab to sourcing on the sous sous and renggli
+  // versions").
+  const FRED_ONLY = new Set(["/photographers", "/color-standards"]);
   const groups = (isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation"))
-    .map((g) =>
-      APP.id === "fred"
-        ? g
-        : { ...g, links: g.links.filter((l) => !FRED_ONLY.has(l.href)) },
-    )
+    .map((g) => ({
+      ...g,
+      links: g.links.filter((l) => {
+        // Orders follows the brand, not the deploy: shown wherever ordering is on.
+        if (l.href === "/material-orders") return ordersEnabled(brand);
+        // Everything else FRED-gated stays FRED-only.
+        return APP.id === "fred" || !FRED_ONLY.has(l.href);
+      }),
+    }))
     // A group left with no links (all of them FRED-only on SSYNC) drops entirely
-    // rather than rendering an empty menu. Sourcing survives on SSYNC because
-    // Materials stays — only Material Orders is filtered out there.
+    // rather than rendering an empty menu.
     .filter((g) => g.links.length > 0);
   const home = isTeam ? "/development" : "/library";
 

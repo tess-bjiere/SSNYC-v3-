@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireTeam } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
-import { APP } from "@/lib/appConfig";
+import { ordersEnabled } from "@/lib/appConfig";
 import {
   normalizeItems,
   normalizeStatus,
@@ -34,10 +34,11 @@ type Row = {
 };
 
 export default async function MaterialOrdersPage() {
-  // FRED-only for now — orders draw on the FRED-only materials library.
-  if (APP.id !== "fred") notFound();
   await requireTeam();
   const brand = await activeBrand();
+  // On for FRED, and for the SOUS SOUS / Renggli brands (Tess, 2026-08-24). A
+  // brand without ordering 404s here exactly as before.
+  if (!ordersEnabled(brand)) notFound();
 
   const supabase = await createClient();
   const { data } = await supabase

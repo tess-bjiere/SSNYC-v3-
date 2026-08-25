@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireTeam } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
-import { APP } from "@/lib/appConfig";
+import { ordersEnabled } from "@/lib/appConfig";
 import { loadBrands } from "@/lib/brandsServer";
 import { brandName } from "@/lib/brands";
 import { specLine, kindOf, materialFacts } from "@/lib/materials";
@@ -41,12 +41,13 @@ export default async function MaterialOrderPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  if (APP.id !== "fred") notFound();
   await requireTeam();
   const { id } = await params;
 
   const supabase = await createClient();
   const brand = await activeBrand();
+  // On for FRED and for SOUS SOUS / Renggli (Tess, 2026-08-24); off elsewhere.
+  if (!ordersEnabled(brand)) notFound();
   const { data } = await supabase.from("material_orders").select("*").eq("id", id).maybeSingle();
   const row = (data as Row) ?? null;
   if (!row) notFound();
