@@ -257,6 +257,27 @@ export const DESIGN_SLOTS: readonly PhotoSlot[] = [
     label: "Back",
     hint: "The back view of the same drawing — yoke, seams, whatever the front cannot show.",
   },
+  // The linesheet presentation images (Tess, 2026-08-24: "new image slots" for
+  // the market-deck layouts). Each is its OWN slot with its own upload, and the
+  // reference layouts show it only where they name it — a missing styled photo or
+  // croquis is left blank, never filled with the technical sketch above ("do not
+  // automatically fill it in with the technical sketch"). Design slots, so they
+  // are never part of the shoot and never count against a style's photo progress.
+  {
+    id: "styled",
+    label: "Styled photo",
+    hint: "The self-styled or model shot for the linesheet — a person wearing the piece.",
+  },
+  {
+    id: "croquis",
+    label: "Croquis — front",
+    hint: "The fashion illustration, front — the drawing on a figure, not the flat sketch.",
+  },
+  {
+    id: "croquis_back",
+    label: "Croquis — back",
+    hint: "The croquis from the back — the same illustration turned around.",
+  },
 ] as const;
 
 /** Every slot the map may legitimately hold, shoot and design together. */

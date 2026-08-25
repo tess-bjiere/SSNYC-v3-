@@ -15,7 +15,7 @@ import {
   type StyleSample,
 } from "@/lib/types";
 import { sortSamples, latestSample } from "@/lib/sampleCycle";
-import { styleCoverUrl, styleFaces, withRoundPhotos } from "@/lib/styleCover";
+import { styleCoverUrl, withRoundPhotos } from "@/lib/styleCover";
 import { readImages, COLORWAYS_KEY, GALLERY_KEY } from "@/lib/imageList";
 import { normalizePhotos } from "@/lib/photoSlots";
 import { siblingsOf, type SiblingStyleLike } from "@/lib/styleSiblings";
@@ -104,15 +104,20 @@ export default async function LinesheetPage({
       if (!st) return null;
       const rounds = sortSamples(roundsByStyle.get(st.id) ?? [], SAMPLE_ROUNDS);
       const round = latestSample(rounds, SAMPLE_ROUNDS);
-      const faces = styleFaces(st);
       const colorways = readImages(st.photos, COLORWAYS_KEY).map((c) => ({
         url: c.url,
         name: c.caption,
       }));
-      // A styled / model photo for the "model" layout's hero: a model shot from
-      // the latest round (overlaid onto the style's map the way the profile cover
-      // is), else the first gallery image. Null falls back to the sketch.
+      // Each reference layout draws from its OWN image slot, never a fallback to
+      // the technical sketch (Tess, 2026-08-24: "do not automatically fill it in
+      // with the technical sketch. those should only ever show exactly where
+      // mentioned"). Read straight off the style's photo map (with the round's
+      // photos layered on the way the profile cover is), by slot id:
+      //   sketch / sketch_back  the technical flats
+      //   styled                the self-styled / model photo
+      //   croquis / croquis_back the fashion illustration
       const merged = normalizePhotos(withRoundPhotos(st, round?.photos).photos);
+      // A styled / model photo for the legacy modelUrl field (kept for back-compat).
       const modelUrl =
         merged.model_front ||
         merged.model_side ||
@@ -133,8 +138,13 @@ export default async function LinesheetPage({
         colors: st.colors,
         colorOverride: item.colors ?? null,
         colorways,
-        sketchUrl: faces.front?.url ?? faces.back?.url ?? st.cover_image ?? null,
-        backUrl: faces.front && faces.back ? faces.back.url : null,
+        // Technical flats: the sketch slots specifically, not the derived profile
+        // face (which could be a model or lay-flat) — a "flats" zone must be flats.
+        sketchUrl: merged.sketch ?? null,
+        backUrl: merged.sketch_back ?? null,
+        styledUrl: merged.styled ?? null,
+        croquisFront: merged.croquis ?? null,
+        croquisBack: merged.croquis_back ?? null,
         modelUrl,
         roundLabel: round ? SAMPLE_ROUND_LABELS[round.round as SampleRound] ?? round.round : null,
         factory: round?.factory ?? st.factory,

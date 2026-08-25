@@ -22,17 +22,40 @@ export const LINESHEET_KINDS: { key: LinesheetKind; label: string }[] = [
 //   flats     — the front/back technical sketches (works for every style)
 //   model     — a styled/model photo as the hero, the flats small beside the facts
 //   colorways — the colourway product photos as a grid
-export type LinesheetLayout = "flats" | "model" | "colorways";
+// The four Detail-page layouts, one per page of the SOUS SOUS market deck (Tess,
+// 2026-08-24: "follow the reference placements exactly ... follow the pages 1:1").
+// Each names its LEFT (big) image and what sits beside the facts on the RIGHT:
+//   styled_flats     — styled photo left;  technical flats + colour swatches right (deck pg 1)
+//   styled_colorways — styled photo left;  a colourway grid right                 (deck pg 2)
+//   colorways_styled — colourway grid left; a styled photo right                  (deck pg 3)
+//   colorways_croquis— colourway grid left; a croquis (front & back) right        (deck pg 4)
+// Each image is its OWN slot and never falls back to the technical sketch (Tess:
+// "if there's a model or a croquis or layflat image -- do not automatically fill
+// it in with the technical sketch") — a missing image leaves its zone empty.
+export type LinesheetLayout =
+  | "styled_flats"
+  | "styled_colorways"
+  | "colorways_styled"
+  | "colorways_croquis";
 
 export const LINESHEET_LAYOUTS: { key: LinesheetLayout; label: string; hint: string }[] = [
-  { key: "flats", label: "Flats", hint: "Front & back technical sketches" },
-  { key: "model", label: "Model + flats", hint: "A styled photo, sketches beside the facts" },
-  { key: "colorways", label: "Colorways", hint: "The colourway photos as a grid" },
+  { key: "styled_flats", label: "Styled + flats", hint: "Styled photo left; technical flats & swatches right" },
+  { key: "styled_colorways", label: "Styled + colorways", hint: "Styled photo left; colourway grid right" },
+  { key: "colorways_styled", label: "Colorways + styled", hint: "Colourway grid left; styled photo right" },
+  { key: "colorways_croquis", label: "Colorways + croquis", hint: "Colourway grid left; croquis right" },
 ];
 
-/** Any input becomes one of the known layouts; unknown/absent reads as flats. */
+const LAYOUT_KEYS = new Set<string>(LINESHEET_LAYOUTS.map((l) => l.key));
+
+/** Any input becomes one of the four layouts; the old three-layout keys map to
+ *  their nearest new page, and unknown/absent reads as the first (styled + flats). */
 export function normalizeLayout(raw: unknown): LinesheetLayout {
-  return raw === "model" || raw === "colorways" ? raw : "flats";
+  if (typeof raw === "string" && LAYOUT_KEYS.has(raw)) return raw as LinesheetLayout;
+  // Back-compat with the pre-reference keys.
+  if (raw === "model") return "styled_flats";
+  if (raw === "colorways") return "colorways_styled";
+  if (raw === "flats") return "styled_flats";
+  return "styled_flats";
 }
 
 // One entry in a linesheet's ordered contents. `style_id` is the only required
@@ -84,10 +107,17 @@ export type LinesheetEntry = {
   /** Per-linesheet colours (name + optional hex); null = show the style's own. */
   colorOverride: LinesheetColorName[] | null;
   colorways: LinesheetColor[];
+  /** Technical sketch, front and back — shown only where a layout asks for flats. */
   sketchUrl: string | null;
   backUrl: string | null;
+  /** A styled / self-styled photo — its own slot, never the technical sketch. */
+  styledUrl: string | null;
+  /** The croquis (fashion illustration), front and back — its own slots. */
+  croquisFront: string | null;
+  croquisBack: string | null;
   /** A styled / model photo used as the hero on the "model" layout; null falls
-   *  back to the sketch. */
+   *  back to the sketch. Retained for back-compat; the reference layouts use
+   *  styledUrl instead so a missing styled photo never shows the sketch. */
   modelUrl: string | null;
   roundLabel: string | null;
   factory: string | null;
@@ -116,6 +146,9 @@ export type LinesheetEntryInput = {
   colorways?: LinesheetColor[];
   sketchUrl?: string | null;
   backUrl?: string | null;
+  styledUrl?: string | null;
+  croquisFront?: string | null;
+  croquisBack?: string | null;
   modelUrl?: string | null;
   roundLabel?: string | null;
   factory?: string | null;
@@ -425,6 +458,9 @@ export function setItemColors(
 export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
   const colorways = (input.colorways ?? []).filter((c) => c && t(c.url));
   const sketchUrl = t(input.sketchUrl);
+  const styledUrl = t(input.styledUrl);
+  const croquisFront = t(input.croquisFront);
+  const croquisBack = t(input.croquisBack);
   return {
     styleId: input.styleId,
     name: t(input.name) ?? "Untitled style",
@@ -438,6 +474,9 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
     colorways: colorways.map((c) => ({ url: c.url, name: t(c.name) ?? "" })),
     sketchUrl,
     backUrl: t(input.backUrl),
+    styledUrl,
+    croquisFront,
+    croquisBack,
     modelUrl: t(input.modelUrl),
     roundLabel: t(input.roundLabel),
     factory: t(input.factory),
@@ -445,10 +484,10 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
     note: t(input.note),
     delivery: t(input.delivery),
     sizes: t(input.sizes),
-    // A style with no drawing and no colorway photo still lists (its name, price
-    // and colours read fine) — the flag just lets a view show a placeholder
-    // rather than a blank tile.
-    empty: !sketchUrl && colorways.length === 0,
+    // A style with nothing to show visually — no sketch, no styled or croquis
+    // image, and no colorway photo. Name, price and colours still read fine.
+    empty:
+      !sketchUrl && !styledUrl && !croquisFront && !croquisBack && colorways.length === 0,
   };
 }
 

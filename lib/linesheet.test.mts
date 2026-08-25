@@ -241,12 +241,19 @@ test("normalizeKind only ever yields the two kinds", () => {
   assert.equal(normalizeKind(undefined), "seasonal");
 });
 
-test("normalizeLayout yields a known layout, defaulting to flats", () => {
-  assert.equal(normalizeLayout("model"), "model");
-  assert.equal(normalizeLayout("colorways"), "colorways");
-  assert.equal(normalizeLayout("flats"), "flats");
-  assert.equal(normalizeLayout("nonsense"), "flats");
-  assert.equal(normalizeLayout(null), "flats");
+test("normalizeLayout yields one of the four reference layouts, mapping the old keys", () => {
+  // The four reference-page layouts pass through unchanged.
+  assert.equal(normalizeLayout("styled_flats"), "styled_flats");
+  assert.equal(normalizeLayout("styled_colorways"), "styled_colorways");
+  assert.equal(normalizeLayout("colorways_styled"), "colorways_styled");
+  assert.equal(normalizeLayout("colorways_croquis"), "colorways_croquis");
+  // The pre-reference three-layout keys map to their nearest new page.
+  assert.equal(normalizeLayout("model"), "styled_flats");
+  assert.equal(normalizeLayout("flats"), "styled_flats");
+  assert.equal(normalizeLayout("colorways"), "colorways_styled");
+  // Unknown / absent defaults to the first layout.
+  assert.equal(normalizeLayout("nonsense"), "styled_flats");
+  assert.equal(normalizeLayout(null), "styled_flats");
 });
 
 test("a per-item delivery reads in and clears like price", () => {
@@ -276,21 +283,32 @@ test("a per-item size run reads in and clears like delivery", () => {
   ]);
 });
 
-test("buildLinesheet carries the layout; buildEntry carries delivery, sizes and the model hero", () => {
-  const sheet = buildLinesheet({ name: "FW26", kind: "seasonal", layout: "model" }, [
+test("buildLinesheet carries the layout; buildEntry carries the merch facts and every image slot", () => {
+  const sheet = buildLinesheet({ name: "FW26", kind: "seasonal", layout: "colorways_croquis" }, [
     {
       styleId: "a",
       name: "Anorak",
       delivery: "February 15",
       sizes: "XS–XL",
-      modelUrl: "u-model",
+      styledUrl: "u-styled",
+      croquisFront: "u-croq-f",
+      croquisBack: "u-croq-b",
       sketchUrl: "u-sk",
     },
   ]);
-  assert.equal(sheet.layout, "model");
-  assert.equal(sheet.entries[0].delivery, "February 15");
-  assert.equal(sheet.entries[0].sizes, "XS–XL");
-  assert.equal(sheet.entries[0].modelUrl, "u-model");
-  // An unknown layout falls back to flats.
-  assert.equal(buildLinesheet({ name: "x", kind: "seasonal" }, []).layout, "flats");
+  assert.equal(sheet.layout, "colorways_croquis");
+  const e = sheet.entries[0];
+  assert.equal(e.delivery, "February 15");
+  assert.equal(e.sizes, "XS–XL");
+  // Each image is carried on its own slot; nothing falls back to the sketch.
+  assert.equal(e.styledUrl, "u-styled");
+  assert.equal(e.croquisFront, "u-croq-f");
+  assert.equal(e.croquisBack, "u-croq-b");
+  assert.equal(e.sketchUrl, "u-sk");
+  // A style with only a styled photo (no sketch, no colorways) is not "empty".
+  assert.equal(buildLinesheet({ name: "x", kind: "seasonal" }, [
+    { styleId: "b", name: "Tee", styledUrl: "u" },
+  ]).entries[0].empty, false);
+  // An unknown layout falls back to the first reference layout.
+  assert.equal(buildLinesheet({ name: "x", kind: "seasonal" }, []).layout, "styled_flats");
 });

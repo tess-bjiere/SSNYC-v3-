@@ -589,7 +589,64 @@ export default function Linesheet({
         )
       ) : (
         <div className={"ls-detail ls-lay-" + layout}>
-          {ordered.map((e) => (
+          {ordered.map((e) => {
+            // The four reference-page layouts (Tess, 2026-08-24: "follow the pages
+            // 1:1"). LEFT (big) image is a styled photo or the colourway grid;
+            // the RIGHT column carries the title, the facts, and a secondary image
+            // set. Each image is its own slot and shows only where its layout names
+            // it — a missing one leaves its zone blank, never the technical sketch.
+            const primaryStyled = layout === "styled_flats" || layout === "styled_colorways";
+            const colorwayGrid = (
+              <div className="ls-cw-grid">
+                {e.colorways.map((c, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={c.url} alt={c.name || e.name} title={c.name} />
+                ))}
+              </div>
+            );
+            const flatsPair = (cls: string) =>
+              e.sketchUrl || e.backUrl ? (
+                <div className={cls}>
+                  {e.sketchUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.sketchUrl} alt={`${e.name} flat`} />
+                  )}
+                  {e.backUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.backUrl} alt={`${e.name} flat back`} />
+                  )}
+                </div>
+              ) : null;
+            const croquisPair =
+              e.croquisFront || e.croquisBack ? (
+                <div className="ls-croquis">
+                  {e.croquisFront && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.croquisFront} alt={`${e.name} croquis`} />
+                  )}
+                  {e.croquisBack && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.croquisBack} alt={`${e.name} croquis back`} />
+                  )}
+                </div>
+              ) : null;
+            const styledHero = e.styledUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="ls-hero" src={e.styledUrl} alt={e.name} />
+            ) : null;
+            // The colour swatches at the foot of the styled-flats page (deck pg 1):
+            // the colourway photos as small squares, else the named colour chips.
+            const swatches =
+              e.colorways.length > 0 ? (
+                <div className="ls-swatches">
+                  {e.colorways.map((c, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={c.url} alt={c.name || ""} title={c.name} />
+                  ))}
+                </div>
+              ) : null;
+
+            return (
             <section
               className={"ls-entry" + (dragId === e.styleId ? " dragging" : "")}
               key={e.styleId}
@@ -597,49 +654,20 @@ export default function Linesheet({
             >
               {dragHandle(e.styleId)}
 
-              {/* IMAGE ZONE — kept apart from the text so the two never jumble
-                  (Tess, 2026-08-24: "Rework detail line sheet exports so images are
-                  not jumbled with text"). What fills it is the sheet's chosen
-                  layout: colourway photos as a grid, a model hero, or the flats. */}
+              {/* LEFT — the big image: a styled photo, or the colourway grid. */}
               <StyleOpener
                 styleId={e.styleId}
                 multi={multi(e.styleId)}
                 onOpen={setOpenStyle}
-                className={"ls-visual" + (e.empty && !e.modelUrl ? " none" : "")}
+                className={
+                  "ls-visual" +
+                  ((primaryStyled ? !e.styledUrl : e.colorways.length === 0) ? " none" : "")
+                }
               >
-                {layout === "colorways" ? (
-                  e.colorways.length > 0 ? (
-                    <div className="ls-cw-grid">
-                      {e.colorways.map((c, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={i} src={c.url} alt={c.name || e.name} title={c.name} />
-                      ))}
-                    </div>
-                  ) : e.sketchUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img className="ls-hero" src={e.sketchUrl} alt={e.name} />
-                  ) : null
-                ) : layout === "model" ? (
-                  (e.modelUrl || e.sketchUrl) && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img className="ls-hero" src={(e.modelUrl || e.sketchUrl) ?? ""} alt={e.name} />
-                  )
-                ) : (
-                  <div className="ls-flats">
-                    {e.sketchUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={e.sketchUrl} alt={e.name} />
-                    )}
-                    {e.backUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={e.backUrl} alt={`${e.name} — back`} />
-                    )}
-                  </div>
-                )}
+                {primaryStyled ? styledHero : e.colorways.length > 0 ? colorwayGrid : null}
               </StyleOpener>
 
-              {/* TEXT ZONE — the market anatomy: eyebrow, serif title, the facts,
-                  the wordmark. */}
+              {/* RIGHT — eyebrow, serif title, [secondary images], facts. */}
               <div className="ls-entry-info">
                 <p className="ls-eyebrow">{sheet.subtitle || sheet.kindLabel}</p>
                 <header className="ls-entry-head">
@@ -662,20 +690,9 @@ export default function Linesheet({
                   </button>
                 </header>
 
-                {/* On the model layout the flats sit small beside the facts (PDF
-                    layout 1), so the drawing still ships without stealing the hero. */}
-                {layout === "model" && (e.sketchUrl || e.backUrl) && (
-                  <div className="ls-flats-mini">
-                    {e.sketchUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={e.sketchUrl} alt="" />
-                    )}
-                    {e.backUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={e.backUrl} alt="" />
-                    )}
-                  </div>
-                )}
+                {/* Deck pg 1: the technical flats sit under the title, above the
+                    facts, so the styled photo keeps the whole left page. */}
+                {layout === "styled_flats" && flatsPair("ls-flats-mini")}
 
                 <dl className="ls-facts">
                   <div className="ls-fact">
@@ -764,20 +781,37 @@ export default function Linesheet({
                   )}
                 </dl>
 
-                {/* The brand mark at the foot of the page — the logo small if the
-                    brand has one, else its wordmark (Tess, 2026-08-24: "use Sous
-                    Sous logo small on bottom of page"). */}
-                <div className="ls-wordmark">
-                  {cover.brandLogo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={cover.brandLogo} alt={cover.brandLabel} />
-                  ) : (
-                    cover.brandLabel
-                  )}
-                </div>
+                {/* The secondary image set, beneath the facts, per the reference
+                    page: colour swatches (styled + flats), a colourway grid
+                    (styled + colorways), a styled photo (colorways + styled), or
+                    the croquis (colorways + croquis). */}
+                {layout === "styled_flats" && swatches}
+                {layout === "styled_colorways" && e.colorways.length > 0 && (
+                  <div className="ls-secondary">{colorwayGrid}</div>
+                )}
+                {layout === "colorways_styled" && styledHero && (
+                  <div className="ls-secondary">{styledHero}</div>
+                )}
+                {layout === "colorways_croquis" && croquisPair && (
+                  <div className="ls-secondary">{croquisPair}</div>
+                )}
+              </div>
+
+              {/* The brand mark at the foot of the page, bottom-LEFT, on every
+                  reference page (Tess, 2026-08-24: "use Sous Sous logo small on
+                  bottom of page"). A section-level child so it sits under the
+                  left image, not inside the text column. */}
+              <div className="ls-wordmark">
+                {cover.brandLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={cover.brandLogo} alt={cover.brandLabel} />
+                ) : (
+                  cover.brandLabel
+                )}
               </div>
             </section>
-          ))}
+            );
+          })}
         </div>
       )}
 

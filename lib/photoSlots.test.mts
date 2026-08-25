@@ -167,15 +167,18 @@ test("REQUIRED_SLOTS is the shoot list minus the optional ones, in order", () =>
 // The sketch, and writing through the raw jsonb (P3 refinements).
 // ---------------------------------------------------------------------------
 
-test("the sketch is a slot but not a shot", () => {
-  // A sketch exists before the garment does. It must never make a style read as
-  // an unfinished shoot.
+test("the design slots — sketch, styled and croquis — are slots but not shots", () => {
+  // These exist before or beside the shoot (a sketch before the garment does, the
+  // styled photo and croquis for the linesheet). None must make a style read as an
+  // unfinished shoot, so none are in PHOTO_SLOTS.
   const designIds = DESIGN_SLOTS.map((s) => s.id);
   const shootIds = PHOTO_SLOTS.map((s) => s.id);
-  assert.deepEqual(designIds, ["sketch", "sketch_back"]);
+  assert.deepEqual(designIds, ["sketch", "sketch_back", "styled", "croquis", "croquis_back"]);
   for (const id of designIds) assert.equal(shootIds.includes(id), false);
   assert.equal(isPhotoSlot("sketch"), true);
-  assert.equal(isPhotoSlot("sketch_back"), true);
+  assert.equal(isPhotoSlot("styled"), true);
+  assert.equal(isPhotoSlot("croquis"), true);
+  assert.equal(isPhotoSlot("croquis_back"), true);
   for (const s of DESIGN_SLOTS) assert.ok(s.hint.length > 0, `${s.id} has no hint`);
 });
 

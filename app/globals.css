@@ -4357,16 +4357,30 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
    fills the image column is the sheet's chosen layout: .ls-lay-flats /
    .ls-lay-model / .ls-lay-colorways. */
 .ls-detail{display:flex;flex-direction:column;gap:40px}
-.ls-entry{position:relative;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:40px;align-items:start}
+.ls-entry{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
+/* Colourway-primary layouts give the grid the larger share (matches the export). */
+.ls-lay-colorways_styled .ls-entry,
+.ls-lay-colorways_croquis .ls-entry{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
 .ls-visual{display:block;text-decoration:none;min-width:0}
 .ls-visual.none{min-height:120px;background:repeating-linear-gradient(45deg,var(--field),var(--field) 7px,transparent 7px,transparent 14px)}
 .ls-hero{width:100%;max-height:64vh;object-fit:contain;display:block}
+/* A styled-primary photo fills its column edge to edge, like the reference. */
+.ls-lay-styled_flats .ls-visual .ls-hero,
+.ls-lay-styled_colorways .ls-visual .ls-hero{object-fit:cover;max-height:66vh}
 .ls-flats{display:flex;gap:16px;align-items:flex-start}
 .ls-flats img{width:100%;max-height:52vh;object-fit:contain;display:block}
-.ls-cw-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.ls-cw-grid img{width:100%;max-height:30vh;object-fit:contain;display:block;background:var(--field)}
+.ls-cw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0}
+.ls-cw-grid img{width:100%;min-width:0;max-height:30vh;object-fit:contain;display:block;background:var(--field)}
 .ls-flats-mini{display:flex;gap:10px;margin:0 0 18px}
-.ls-flats-mini img{height:104px;width:auto;object-fit:contain;border:1px solid var(--hair);background:var(--field)}
+.ls-flats-mini img{height:150px;width:auto;object-fit:contain;border:1px solid var(--hair);background:var(--field)}
+/* The secondary image block beneath the facts, and the swatch row / croquis. */
+.ls-secondary{margin-top:24px;min-width:0}
+.ls-secondary .ls-cw-grid img{max-height:20vh}
+.ls-secondary .ls-hero{max-height:42vh}
+.ls-croquis{display:flex;gap:14px;align-items:flex-end;min-width:0}
+.ls-croquis img{flex:1 1 0;min-width:0;max-width:100%;max-height:42vh;object-fit:contain;background:var(--field)}
+.ls-swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.ls-swatches img{width:46px;height:46px;object-fit:cover;border:1px solid var(--hair);background:var(--field)}
 .ls-entry-info{min-width:0;display:flex;flex-direction:column}
 /* A serif title for the buyer-facing page — a deliberate market-deck flourish,
    in Instrument Serif via var(--serif) (Tess, 2026-08-24: "serifs should be
@@ -4389,7 +4403,10 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-field{width:100%;max-width:280px}
 .ls-note{min-height:64px;max-width:100%}
 .ls-field-print{display:none}
-.ls-wordmark{margin-top:auto;padding-top:26px;font-size:var(--t-meta);letter-spacing:.16em;
+/* The wordmark is now a section-level child (bottom-left in the export), so on
+   screen it spans the row under both columns rather than sitting in the text
+   flow. */
+.ls-wordmark{grid-column:1/-1;padding-top:8px;font-size:var(--t-meta);letter-spacing:.16em;
   text-transform:uppercase;color:var(--faint)}
 /* When the mark is the brand logo, keep it small on screen too (the print rule
    sizes it for paper). Muted so it reads as a footer, not a hero. */
@@ -4552,39 +4569,60 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      below it — two flats then overran their column and overlapped the facts. The
      zero-min track lets the images size down to their share; the screen rule
      always used minmax(0,…) and the print rule had quietly dropped it. */
-  .ls-entry{break-before:page;break-inside:avoid;min-height:98vh;box-sizing:border-box;
-    grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0.7in;
-    align-items:center;align-content:center;padding:0.55in 0.75in;border-top:none}
+  /* The page: a big image left, the text column right, the wordmark pinned
+     bottom-left. position:relative so the wordmark can sit at the page foot
+     without being measured into the columns. */
+  .ls-entry{position:relative;break-before:page;break-inside:avoid;min-height:98vh;
+    box-sizing:border-box;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0.55in;
+    align-items:stretch;padding:0.5in 0.65in 0.85in;border-top:none}
+  /* The colourway-grid pages give the grid the larger share (deck pg 3–4). */
+  .ls-lay-colorways_styled .ls-entry,
+  .ls-lay-colorways_croquis .ls-entry{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
   /* The cover already broke to a new page, so the first product must not force a
      second, blank one before it. */
   .ls-detail .ls-entry:first-child{break-before:avoid}
-  /* Image zone — the layout decides what it holds. Full-height and self-contained
-     so a picture never overruns the facts. */
-  /* min-width:0 on every image zone and its images so a raster picture shrinks
-     to its box instead of forcing it wider (the flats overlap fix, 2026-08-24). */
-  .ls-visual{align-self:center;min-width:0}
-  .ls-hero{width:100%;max-height:7.4in;object-fit:contain;min-width:0}
-  .ls-flats{display:flex;gap:0.2in;align-items:center;min-width:0}
-  .ls-flats img{flex:1 1 0;min-width:0;max-width:100%;max-height:6.4in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
-  .ls-cw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.14in;min-width:0}
-  .ls-cw-grid img{width:100%;min-width:0;max-height:3.3in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
-  .ls-flats-mini{display:flex;gap:0.12in;margin:0 0 0.22in}
-  .ls-flats-mini img{height:1in;width:auto;object-fit:contain;border:1px solid #ececec;background:#fafafa}
-  /* Text zone — the market anatomy. */
-  .ls-entry-info{justify-content:flex-start}
-  .ls-eyebrow{font-size:9px;letter-spacing:.18em;color:#9a9a9a;margin:0 0 10px}
+
+  /* LEFT image zone. min-width:0 so a raster picture shrinks to its box instead
+     of forcing the column wider (the overlap fix, 2026-08-24). */
+  .ls-visual{min-width:0;align-self:stretch;display:flex;align-items:center;justify-content:center}
+  .ls-hero{width:100%;height:100%;max-height:calc(98vh - 1.3in);object-fit:contain;min-width:0}
+  /* On a styled-primary page the photo fills its column edge to edge (deck pg 1–2). */
+  .ls-lay-styled_flats .ls-visual .ls-hero,
+  .ls-lay-styled_colorways .ls-visual .ls-hero{object-fit:cover;height:calc(98vh - 1.3in)}
+  .ls-cw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.14in;
+    min-width:0;width:100%;align-content:center}
+  .ls-cw-grid img{width:100%;min-width:0;max-height:2.9in;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+
+  /* RIGHT text zone — the market anatomy, top-aligned. */
+  .ls-entry-info{justify-content:flex-start;align-self:stretch}
+  .ls-eyebrow{font-size:9px;letter-spacing:.18em;color:#9a9a9a;margin:0 0 12px}
   .ls-entry-head{margin-bottom:0.16in}
   .ls-entry-head .ls-entry-name{font-family:var(--serif);font-size:37px;font-weight:400;color:#111;line-height:1.02;letter-spacing:0}
-  .ls-facts{display:flex;flex-direction:column;gap:16px;margin-top:0.1in}
+  /* Technical flats under the title (styled_flats / deck pg 1). */
+  .ls-flats-mini{display:flex;gap:0.16in;margin:0.05in 0 0.28in;align-items:flex-start}
+  .ls-flats-mini img{height:1.7in;width:auto;object-fit:contain;border:1px solid #ececec;background:#fafafa}
+  .ls-facts{display:flex;flex-direction:column;gap:15px;margin-top:0.06in}
   .ls-fact dt{font-size:9px;letter-spacing:.15em;color:#9a9a9a;margin-bottom:4px}
   .ls-fact dd{font-size:12.5px;color:#111;line-height:1.5}
   .ls-fabric{margin-bottom:3px;font-size:12.5px;color:#111}
   .ls-color-chip{border-color:#ddd;background:#f2f2f2;width:13px;height:13px}
-  /* The editable field is hidden; its saved value prints as text. */
   .ls-field.no-print{display:none}
   .ls-field-print{display:block;font-size:12.5px;color:#111;line-height:1.5}
   .ls-fact-details .ls-field-print{white-space:normal}
-  .ls-wordmark{margin-top:0.35in;font-size:11px;letter-spacing:.2em;color:#111;font-weight:600}
+
+  /* Secondary image block beneath the facts (colourway grid / styled photo /
+     croquis), and the swatch row on the styled-flats page. */
+  .ls-secondary{margin-top:0.3in;min-width:0}
+  .ls-secondary .ls-cw-grid img{max-height:1.9in}
+  .ls-secondary .ls-hero{width:100%;height:auto;max-height:3.4in;object-fit:contain}
+  .ls-croquis{display:flex;gap:0.2in;align-items:flex-end;min-width:0}
+  .ls-croquis img{flex:1 1 0;min-width:0;max-width:100%;max-height:3.5in;object-fit:contain}
+  .ls-swatches{display:flex;flex-wrap:wrap;gap:0.1in;margin-top:0.3in}
+  .ls-swatches img{width:0.62in;height:0.62in;object-fit:cover;border:1px solid #ececec;background:#fafafa}
+
+  /* The brand mark, bottom-left of every page. */
+  .ls-wordmark{position:absolute;left:0.65in;bottom:0.42in;margin:0;
+    font-size:11px;letter-spacing:.2em;color:#111;font-weight:600}
   .ls-wordmark img{height:0.26in;width:auto;display:block}
   .ls-wordmark, .ls-eyebrow{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
