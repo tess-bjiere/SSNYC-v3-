@@ -11,7 +11,7 @@ import {
   type Style,
   type StyleSample,
 } from "@/lib/types";
-import { sortSamples, latestSample } from "@/lib/sampleCycle";
+import { sortSamples, latestSample, shortDate } from "@/lib/sampleCycle";
 import { normalizePhotos, PHOTO_SLOTS } from "@/lib/photoSlots";
 import { readNotes } from "@/lib/imageNotes";
 import {
@@ -109,6 +109,7 @@ export default async function FittingDeckPage({
         brand: st.brand,
         roundLabel: round ? SAMPLE_ROUND_LABELS[round.round as SampleRound] ?? round.round : null,
         factory: round?.factory ?? st.factory,
+        fittingDate: round?.fitting_date ? shortDate(round.fitting_date) : null,
         images: modelImages(round),
         fitNotes: round?.fit_notes,
         factoryComments: round?.comments,
@@ -183,6 +184,10 @@ export default async function FittingDeckPage({
                 <header className="deck-slide-head">
                   <h2>{slide.name}</h2>
                   {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
+                  {/* The fitting date of this round, on its own line so it reads
+                      as the date the page is a record of (Tess, 2026-08-24: "fit
+                      decks should include date of fitting for each style"). */}
+                  {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
                 </header>
 
                 {!slide.empty && slide.images.length > 0 && (

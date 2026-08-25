@@ -15,6 +15,7 @@ const FULL: DeckSlideInput = {
   brand: "SOUS SOUS",
   roundLabel: "2nd Proto",
   factory: "All Systems",
+  fittingDate: "Aug 12, 2026",
   images: [
     { url: "https://x/front.jpg", label: "Model — front", note: "1. Shoulder dropped", pins: [{ x: 0.5, y: 0.3, text: "Shoulder dropped" }] },
     { url: "https://x/back.jpg", label: "Model — back", note: null, pins: [] },
@@ -36,6 +37,9 @@ test("a slide's subtitle identifies the fitting in the studio's own terms", () =
   const slide = buildFittingSlide(FULL);
   assert.equal(slide.subtitle, "SS-100 · 2nd Proto · Jacket · All Systems");
   assert.equal(slide.name, "Anorak Jacket");
+  // The fitting date rides onto the slide; a round with none carries null.
+  assert.equal(slide.fitDate, "Aug 12, 2026");
+  assert.equal(buildFittingSlide({ name: "x", images: [] }).fitDate, null);
   assert.equal(slide.material, "Nylon · 100% Poly · XX Premiere");
   assert.equal(slide.images.length, 2);
   // The mark-up pins ride through untouched, so they land on the picture.

@@ -3061,6 +3061,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    than cropping keeps the picture whole so the mark-up pins stay true. */
 .deck-slide-head{margin:0 0 24px}
 .deck-slide-head h2{font-size:28px;font-weight:500;letter-spacing:.01em;margin:0 0 4px}
+/* The fitting date, a small uppercase line under the subtitle. */
+.deck-fitdate{margin:6px 0 0;font-size:var(--t-micro);letter-spacing:.14em;
+  text-transform:uppercase;color:#888}
 .deck-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 /* Every shot on the slide at one height and one gap (Tess, 2026-08-24: "all
    images on a page should be the same height and distance apart for fit deck
@@ -3069,7 +3072,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    and each sat left in its cell, so the space between them read as uneven too.
    A centred flex row with a fixed image height fixes both: same baseline, same
    gap, no dead space in a cell. Matches the style export's .paper-shots. */
-.deck-shots{display:flex;flex-wrap:wrap;justify-content:center;gap:24px;
+/* Left-aligned, one row while they fit (Tess, 2026-08-24: "images should be left
+   aligned and in 1 row when possible on fit decks"). flex-start packs them from
+   the left; flex-wrap only drops to a second row when a page cannot hold them
+   all — three or four fit-shots at one height sit on a single line. */
+.deck-shots{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:24px;
   margin-bottom:22px;align-items:flex-start}
 .deck-shots figure{margin:0;break-inside:avoid}
 .deck-shots .paper-shot-frame{width:auto}

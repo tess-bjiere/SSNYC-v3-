@@ -21,6 +21,9 @@ export type DeckSlideInput = {
   brand?: string | null;
   roundLabel?: string | null;
   factory?: string | null;
+  /** The fitting date of this round, already formatted for display (Tess,
+   *  2026-08-24: "fit decks should include date of fitting for each style"). */
+  fittingDate?: string | null;
   images: DeckImage[];
   fitNotes?: string | null;
   factoryComments?: string | null;
@@ -33,6 +36,8 @@ export type DeckSlide = {
   name: string;
   /** style no · round · garment · factory — what this page is a fitting of. */
   subtitle: string;
+  /** When this round was fitted, formatted for display; null when unrecorded. */
+  fitDate: string | null;
   images: DeckImage[];
   fitNotes: string | null;
   factoryComments: string | null;
@@ -83,6 +88,7 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
   return {
     name: t(input.name) ?? "Untitled style",
     subtitle: dots([input.styleNo, input.roundLabel, input.garment, input.factory]),
+    fitDate: t(input.fittingDate),
     images: input.images,
     fitNotes,
     factoryComments,
