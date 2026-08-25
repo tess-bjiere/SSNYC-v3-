@@ -246,7 +246,11 @@ export default function Linesheet({
   standings: Record<string, LinesheetStanding>;
   cover: Cover;
 }) {
-  const [view, setView] = useState<View>("grid");
+  // Opens on the horizontal Detail view — one product per landscape page, the
+  // way the sheet is presented and exported (Tess, 2026-08-24: "line sheets
+  // should be horizontal layouts"). Grid is still a click away for the
+  // at-a-glance assortment.
+  const [view, setView] = useState<View>("detail");
   // The name is editable in place (Tess, 2026-08-12: "you should be able to edit
   // linesheet name"). Kept in local state so the header, the PDF filename and the
   // cover title all track the edit immediately; the server revalidation that
