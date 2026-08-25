@@ -3090,8 +3090,17 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      None" and a "Default" print land identically — the inset is the slide's own
      padding, not @page margins (which a None print ignores, the thing that
      jammed the linesheet into a corner). vh now tracks that real page box, so it
-     is safe on a phone print too — the parity the min-width used to buy alone. */
-  @page{size:letter landscape;margin:0}
+     is safe on a phone print too — the parity the min-width used to buy alone.
+
+     NAMED page, not a bare @page (Tess, 2026-08-24: "the export for linesheets is
+     still portrait ... it needs to be landscape for this and fitting decks"). A
+     bare @page is global — it cannot be scoped to a selector — so the LAST bare
+     @page in the file won for the whole document, and the material-order PO's
+     portrait @page (added later) was quietly turning every deck and linesheet
+     export portrait. Naming this one and assigning it with `page:` on .deck-page
+     below binds landscape to the deck alone; the anonymous portrait @page stays
+     the default for the style, round and PO exports. */
+  @page deck-sheet{size:letter landscape;margin:0}
   /* Print every designed fill — the mark-up pins' dark discs and their white
      numbers, the image frames and grounds — instead of dropping them when a
      "Save as PDF" has Background graphics off (the linesheet's blank-swatch fix
@@ -3100,7 +3109,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* Zero the .page chrome (its 24px head, its 80px foot) so nothing nudges the
      cover down or spills a blank trailing sheet after the last slide — the same
      reset the linesheet's .ls-page carries. */
-  .deck-page{padding:0}
+  .deck-page{padding:0;page:deck-sheet}
   /* Export at the desktop size on every device (Tess, 2026-08-12: "when you
      export deck on mobile -- it should be the same page size / orientation as
      the desktop version"). A phone prints by laying the page out at its own
@@ -4438,7 +4447,13 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      box whatever the margin setting is. margin:0 makes the page box the full sheet
      so the content padding is the only inset, the same for a "Default" or a "None"
      print. */
-  @page{size:letter landscape;margin:0}
+  /* NAMED landscape page, bound to .ls-page below with `page:` (Tess, 2026-08-24:
+     "the export for linesheets is still portrait ... it needs to be landscape").
+     A bare @page is global and the file's LAST bare @page — the material-order
+     PO's portrait one — was winning for every document, so the linesheet exported
+     portrait even though this rule said landscape. Naming it scopes landscape to
+     the linesheet; the anonymous portrait @page stays the default elsewhere. */
+  @page ls-sheet{size:letter landscape;margin:0}
   /* Zero the .page chrome padding (24/80px) — its 80px foot was spilling a blank
      trailing sheet, and its 24px head nudged the cover down.
 
@@ -4450,7 +4465,7 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      the landscape sheet and read as portrait. The same fix the fitting deck
      carries (.deck min-width:960px): force a landscape-proportioned width and
      let the browser scale that whole width onto the 8.5x11 sheet. */
-  .ls-page{background:#fff;color:#111;padding:0;min-width:960px;max-width:none}
+  .ls-page{background:#fff;color:#111;padding:0;min-width:960px;max-width:none;page:ls-sheet}
   body.notes-open .wrap{padding-right:0}
   /* Print the fills. A "Save as PDF" with Background graphics off drops every
      background colour, so the colour dots came out blank (Tess, 2026-08-12: "black
@@ -4546,6 +4561,12 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
    Like the linesheet, the margins are the content's own padding, not @page
    margins, so a "Margins: None" print still insets cleanly. --- */
 @media print{
+  /* This is the one ANONYMOUS @page in the file, and so the default page for
+     every export that does not name its own — the PO here, and the style and
+     round exports (.paper). Leave it unnamed: the deck and linesheet name their
+     landscape pages and bind them with `page:`, so they are unaffected by this,
+     but if this were also named, those .paper exports would fall back to the
+     browser's default paper and could change size. */
   @page{size:letter portrait;margin:0}
   .mo-page{background:#fff;color:#111;padding:0}
   .mo-page,.mo-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
