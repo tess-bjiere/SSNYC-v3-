@@ -48,6 +48,11 @@ export type LinesheetItem = {
   // "Delivery: per product"). Free text — "February 15", "Drop 2", a date — since
   // a style has no delivery column; a blank removes it.
   delivery?: string;
+  // The size run offered, printed on the market page (Tess, 2026-08-24:
+  // "linesheets should also allow size listing"). Free text — "XS–XL", "S M L",
+  // "One size" — since sizing is a merchandising choice per sheet, not a style
+  // column; a blank removes it.
+  sizes?: string;
   colorways?: string[];
   // A per-linesheet colour list, edited on the sheet without touching the style
   // (Tess, 2026-08-12: "add ability to add / remove colors from styles on line
@@ -92,6 +97,8 @@ export type LinesheetEntry = {
   note: string | null;
   /** When this product ships, on the market page. */
   delivery: string | null;
+  /** The size run offered, on the market page. */
+  sizes: string | null;
   /** Nothing to show visually — no sketch and no colorway image. */
   empty: boolean;
 };
@@ -115,6 +122,7 @@ export type LinesheetEntryInput = {
   rating?: string | null;
   note?: string | null;
   delivery?: string | null;
+  sizes?: string | null;
 };
 
 export type Linesheet = {
@@ -309,6 +317,7 @@ export function normalizeItems(raw: unknown): LinesheetItem[] {
     if (typeof r.price === "string" && r.price.trim()) item.price = r.price.trim().slice(0, 40);
     if (typeof r.note === "string" && r.note.trim()) item.note = r.note.trim().slice(0, 2000);
     if (typeof r.delivery === "string" && r.delivery.trim()) item.delivery = r.delivery.trim().slice(0, 60);
+    if (typeof r.sizes === "string" && r.sizes.trim()) item.sizes = r.sizes.trim().slice(0, 60);
     if (Array.isArray(r.colorways)) {
       const cw = r.colorways.filter((x): x is string => typeof x === "string" && x.length > 0);
       if (cw.length) item.colorways = cw;
@@ -365,7 +374,12 @@ export function reorderItems(items: LinesheetItem[], orderedIds: string[]): Line
 export function setItemField(
   items: LinesheetItem[],
   styleId: string,
-  patch: { price?: string | null; note?: string | null; delivery?: string | null }
+  patch: {
+    price?: string | null;
+    note?: string | null;
+    delivery?: string | null;
+    sizes?: string | null;
+  }
 ): LinesheetItem[] {
   return items.map((i) => {
     if (i.style_id !== styleId) return i;
@@ -384,6 +398,11 @@ export function setItemField(
       const d = t(patch.delivery);
       if (d) next.delivery = d.slice(0, 60);
       else delete next.delivery;
+    }
+    if ("sizes" in patch) {
+      const z = t(patch.sizes);
+      if (z) next.sizes = z.slice(0, 60);
+      else delete next.sizes;
     }
     return next;
   });
@@ -425,6 +444,7 @@ export function buildEntry(input: LinesheetEntryInput): LinesheetEntry {
     rating: (input.rating ?? "").trim(),
     note: t(input.note),
     delivery: t(input.delivery),
+    sizes: t(input.sizes),
     // A style with no drawing and no colorway photo still lists (its name, price
     // and colours read fine) — the flag just lets a view show a placeholder
     // rather than a blank tile.

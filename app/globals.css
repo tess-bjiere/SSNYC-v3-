@@ -3051,11 +3051,19 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    than cropping keeps the picture whole so the mark-up pins stay true. */
 .deck-slide-head{margin:0 0 24px}
 .deck-slide-head h2{font-size:28px;font-weight:500;letter-spacing:.01em;margin:0 0 4px}
-.deck-shots,.deck-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.deck-shots{margin-bottom:22px;align-items:start}
+.deck-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+/* Every shot on the slide at one height and one gap (Tess, 2026-08-24: "all
+   images on a page should be the same height and distance apart for fit deck
+   exports"). The 3-column grid gave each shot an equal cell but not an equal
+   size — a portrait and a landscape shot came out at wildly different heights,
+   and each sat left in its cell, so the space between them read as uneven too.
+   A centred flex row with a fixed image height fixes both: same baseline, same
+   gap, no dead space in a cell. Matches the style export's .paper-shots. */
+.deck-shots{display:flex;flex-wrap:wrap;justify-content:center;gap:24px;
+  margin-bottom:22px;align-items:flex-start}
 .deck-shots figure{margin:0;break-inside:avoid}
 .deck-shots .paper-shot-frame{width:auto}
-.deck-shots img{width:auto;max-width:100%;max-height:38vh;height:auto;display:block;border:1px solid #ddd;background:#f4f4f4}
+.deck-shots img{height:340px;width:auto;max-width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}
 /* The numbered mark-up sits over the drawing, so it is half-transparent — it
    says "look here" without covering the detail underneath (Tess, 2026-08-10). */
 .deck-shots .paper-pin{background:rgba(20,20,20,.5);box-shadow:0 0 0 2px rgba(255,255,255,.55)}
@@ -3107,8 +3115,8 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   .deck-cover{break-after:page}
   /* Height in px, not vh: on a phone's print pass vh resolves against the device
      viewport, not the page, so the shots would size differently than on desktop.
-     300px matches the ~38vh the desktop landscape page already gives them. */
-  .deck-shots img{max-height:300px}
+     Fixed height (not max-) so every shot on the sheet lands at one height. */
+  .deck-shots img{height:300px}
 }
 /* A wrapping row of equal-height shots (Tess, 2026-08-24: "Size images the same
    heights on the exports"), the way the sketch pair above already sits. A grid of
@@ -4424,17 +4432,29 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
      print. */
   @page{size:letter landscape;margin:0}
   /* Zero the .page chrome padding (24/80px) — its 80px foot was spilling a blank
-     trailing sheet, and its 24px head nudged the cover down. */
-  .ls-page{background:#fff;color:#111;padding:0}
+     trailing sheet, and its 24px head nudged the cover down.
+
+     min-width holds the desktop landscape layout on every device (Tess,
+     2026-08-24: "the export for the linesheet should be on a horizontal 8.5x11
+     page layout"). The comment above claimed this floor but the rule was
+     missing, so a print from a narrow window — or a phone, which lays the page
+     out at its own ~375px viewport — sat the content in a strip on one side of
+     the landscape sheet and read as portrait. The same fix the fitting deck
+     carries (.deck min-width:960px): force a landscape-proportioned width and
+     let the browser scale that whole width onto the 8.5x11 sheet. */
+  .ls-page{background:#fff;color:#111;padding:0;min-width:960px;max-width:none}
   body.notes-open .wrap{padding-right:0}
   /* Print the fills. A "Save as PDF" with Background graphics off drops every
      background colour, so the colour dots came out blank (Tess, 2026-08-12: "black
      dot showing up blank"). This forces the swatches — and every designed fill —
      to print. */
   .ls-page,.ls-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  /* The style number is on screen for the merchandiser but not in the export
-     (Tess, 2026-08-12: "linesheet export doesnt need style number"). */
-  .ls-cardno,.ls-eno{display:none}
+  /* The Grid export now carries the style number (Tess, 2026-08-24: "on the grid
+     setting -- exports should include style name, style number and colors and
+     price") — reversing the 2026-08-12 "export doesnt need style number", which
+     was about the one-per-page Detail export. The Detail number (.ls-eno) stays
+     out of that export; the Grid card (.ls-cardno) prints it, styled below. */
+  .ls-eno{display:none}
 
   /* --- Cover: masthead top, title in the middle, confidential at the foot; its
      own generous inset so nothing touches the paper edge. --- */

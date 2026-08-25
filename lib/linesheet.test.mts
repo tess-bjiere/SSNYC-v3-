@@ -262,12 +262,34 @@ test("a per-item delivery reads in and clears like price", () => {
   ]);
 });
 
-test("buildLinesheet carries the layout; buildEntry carries delivery and the model hero", () => {
+test("a per-item size run reads in and clears like delivery", () => {
+  assert.deepEqual(normalizeItems([{ style_id: "a", sizes: " XS–XL " }]), [
+    { style_id: "a", sizes: "XS–XL" },
+  ]);
+  const items: LinesheetItem[] = [{ style_id: "a" }];
+  assert.deepEqual(setItemField(items, "a", { sizes: "S M L" }), [
+    { style_id: "a", sizes: "S M L" },
+  ]);
+  // A blank removes the key rather than storing "" — sizing is optional per item.
+  assert.deepEqual(setItemField([{ style_id: "a", sizes: "x" }], "a", { sizes: "  " }), [
+    { style_id: "a" },
+  ]);
+});
+
+test("buildLinesheet carries the layout; buildEntry carries delivery, sizes and the model hero", () => {
   const sheet = buildLinesheet({ name: "FW26", kind: "seasonal", layout: "model" }, [
-    { styleId: "a", name: "Anorak", delivery: "February 15", modelUrl: "u-model", sketchUrl: "u-sk" },
+    {
+      styleId: "a",
+      name: "Anorak",
+      delivery: "February 15",
+      sizes: "XS–XL",
+      modelUrl: "u-model",
+      sketchUrl: "u-sk",
+    },
   ]);
   assert.equal(sheet.layout, "model");
   assert.equal(sheet.entries[0].delivery, "February 15");
+  assert.equal(sheet.entries[0].sizes, "XS–XL");
   assert.equal(sheet.entries[0].modelUrl, "u-model");
   // An unknown layout falls back to flats.
   assert.equal(buildLinesheet({ name: "x", kind: "seasonal" }, []).layout, "flats");

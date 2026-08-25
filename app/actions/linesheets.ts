@@ -116,11 +116,17 @@ export async function reorderLinesheet(id: string, orderedIds: string[]) {
 }
 
 // The per-item merchandising fields the style row does not carry: Estimated
-// Retail, the positioning note, and the delivery date (Tess, 2026-08-24).
+// Retail, the positioning note, the delivery date and the size run (Tess,
+// 2026-08-24: "linesheets should also allow size listing").
 export async function setLinesheetItem(
   id: string,
   styleId: string,
-  patch: { price?: string | null; note?: string | null; delivery?: string | null }
+  patch: {
+    price?: string | null;
+    note?: string | null;
+    delivery?: string | null;
+    sizes?: string | null;
+  }
 ) {
   await requireUser();
   const { supabase, items } = await readItems(id);

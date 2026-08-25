@@ -128,6 +128,7 @@ export default async function LinesheetPage({
         price: item.price ?? null,
         note: item.note ?? null,
         delivery: item.delivery ?? null,
+        sizes: item.sizes ?? null,
         fabric: st.fabric,
         colors: st.colors,
         colorOverride: item.colors ?? null,

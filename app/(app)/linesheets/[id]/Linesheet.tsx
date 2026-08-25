@@ -369,7 +369,11 @@ export default function Linesheet({
     await removeStyleFromLinesheet(id, styleId);
   }
 
-  async function saveField(styleId: string, field: "price" | "note" | "delivery", value: string) {
+  async function saveField(
+    styleId: string,
+    field: "price" | "note" | "delivery" | "sizes",
+    value: string
+  ) {
     await setLinesheetItem(id, styleId, { [field]: value });
   }
 
@@ -697,6 +701,23 @@ export default function Linesheet({
                       <div className="ls-field-print">
                         <Colors entry={withColors(e)} />
                       </div>
+                    </dd>
+                  </div>
+                  {/* The size run offered (Tess, 2026-08-24: "linesheets should
+                      also allow size listing") — free text, so "XS–XL", "S M L"
+                      or "One size" all read. Sits with the other merchandising
+                      facts and prints on the buyer page. */}
+                  <div className="ls-fact">
+                    <dt>Sizes</dt>
+                    <dd>
+                      <input
+                        className="input sm ls-field no-print"
+                        defaultValue={e.sizes ?? ""}
+                        placeholder="e.g. XS–XL"
+                        onBlur={(ev) => saveField(e.styleId, "sizes", ev.target.value)}
+                        aria-label="Sizes"
+                      />
+                      <span className="ls-field-print">{e.sizes || "—"}</span>
                     </dd>
                   </div>
                   <div className="ls-fact ls-fact-details">
