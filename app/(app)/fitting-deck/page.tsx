@@ -240,6 +240,18 @@ export default async function FittingDeckPage({
                     )}
                 </div>
               )}
+              {/* The brand mark, small at the foot of every slide (Tess,
+                  2026-08-24: "use Sous Sous logo small on bottom of page").
+                  Absolutely positioned so it never disturbs the space-between
+                  that drops the notes to the foot; print-only. */}
+              <div className="deck-slide-foot" aria-hidden="true">
+                {brandLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={brandLogo} alt="" />
+                ) : (
+                  <span>{brandLabel}</span>
+                )}
+              </div>
             </section>
           ))}
         </article>

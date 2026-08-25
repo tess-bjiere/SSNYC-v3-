@@ -3008,6 +3008,8 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-slide{min-height:86vh;display:flex;flex-direction:column;justify-content:space-between;
   padding:48px 60px;scroll-snap-align:start}
 .deck-slide + .deck-slide{border-top:1px solid #eee}
+/* The per-slide brand mark is an export-only footer — hidden in the on-screen deck. */
+.deck-slide-foot{display:none}
 
 /* Cover: a SOUS SOUS wordmark at the masthead, a brand · season kicker, the big
    title, then a numbered contents list of the products (Tess, 2026-08-10: "a
@@ -3123,8 +3125,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* One product per landscape sheet, generously inset, filling the page so the
      fit notes spread to the foot the way the cover already spreads its contents
      — a designed page, not a strip anchored at the top. */
-  .deck-slide{min-height:98vh;box-sizing:border-box;justify-content:space-between;
+  .deck-slide{position:relative;min-height:98vh;box-sizing:border-box;justify-content:space-between;
     padding:0.5in 0.7in;break-before:page;break-inside:avoid;border-top:none}
+  /* The brand mark, small at the foot of each slide (Tess, 2026-08-24: "use Sous
+     Sous logo small on bottom of page"). Absolute within the slide so it never
+     shifts the notes; each slide is its own page, so it reads as a page footer. */
+  .deck-slide-foot{position:absolute;left:0;right:0;bottom:0.26in;
+    display:flex;justify-content:center;align-items:center}
+  .deck-slide-foot img{height:0.2in;width:auto;opacity:.8}
+  .deck-slide-foot span{font-size:8px;letter-spacing:.24em;text-transform:uppercase;
+    color:#9a9a9a;font-weight:600}
   /* A style with no fitting yet has only its header and one line — let it sit at
      the top of its page rather than spreading a header-and-a-sentence across the
      full sheet. */
@@ -4561,6 +4571,7 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-field-print{display:block;font-size:12.5px;color:#111;line-height:1.5}
   .ls-fact-details .ls-field-print{white-space:normal}
   .ls-wordmark{margin-top:0.35in;font-size:11px;letter-spacing:.2em;color:#111;font-weight:600}
+  .ls-wordmark img{height:0.26in;width:auto;display:block}
   .ls-wordmark, .ls-eyebrow{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 

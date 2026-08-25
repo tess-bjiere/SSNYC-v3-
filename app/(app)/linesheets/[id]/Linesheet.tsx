@@ -764,7 +764,17 @@ export default function Linesheet({
                   )}
                 </dl>
 
-                <div className="ls-wordmark">{cover.brandLabel}</div>
+                {/* The brand mark at the foot of the page — the logo small if the
+                    brand has one, else its wordmark (Tess, 2026-08-24: "use Sous
+                    Sous logo small on bottom of page"). */}
+                <div className="ls-wordmark">
+                  {cover.brandLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={cover.brandLogo} alt={cover.brandLabel} />
+                  ) : (
+                    cover.brandLabel
+                  )}
+                </div>
               </div>
             </section>
           ))}
