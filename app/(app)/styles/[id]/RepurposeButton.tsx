@@ -49,7 +49,11 @@ export default function RepurposeButton({
 
   return (
     <>
-      <button type="button" className="btn ghost sm" onClick={() => setOpen(true)}>
+      {/* A quiet text link, the same weight as Export CSV / Export history /
+          Delete beside it (Tess, 2026-08-24: "make repurpose a smaller link like
+          the links next to it on style profile"), rather than the bordered
+          button it used to be. */}
+      <button type="button" className="btn link" onClick={() => setOpen(true)}>
         Repurpose ↗
       </button>
 
