@@ -63,9 +63,26 @@ export function parseNoteBlocks(text: string | null | undefined): NoteBlock[] {
       const flat: { level: number; text: string }[] = [];
       while (i < lines.length) {
         const m = lines[i].match(BULLET);
-        if (!m) break;
-        flat.push({ level: indentUnits(m[1]), text: m[3] });
-        i += 1;
+        if (m) {
+          flat.push({ level: indentUnits(m[1]), text: m[3] });
+          i += 1;
+          continue;
+        }
+        // A blank line INSIDE a bullet run keeps the list together (Tess,
+        // 2026-08-24: bullets "rendering very weird and messy") — people put a
+        // blank line between points for air, and without this each bullet became
+        // its own one-item list, so an indented sub-bullet lost its parent and
+        // rendered as a stray top-level mark. Skip the blank(s) only when another
+        // bullet follows; a blank before ordinary prose still ends the list.
+        if (lines[i].trim() === "") {
+          let j = i + 1;
+          while (j < lines.length && lines[j].trim() === "") j += 1;
+          if (j < lines.length && BULLET.test(lines[j])) {
+            i = j;
+            continue;
+          }
+        }
+        break;
       }
       blocks.push({ kind: "list", items: buildTree(flat) });
     } else {
@@ -74,7 +91,10 @@ export function parseNoteBlocks(text: string | null | undefined): NoteBlock[] {
         textLines.push(lines[i]);
         i += 1;
       }
-      const text = textLines.join("\n");
+      // Trim blank lines off the top and tail — a blank line that separated this
+      // prose from an adjacent list is a separator, not an empty first line of
+      // the paragraph, so it should not print as a gap.
+      const text = textLines.join("\n").replace(/^\n+|\n+$/g, "");
       // An empty run — the "" from splitting empty input, or blank lines at a
       // boundary — is not a paragraph and does not become a block.
       if (text) blocks.push({ kind: "text", text });

@@ -74,6 +74,27 @@ test("a bare dash with no space is NOT a bullet — a minus sign stays text", ()
   ]);
 });
 
+test("blank lines between bullets keep one list, so a sub-bullet stays nested", () => {
+  // People put a blank line between points for air; that must NOT split the list
+  // and strand an indented sub-bullet as a top-level mark (Tess, 2026-08-24:
+  // bullets "rendering very weird and messy").
+  const blocks = parseNoteBlocks("• Correct the label\n\n• Racer back\n\n  • Fit is perfection");
+  assert.deepEqual(blocks, [
+    {
+      kind: "list",
+      items: [
+        { text: "Correct the label", children: [] },
+        { text: "Racer back", children: [leaf("Fit is perfection")] },
+      ],
+    },
+  ]);
+  // A blank line before ordinary prose still ends the list.
+  assert.deepEqual(parseNoteBlocks("- one\n\nJust a sentence"), [
+    { kind: "list", items: [leaf("one")] },
+    { kind: "text", text: "Just a sentence" },
+  ]);
+});
+
 test("empty input is no blocks", () => {
   assert.deepEqual(parseNoteBlocks(""), []);
   assert.deepEqual(parseNoteBlocks(null), []);
