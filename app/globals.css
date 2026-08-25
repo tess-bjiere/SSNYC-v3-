@@ -4380,6 +4380,9 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-field-print{display:none}
 .ls-wordmark{margin-top:auto;padding-top:26px;font-size:var(--t-meta);letter-spacing:.16em;
   text-transform:uppercase;color:var(--faint)}
+/* When the mark is the brand logo, keep it small on screen too (the print rule
+   sizes it for paper). Muted so it reads as a footer, not a hero. */
+.ls-wordmark img{height:22px;width:auto;display:block;opacity:.6}
 .ls-entry-head .ls-remove{position:static;opacity:1;margin-top:8px;display:inline-block}
 
 /* --- Add-styles picker --- */
