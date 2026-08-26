@@ -33,7 +33,7 @@ export default async function MaterialsPage() {
     canOrder
       ? supabase
           .from("material_orders")
-          .select("id,name,status")
+          .select("id,name,status,kind")
           .eq("brand", brand)
           .is("deleted_at", null)
           .neq("status", "received")
@@ -68,11 +68,17 @@ export default async function MaterialsPage() {
   ]);
 
   const materials = (error ? [] : (data ?? [])) as Material[];
-  const openOrders = (ordersRes.error ? [] : (ordersRes.data ?? [])) as {
+  // Open orders AND quotes come back together (same table); split by kind so the
+  // pickbar can offer "Add to order…" and "Add to quote…" separately (Tess,
+  // 2026-08-26: "put add to quote button in"). A row with no kind reads as an order.
+  const openRows = (ordersRes.error ? [] : (ordersRes.data ?? [])) as {
     id: string;
     name: string;
     status: string;
+    kind?: string | null;
   }[];
+  const openOrders = openRows.filter((r) => r.kind !== "quote");
+  const openQuotes = openRows.filter((r) => r.kind === "quote");
   // Distinct products by name (a garment type can have several products); each
   // keeps its type for the garment-type filter.
   const seen = new Set<string>();
@@ -95,6 +101,7 @@ export default async function MaterialsPage() {
       canEdit={user?.role === "team"}
       canOrder={canOrder}
       openOrders={openOrders}
+      openQuotes={openQuotes}
       products={products}
       standards={standards}
     />

@@ -149,15 +149,18 @@ export default function MaterialsClient({
   canEdit = false,
   canOrder = false,
   openOrders = [],
+  openQuotes = [],
   products = [],
   standards = [],
 }: {
   materials: Material[];
   canEdit?: boolean;
-  // Ordering (select → create/add-to order) is FRED-only; off FRED the library
-  // is documentation only (Tess, 2026-08-19).
+  // Ordering (select → create/add-to order) is on for FRED and for the SOUS SOUS
+  // / Renggli brands (Tess, 2026-08-24); off elsewhere the library is docs only.
   canOrder?: boolean;
   openOrders?: OpenOrder[];
+  // The same, for quotes (Tess, 2026-08-26: "put add to quote button in").
+  openQuotes?: OpenOrder[];
   products?: Product[];
   // Colour standards (Tess, 2026-08-23). Empty on every deploy but FRED — the
   // page already reduced a missing table to [] via normalizeStandards, so an
@@ -215,7 +218,8 @@ export default function MaterialsClient({
   // Off, the grid opens a swatch's detail; on, a click ticks it for an order.
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [naming, setNaming] = useState(false);
+  // Which "Create …" modal is open: an order, a quote, or none (Tess, 2026-08-26).
+  const [namingKind, setNamingKind] = useState<"order" | "quote" | null>(null);
 
   function flash(m: string) {
     setToast(m);
@@ -233,23 +237,28 @@ export default function MaterialsClient({
   function leaveSelect() {
     setSelecting(false);
     setSelected(new Set());
-    setNaming(false);
+    setNamingKind(null);
   }
 
-  async function createFromSelection(name: string) {
+  // Create a new order OR quote from the ticked materials. The only difference is
+  // the hidden `kind` the create action reads; createOrder redirects to the new
+  // row's detail on success (shared between the two kinds).
+  async function createFromSelection(name: string, kind: "order" | "quote") {
     const fd = new FormData();
     fd.set("name", name);
+    if (kind === "quote") fd.set("kind", "quote");
     for (const id of selected) fd.append("material_ids", id);
-    // createOrder redirects to the new order on success.
     await createOrder(fd);
   }
-  async function addSelectionToOrder(orderId: string) {
+  // Drop the selection into an existing order or quote. The detail route is shared,
+  // so /material-orders/<id> opens either; `noun` only tunes the toast wording.
+  async function addSelectionToRow(rowId: string, noun: "order" | "quote") {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
-    const res = await addMaterialsToOrder(orderId, ids);
+    const res = await addMaterialsToOrder(rowId, ids);
     leaveSelect();
-    router.push(`/material-orders/${orderId}`);
-    flash(res.added > 0 ? `Added ${res.added} to order` : "Already on the order");
+    router.push(`/material-orders/${rowId}`);
+    flash(res.added > 0 ? `Added ${res.added} to ${noun}` : `Already on the ${noun}`);
   }
 
   // product name → garment type, for deriving a material's types from its
@@ -589,7 +598,8 @@ export default function MaterialsClient({
         )}
         {canOrder && canEdit && !selecting && (
           <button type="button" className="btn ghost sm" onClick={() => setSelecting(true)}>
-            Select for order
+            {/* Select mode now feeds an order OR a quote (Tess, 2026-08-26). */}
+            Select
           </button>
         )}
         {canEdit && !selecting && (
@@ -747,24 +757,41 @@ export default function MaterialsClient({
               className="select sm mo-pickbar-add"
               aria-label="Add to order"
               value=""
-              onChange={(v) => v && addSelectionToOrder(v)}
+              onChange={(v) => v && addSelectionToRow(v, "order")}
               options={[
                 { value: "", label: "Add to order…" },
                 ...openOrders.map((o) => ({ value: o.id, label: o.name })),
               ]}
             />
           )}
-          <button type="button" className="btn" onClick={() => setNaming(true)}>
+          <button type="button" className="btn ghost" onClick={() => setNamingKind("order")}>
             Create order
+          </button>
+          {/* The quote twins (Tess, 2026-08-26: "put add to quote button in"). */}
+          {openQuotes.length > 0 && (
+            <Select
+              className="select sm mo-pickbar-add"
+              aria-label="Add to quote"
+              value=""
+              onChange={(v) => v && addSelectionToRow(v, "quote")}
+              options={[
+                { value: "", label: "Add to quote…" },
+                ...openQuotes.map((o) => ({ value: o.id, label: o.name })),
+              ]}
+            />
+          )}
+          <button type="button" className="btn ghost" onClick={() => setNamingKind("quote")}>
+            Create quote
           </button>
         </div>
       )}
 
-      {naming && (
+      {namingKind && (
         <NameOrder
+          noun={namingKind}
           count={selected.size}
-          onClose={() => setNaming(false)}
-          onCreate={createFromSelection}
+          onClose={() => setNamingKind(null)}
+          onCreate={(name) => createFromSelection(name, namingKind)}
         />
       )}
 
@@ -957,14 +984,17 @@ function MaterialForm({
 // Name a new order built from the current selection, then create it (the server
 // action redirects to the fresh order).
 function NameOrder({
+  noun,
   count,
   onClose,
   onCreate,
 }: {
+  noun: "order" | "quote";
   count: number;
   onClose: () => void;
   onCreate: (name: string) => Promise<void>;
 }) {
+  const Noun = noun === "quote" ? "Quote" : "Order";
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -991,23 +1021,23 @@ function NameOrder({
           Close or a save are the ways out. */}
       <div className="modal mat-modal mat-modal-sm">
         <div className="modal-head">
-          <span>New order · {count} {count === 1 ? "material" : "materials"}</span>
+          <span>New {noun} · {count} {count === 1 ? "material" : "materials"}</span>
           <button className="notes-close" onClick={onClose} title="Close">×</button>
         </div>
         <form className="modal-body mat-form" onSubmit={submit}>
           <label className="mat-field mat-field-wide">
-            <span className="mat-label">Order name</span>
+            <span className="mat-label">{Noun} name</span>
             <input
               className="input"
               value={name}
               autoFocus
-              placeholder="e.g. FW26 fabric buy"
+              placeholder={noun === "quote" ? "e.g. FW26 fabric pricing" : "e.g. FW26 fabric buy"}
               onChange={(e) => setName(e.target.value)}
             />
           </label>
           <div className="mat-tools">
             <button type="submit" className="btn" disabled={busy || !name.trim()}>
-              {busy ? "Creating…" : "Create order"}
+              {busy ? "Creating…" : `Create ${noun}`}
             </button>
             <button type="button" className="ph-link" onClick={onClose} disabled={busy}>Cancel</button>
           </div>
