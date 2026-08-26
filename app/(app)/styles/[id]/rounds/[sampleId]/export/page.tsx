@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { docToText } from "@/lib/richNote";
 import { requireTeam } from "@/lib/access";
 import {
   SAMPLE_ROUND_LABELS,
@@ -122,9 +123,9 @@ export default async function RoundExport({
     materialType: s.material_type,
     materialContents: s.material_contents,
     materialSupplier: s.material_supplier,
-    materialNotes: s.material_notes,
-    fitNotes: s.fit_notes,
-    factoryComments: s.comments,
+    materialNotes: docToText(s.material_notes),
+    fitNotes: docToText(s.fit_notes),
+    factoryComments: docToText(s.comments),
     images,
     generatedOn,
   };

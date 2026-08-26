@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import CloseOnSave from "@/app/components/CloseOnSave";
-import NotesField from "@/app/components/NotesField";
+import RichNotesField from "@/app/components/RichNotesField";
 import Select from "@/app/components/Select";
 import Link from "next/link";
 import {
@@ -49,6 +49,7 @@ import SlotCards from "./SlotCards";
 import PhotoSlots from "./PhotoSlots";
 import ImageNotes from "./ImageNotes";
 import Linked from "@/app/components/Linked";
+import RichNote from "@/app/components/RichNote";
 import { requestCommentScope } from "./commentScope";
 import { PHOTO_FOCUS_EVENT, peekPhotoFocus } from "./photoFocus";
 import { REVIEW_LATEST_EVENT } from "./reviewLatest";
@@ -452,7 +453,7 @@ function MaterialFields({
       </div>
       <div className="field">
         <label>Material notes</label>
-        <NotesField
+        <RichNotesField
           name="material_notes"
           defaultValue={s?.material_notes ?? ""}
           placeholder="Dates, lead times, dye lot, anything the next person needs."
@@ -776,7 +777,7 @@ function RoundFacts({
             <div className="sr-field">
               <span className="k">Material notes</span>
               <div className="v">
-                <Linked text={s.material_notes} block={false} />
+                <RichNote value={s.material_notes} />
               </div>
             </div>
           )}
@@ -784,7 +785,7 @@ function RoundFacts({
             <div className="sr-field">
               <span className="k">Fit notes</span>
               <div className="v">
-                <Linked text={s.fit_notes} block={false} />
+                <RichNote value={s.fit_notes} />
               </div>
             </div>
           )}
@@ -792,7 +793,7 @@ function RoundFacts({
             <div className="sr-field">
               <span className="k">Factory comments that came with samples</span>
               <div className="v">
-                <Linked text={s.comments} block={false} />
+                <RichNote value={s.comments} />
               </div>
             </div>
           )}
@@ -908,11 +909,11 @@ function RoundForm({
 
       <div className="field">
         <label>Fit notes — how this round fitted</label>
-        <NotesField name="fit_notes" defaultValue={s.fit_notes} />
+        <RichNotesField name="fit_notes" defaultValue={s.fit_notes} />
       </div>
       <div className="field">
         <label>Factory comments that came with samples</label>
-        <NotesField name="comments" defaultValue={s.comments} />
+        <RichNotesField name="comments" defaultValue={s.comments} />
       </div>
 
       {/* Rounds logged before material went from dates to words still hold
@@ -1796,11 +1797,11 @@ export default function SampleRounds({
 
           <div className="field">
             <label>Fit notes</label>
-            <NotesField name="fit_notes" />
+            <RichNotesField name="fit_notes" />
           </div>
           <div className="field">
             <label>Factory comments that came with samples</label>
-            <NotesField name="comments" />
+            <RichNotesField name="comments" />
           </div>
 
           {/* First photos of the round, attached the moment it is created (Tess,

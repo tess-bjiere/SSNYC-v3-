@@ -1,6 +1,6 @@
 import Select from "@/app/components/Select";
 import GarmentField from "@/app/components/GarmentField";
-import NotesField from "@/app/components/NotesField";
+import RichNotesField from "@/app/components/RichNotesField";
 import FredCategoryType from "./FredCategoryType";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -63,6 +63,7 @@ import LinkReference from "./LinkReference";
 import ModalButton from "./ModalButton";
 import { ModalCloseOnSave } from "@/app/components/CloseOnSave";
 import Linked from "@/app/components/Linked";
+import RichNote from "@/app/components/RichNote";
 import { MOCK, mockStyleBundle } from "@/lib/mock";
 import { APP } from "@/lib/appConfig";
 import { activeBrand } from "@/lib/activeBrand";
@@ -949,7 +950,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             {st.notes && (
               <div className="kv kv-wide">
                 <span className="k">Notes</span>
-                <Linked text={st.notes} block={false} />
+                <RichNote value={st.notes} />
               </div>
             )}
             {/* The running fit story — the part that carries across rounds:
@@ -967,7 +968,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             {st.fit_notes && (
               <div className="kv kv-wide">
                 <span className="k">Fit</span>
-                <Linked text={st.fit_notes} block={false} />
+                <RichNote value={st.fit_notes} />
               </div>
             )}
             </div>
@@ -1135,10 +1136,10 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   <div className="field"><label>WIP link</label><input className="input" name="wip_url" defaultValue={st.wip_url ?? ""} placeholder="https://… the live working folder" /></div>
                 )}
               </div>
-              <div className="field"><label>Notes</label><NotesField name="notes" defaultValue={st.notes} /></div>
+              <div className="field"><label>Notes</label><RichNotesField name="notes" defaultValue={st.notes} /></div>
               <div className="field">
                 <label>Fit notes — the running story across rounds</label>
-                <NotesField name="fit_notes" defaultValue={st.fit_notes} />
+                <RichNotesField name="fit_notes" defaultValue={st.fit_notes} />
               </div>
               <div className="row">
                 <div className="field">

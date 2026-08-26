@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { docToText } from "@/lib/richNote";
 import { requireTeam } from "@/lib/access";
 import {
   SAMPLE_ROUNDS,
@@ -179,13 +180,13 @@ export default async function StyleExport({ params }: { params: Promise<{ id: st
       material_ordered_date: s.material_ordered_date,
       material_eta_date: s.material_eta_date,
       material_received_date: s.material_received_date,
-      material_notes: s.material_notes,
+      material_notes: docToText(s.material_notes),
       submitted_date: s.submitted_date,
       received_date: s.received_date,
       fitting_date: s.fitting_date,
       notes_sent_date: s.notes_sent_date,
-      fit_notes: s.fit_notes,
-      comments: s.comments,
+      fit_notes: docToText(s.fit_notes),
+      comments: docToText(s.comments),
       photos: [
         ...PHOTO_SLOTS.filter((slot) => slots[slot.id]).map((slot) => ({
           label: slot.label,

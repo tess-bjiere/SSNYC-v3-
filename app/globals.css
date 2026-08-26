@@ -2631,6 +2631,45 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .linked-list .linked-list > li::marker{content:""}
 .linked-list .linked-list > li::before{content:"–";position:absolute;left:-1.25em;
   color:var(--muted);font-weight:600}
+
+/* --- TipTap notes editor + its rendered output (Tess, 2026-08-24: "go with
+   TipTap"). Bullets are real editor structure now; a dotted top level and a
+   dashed sub level, matched between the editor and the render so a note looks the
+   same while you type it and after it saves. --- */
+.rich-field{display:flex;flex-direction:column}
+.rich-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.rich-btn{font-family:inherit;font-size:var(--t-meta);min-width:26px;padding:3px 8px;
+  background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;line-height:1}
+.rich-btn:hover{color:var(--ink);border-color:var(--muted)}
+.rich-btn.on{background:var(--chip);color:var(--ink);border-color:var(--muted)}
+.rich-hint{font-size:var(--t-micro);color:var(--faint);margin-left:4px}
+.rich-editor{position:relative;border:1px solid var(--line);background:var(--field);
+  min-height:88px;padding:9px 11px}
+.rich-editor .ProseMirror{outline:none;min-height:70px;font-size:var(--t-body);
+  color:var(--ink);line-height:1.5;white-space:pre-wrap}
+.rich-editor .ProseMirror:focus{outline:none}
+/* The placeholder — shown only while the note is genuinely empty. */
+.rich-editor.is-empty::before{content:attr(data-placeholder);position:absolute;
+  top:9px;left:11px;color:var(--faint);font-size:var(--t-body);pointer-events:none}
+.rich-editor p{margin:0 0 4px}
+.rich-editor p:last-child{margin-bottom:0}
+
+/* Lists — in the editor AND in the rendered note, one treatment. Top level a
+   dot, every level under it a dash drawn with ::before (works in every browser). */
+.rich-editor ul,.rich-note .rich-list{margin:6px 0;padding-left:1.4em;list-style:disc}
+.rich-editor ol,.rich-note ol.rich-list{margin:6px 0;padding-left:1.4em;list-style:decimal}
+.rich-editor li,.rich-note .rich-list li{margin:5px 0;line-height:1.45}
+.rich-editor li::marker,.rich-note .rich-list li::marker{color:var(--faint)}
+.rich-editor ul ul,.rich-editor ol ul,
+.rich-note .rich-list .rich-list{margin:5px 0;padding-left:2.7em;list-style:none}
+.rich-editor ul ul > li,.rich-note .rich-list .rich-list > li{position:relative}
+.rich-editor ul ul > li::marker,.rich-note .rich-list .rich-list > li::marker{content:""}
+.rich-editor ul ul > li::before,.rich-note .rich-list .rich-list > li::before{
+  content:"–";position:absolute;left:-1.25em;color:var(--muted);font-weight:600}
+.rich-editor li p,.rich-note .rich-list li p{margin:0}
+.rich-note .rich-p{margin:0 0 6px;white-space:pre-wrap}
+.rich-note .rich-p:last-child{margin-bottom:0}
+.rich-note .rich-li-text{display:inline}
 /* The bullet-aware notes editor (Tess, 2026-08-24). A quiet toolbar over the
    textarea; the textarea itself keeps the plain .textarea look. */
 .notes-field{display:flex;flex-direction:column;gap:3px}

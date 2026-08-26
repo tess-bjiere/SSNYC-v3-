@@ -14,6 +14,7 @@ import {
 import { sortSamples, latestSample, shortDate } from "@/lib/sampleCycle";
 import { normalizePhotos, PHOTO_SLOTS } from "@/lib/photoSlots";
 import { readNotes } from "@/lib/imageNotes";
+import { docToText } from "@/lib/richNote";
 import {
   buildFittingDeck,
   type DeckImage,
@@ -111,8 +112,10 @@ export default async function FittingDeckPage({
         factory: round?.factory ?? st.factory,
         fittingDate: round?.fitting_date ? shortDate(round.fitting_date) : null,
         images: modelImages(round),
-        fitNotes: round?.fit_notes,
-        factoryComments: round?.comments,
+        // A note may now be a TipTap doc — flatten to its bulleted text so the
+        // deck reads it, never raw JSON (Tess, 2026-08-24: "go with TipTap").
+        fitNotes: docToText(round?.fit_notes),
+        factoryComments: docToText(round?.comments),
         materialType: round?.material_type,
         materialContents: round?.material_contents,
         materialSupplier: round?.material_supplier,
