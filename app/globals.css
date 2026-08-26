@@ -4792,11 +4792,16 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-cell-qty .mo-print-val{font-weight:var(--w-title)}
   /* Ship-to + notes, printed once at the top of page 1 (Tess, 2026-08-26). Each is
      its own block, label over value, with the entered line breaks kept (pre-wrap)
-     instead of run onto one line. */
-  .mo-doc-meta{margin:14px 0 20px;padding-bottom:14px;border-bottom:1px solid #ddd;
+     instead of run onto one line. Inset 0.6in so it lines up with the masthead and
+     the supplier tables, not flush to the paper edge (Tess, 2026-08-26: "Address
+     and notes etc should be aligned with other text"). */
+  .mo-doc-meta{margin:14px 0 20px;padding:0 0.6in 14px;border-bottom:1px solid #ddd;
     display:flex;flex-direction:column;gap:13px}
   .mo-doc-meta-k{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#888;margin-bottom:4px}
   .mo-doc-meta-v{font-size:12.5px;color:#111;line-height:1.5;white-space:pre-wrap}
+  /* The per-item note, labelled like a spec fact (Tess, 2026-08-26). */
+  .mo-note-print{display:block;font-size:12.5px;color:#111;line-height:1.4;white-space:pre-wrap}
+  .mo-note-print .mo-fact-k{display:block;margin-bottom:3px}
 }
 
 /* --- Colour standards (Tess, 2026-08-23: "can you create a color standard

@@ -417,7 +417,16 @@ function LineRow({
           onChange={(e) => setNote(e.target.value)}
           onBlur={() => note !== (entry.note ?? "") && save({ note })}
         />
-        <span className="mo-print-val print-only">{note || ""}</span>
+        {/* In print the note carries its own small "Notes" label (Tess,
+            2026-08-26: "add small notes title in front of the notes for item"),
+            like the spec facts, so a note far down a page reads without hunting
+            for the column header. Nothing prints when the line has no note. */}
+        {note && (
+          <span className="mo-note-print print-only">
+            <span className="mo-fact-k">Notes</span>
+            {note}
+          </span>
+        )}
       </span>
       <span className="mo-cell-x no-print">
         <button
