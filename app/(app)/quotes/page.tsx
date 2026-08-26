@@ -83,7 +83,7 @@ export default async function QuotesPage() {
               {list.map((r) => {
                 const count = normalizeItems(r.items).length;
                 return (
-                  <Link key={r.id} href={`/material-orders/${r.id}`} className="ls-card">
+                  <Link key={r.id} href={`/quotes/${r.id}`} className="ls-card">
                     <span className="ls-card-name">{r.name}</span>
                     <span className="ls-card-meta">
                       {count === 0

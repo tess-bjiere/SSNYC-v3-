@@ -52,6 +52,14 @@ export type OrderLine = {
   qty?: string;
   unit?: string;
   note?: string;
+  // Quote-only per-line control over Price and MOQ (Tess, 2026-08-26: "quotes
+  // should be able to hide / edit MOQ and price"). `price`/`moq` override the
+  // material's printed value for this quote; `hidePrice`/`hideMoq` drop the field
+  // entirely. Absent = show the material's own value. Ignored on orders.
+  price?: string;
+  moq?: string;
+  hidePrice?: boolean;
+  hideMoq?: boolean;
 };
 
 // The units an order line offers — a small, editable default set. Fabric is
@@ -77,11 +85,16 @@ export function normalizeItems(raw: unknown): OrderLine[] {
     const id = str((r as Record<string, unknown>).material_id);
     if (!id || seen.has(id)) continue;
     seen.add(id);
+    const rec = r as Record<string, unknown>;
     out.push({
       material_id: id,
-      qty: str((r as Record<string, unknown>).qty),
-      unit: str((r as Record<string, unknown>).unit),
-      note: str((r as Record<string, unknown>).note),
+      qty: str(rec.qty),
+      unit: str(rec.unit),
+      note: str(rec.note),
+      price: str(rec.price),
+      moq: str(rec.moq),
+      hidePrice: rec.hidePrice === true ? true : undefined,
+      hideMoq: rec.hideMoq === true ? true : undefined,
     });
   }
   return out;
@@ -106,22 +119,38 @@ export function removeItem(items: OrderLine[], materialId: string): OrderLine[] 
   return items.filter((i) => i.material_id !== materialId);
 }
 
-/** Set a line's quantity / unit / note. An empty string clears that field. Only
- *  the keys present in `patch` are touched; a material not on the order is a
- *  no-op. */
+/** Set a line's editable fields. Text fields (qty / unit / note / price / moq)
+ *  clear on an empty string; the boolean hide flags (hidePrice / hideMoq) clear
+ *  when false. Only the keys present in `patch` are touched; a material not on the
+ *  order is a no-op. */
+export type OrderLinePatch = {
+  qty?: string | null;
+  unit?: string | null;
+  note?: string | null;
+  price?: string | null;
+  moq?: string | null;
+  hidePrice?: boolean;
+  hideMoq?: boolean;
+};
 export function setItemField(
   items: OrderLine[],
   materialId: string,
-  patch: { qty?: string | null; unit?: string | null; note?: string | null }
+  patch: OrderLinePatch
 ): OrderLine[] {
   return items.map((i) => {
     if (i.material_id !== materialId) return i;
     const next: OrderLine = { ...i };
-    for (const k of ["qty", "unit", "note"] as const) {
+    for (const k of ["qty", "unit", "note", "price", "moq"] as const) {
       if (k in patch) {
         const v = patch[k];
         if (v == null || v.trim() === "") delete next[k];
         else next[k] = v.trim();
+      }
+    }
+    for (const k of ["hidePrice", "hideMoq"] as const) {
+      if (k in patch) {
+        if (patch[k]) next[k] = true;
+        else delete next[k];
       }
     }
     return next;
@@ -151,6 +180,17 @@ export type OrderEntryInput = {
   qty: string | null;
   unit: string | null;
   note: string | null;
+  // Quote-only price/MOQ editing (Tess, 2026-08-26). `matPrice`/`matMoq` are the
+  // material's own values, shown as the editor's placeholder; `price`/`moq` are
+  // this line's overrides; `hidePrice`/`hideMoq` drop the field from the sheet.
+  // The page has already applied all of this to `details`; these carry the state
+  // the editor needs. All null/false on an order.
+  matPrice?: string | null;
+  matMoq?: string | null;
+  price?: string | null;
+  moq?: string | null;
+  hidePrice?: boolean;
+  hideMoq?: boolean;
 };
 
 export type OrderEntry = OrderEntryInput;

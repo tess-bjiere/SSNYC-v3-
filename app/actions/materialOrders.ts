@@ -14,6 +14,7 @@ import {
   normalizeStatus,
   normalizeKind,
   type OrderLine,
+  type OrderLinePatch,
 } from "@/lib/materialOrder";
 
 // Every write to a material order goes through here, matching
@@ -47,7 +48,18 @@ async function readItems(
 function revalidateOrders(id?: string) {
   revalidatePath("/material-orders");
   revalidatePath("/quotes");
-  if (id) revalidatePath(`/material-orders/${id}`);
+  // Orders and quotes have separate detail URLs (Tess, 2026-08-26); revalidate
+  // both since a write doesn't know which the row is.
+  if (id) {
+    revalidatePath(`/material-orders/${id}`);
+    revalidatePath(`/quotes/${id}`);
+  }
+}
+
+// The detail URL for a row of the given kind — the two live at different paths so
+// the nav underlines the right section.
+function detailPath(kind: string | null | undefined, id: string) {
+  return normalizeKind(kind) === "quote" ? `/quotes/${id}` : `/material-orders/${id}`;
 }
 
 async function writeItems(
@@ -101,9 +113,8 @@ export async function createOrder(form: FormData) {
     );
   }
   revalidateOrders();
-  // The detail page is shared between both kinds and reads the row's kind, so a
-  // quote and an order open at the same route.
-  if (data?.id) redirect(`/material-orders/${data.id}`);
+  // Open the new row at its own kind's URL so the nav underlines the right section.
+  if (data?.id) redirect(detailPath(kind, data.id));
 }
 
 export async function renameOrder(id: string, form: FormData) {
@@ -170,12 +181,9 @@ export async function removeOrderLine(id: string, materialId: string) {
   await writeItems(supabase, id, next);
 }
 
-// A line's quantity / unit / note — what this order actually asks for.
-export async function setOrderLine(
-  id: string,
-  materialId: string,
-  patch: { qty?: string | null; unit?: string | null; note?: string | null }
-) {
+// A line's editable fields — qty / unit / note on an order; on a quote also the
+// price / MOQ overrides and their hide flags (Tess, 2026-08-26).
+export async function setOrderLine(id: string, materialId: string, patch: OrderLinePatch) {
   await requireOrdersTeam();
   const { supabase, items } = await readItems(id);
   await writeItems(supabase, id, setItemField(items, materialId, patch));

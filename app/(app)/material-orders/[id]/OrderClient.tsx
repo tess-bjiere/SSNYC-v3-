@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Select from "@/app/components/Select";
-import { ORDER_STATUSES, ORDER_UNITS, docLabel, type Order, type OrderKind } from "@/lib/materialOrder";
+import {
+  ORDER_STATUSES,
+  ORDER_UNITS,
+  docLabel,
+  type Order,
+  type OrderKind,
+  type OrderLinePatch,
+} from "@/lib/materialOrder";
 import {
   renameOrder,
   setOrderStatus,
@@ -340,12 +347,21 @@ function LineRow({
   const [qty, setQty] = useState(entry.qty ?? "");
   const [unit, setUnit] = useState(entry.unit ?? "");
   const [note, setNote] = useState(entry.note ?? "");
+  // Quote-only price/MOQ overrides + hide flags (Tess, 2026-08-26).
+  const [price, setPrice] = useState(entry.price ?? "");
+  const [moq, setMoq] = useState(entry.moq ?? "");
+  const [hidePrice, setHidePrice] = useState(entry.hidePrice ?? false);
+  const [hideMoq, setHideMoq] = useState(entry.hideMoq ?? false);
   const [arm, setArm] = useState(false);
   useEffect(() => setQty(entry.qty ?? ""), [entry.qty]);
   useEffect(() => setUnit(entry.unit ?? ""), [entry.unit]);
   useEffect(() => setNote(entry.note ?? ""), [entry.note]);
+  useEffect(() => setPrice(entry.price ?? ""), [entry.price]);
+  useEffect(() => setMoq(entry.moq ?? ""), [entry.moq]);
+  useEffect(() => setHidePrice(entry.hidePrice ?? false), [entry.hidePrice]);
+  useEffect(() => setHideMoq(entry.hideMoq ?? false), [entry.hideMoq]);
 
-  function save(patch: { qty?: string; unit?: string; note?: string }) {
+  function save(patch: OrderLinePatch) {
     setOrderLine(orderId, entry.materialId, patch);
   }
 
@@ -406,6 +422,64 @@ function LineRow({
                     ? [{ value: unit, label: unit }]
                     : []),
                 ]}
+              />
+            </label>
+          )}
+          {/* On a quote, Price and MOQ can be overridden or hidden per line (Tess,
+              2026-08-26: "quotes should be able to hide / edit MOQ and price"). The
+              input carries this quote's value; empty falls back to the material's
+              (shown as the placeholder). "Hide" drops the field from the sheet. */}
+          {quote && (
+            <label className="mo-edit-field">
+              <span className="mo-edit-k">
+                Price
+                <button
+                  type="button"
+                  className={"mo-pm-hide" + (hidePrice ? " on" : "")}
+                  disabled={disabled}
+                  onClick={() => {
+                    const v = !hidePrice;
+                    setHidePrice(v);
+                    save({ hidePrice: v });
+                  }}
+                >
+                  {hidePrice ? "hidden" : "hide"}
+                </button>
+              </span>
+              <input
+                className="input sm mo-qty-input"
+                value={price}
+                placeholder={entry.matPrice ?? "—"}
+                disabled={disabled || hidePrice}
+                onChange={(e) => setPrice(e.target.value)}
+                onBlur={() => price !== (entry.price ?? "") && save({ price })}
+              />
+            </label>
+          )}
+          {quote && (
+            <label className="mo-edit-field">
+              <span className="mo-edit-k">
+                MOQ
+                <button
+                  type="button"
+                  className={"mo-pm-hide" + (hideMoq ? " on" : "")}
+                  disabled={disabled}
+                  onClick={() => {
+                    const v = !hideMoq;
+                    setHideMoq(v);
+                    save({ hideMoq: v });
+                  }}
+                >
+                  {hideMoq ? "hidden" : "hide"}
+                </button>
+              </span>
+              <input
+                className="input sm mo-qty-input"
+                value={moq}
+                placeholder={entry.matMoq ?? "—"}
+                disabled={disabled || hideMoq}
+                onChange={(e) => setMoq(e.target.value)}
+                onBlur={() => moq !== (entry.moq ?? "") && save({ moq })}
               />
             </label>
           )}

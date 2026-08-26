@@ -257,7 +257,8 @@ export default function MaterialsClient({
     if (ids.length === 0) return;
     const res = await addMaterialsToOrder(rowId, ids);
     leaveSelect();
-    router.push(`/material-orders/${rowId}`);
+    // Orders and quotes have separate detail URLs (Tess, 2026-08-26).
+    router.push(`${noun === "quote" ? "/quotes" : "/material-orders"}/${rowId}`);
     flash(res.added > 0 ? `Added ${res.added} to ${noun}` : `Already on the ${noun}`);
   }
 

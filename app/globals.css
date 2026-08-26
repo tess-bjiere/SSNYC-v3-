@@ -724,7 +724,13 @@ body.notes-open .wrap{padding-right:378px}
 .mo-prod-ref{font-size:var(--t-meta);color:var(--muted);letter-spacing:.03em}
 .mo-prod-edit{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .mo-edit-field{display:flex;flex-direction:column;gap:3px}
-.mo-edit-k{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
+.mo-edit-k{display:inline-flex;align-items:baseline;gap:7px;font-size:var(--t-micro);
+  text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
+/* The per-line "hide" toggle for Price / MOQ on a quote (Tess, 2026-08-26). */
+.mo-pm-hide{background:none;border:none;padding:0;cursor:pointer;font:inherit;
+  font-size:var(--t-micro);letter-spacing:.06em;color:var(--faint);text-decoration:underline}
+.mo-pm-hide:hover{color:var(--ink)}
+.mo-pm-hide.on{color:var(--danger);text-decoration:none}
 .mo-qty-input{width:72px;text-align:right}
 .mo-unit-input{width:90px}
 .mo-edit-note{flex:1 1 220px}

@@ -150,3 +150,36 @@ test("docLabel names the printed document by kind", () => {
   assert.equal(docLabel("quote"), "Quote request");
   assert.equal(docLabel("order"), "Purchase order");
 });
+
+// The quote's price/MOQ overrides and hide flags round-trip through the jsonb, and
+// clear the way every other line field does (Tess, 2026-08-26: "hide / edit MOQ
+// and price"). A hide flag clears when set false, not stored as false forever.
+test("normalizeItems reads price/moq overrides and hide flags", () => {
+  const items = normalizeItems([
+    { material_id: "a", price: " 1.20 ", moq: "500", hidePrice: true, hideMoq: false },
+  ]);
+  assert.deepEqual(items[0], {
+    material_id: "a",
+    qty: undefined,
+    unit: undefined,
+    note: undefined,
+    price: "1.20",
+    moq: "500",
+    hidePrice: true,
+    hideMoq: undefined,
+  });
+});
+
+test("setItemField overrides, then hides, then clears price on a quote line", () => {
+  let items = [{ material_id: "a" }];
+  items = setItemField(items, "a", { price: "2.00" });
+  assert.equal(items[0].price, "2.00");
+  items = setItemField(items, "a", { hidePrice: true });
+  assert.equal(items[0].hidePrice, true);
+  // Un-hiding removes the flag rather than storing false.
+  items = setItemField(items, "a", { hidePrice: false });
+  assert.equal("hidePrice" in items[0], false);
+  // An empty override clears back to the material's own value.
+  items = setItemField(items, "a", { price: "" });
+  assert.equal("price" in items[0], false);
+});
