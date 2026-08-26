@@ -4790,6 +4790,11 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-facts{grid-template-columns:repeat(3,minmax(0,1fr));gap:11px 30px}
   .mo-fact-k{color:#888}
   .mo-fact-v{color:#222;line-height:1.4}
+  /* The note fact also carries `print-only`, whose display:block would collapse
+     its label and value onto one line ("NOTESWould like…"); restore the stacked
+     label-over-value with a gap (Tess, 2026-08-26: "add spaces between notes and
+     text after it"). */
+  .mo-note-fact{display:flex;flex-direction:column;gap:4px}
   .mo-note-fact .mo-fact-v{white-space:pre-wrap}
   /* The AI-file link stays a blue hyperlink in the PDF, short label only (Tess,
      2026-08-26: "clickable blue hyperlink with full path hidden"). */
