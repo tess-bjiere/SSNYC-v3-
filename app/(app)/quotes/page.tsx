@@ -15,16 +15,16 @@ import { createOrder } from "@/app/actions/materialOrders";
 
 export const dynamic = "force-dynamic";
 
-// The material orders index (Tess, 2026-08-18: "add ability to create an order
-// for materials from the material library"). Grouped by status — Draft, Sent,
-// Received — with a one-line create form; the fuller way in is the library's
-// select mode, which creates an order already seeded with the chosen materials.
-// Team only, like the rest of the product side, and FRED-only like the materials
-// library it draws from.
+// The material quotes index (Tess, 2026-08-26: "add a quote section to the
+// sourcing page --- essentially it's the same as the order page but doesnt include
+// quantity or price and allows for notes to be added"). The same shape as the
+// Orders list — grouped by status, one-line create — over the same table, filtered
+// to kind='quote'. The create form carries a hidden kind=quote so createOrder marks
+// the row; the detail page is shared with orders and renders the quote mode from
+// the row. Team only and gated the same way orders are.
 //
-// The select("*") tolerates the material_orders table not existing yet (before
-// db/p12-material-orders.sql is run) — data comes back null, the list is empty,
-// and nothing errors, the same graceful path the materials page takes.
+// select("*") tolerates the table/column not existing yet (before db/p24): the
+// list comes back empty and nothing errors, the same graceful path Orders takes.
 
 type Row = {
   id: string;
@@ -35,11 +35,9 @@ type Row = {
   updated_at?: string | null;
 };
 
-export default async function MaterialOrdersPage() {
+export default async function QuotesPage() {
   await requireTeam();
   const brand = await activeBrand();
-  // On for FRED, and for the SOUS SOUS / Renggli brands (Tess, 2026-08-24). A
-  // brand without ordering 404s here exactly as before.
   if (!ordersEnabled(brand)) notFound();
 
   const supabase = await createClient();
@@ -49,31 +47,29 @@ export default async function MaterialOrdersPage() {
     .eq("brand", brand)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
-  // Orders only — quotes live on their own /quotes list (Tess, 2026-08-26). A row
-  // with no kind (before db/p24) reads as an order, so nothing hides pre-migration.
-  const rows = ((data ?? []) as Row[]).filter((r) => normalizeKind(r.kind) === "order");
+  const rows = ((data ?? []) as Row[]).filter((r) => normalizeKind(r.kind) === "quote");
 
   const byStatus = (s: OrderStatus) => rows.filter((r) => normalizeStatus(r.status) === s);
 
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="page-title display">Orders</h1>
+        <h1 className="page-title display">Quotes</h1>
       </div>
 
-      {/* Create an empty order here; or select materials in the library and
-          create one already filled. The status is Draft on creation — it moves to
-          Sent / Received from the order itself. */}
+      {/* A quote is priced by the supplier, so it starts with no quantities — just
+          the materials and any notes. Create an empty one here, then add materials. */}
       <form action={createOrder} className="ls-new mo-new">
+        <input type="hidden" name="kind" value="quote" />
         <input
           className="input sm ls-new-name"
           name="name"
-          placeholder="New order — e.g. FW26 fabric buy…"
+          placeholder="New quote — e.g. FW26 fabric pricing…"
           autoComplete="off"
           required
         />
         <button className="btn sm" type="submit">
-          + New order
+          + New quote
         </button>
       </form>
 
@@ -92,7 +88,7 @@ export default async function MaterialOrdersPage() {
                     <span className="ls-card-meta">
                       {count === 0
                         ? "Empty"
-                        : `${count} ${count === 1 ? "line" : "lines"}`}
+                        : `${count} ${count === 1 ? "material" : "materials"}`}
                     </span>
                   </Link>
                 );
@@ -104,8 +100,8 @@ export default async function MaterialOrdersPage() {
 
       {rows.length === 0 && (
         <div className="empty">
-          No orders yet. Create one above, or select materials in{" "}
-          <Link href="/materials">Materials</Link> and choose “Create order”.
+          No quotes yet. Create one above, or select materials in{" "}
+          <Link href="/materials">Materials</Link> and add them to a quote.
         </div>
       )}
     </div>

@@ -121,6 +121,10 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // Purchase orders assembled from that library (Tess, 2026-08-18: "add
       // ability to create an order for materials from the material library").
       { href: "/material-orders", label: "Orders" },
+      // Quotes — the same library assembled into a supplier price request, no
+      // quantities or price (Tess, 2026-08-26: "add a quote section to the
+      // sourcing page"). Gated exactly like Orders (ordersEnabled).
+      { href: "/quotes", label: "Quotes" },
     ],
   },
 ];
@@ -159,8 +163,9 @@ export default function Nav({
     .map((g) => ({
       ...g,
       links: g.links.filter((l) => {
-        // Orders follows the brand, not the deploy: shown wherever ordering is on.
-        if (l.href === "/material-orders") return ordersEnabled(brand);
+        // Orders and Quotes follow the brand, not the deploy: shown wherever
+        // ordering is on.
+        if (l.href === "/material-orders" || l.href === "/quotes") return ordersEnabled(brand);
         // Everything else FRED-gated stays FRED-only.
         return APP.id === "fred" || !FRED_ONLY.has(l.href);
       }),

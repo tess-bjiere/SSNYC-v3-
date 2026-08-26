@@ -12,6 +12,7 @@ import {
   setItemField,
   normalizeItems,
   normalizeStatus,
+  normalizeKind,
   type OrderLine,
 } from "@/lib/materialOrder";
 
@@ -40,14 +41,22 @@ async function readItems(
   return { supabase, items: normalizeItems(data?.items) };
 }
 
+// Both the Orders list and the Quotes list read this table; a write to either
+// kind revalidates both, plus the shared detail route. Cheap, and it means a quote
+// edit never leaves the Quotes list stale.
+function revalidateOrders(id?: string) {
+  revalidatePath("/material-orders");
+  revalidatePath("/quotes");
+  if (id) revalidatePath(`/material-orders/${id}`);
+}
+
 async function writeItems(
   supabase: Awaited<ReturnType<typeof createClient>>,
   id: string,
   items: OrderLine[]
 ) {
   await supabase.from(TABLE).update({ items, updated_at: new Date().toISOString() }).eq("id", id);
-  revalidatePath("/material-orders");
-  revalidatePath(`/material-orders/${id}`);
+  revalidateOrders(id);
 }
 
 // Create an order — born into the brand you are looking at, optionally seeded
@@ -59,15 +68,29 @@ export async function createOrder(form: FormData) {
   if (!name) return;
   const ids = form.getAll("material_ids").map((v) => String(v)).filter(Boolean);
   const items = addItems([], ids);
+  // 'order' by default; the Quotes list passes kind=quote (Tess, 2026-08-26).
+  const kind = normalizeKind(form.get("kind"));
 
   const supabase = await createClient();
   const brand = await activeBrand();
   const { data } = await supabase
     .from(TABLE)
-    .insert({ name, status: "draft", items, brand, created_by: user?.email ?? null })
+    // `kind` is only sent for a quote, so ordinary order creation stays byte-for-byte
+    // what it was and keeps working on a database where db/p24 has not been run yet
+    // (the column defaults to 'order' there anyway).
+    .insert({
+      name,
+      status: "draft",
+      items,
+      brand,
+      created_by: user?.email ?? null,
+      ...(kind === "quote" ? { kind } : {}),
+    })
     .select("id")
     .single();
-  revalidatePath("/material-orders");
+  revalidateOrders();
+  // The detail page is shared between both kinds and reads the row's kind, so a
+  // quote and an order open at the same route.
   if (data?.id) redirect(`/material-orders/${data.id}`);
 }
 
@@ -77,8 +100,7 @@ export async function renameOrder(id: string, form: FormData) {
   if (!name) return;
   const supabase = await createClient();
   await supabase.from(TABLE).update({ name, updated_at: new Date().toISOString() }).eq("id", id);
-  revalidatePath("/material-orders");
-  revalidatePath(`/material-orders/${id}`);
+  revalidateOrders(id);
 }
 
 export async function setOrderStatus(id: string, status: string) {
@@ -88,8 +110,7 @@ export async function setOrderStatus(id: string, status: string) {
     .from(TABLE)
     .update({ status: normalizeStatus(status), updated_at: new Date().toISOString() })
     .eq("id", id);
-  revalidatePath("/material-orders");
-  revalidatePath(`/material-orders/${id}`);
+  revalidateOrders(id);
 }
 
 // The delivery address and the free-text notes on the order (both optional).
@@ -111,7 +132,7 @@ export async function setOrderMeta(
     .from(TABLE)
     .update({ ...clean, updated_at: new Date().toISOString() })
     .eq("id", id);
-  revalidatePath(`/material-orders/${id}`);
+  revalidateOrders(id);
 }
 
 // Add materials to an existing order (from the library's "Add to order", or the
@@ -153,7 +174,9 @@ export async function setOrderLine(
 export async function deleteOrder(id: string) {
   await requireOrdersTeam();
   const supabase = await createClient();
+  // Read the kind first so the redirect lands back on the list it came from.
+  const { data: row } = await supabase.from(TABLE).select("kind").eq("id", id).maybeSingle();
   await supabase.from(TABLE).update({ deleted_at: new Date().toISOString() }).eq("id", id);
-  revalidatePath("/material-orders");
-  redirect("/material-orders");
+  revalidateOrders();
+  redirect(normalizeKind(row?.kind) === "quote" ? "/quotes" : "/material-orders");
 }

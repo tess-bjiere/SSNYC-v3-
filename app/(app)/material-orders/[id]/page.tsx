@@ -11,6 +11,7 @@ import type { Material } from "@/app/(app)/materials/MaterialsClient";
 import {
   normalizeItems,
   normalizeStatus,
+  normalizeKind,
   buildOrder,
   type OrderEntryInput,
 } from "@/lib/materialOrder";
@@ -27,6 +28,7 @@ type Row = {
   id: string;
   name: string;
   status: string;
+  kind?: string | null;
   ship_to?: string | null;
   notes?: string | null;
   items: unknown;
@@ -137,6 +139,7 @@ export default async function MaterialOrderPage({
   return (
     <OrderClient
       id={id}
+      kind={normalizeKind(row.kind)}
       order={order}
       shipTo={row.ship_to ?? ""}
       notes={row.notes ?? ""}

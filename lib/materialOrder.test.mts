@@ -7,6 +7,8 @@ import {
   setItemField,
   buildOrder,
   normalizeStatus,
+  normalizeKind,
+  docLabel,
   orderSummary,
   NO_SUPPLIER_LABEL,
   type OrderEntryInput,
@@ -131,4 +133,20 @@ test("orderSummary reads naturally at the edges", () => {
   assert.equal(orderSummary(0, 0), "Empty");
   assert.equal(orderSummary(1, 1), "1 line · 1 supplier");
   assert.equal(orderSummary(3, 2), "3 lines · 2 suppliers");
+});
+
+// A row's kind decides order vs quote; anything not "quote" (including a null from
+// a database where db/p24 has not run) reads as an order, so nothing is mistaken
+// for a quote before the column exists.
+test("normalizeKind treats only \"quote\" as a quote", () => {
+  assert.equal(normalizeKind("quote"), "quote");
+  assert.equal(normalizeKind("order"), "order");
+  assert.equal(normalizeKind(null), "order");
+  assert.equal(normalizeKind(undefined), "order");
+  assert.equal(normalizeKind("garbage"), "order");
+});
+
+test("docLabel names the printed document by kind", () => {
+  assert.equal(docLabel("quote"), "Quote request");
+  assert.equal(docLabel("order"), "Purchase order");
 });

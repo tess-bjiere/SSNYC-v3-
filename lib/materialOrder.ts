@@ -22,6 +22,23 @@ export function normalizeStatus(raw: unknown): OrderStatus {
   return raw === "sent" || raw === "received" ? raw : "draft";
 }
 
+// A material_orders row is one of two modes (Tess, 2026-08-26: "add a quote
+// section to the sourcing page --- essentially it's the same as the order page but
+// doesnt include quantity or price"). An 'order' asks for quantities to be bought;
+// a 'quote' asks a supplier to price the materials, so it carries no qty/unit — the
+// numbers come back, they don't go out. Every existing row is an 'order'.
+export type OrderKind = "order" | "quote";
+
+export function normalizeKind(raw: unknown): OrderKind {
+  return raw === "quote" ? "quote" : "order";
+}
+
+// What the document is called, on screen and on the printed sheet. A quote sent to
+// a supplier is a request for a price, not a purchase order.
+export function docLabel(kind: OrderKind): string {
+  return kind === "quote" ? "Quote request" : "Purchase order";
+}
+
 export function statusLabel(s: OrderStatus): string {
   return ORDER_STATUSES.find((x) => x.key === s)?.label ?? "Draft";
 }

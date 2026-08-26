@@ -713,6 +713,10 @@ body.notes-open .wrap{padding-right:378px}
 .mo-row:last-child{border-bottom:none}
 .mo-line{display:grid;grid-template-columns:100px minmax(0,1.6fr) 90px 76px 84px minmax(0,1.4fr) 34px;
   align-items:center;gap:10px}
+/* A quote drops the Qty and Unit columns (Tess, 2026-08-26): image, material,
+   ref, note, remove. The header and line render the same cells, so the column
+   count matches. */
+.mo-quote .mo-line{grid-template-columns:100px minmax(0,1.6fr) 90px minmax(0,1.6fr) 34px}
 .mo-line-head{border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:2px}
 .mo-line-head span{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--faint)}
 .mo-cell-img img{width:100px;height:100px;object-fit:cover;display:block;background:var(--chip)}
@@ -742,6 +746,8 @@ body.notes-open .wrap{padding-right:378px}
 .mo-danger{grid-column:1 / -1;margin-top:4px}
 @media (max-width:720px){.mo-meta{grid-template-columns:1fr}
   .mo-line{grid-template-columns:80px minmax(0,1fr) 64px 70px 34px;row-gap:2px}
+  /* On a phone a quote has no qty/unit either — image, material, remove. */
+  .mo-quote .mo-line{grid-template-columns:80px minmax(0,1fr) 34px}
   .mo-cell-ref,.mo-cell-note{display:none}
   /* Full width for the details on a phone — no room to indent. */
   .mo-detail{padding-left:0}
@@ -4765,6 +4771,8 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-row{break-inside:avoid;border-color:#e6e6e6;padding:8px 0}
   .mo-line{grid-template-columns:minmax(0,1.7fr) 100px 66px 66px minmax(0,1.4fr);
     gap:12px;color:#111}
+  /* The printed quote sheet: material, ref, note — no qty/unit (Tess, 2026-08-26). */
+  .mo-quote .mo-line{grid-template-columns:minmax(0,1.7fr) 100px minmax(0,1.6fr)}
   .mo-line-head{border-color:#bbb}
   .mo-line-head span{color:#888}
   .mo-cell-img,.mo-cell-x{display:none}

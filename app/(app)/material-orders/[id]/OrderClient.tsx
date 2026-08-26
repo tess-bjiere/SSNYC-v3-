@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Select from "@/app/components/Select";
-import { ORDER_STATUSES, ORDER_UNITS, type Order } from "@/lib/materialOrder";
+import { ORDER_STATUSES, ORDER_UNITS, docLabel, type Order, type OrderKind } from "@/lib/materialOrder";
 import {
   renameOrder,
   setOrderStatus,
@@ -30,6 +30,7 @@ export type PickMaterial = {
 // order (one page per supplier). Mirrors the linesheet's client.
 export default function OrderClient({
   id,
+  kind = "order",
   order,
   shipTo,
   notes,
@@ -37,6 +38,11 @@ export default function OrderClient({
   cover,
 }: {
   id: string;
+  // 'quote' drops the quantity and unit columns and relabels the document (Tess,
+  // 2026-08-26: "the same as the order page but doesnt include quantity or price
+  // and allows for notes to be added"). Everything else — the supplier grouping,
+  // the per-line note, the material spec and its AI-file link — is identical.
+  kind?: OrderKind;
   order: Order;
   shipTo: string;
   notes: string;
@@ -45,6 +51,9 @@ export default function OrderClient({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const quote = kind === "quote";
+  const listPath = quote ? "/quotes" : "/material-orders";
+  const noun = quote ? "quote" : "order";
 
   // Name — click to rename, like the linesheet.
   const [name, setName] = useState(order.name);
@@ -67,7 +76,7 @@ export default function OrderClient({
 
   // The PDF names itself from the order — the browser suggests document.title as
   // the filename, the same trick the linesheet and fitting deck use.
-  const fileTitle = `${name} — order`;
+  const fileTitle = `${name} — ${noun}`;
   useEffect(() => {
     const previous = document.title;
     document.title = fileTitle;
@@ -116,7 +125,7 @@ export default function OrderClient({
     start(async () => {
       await deleteOrder(id);
       // deleteOrder redirects to the list; refresh as a fallback.
-      router.push("/material-orders");
+      router.push(listPath);
     });
   }
 
@@ -131,7 +140,7 @@ export default function OrderClient({
   const empty = order.count === 0;
 
   return (
-    <div className="page mo-page">
+    <div className={"page mo-page" + (quote ? " mo-quote" : "")}>
       {/* --- Toolbar (not printed) --- */}
       <div className="page-head mo-head no-print">
         <div className="mo-title-wrap">
@@ -196,14 +205,14 @@ export default function OrderClient({
           <div className="mo-print-meta">
             <div className="mo-print-title">{name}</div>
             <div className="mo-print-date">
-              Purchase order · {order.statusLabel} · {cover.generatedOn}
+              {docLabel(kind)} · {order.statusLabel} · {cover.generatedOn}
             </div>
           </div>
         </div>
 
         {empty ? (
           <div className="empty no-print">
-            No materials on this order yet. Use “+ Add materials”, or select materials in the
+            No materials on this {noun} yet. Use “+ Add materials”, or select materials in the
             library and choose “Add to order”.
           </div>
         ) : (
@@ -226,8 +235,8 @@ export default function OrderClient({
                   <span className="mo-cell-img" />
                   <span className="mo-cell-name">Material</span>
                   <span className="mo-cell-ref">Ref</span>
-                  <span className="mo-cell-qty">Qty</span>
-                  <span className="mo-cell-unit">Unit</span>
+                  {!quote && <span className="mo-cell-qty">Qty</span>}
+                  {!quote && <span className="mo-cell-unit">Unit</span>}
                   <span className="mo-cell-note">Note</span>
                   <span className="mo-cell-x no-print" />
                 </div>
@@ -237,6 +246,7 @@ export default function OrderClient({
                     key={e.materialId}
                     orderId={id}
                     entry={e}
+                    quote={quote}
                     onRemove={() => remove(e.materialId)}
                     disabled={pending}
                   />
@@ -278,7 +288,7 @@ export default function OrderClient({
           />
         </label>
         <label className="mat-field mat-field-wide">
-          <span className="mat-label">Order notes</span>
+          <span className="mat-label">{quote ? "Quote notes" : "Order notes"}</span>
           <textarea
             className="textarea"
             rows={2}
@@ -296,7 +306,7 @@ export default function OrderClient({
             onMouseLeave={() => setArmDelete(false)}
             onClick={() => (armDelete ? doDelete() : setArmDelete(true))}
           >
-            {armDelete ? "Delete order?" : "Delete order"}
+            {armDelete ? `Delete ${noun}?` : `Delete ${noun}`}
           </button>
         </div>
       </div>
@@ -319,11 +329,13 @@ export default function OrderClient({
 function LineRow({
   orderId,
   entry,
+  quote,
   onRemove,
   disabled,
 }: {
   orderId: string;
   entry: Order["groups"][number]["entries"][number];
+  quote: boolean;
   onRemove: () => void;
   disabled: boolean;
 }) {
@@ -354,37 +366,43 @@ function LineRow({
         <span className="mo-name-line">{entry.name}</span>
       </span>
       <span className="mo-cell-ref">{entry.supplierRef || "—"}</span>
-      <span className="mo-cell-qty">
-        <input
-          className="input sm mo-qty-input no-print"
-          value={qty}
-          inputMode="decimal"
-          placeholder="—"
-          disabled={disabled}
-          onChange={(e) => setQty(e.target.value)}
-          onBlur={() => qty !== (entry.qty ?? "") && save({ qty })}
-        />
-        <span className="mo-print-val print-only">{qty || "—"}</span>
-      </span>
-      <span className="mo-cell-unit">
-        <Select
-          className="select sm mo-unit-input no-print"
-          aria-label="Unit"
-          value={unit}
-          onChange={(v) => {
-            setUnit(v);
-            save({ unit: v });
-          }}
-          options={[
-            { value: "", label: "—" },
-            ...ORDER_UNITS.map((u) => ({ value: u, label: u })),
-            ...(unit && !ORDER_UNITS.includes(unit as (typeof ORDER_UNITS)[number])
-              ? [{ value: unit, label: unit }]
-              : []),
-          ]}
-        />
-        <span className="mo-print-val print-only">{unit || ""}</span>
-      </span>
+      {/* Quantity and unit are the two columns a quote drops — it asks a supplier
+          to price the materials, so the numbers come back, they don't go out. */}
+      {!quote && (
+        <span className="mo-cell-qty">
+          <input
+            className="input sm mo-qty-input no-print"
+            value={qty}
+            inputMode="decimal"
+            placeholder="—"
+            disabled={disabled}
+            onChange={(e) => setQty(e.target.value)}
+            onBlur={() => qty !== (entry.qty ?? "") && save({ qty })}
+          />
+          <span className="mo-print-val print-only">{qty || "—"}</span>
+        </span>
+      )}
+      {!quote && (
+        <span className="mo-cell-unit">
+          <Select
+            className="select sm mo-unit-input no-print"
+            aria-label="Unit"
+            value={unit}
+            onChange={(v) => {
+              setUnit(v);
+              save({ unit: v });
+            }}
+            options={[
+              { value: "", label: "—" },
+              ...ORDER_UNITS.map((u) => ({ value: u, label: u })),
+              ...(unit && !ORDER_UNITS.includes(unit as (typeof ORDER_UNITS)[number])
+                ? [{ value: unit, label: unit }]
+                : []),
+            ]}
+          />
+          <span className="mo-print-val print-only">{unit || ""}</span>
+        </span>
+      )}
       <span className="mo-cell-note">
         <input
           className="input sm no-print"
