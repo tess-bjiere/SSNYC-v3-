@@ -709,7 +709,9 @@ body.notes-open .wrap{padding-right:378px}
 /* A line is a control row (the grid) plus, beneath it, a full-width detail block.
    The row border and vertical rhythm live on the wrapper so the details sit
    inside the same ruled band as the material they belong to (Tess, 2026-08-20). */
-.mo-row{border-bottom:1px solid var(--hair);padding:9px 0}
+/* Room between products (Tess, 2026-08-26: "add more space between each product
+   on the quote / order forms"). */
+.mo-row{border-bottom:1px solid var(--hair);padding:16px 0}
 .mo-row:last-child{border-bottom:none}
 .mo-line{display:grid;grid-template-columns:100px minmax(0,1.6fr) 90px 76px 84px minmax(0,1.4fr) 34px;
   align-items:center;gap:10px}
@@ -736,8 +738,9 @@ body.notes-open .wrap{padding-right:378px}
 .mo-fact-k{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);line-height:1.1}
 .mo-fact-v{font-size:var(--t-meta);color:var(--ink);word-break:break-word;line-height:1.35}
 .mo-ai-row{margin-top:11px}
-.mo-ai{font-size:var(--t-meta);color:var(--accent,#2563eb);width:fit-content}
-.mo-ai-print{font-size:var(--t-meta);color:#333;word-break:break-all}
+/* A blue hyperlink with a short label; the long path lives in the href, hidden
+   (Tess, 2026-08-26). Prints/PDFs blue too — see the print block. */
+.mo-ai{font-size:var(--t-meta);color:#2563eb;text-decoration:underline;width:fit-content}
 .mo-cell-ref{font-size:var(--t-meta);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mo-cell-x{text-align:right}
 .mo-qty-input{width:100%;text-align:right}
@@ -4773,7 +4776,7 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-group-head{border-color:#ccc}
   .mo-supplier{color:#111}.mo-unassigned{color:#666}
   .mo-group-n{color:#999}
-  .mo-row{break-inside:avoid;border-color:#e6e6e6;padding:8px 0}
+  .mo-row{break-inside:avoid;border-color:#e6e6e6;padding:16px 0}
   .mo-line{grid-template-columns:minmax(0,1.7fr) 100px 66px 66px minmax(0,1.4fr);
     gap:12px;color:#111}
   /* The printed quote sheet: material, ref, note — no qty/unit (Tess, 2026-08-26). */
@@ -4787,7 +4790,9 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-detail{padding-left:0;margin-top:6px}
   .mo-fact-k{color:#888}
   .mo-fact-v{color:#333}
-  .mo-ai-print{color:#333}
+  /* The AI-file link stays a blue hyperlink in the PDF, short label only (Tess,
+     2026-08-26: "clickable blue hyperlink with full path hidden"). */
+  .mo-ai{color:#2563eb;text-decoration:underline}
   .mo-print-val{color:#111;font-size:12px}
   .mo-cell-qty .mo-print-val{font-weight:var(--w-title)}
   /* Ship-to + notes, printed once at the top of page 1 (Tess, 2026-08-26). Each is

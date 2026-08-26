@@ -464,11 +464,14 @@ function LineRow({
           {entry.aiFile && (
             <div className="mo-fact mo-fact-wide mo-ai-row">
               <span className="mo-fact-k">AI file</span>
-              <a className="mo-ai no-print" href={entry.aiFile} target="_blank" rel="noreferrer">
+              {/* A clickable blue link, on screen AND in the PDF, showing a short
+                  label rather than the long Dropbox path (Tess, 2026-08-26: "make
+                  ai file link a clickable blue hyperlink with full path hidden").
+                  The href keeps the full URL, so the link still opens the file —
+                  Save-as-PDF preserves the anchor, so the label stays clickable. */}
+              <a className="mo-ai" href={entry.aiFile} target="_blank" rel="noreferrer">
                 Open AI file ↗
               </a>
-              {/* Printed as the bare URL so it can be copied off the PDF / email. */}
-              <span className="mo-ai-print print-only">{entry.aiFile}</span>
             </div>
           )}
         </div>
