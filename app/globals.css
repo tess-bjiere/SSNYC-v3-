@@ -4383,6 +4383,29 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   cursor:pointer;flex:0 0 auto;border-radius:0}
 .ls-hexpick::-webkit-color-swatch-wrapper{padding:2px}
 .ls-hexpick::-webkit-color-swatch{border:none}
+/* Each chip circle is itself a colour picker (Tess, 2026-08-26): the swatch is a
+   label over a hidden native colour input, so a click opens the picker on that
+   chip. A little ring on hover says it is pressable. */
+.ls-color-chip-pick{cursor:pointer;position:relative;overflow:hidden}
+.ls-color-chip-pick:hover{box-shadow:0 0 0 2px var(--field),0 0 0 3px var(--muted)}
+.ls-chip-pick-input{position:absolute;inset:0;width:100%;height:100%;
+  opacity:0;border:0;padding:0;margin:0;cursor:pointer}
+
+/* The linesheet image-upload strip (Tess, 2026-08-26: "the space to upload a
+   styled image or croquis on the line sheet functionality"): three compact slots
+   under the entry title, each a dot (filled/empty) + label + Add/Replace. */
+.ls-imgstrip{display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  margin:2px 0 4px;padding:6px 8px;border:1px dashed var(--line);background:var(--panel)}
+.ls-imgslot{display:inline-flex;align-items:center;gap:5px}
+.ls-imgslot-file{display:none}
+.ls-imgslot-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;
+  border:1px solid var(--muted);background:transparent}
+.ls-imgslot-dot.has{background:var(--good,#3a7);border-color:var(--good,#3a7)}
+.ls-imgslot-label{font-size:var(--t-meta);color:var(--muted)}
+.ls-imgslot-x{background:none;border:none;cursor:pointer;color:var(--faint);
+  font-size:var(--t-body);line-height:1;padding:0 2px}
+.ls-imgslot-x:hover,.ls-imgslot-x.armed{color:var(--danger)}
+.ls-imgslot-err{font-size:var(--t-micro);color:var(--danger)}
 
 .ls-remove{position:absolute;top:6px;right:6px;background:var(--panel);border:1px solid var(--line);
   color:var(--faint);cursor:pointer;font-size:var(--t-meta);line-height:1;padding:2px 6px;

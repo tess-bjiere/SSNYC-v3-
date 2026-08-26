@@ -7,6 +7,7 @@ import { groupByColor, swatchForColor, baseColorNames, LINESHEET_LAYOUTS } from 
 import SizeToggle from "@/app/components/SizeToggle";
 import Select from "@/app/components/Select";
 import Linked from "@/app/components/Linked";
+import LsImageSlot from "./LsImageSlot";
 import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
@@ -138,17 +139,34 @@ function ColorsEditor({
   function drop(name: string) {
     onSave(current.filter((c) => c.name.toLowerCase() !== name.toLowerCase()));
   }
+  // Recolour a chip that already exists (Tess, 2026-08-26: "i also want the
+  // ability to use color picker for color chip circles"). The chip's circle is
+  // the swatch of a hidden native colour input, so clicking any chip opens the
+  // picker on it; the pick writes that chip's hex and leaves its name alone.
+  function recolor(name: string, hex: string) {
+    onSave(
+      current.map((c) => (c.name.toLowerCase() === name.toLowerCase() ? { ...c, hex } : c))
+    );
+  }
 
   return (
     <div className="ls-coloredit no-print">
       <div className="ls-coloredit-chips">
         {current.map((c, i) => (
           <span className="ls-coloredit-chip" key={i}>
-            <span
-              className="ls-color-chip"
+            <label
+              className="ls-color-chip ls-color-chip-pick"
               style={{ background: c.hex ?? c.name.toLowerCase() }}
-              aria-hidden="true"
-            />
+              title={`Pick a colour for ${c.name}`}
+            >
+              <input
+                type="color"
+                className="ls-chip-pick-input"
+                value={c.hex ?? "#000000"}
+                onChange={(e) => recolor(c.name, e.target.value)}
+                aria-label={`Pick a colour for ${c.name}`}
+              />
+            </label>
             <span className="ls-coloredit-name">{c.name}</span>
             <button
               type="button"
@@ -689,6 +707,20 @@ export default function Linesheet({
                     {armed === e.styleId ? "Remove?" : "Remove"}
                   </button>
                 </header>
+
+                {/* The linesheet's own upload space for the styled photo and
+                    croquis (Tess, 2026-08-26: "im still missing the space to
+                    upload a styled image or croquis on the line sheet
+                    functionality"). All three slots show whatever the layout,
+                    so a page can be filled and the layout switched freely; they
+                    write to the style's photos map, the same place the profile's
+                    Sketch modal writes, so an image added here is the style's
+                    everywhere. Screen-only — never in the export. */}
+                <div className="ls-imgstrip no-print">
+                  <LsImageSlot styleId={e.styleId} slotId="styled" label="Styled photo" current={e.styledUrl} />
+                  <LsImageSlot styleId={e.styleId} slotId="croquis" label="Croquis" current={e.croquisFront} />
+                  <LsImageSlot styleId={e.styleId} slotId="croquis_back" label="Croquis back" current={e.croquisBack} />
+                </div>
 
                 {/* Deck pg 1: the technical flats sit under the title, above the
                     facts, so the styled photo keeps the whole left page. */}
