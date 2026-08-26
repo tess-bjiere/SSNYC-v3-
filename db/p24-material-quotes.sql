@@ -15,11 +15,12 @@
 -- nothing changes for orders. To undo: stop reading the column; the quotes simply
 -- become orders again.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo), where material
--- orders live. Run this by hand in the Supabase SQL editor of the Loyalist project
--- (axwavdjhzvtluvsixfjq) if/when material orders are switched on there too — until
--- then the pages render their empty states (the readers tolerate the missing column),
--- so nothing breaks before you run it.
+-- NOT yet applied anywhere as of 2026-08-26 — run it by hand in the Supabase SQL
+-- editor of BOTH projects: the FRED project (vjiwcreytvmxvxasyvoo), where
+-- material_orders already exists, and the Loyalist project (axwavdjhzvtluvsixfjq),
+-- where material_orders must be created first (db/p12-material-orders.sql) because
+-- material orders were never switched on there. The lists tolerate a missing column
+-- (they read as 'order'), but CREATING a quote needs this column to exist.
 
 alter table public.material_orders
   add column if not exists kind text not null default 'order';   -- 'order' | 'quote'

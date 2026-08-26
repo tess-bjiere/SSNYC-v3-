@@ -73,7 +73,7 @@ export async function createOrder(form: FormData) {
 
   const supabase = await createClient();
   const brand = await activeBrand();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from(TABLE)
     // `kind` is only sent for a quote, so ordinary order creation stays byte-for-byte
     // what it was and keeps working on a database where db/p24 has not been run yet
@@ -88,6 +88,18 @@ export async function createOrder(form: FormData) {
     })
     .select("id")
     .single();
+  // Surface a failed insert instead of swallowing it (Tess, 2026-08-26: "i type in
+  // a title and press add quote, nothing happens -- it just spins and the text
+  // disappears"). That silent spin was a create that failed — the material_orders
+  // table (or the quote `kind` column) not yet existing on this database — with the
+  // error dropped on the floor. A thrown error is visible; the fix is the migration.
+  if (error) {
+    throw new Error(
+      `Could not create the ${kind === "quote" ? "quote" : "order"}: ${error.message}. ` +
+        `If this says the table or the "kind" column is missing, run db/p12-material-orders.sql ` +
+        `and db/p24-material-quotes.sql on this brand's database.`
+    );
+  }
   revalidateOrders();
   // The detail page is shared between both kinds and reads the row's kind, so a
   // quote and an order open at the same route.
