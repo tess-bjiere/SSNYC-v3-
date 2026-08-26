@@ -2645,6 +2645,8 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .rich-hint{font-size:var(--t-micro);color:var(--faint);margin-left:4px}
 .rich-editor{position:relative;border:1px solid var(--line);background:var(--field);
   min-height:88px;padding:9px 11px}
+/* While the editor chunk loads — a quiet box the same size, so nothing jumps. */
+.rich-editor.rich-loading{min-height:106px}
 .rich-editor .ProseMirror{outline:none;min-height:70px;font-size:var(--t-body);
   color:var(--ink);line-height:1.5;white-space:pre-wrap}
 .rich-editor .ProseMirror:focus{outline:none}

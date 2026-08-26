@@ -1091,14 +1091,14 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 )}
               </div>
               {/* Customs — HS code, country of origin and (off FRED) the shipping
-                  weight. Tucked into a collapsed section because they travel with a
-                  shipment, get filled the week something ships, and clutter the
-                  design-stage form the rest of the time (Tess, 2026-08-24 field
-                  audit: "tuck HS code / Country / Weight into a Customs
-                  sub-section"). Collapsed inputs still post, so nothing is blanked.
+                  weight. In a Customs section because they travel with a shipment
+                  (Tess, 2026-08-24 field audit: "tuck HS code / Country / Weight
+                  into a Customs sub-section"), but OPEN by default now — collapsed,
+                  Country of origin read as "not available" because the summary hid
+                  it (Tess, 2026-08-24). It still collapses; it just starts shown.
                   step="0.001" keeps the browser's validation in step with the three
                   decimals the column stores. */}
-              <details className="edit-customs">
+              <details open className="edit-customs">
                 <summary>Customs</summary>
                 <div className="row3">
                   <div className="field"><label>HS code</label><input className="input" name="hs_code" defaultValue={st.hs_code ?? ""} /></div>
