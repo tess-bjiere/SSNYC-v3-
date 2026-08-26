@@ -742,8 +742,13 @@ body.notes-open .wrap{padding-right:378px}
 .mo-cell-x{text-align:right}
 .mo-qty-input{width:100%;text-align:right}
 .mo-unit-input{width:100%}
-.mo-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;max-width:720px;margin-top:22px}
-.mo-danger{grid-column:1 / -1;margin-top:4px}
+/* Ship-to and notes each get their own stacked, full-width section (Tess,
+   2026-08-26: "make notes it's own section ... organized ... with multiple lines
+   as opposed to squeezing everything onto one line"), a ruled band apart. */
+.mo-meta{display:flex;flex-direction:column;gap:18px;max-width:720px;margin-top:26px}
+.mo-metasec{display:flex;flex-direction:column;gap:6px;padding-top:16px;border-top:1px solid var(--hair)}
+.mo-metasec:first-child{padding-top:0;border-top:none}
+.mo-danger{margin-top:4px}
 @media (max-width:720px){.mo-meta{grid-template-columns:1fr}
   .mo-line{grid-template-columns:80px minmax(0,1fr) 64px 70px 34px;row-gap:2px}
   /* On a phone a quote has no qty/unit either — image, material, remove. */
@@ -4785,10 +4790,13 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-ai-print{color:#333}
   .mo-print-val{color:#111;font-size:12px}
   .mo-cell-qty .mo-print-val{font-weight:var(--w-title)}
-  .mo-group-foot{margin-top:14px;border-top:1px solid #ddd;padding-top:8px;
-    display:flex;flex-direction:column;gap:5px}
-  .mo-foot-line{display:flex;gap:10px;font-size:11px;color:#333}
-  .mo-foot-k{min-width:60px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999}
+  /* Ship-to + notes, printed once at the top of page 1 (Tess, 2026-08-26). Each is
+     its own block, label over value, with the entered line breaks kept (pre-wrap)
+     instead of run onto one line. */
+  .mo-doc-meta{margin:14px 0 20px;padding-bottom:14px;border-bottom:1px solid #ddd;
+    display:flex;flex-direction:column;gap:13px}
+  .mo-doc-meta-k{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#888;margin-bottom:4px}
+  .mo-doc-meta-v{font-size:12.5px;color:#111;line-height:1.5;white-space:pre-wrap}
 }
 
 /* --- Colour standards (Tess, 2026-08-23: "can you create a color standard

@@ -210,6 +210,28 @@ export default function OrderClient({
           </div>
         </div>
 
+        {/* Ship-to and the general notes print ONCE, here on page 1, not repeated
+            at the foot of every supplier page (Tess, 2026-08-26: "dont put ship to
+            and general notes on bottom of every page ... those sections should only
+            live on page 1"). Each is its own block with its lines kept, shown the
+            way the tool holds them rather than squeezed onto a single line. */}
+        {(ship.trim() || note.trim()) && (
+          <div className="mo-doc-meta print-only">
+            {ship.trim() && (
+              <div className="mo-doc-meta-block">
+                <div className="mo-doc-meta-k">Ship to</div>
+                <div className="mo-doc-meta-v">{ship}</div>
+              </div>
+            )}
+            {note.trim() && (
+              <div className="mo-doc-meta-block">
+                <div className="mo-doc-meta-k">{quote ? "Quote notes" : "Order notes"}</div>
+                <div className="mo-doc-meta-v">{note}</div>
+              </div>
+            )}
+          </div>
+        )}
+
         {empty ? (
           <div className="empty no-print">
             No materials on this {noun} yet. Use “+ Add materials”, or select materials in the
@@ -227,8 +249,6 @@ export default function OrderClient({
                 </span>
               </div>
 
-              {/* Ship-to and notes ride once per supplier page in print so each
-                  sent page is a complete PO. On screen they render once, below. */}
               <div className="mo-lines">
                 {/* Header row (screen + print). */}
                 <div className="mo-line mo-line-head">
@@ -252,52 +272,37 @@ export default function OrderClient({
                   />
                 ))}
               </div>
-
-              {(ship.trim() || note.trim()) && (
-                <div className="mo-group-foot print-only">
-                  {ship.trim() && (
-                    <div className="mo-foot-line">
-                      <span className="mo-foot-k">Ship to</span>
-                      <span>{ship}</span>
-                    </div>
-                  )}
-                  {note.trim() && (
-                    <div className="mo-foot-line">
-                      <span className="mo-foot-k">Notes</span>
-                      <span>{note}</span>
-                    </div>
-                  )}
-                </div>
-              )}
             </section>
           ))
         )}
       </div>
 
-      {/* --- Delivery + notes + delete (not printed) --- */}
+      {/* --- Delivery + notes + delete (not printed). Each is its own stacked,
+          full-width section (Tess, 2026-08-26: "make notes it's own section in the
+          quote / order form"), with room for the several lines they usually hold. */}
       <div className="mo-meta no-print">
-        <label className="mat-field mat-field-wide">
+        <section className="mo-metasec">
           <span className="mat-label">Ship to</span>
           <textarea
             className="textarea"
-            rows={2}
+            rows={3}
             value={ship}
-            placeholder="Delivery address for this order"
+            placeholder={`Delivery address for this ${noun}`}
             onChange={(e) => setShip(e.target.value)}
             onBlur={saveShip}
           />
-        </label>
-        <label className="mat-field mat-field-wide">
+        </section>
+        <section className="mo-metasec">
           <span className="mat-label">{quote ? "Quote notes" : "Order notes"}</span>
           <textarea
             className="textarea"
-            rows={2}
+            rows={5}
             value={note}
-            placeholder="Anything the supplier should know"
+            placeholder="Anything the supplier should know — one point per line"
             onChange={(e) => setNote(e.target.value)}
             onBlur={saveNote}
           />
-        </label>
+        </section>
         <div className="mo-danger">
           <button
             type="button"
