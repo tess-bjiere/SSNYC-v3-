@@ -7,7 +7,7 @@ import { groupByColor, swatchForColor, baseColorNames, LINESHEET_LAYOUTS } from 
 import SizeToggle from "@/app/components/SizeToggle";
 import Select from "@/app/components/Select";
 import Linked from "@/app/components/Linked";
-import LsImageSlot from "./LsImageSlot";
+import LsImageSpot from "./LsImageSpot";
 import type {
   Linesheet as LinesheetModel,
   LinesheetEntry,
@@ -635,23 +635,20 @@ export default function Linesheet({
                   )}
                 </div>
               ) : null;
-            const croquisPair =
-              e.croquisFront || e.croquisBack ? (
-                <div className="ls-croquis">
-                  {e.croquisFront && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={e.croquisFront} alt={`${e.name} croquis`} />
-                  )}
-                  {e.croquisBack && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={e.croquisBack} alt={`${e.name} croquis back`} />
-                  )}
-                </div>
-              ) : null;
-            const styledHero = e.styledUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="ls-hero" src={e.styledUrl} alt={e.name} />
-            ) : null;
+            // The styled photo and the croquis are upload spots (Tess,
+            // 2026-08-26: "styled photo or croquis go where the crosshatched
+            // lines are on the left"): the picture where it will print, or, when
+            // empty, the crosshatched zone itself as a drop-to-upload target.
+            // Always rendered — an empty spot is how you add the image.
+            const croquisPair = (
+              <div className="ls-croquis">
+                <LsImageSpot styleId={e.styleId} slotId="croquis" label="Croquis" url={e.croquisFront} />
+                <LsImageSpot styleId={e.styleId} slotId="croquis_back" label="Croquis back" url={e.croquisBack} />
+              </div>
+            );
+            const styledHero = (
+              <LsImageSpot styleId={e.styleId} slotId="styled" label="Styled photo" url={e.styledUrl} imgClass="ls-hero" />
+            );
             // The colour swatches at the foot of the styled-flats page (deck pg 1):
             // the colourway photos as small squares, else the named colour chips.
             const swatches =
@@ -672,18 +669,24 @@ export default function Linesheet({
             >
               {dragHandle(e.styleId)}
 
-              {/* LEFT — the big image: a styled photo, or the colourway grid. */}
-              <StyleOpener
-                styleId={e.styleId}
-                multi={multi(e.styleId)}
-                onOpen={setOpenStyle}
-                className={
-                  "ls-visual" +
-                  ((primaryStyled ? !e.styledUrl : e.colorways.length === 0) ? " none" : "")
-                }
-              >
-                {primaryStyled ? styledHero : e.colorways.length > 0 ? colorwayGrid : null}
-              </StyleOpener>
+              {/* LEFT — the big image. On the styled layouts it is the styled
+                  photo's upload spot (the crosshatched zone IS the drop target,
+                  so it can't be a link to the profile). On the colourway layouts
+                  it is the colourway grid, still a click into the style; empty,
+                  it stays the crosshatch link since colourways are added on the
+                  profile gallery, not as a single slot. */}
+              {primaryStyled ? (
+                <div className="ls-visual">{styledHero}</div>
+              ) : (
+                <StyleOpener
+                  styleId={e.styleId}
+                  multi={multi(e.styleId)}
+                  onOpen={setOpenStyle}
+                  className={"ls-visual" + (e.colorways.length === 0 ? " none" : "")}
+                >
+                  {e.colorways.length > 0 ? colorwayGrid : null}
+                </StyleOpener>
+              )}
 
               {/* RIGHT — eyebrow, serif title, [secondary images], facts. */}
               <div className="ls-entry-info">
@@ -707,20 +710,6 @@ export default function Linesheet({
                     {armed === e.styleId ? "Remove?" : "Remove"}
                   </button>
                 </header>
-
-                {/* The linesheet's own upload space for the styled photo and
-                    croquis (Tess, 2026-08-26: "im still missing the space to
-                    upload a styled image or croquis on the line sheet
-                    functionality"). All three slots show whatever the layout,
-                    so a page can be filled and the layout switched freely; they
-                    write to the style's photos map, the same place the profile's
-                    Sketch modal writes, so an image added here is the style's
-                    everywhere. Screen-only — never in the export. */}
-                <div className="ls-imgstrip no-print">
-                  <LsImageSlot styleId={e.styleId} slotId="styled" label="Styled photo" current={e.styledUrl} />
-                  <LsImageSlot styleId={e.styleId} slotId="croquis" label="Croquis" current={e.croquisFront} />
-                  <LsImageSlot styleId={e.styleId} slotId="croquis_back" label="Croquis back" current={e.croquisBack} />
-                </div>
 
                 {/* Deck pg 1: the technical flats sit under the title, above the
                     facts, so the styled photo keeps the whole left page. */}
@@ -821,10 +810,10 @@ export default function Linesheet({
                 {layout === "styled_colorways" && e.colorways.length > 0 && (
                   <div className="ls-secondary">{colorwayGrid}</div>
                 )}
-                {layout === "colorways_styled" && styledHero && (
+                {layout === "colorways_styled" && (
                   <div className="ls-secondary">{styledHero}</div>
                 )}
-                {layout === "colorways_croquis" && croquisPair && (
+                {layout === "colorways_croquis" && (
                   <div className="ls-secondary">{croquisPair}</div>
                 )}
               </div>

@@ -4391,21 +4391,36 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-chip-pick-input{position:absolute;inset:0;width:100%;height:100%;
   opacity:0;border:0;padding:0;margin:0;cursor:pointer}
 
-/* The linesheet image-upload strip (Tess, 2026-08-26: "the space to upload a
-   styled image or croquis on the line sheet functionality"): three compact slots
-   under the entry title, each a dot (filled/empty) + label + Add/Replace. */
-.ls-imgstrip{display:flex;flex-wrap:wrap;gap:14px;align-items:center;
-  margin:2px 0 4px;padding:6px 8px;border:1px dashed var(--line);background:var(--panel)}
-.ls-imgslot{display:inline-flex;align-items:center;gap:5px}
+/* The linesheet image spot (Tess, 2026-08-26: "styled photo or croquis go where
+   the crosshatched lines are on the left"). The spot IS the upload target: empty,
+   it is the crosshatched drop zone with an Add prompt; filled, it is the image as
+   it prints, with a hover-only Replace / Remove. The wrapper passes its size
+   through so the image sizes exactly as it did before (the print/screen rules key
+   off .ls-hero / .ls-croquis img, which still match through the wrapper). */
 .ls-imgslot-file{display:none}
-.ls-imgslot-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;
-  border:1px solid var(--muted);background:transparent}
-.ls-imgslot-dot.has{background:var(--good,#3a7);border-color:var(--good,#3a7)}
-.ls-imgslot-label{font-size:var(--t-meta);color:var(--muted)}
-.ls-imgslot-x{background:none;border:none;cursor:pointer;color:var(--faint);
-  font-size:var(--t-body);line-height:1;padding:0 2px}
-.ls-imgslot-x:hover,.ls-imgslot-x.armed{color:var(--danger)}
-.ls-imgslot-err{font-size:var(--t-micro);color:var(--danger)}
+.ls-imgslot-err{display:block;font-size:var(--t-micro);color:var(--danger);margin-top:4px}
+.ls-imgspot{position:relative;min-width:0;width:100%}
+.ls-imgspot > img{display:block;width:100%}
+.ls-imgspot.empty{min-height:200px;display:flex}
+.ls-secondary .ls-imgspot.empty{min-height:130px}
+.ls-croquis > .ls-imgspot{flex:1 1 0;min-width:0}
+.ls-croquis > .ls-imgspot.empty{min-height:150px}
+.ls-imgspot-add{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:5px;width:100%;padding:18px;cursor:pointer;color:var(--muted);
+  font-family:inherit;border:1px dashed var(--line);
+  background:repeating-linear-gradient(45deg,var(--field),var(--field) 7px,transparent 7px,transparent 14px)}
+.ls-imgspot-add:hover,.ls-imgspot.over .ls-imgspot-add{border-color:var(--accent);
+  color:var(--ink);background:var(--field)}
+.ls-imgspot-plus{font-size:var(--t-display);line-height:1}
+.ls-imgspot-add-label{font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.1em}
+.ls-imgspot-hint{font-size:var(--t-micro);color:var(--faint)}
+.ls-imgspot-tools{position:absolute;top:6px;right:6px;z-index:2;gap:4px;display:none}
+.ls-imgspot:hover .ls-imgspot-tools{display:inline-flex}
+.ls-imgspot-btn{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-family:inherit;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.08em;
+  padding:3px 7px;cursor:pointer}
+.ls-imgspot-btn:hover{color:var(--ink)}
+.ls-imgspot-btn.danger:hover,.ls-imgspot-btn.danger.armed{color:var(--danger);border-color:var(--danger)}
 
 .ls-remove{position:absolute;top:6px;right:6px;background:var(--panel);border:1px solid var(--line);
   color:var(--faint);cursor:pointer;font-size:var(--t-meta);line-height:1;padding:2px 6px;
@@ -4659,6 +4674,11 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   /* LEFT image zone. min-width:0 so a raster picture shrinks to its box instead
      of forcing the column wider (the overlap fix, 2026-08-24). */
   .ls-visual{min-width:0;align-self:stretch;display:flex;align-items:center;justify-content:center}
+  /* The styled photo now sits in an upload spot; the spot stretches to fill the
+     zone so the image sizes exactly as it did as a direct child. The empty spot
+     never prints (its Add prompt is no-print) — a blank page zone, as before. */
+  .ls-visual > .ls-imgspot{width:100%;height:100%;align-self:stretch;display:flex;
+    align-items:center;justify-content:center}
   .ls-hero{width:100%;height:100%;max-height:calc(98vh - 1.3in);object-fit:contain;min-width:0}
   /* On a styled-primary page the photo fills its column edge to edge (deck pg 1–2). */
   .ls-lay-styled_flats .ls-visual .ls-hero,
@@ -4690,7 +4710,12 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .ls-secondary .ls-cw-grid img{max-height:1.9in}
   .ls-secondary .ls-hero{width:100%;height:auto;max-height:3.4in;object-fit:contain}
   .ls-croquis{display:flex;gap:0.2in;align-items:flex-end;min-width:0}
-  .ls-croquis img{flex:1 1 0;min-width:0;max-width:100%;max-height:3.5in;object-fit:contain}
+  .ls-croquis > .ls-imgspot{flex:1 1 0;min-width:0}
+  .ls-croquis img{min-width:0;max-width:100%;max-height:3.5in;object-fit:contain}
+  /* An empty spot is a screen-only invitation to upload; it never prints, so a
+     blank styled/croquis zone leaves the page blank (as it did before) rather
+     than printing the crosshatch or reserving a gap. */
+  .ls-imgspot.empty{display:none}
   .ls-swatches{display:flex;flex-wrap:wrap;gap:0.1in;margin-top:0.3in}
   .ls-swatches img{width:0.62in;height:0.62in;object-fit:cover;border:1px solid #ececec;background:#fafafa}
 

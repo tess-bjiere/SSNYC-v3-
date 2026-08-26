@@ -90,7 +90,15 @@ export const mockStyles: Style[] = [
   // one with a front/back pair, one with a front alone, and the rest still
   // falling through to the inherited cover. All three states on one grid.
   photos: (i === 0
-    ? { sketch: ph(tones[(i + 3) % tones.length]), sketch_back: ph(tones[(i + 4) % tones.length]) }
+    ? {
+        sketch: ph(tones[(i + 3) % tones.length]),
+        sketch_back: ph(tones[(i + 4) % tones.length]),
+        // A styled photo and a croquis pair so the linesheet's styled/croquis
+        // upload spots can be previewed in their filled state locally.
+        styled: ph(tones[(i + 1) % tones.length]),
+        croquis: ph(tones[(i + 2) % tones.length]),
+        croquis_back: ph(tones[(i + 5) % tones.length]),
+      }
     : i === 1
       ? { sketch: ph(tones[(i + 3) % tones.length]) }
       : null) as Record<string, string> | null,
