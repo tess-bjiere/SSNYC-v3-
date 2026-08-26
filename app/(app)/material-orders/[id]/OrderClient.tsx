@@ -249,18 +249,11 @@ export default function OrderClient({
                 </span>
               </div>
 
+              {/* No column-header row any more — each product is a self-labelled
+                  block (name + ref, then a spec grid), so the old MATERIAL / REF /
+                  NOTE header that set up columns the specs never followed is gone
+                  (Tess, 2026-08-26: "make this abundantly clear and readable"). */}
               <div className="mo-lines">
-                {/* Header row (screen + print). */}
-                <div className="mo-line mo-line-head">
-                  <span className="mo-cell-img" />
-                  <span className="mo-cell-name">Material</span>
-                  <span className="mo-cell-ref">Ref</span>
-                  {!quote && <span className="mo-cell-qty">Qty</span>}
-                  {!quote && <span className="mo-cell-unit">Unit</span>}
-                  <span className="mo-cell-note">Note</span>
-                  <span className="mo-cell-x no-print" />
-                </div>
-
                 {g.entries.map((e) => (
                   <LineRow
                     key={e.materialId}
@@ -358,97 +351,95 @@ function LineRow({
 
   return (
     <div className="mo-row">
-      <div className="mo-line mo-line-data">
-      <span className="mo-cell-img">
-        {entry.thumb ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={entry.thumb} alt={entry.name} loading="lazy" />
-        ) : (
-          <span className="mo-noimg" />
-        )}
-      </span>
-      <span className="mo-cell-name">
-        <span className="mo-name-line">{entry.name}</span>
-      </span>
-      <span className="mo-cell-ref">{entry.supplierRef || "—"}</span>
-      {/* Quantity and unit are the two columns a quote drops — it asks a supplier
-          to price the materials, so the numbers come back, they don't go out. */}
-      {!quote && (
-        <span className="mo-cell-qty">
-          <input
-            className="input sm mo-qty-input no-print"
-            value={qty}
-            inputMode="decimal"
-            placeholder="—"
-            disabled={disabled}
-            onChange={(e) => setQty(e.target.value)}
-            onBlur={() => qty !== (entry.qty ?? "") && save({ qty })}
-          />
-          <span className="mo-print-val print-only">{qty || "—"}</span>
+      {/* One product, one coherent block: a bold name with its ref, then the spec
+          grid — no competing table columns (Tess, 2026-08-26). */}
+      <div className="mo-prod-head">
+        <span className="mo-prod-thumb no-print">
+          {entry.thumb ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={entry.thumb} alt={entry.name} loading="lazy" />
+          ) : (
+            <span className="mo-noimg" />
+          )}
         </span>
-      )}
-      {!quote && (
-        <span className="mo-cell-unit">
-          <Select
-            className="select sm mo-unit-input no-print"
-            aria-label="Unit"
-            value={unit}
-            onChange={(v) => {
-              setUnit(v);
-              save({ unit: v });
-            }}
-            options={[
-              { value: "", label: "—" },
-              ...ORDER_UNITS.map((u) => ({ value: u, label: u })),
-              ...(unit && !ORDER_UNITS.includes(unit as (typeof ORDER_UNITS)[number])
-                ? [{ value: unit, label: unit }]
-                : []),
-            ]}
-          />
-          <span className="mo-print-val print-only">{unit || ""}</span>
-        </span>
-      )}
-      <span className="mo-cell-note">
-        <input
-          className="input sm no-print"
-          value={note}
-          placeholder="—"
-          disabled={disabled}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={() => note !== (entry.note ?? "") && save({ note })}
-        />
-        {/* In print the note carries its own small "Notes" label (Tess,
-            2026-08-26: "add small notes title in front of the notes for item"),
-            like the spec facts, so a note far down a page reads without hunting
-            for the column header. Nothing prints when the line has no note. */}
-        {note && (
-          <span className="mo-note-print print-only">
-            <span className="mo-fact-k">Notes</span>
-            {note}
+        <div className="mo-prod-title">
+          <span className="mo-prod-name">{entry.name}</span>
+          {entry.supplierRef && <span className="mo-prod-ref">{entry.supplierRef}</span>}
+        </div>
+        {/* An order prints the quantity with the product; a quote carries none. */}
+        {!quote && (qty.trim() || unit.trim()) && (
+          <span className="mo-prod-qty print-only">
+            {[qty.trim(), unit.trim()].filter(Boolean).join(" ")}
           </span>
         )}
-      </span>
-      <span className="mo-cell-x no-print">
-        <button
-          type="button"
-          className={"btn link sm" + (arm ? " arm" : "")}
-          disabled={disabled}
-          title="Remove line"
-          onMouseLeave={() => setArm(false)}
-          onClick={() => (arm ? onRemove() : setArm(true))}
-        >
-          {arm ? "Remove?" : "✕"}
-        </button>
-      </span>
+        {/* Screen-only editors, each self-labelled now that there is no column head. */}
+        <div className="mo-prod-edit no-print">
+          {!quote && (
+            <label className="mo-edit-field">
+              <span className="mo-edit-k">Qty</span>
+              <input
+                className="input sm mo-qty-input"
+                value={qty}
+                inputMode="decimal"
+                placeholder="—"
+                disabled={disabled}
+                onChange={(e) => setQty(e.target.value)}
+                onBlur={() => qty !== (entry.qty ?? "") && save({ qty })}
+              />
+            </label>
+          )}
+          {!quote && (
+            <label className="mo-edit-field">
+              <span className="mo-edit-k">Unit</span>
+              <Select
+                className="select sm mo-unit-input"
+                aria-label="Unit"
+                value={unit}
+                onChange={(v) => {
+                  setUnit(v);
+                  save({ unit: v });
+                }}
+                options={[
+                  { value: "", label: "—" },
+                  ...ORDER_UNITS.map((u) => ({ value: u, label: u })),
+                  ...(unit && !ORDER_UNITS.includes(unit as (typeof ORDER_UNITS)[number])
+                    ? [{ value: unit, label: unit }]
+                    : []),
+                ]}
+              />
+            </label>
+          )}
+          <label className="mo-edit-field mo-edit-note">
+            <span className="mo-edit-k">Note</span>
+            <input
+              className="input sm"
+              value={note}
+              placeholder="—"
+              disabled={disabled}
+              onChange={(e) => setNote(e.target.value)}
+              onBlur={() => note !== (entry.note ?? "") && save({ note })}
+            />
+          </label>
+          <button
+            type="button"
+            className={"btn link sm mo-edit-x" + (arm ? " arm" : "")}
+            disabled={disabled}
+            title="Remove line"
+            onMouseLeave={() => setArm(false)}
+            onClick={() => (arm ? onRemove() : setArm(true))}
+          >
+            {arm ? "Remove?" : "✕"}
+          </button>
+        </div>
       </div>
 
-      {/* The full profile spec on its own full-width row, indented under the name:
-          an aligned label/value grid so every field is easy to scan, with Notes
-          given the whole width since it runs long (Tess, 2026-08-20: "organize the
-          product details / notes in a clear and logical way"). */}
-      {(entry.details.length > 0 || entry.aiFile) && (
+      {/* The spec grid, the per-line note, and the AI-file link — every field on
+          its own label-over-value cell so the block is easy to scan (Tess,
+          2026-08-20: "organize the product details / notes in a clear and logical
+          way"). Notes and the AI file take the whole width. */}
+      {(entry.details.length > 0 || note || entry.aiFile) && (
         <div className="mo-detail">
-          {entry.details.length > 0 && (
+          {(entry.details.length > 0 || note) && (
             <div className="mo-facts">
               {entry.details.map((d) => (
                 <div
@@ -459,16 +450,22 @@ function LineRow({
                   <span className="mo-fact-v">{d.value}</span>
                 </div>
               ))}
+              {/* The per-line note, a full-width labelled fact in print (on screen
+                  it is edited above), with its own lines kept (Tess, 2026-08-26). */}
+              {note && (
+                <div className="mo-fact mo-fact-wide mo-note-fact print-only">
+                  <span className="mo-fact-k">Notes</span>
+                  <span className="mo-fact-v">{note}</span>
+                </div>
+              )}
             </div>
           )}
           {entry.aiFile && (
             <div className="mo-fact mo-fact-wide mo-ai-row">
               <span className="mo-fact-k">AI file</span>
               {/* A clickable blue link, on screen AND in the PDF, showing a short
-                  label rather than the long Dropbox path (Tess, 2026-08-26: "make
-                  ai file link a clickable blue hyperlink with full path hidden").
-                  The href keeps the full URL, so the link still opens the file —
-                  Save-as-PDF preserves the anchor, so the label stays clickable. */}
+                  label rather than the long Dropbox path (Tess, 2026-08-26). The
+                  href keeps the full URL, so Save-as-PDF stays clickable. */}
               <a className="mo-ai" href={entry.aiFile} target="_blank" rel="noreferrer">
                 Open AI file ↗
               </a>
