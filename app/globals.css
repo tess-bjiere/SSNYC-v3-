@@ -3189,7 +3189,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The fitting date, a small uppercase line under the subtitle. */
 .deck-fitdate{margin:6px 0 0;font-size:var(--t-micro);letter-spacing:.14em;
   text-transform:uppercase;color:#888}
-.deck-detail{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+/* Shots on the left, everything (fit notes, factory comments, material, colours,
+   tech pack) stacked in one column on the right (Tess, 2026-08-27: "fit notes,
+   comments, materials, colours and techpack link are all in a column on the
+   right"). A style slide sits top-aligned, not spread; the cover keeps its own
+   top-to-bottom spread. */
+.deck-slide:not(.deck-cover){justify-content:flex-start}
+.deck-slide-body{display:flex;gap:34px;align-items:flex-start;margin-top:22px}
+.deck-detail{flex:0 0 34%;min-width:0;display:flex;flex-direction:column;gap:18px}
+/* On a narrow screen the on-screen preview stacks (print always lays out wide). */
+@media(max-width:760px){.deck-slide-body{flex-direction:column;gap:20px}.deck-detail{flex-basis:auto;width:100%}}
 /* Every shot on the slide at one height and one gap (Tess, 2026-08-24: "all
    images on a page should be the same height and distance apart for fit deck
    exports"). The 3-column grid gave each shot an equal cell but not an equal
@@ -3201,8 +3210,8 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    aligned and in 1 row when possible on fit decks"). flex-start packs them from
    the left; flex-wrap only drops to a second row when a page cannot hold them
    all — three or four fit-shots at one height sit on a single line. */
-.deck-shots{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:24px;
-  margin-bottom:22px;align-items:flex-start}
+.deck-shots{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;justify-content:flex-start;gap:24px;
+  align-items:flex-start}
 .deck-shots figure{margin:0;break-inside:avoid}
 .deck-shots .paper-shot-frame{width:auto}
 .deck-shots img{height:340px;width:auto;max-width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}

@@ -186,53 +186,50 @@ export default async function FittingDeckPage({
 
           {deck.slides.map((slide, i) => (
             <section className="deck-slide" key={i}>
-              {/* Top group — the title and the shots — so space-between drops the
-                  notes to the foot of the page (Tess, 2026-08-10). */}
-              <div className="deck-slide-top">
-                <header className="deck-slide-head">
-                  <h2>{slide.name}</h2>
-                  {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
-                  {/* The fitting date of this round, on its own line so it reads
-                      as the date the page is a record of (Tess, 2026-08-24: "fit
-                      decks should include date of fitting for each style"). */}
-                  {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
-                </header>
-
-                {!slide.empty && slide.images.length > 0 && (
-                  <div className="deck-shots">
-                    {slide.images.map((im) => (
-                      <figure key={im.url}>
-                        <span className="paper-shot-frame">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={im.url} alt={im.label} />
-                          {im.pins.map((pin, pi) => (
-                            <span
-                              className="paper-pin"
-                              key={pi}
-                              style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
-                              aria-hidden="true"
-                            >
-                              {pi + 1}
-                            </span>
-                          ))}
-                        </span>
-                        <figcaption>
-                          <strong>{im.label}</strong>
-                          {/* The mark-up note drops onto its own line below the
-                              shot's title (Tess, 2026-08-10), so the title stays
-                              scannable and the fit note reads as the note it is. */}
-                          {im.note && <span className="deck-shot-note">{im.note}</span>}
-                        </figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <header className="deck-slide-head">
+                <h2>{slide.name}</h2>
+                {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
+                {/* The fitting date of this round, on its own line so it reads as
+                    the date the page is a record of (Tess, 2026-08-24: "fit decks
+                    should include date of fitting for each style"). */}
+                {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
+              </header>
 
               {slide.empty ? (
                 <p className="deck-empty">No fitting recorded for this style yet.</p>
               ) : (
-                <div className="deck-detail">
+                /* Shots on the left, everything else stacked in one column on the
+                   right (Tess, 2026-08-27: "fit notes, comments, materials, colours
+                   and techpack link are all in a column on the right"). */
+                <div className="deck-slide-body">
+                  {slide.images.length > 0 && (
+                    <div className="deck-shots">
+                      {slide.images.map((im) => (
+                        <figure key={im.url}>
+                          <span className="paper-shot-frame">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={im.url} alt={im.label} />
+                            {im.pins.map((pin, pi) => (
+                              <span
+                                className="paper-pin"
+                                key={pi}
+                                style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
+                                aria-hidden="true"
+                              >
+                                {pi + 1}
+                              </span>
+                            ))}
+                          </span>
+                          <figcaption>
+                            <strong>{im.label}</strong>
+                            {im.note && <span className="deck-shot-note">{im.note}</span>}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="deck-detail">
                     {slide.fitNotes && (
                       <div className="deck-note">
                         <h3>Fit notes</h3>
@@ -245,36 +242,30 @@ export default async function FittingDeckPage({
                         <p>{slide.factoryComments}</p>
                       </div>
                     )}
-                    {/* The spec facts stacked in one column beside the notes:
-                        material, colours, and the tech-pack link (Tess, 2026-08-27:
-                        "include material, colors and link to techpack"). The link
-                        stays clickable in the saved PDF. */}
-                    {(slide.material || slide.colors || slide.techPack) && (
-                      <div className="deck-note deck-specs">
-                        {slide.material && (
-                          <div>
-                            <h3>Material</h3>
-                            <p>{slide.material}</p>
-                          </div>
-                        )}
-                        {slide.colors && (
-                          <div>
-                            <h3>Colours</h3>
-                            <p>{slide.colors}</p>
-                          </div>
-                        )}
-                        {slide.techPack && (
-                          <div>
-                            <h3>Tech pack</h3>
-                            <p>
-                              <a className="deck-link" href={slide.techPack} target="_blank" rel="noreferrer">
-                                Open tech pack ↗
-                              </a>
-                            </p>
-                          </div>
-                        )}
+                    {slide.material && (
+                      <div className="deck-note">
+                        <h3>Material</h3>
+                        <p>{slide.material}</p>
                       </div>
                     )}
+                    {slide.colors && (
+                      <div className="deck-note">
+                        <h3>Colours</h3>
+                        <p>{slide.colors}</p>
+                      </div>
+                    )}
+                    {slide.techPack && (
+                      <div className="deck-note">
+                        <h3>Tech pack</h3>
+                        {/* The link stays clickable in the saved PDF. */}
+                        <p>
+                          <a className="deck-link" href={slide.techPack} target="_blank" rel="noreferrer">
+                            Open tech pack ↗
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               {/* The brand mark, small in the bottom-left of every slide, set as
