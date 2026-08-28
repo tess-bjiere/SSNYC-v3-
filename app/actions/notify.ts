@@ -93,3 +93,32 @@ export async function mailConfigured(): Promise<boolean> {
   await requireUser();
   return isMailConfigured();
 }
+
+/**
+ * Send a test email to yourself (Tess, 2026-08-26). The end-to-end proof that a
+ * provider is wired correctly, without needing a second person to comment: it
+ * goes through the very same mailer the notifications use, to your own address,
+ * and reports exactly what happened. You ask for it about yourself, so it does
+ * not run afoul of "never send mail on her behalf" — nothing reaches a factory.
+ */
+export async function sendTestEmail(): Promise<{
+  configured: boolean;
+  sent: number;
+  failed: number;
+  to: string | null;
+}> {
+  const user = await requireUser();
+  const to = (user?.email ?? "").trim();
+  if (!to) return { configured: isMailConfigured(), sent: 0, failed: 0, to: null };
+  const report = await sendEmails([
+    {
+      to,
+      subject: "SSYNC — test notification",
+      text:
+        "This is a test from your SSYNC notification settings.\n\n" +
+        "If it reached your inbox, comment notifications will too. You can delete this.\n\n" +
+        appBaseUrl(),
+    },
+  ]);
+  return { configured: report.configured, sent: report.sent, failed: report.failed, to };
+}

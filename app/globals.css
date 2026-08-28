@@ -2314,6 +2314,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .toggle.on{background:var(--accent);border-color:var(--accent)}
 .toggle.on .knob{transform:translateX(16px);background:var(--btnfg)}
 .pref-said{font-size:var(--t-meta);color:var(--muted);padding:10px 18px;border-top:1px solid var(--hair)}
+/* The "send test email to me" row (Tess, 2026-08-26). */
+.pref-test{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--hair)}
+.pref-test-said{font-size:var(--t-meta);color:var(--muted)}
 /* A link inside the muted line still has to look like a link — at this size the
    colour alone doesn't read as clickable. */
 .muted-line a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}

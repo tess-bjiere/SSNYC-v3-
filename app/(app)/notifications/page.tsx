@@ -29,8 +29,10 @@ export default async function NotificationsPage() {
       {!configured && (
         <div className="notice">
           No email provider is connected yet, so nothing is being delivered. Your choices here are
-          saved and will apply the moment one is. (Set <code>RESEND_API_KEY</code> and{" "}
-          <code>NOTIFY_FROM</code> in the Vercel environment.)
+          saved and will apply the moment one is. Connect one in the Vercel environment: either{" "}
+          <code>SMTP_HOST</code>/<code>SMTP_PORT</code>/<code>SMTP_USER</code>/<code>SMTP_PASS</code>{" "}
+          (e.g. SendGrid or Google Workspace) or <code>RESEND_API_KEY</code> — plus{" "}
+          <code>NOTIFY_FROM</code> either way.
         </div>
       )}
 

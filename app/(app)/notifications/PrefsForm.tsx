@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { savePrefs } from "@/app/actions/notify";
+import { savePrefs, sendTestEmail } from "@/app/actions/notify";
 import type { NotifyChannel } from "@/lib/notify";
 
 const SWITCHES: { key: NotifyChannel; label: string; help: string }[] = [
@@ -32,6 +32,30 @@ export default function PrefsForm({
   });
   const [said, setSaid] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  // The self-test: proves the provider is wired without a second person.
+  const [testing, setTesting] = useState(false);
+  const [testSaid, setTestSaid] = useState<string | null>(null);
+
+  function test() {
+    setTesting(true);
+    setTestSaid(null);
+    start(async () => {
+      try {
+        const r = await sendTestEmail();
+        if (!r.configured) {
+          setTestSaid("No email provider is connected yet — nothing was sent.");
+        } else if (r.sent > 0) {
+          setTestSaid(`Sent to ${r.to}. Check your inbox (and spam) in a minute.`);
+        } else {
+          setTestSaid("The provider is set but the send failed — double-check SMTP_USER / SMTP_PASS in Vercel.");
+        }
+      } catch {
+        setTestSaid("Couldn't send the test — try again.");
+      } finally {
+        setTesting(false);
+      }
+    });
+  }
 
   function toggle(key: NotifyChannel) {
     const next = !on[key];
@@ -71,6 +95,14 @@ export default function PrefsForm({
         </div>
       ))}
       {said && <div className="pref-said">{said}</div>}
+
+      {/* End-to-end check: send yourself a test email through the real mailer. */}
+      <div className="pref-test">
+        <button type="button" className="btn ghost sm" onClick={test} disabled={testing || pending}>
+          {testing ? "Sending…" : "Send test email to me"}
+        </button>
+        {testSaid && <span className="pref-test-said">{testSaid}</span>}
+      </div>
     </div>
   );
 }
