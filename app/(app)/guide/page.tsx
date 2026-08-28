@@ -63,6 +63,26 @@ export default async function GuidePage() {
             </li>
           </ul>
 
+          <h2>Sourcing — fabrics &amp; trims</h2>
+          <ul>
+            <li>
+              <b>Materials</b> — the fabric, trim &amp; packaging library.
+              Document each material once, with its supplier, spec and AI-file
+              link, and reuse it.
+            </li>
+            <li>
+              <b>Orders</b> — build a purchase order from the library. It groups
+              by supplier, carries each material&rsquo;s full spec, and exports a
+              clean PO to save or email.
+            </li>
+            <li>
+              <b>Quotes</b> — the same, but asking a supplier to <i>price</i> the
+              materials: no quantities, and you can hide or edit price and MOQ per
+              line. To build one, open Quotes and add materials, or tick materials
+              in the library and choose <b>Create quote</b>.
+            </li>
+          </ul>
+
           <h2>A linesheet</h2>
           <ul>
             <li>
@@ -74,8 +94,14 @@ export default async function GuidePage() {
               <b>Detail</b> (one product a page). Drag the handle to reorder.
             </li>
             <li>
-              In Detail, set the retail price, add a description, and add or
-              remove colours — pick a swatch by hex and give it your own name.
+              In Detail, choose a <b>Page layout</b>, set the retail price and a
+              description, and add or remove colours — click a colour chip to
+              recolour it, or pick a swatch by hex and give it your own name.
+            </li>
+            <li>
+              Add a <b>styled photo or croquis</b> right on the page — the
+              crosshatched box is the drop zone (or Replace one that&rsquo;s
+              there).
             </li>
             <li>
               <b>Group by color</b> to sort the assortment, and{" "}
@@ -91,7 +117,7 @@ export default async function GuidePage() {
             </li>
             <li>
               Log a round, upload sample photos, and pin notes right on the
-              image.
+              image. Use <b>Review latest round</b> for the full-screen view.
             </li>
             <li>
               Comment to anyone on the team; export a style or a round to PDF.
@@ -99,6 +125,19 @@ export default async function GuidePage() {
           </ul>
         </>
       )}
+
+      <h2>Staying in the loop</h2>
+      <ul>
+        <li>
+          The <b>bell</b> at the top shows new comments on styles you created or
+          commented on. Open <b>Activity</b> to read them — the count clears when
+          you do.
+        </li>
+        <li>
+          <b>Email settings</b> (under your name) turn those emails on or off per
+          person, and let you send yourself a test to check delivery.
+        </li>
+      </ul>
 
       <h2>Everywhere</h2>
       <ul>

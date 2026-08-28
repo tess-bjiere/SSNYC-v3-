@@ -35,6 +35,19 @@ export default function AppFooter({ isTeam = false }: { isTeam?: boolean }) {
       <span className="app-footer-sep" aria-hidden="true">
         ·
       </span>
+      {/* The short fit-photo/notes standard — product work, so team only (Tess,
+          2026-08-26: "a section in the footer that has best practice for fit
+          images and notes ... very simple and short"). */}
+      {isTeam && (
+        <>
+          <Link href="/fit-tips" title="Best practice for fit photos and notes">
+            Fit photos &amp; notes
+          </Link>
+          <span className="app-footer-sep" aria-hidden="true">
+            ·
+          </span>
+        </>
+      )}
       <a
         href={url || "#"}
         target={url ? "_blank" : undefined}
