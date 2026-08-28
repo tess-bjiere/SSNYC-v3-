@@ -64,20 +64,15 @@ export default function FitTipsPage() {
           needs both — the observation and the fix.
         </li>
         <li>
-          <b>Give every issue the same fields:</b> area · what you saw · the fix ·
-          amount · priority · photo · owner · status.
-        </li>
-        <li>
           <b>Always a direction and an amount</b> — never &ldquo;tighter&rdquo; or
           &ldquo;a bit.&rdquo; One name per component; left and right are the
           wearer&rsquo;s. Keep fabric issues (hand, recovery, shade) separate from
           fit fixes.
         </li>
         <li>
-          <b>Clean up within a day,</b> and carry every open issue forward from
-          the last round, marked resolved or still open. Cold-read test: hand it
-          to someone who wasn&rsquo;t there — if they have a question, it&rsquo;s
-          not finished.
+          <b>Tidy the notes before you close out.</b> Anyone opening the deck
+          should understand each issue and what&rsquo;s being asked without being
+          in the room — if they&rsquo;d have to ask, it&rsquo;s not finished.
         </li>
       </ul>
     </div>
