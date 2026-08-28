@@ -3216,6 +3216,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    all — three or four fit-shots at one height sit on a single line. */
 .deck-shots{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;justify-content:flex-start;gap:24px;
   align-items:flex-start}
+/* Nudge the shots down by the title's cap-height offset so the top of the images
+   lines up with the top of the header LETTERS, not the line box above them (Tess,
+   2026-08-28: "top of images should align with top of header text"). At the 28px
+   title this is ~8px; measured cap-top and image-top coincide. */
+.deck-shots{margin-top:8px}
 .deck-shots figure{margin:0;break-inside:avoid}
 .deck-shots .paper-shot-frame{width:auto}
 .deck-shots img{height:340px;width:auto;max-width:100%;display:block;border:1px solid #ddd;background:#f4f4f4}

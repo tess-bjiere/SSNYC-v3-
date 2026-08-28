@@ -89,6 +89,27 @@ test("the cover carries the season, the brand and the list of products", () => {
   assert.equal(bare.brand, null);
 });
 
+test("material falls back to the style's free-text spec when the round has none", () => {
+  // Round-level structured material wins when present.
+  assert.equal(
+    buildFittingSlide({
+      name: "x", images: [],
+      materialType: "Nylon", materialContents: "100% Poly", materialSupplier: "XX",
+      materialText: "styles.material spec",
+    }).material,
+    "Nylon · 100% Poly · XX"
+  );
+  // With no round material, the style's free-text material is shown.
+  assert.equal(
+    buildFittingSlide({ name: "x", images: [], materialText: "82% Nylon 18% Elastane" }).material,
+    "82% Nylon 18% Elastane"
+  );
+  // Neither present → null, and that keeps counting toward "empty".
+  const bare = buildFittingSlide({ name: "x", images: [] });
+  assert.equal(bare.material, null);
+  assert.equal(bare.empty, true);
+});
+
 test("the sketch url is carried onto the slide, trimmed, null when blank", () => {
   assert.equal(buildFittingSlide({ name: "x", images: [], sketch: " https://s/sketch.png " }).sketch,
     "https://s/sketch.png");

@@ -30,6 +30,11 @@ export type DeckSlideInput = {
   materialType?: string | null;
   materialContents?: string | null;
   materialSupplier?: string | null;
+  // The style-level material line (styles.material, the free-text spec on the
+  // profile) — used when the round carries no structured material of its own, so
+  // a style whose fabric was entered there still shows it (Tess, 2026-08-28:
+  // "exports are missing the materials listed").
+  materialText?: string | null;
   // The style's colourway line and its tech-pack link, carried onto the page
   // (Tess, 2026-08-27: "include material, colors and link to techpack").
   colors?: string | null;
@@ -164,7 +169,8 @@ export function materialLine(s: {
 export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
   const fitNotes = t(input.fitNotes);
   const factoryComments = t(input.factoryComments);
-  const material = materialLine(input);
+  // The round's own fabric line, else the style's free-text material spec.
+  const material = materialLine(input) ?? t(input.materialText);
   return {
     name: t(input.name) ?? "Untitled style",
     subtitle: dots([input.styleNo, input.roundLabel, input.garment, input.factory]),

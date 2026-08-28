@@ -157,6 +157,9 @@ export default async function FittingDeckPage({
         materialType: round?.material_type,
         materialContents: round?.material_contents,
         materialSupplier: round?.material_supplier,
+        // Fall back to the style's free-text material when the round has none
+        // (Tess, 2026-08-28: "exports are missing the materials listed").
+        materialText: st.material,
         // The style's colourway line and tech-pack link (Tess, 2026-08-27:
         // "include material, colors and link to techpack").
         colors: st.colors,
