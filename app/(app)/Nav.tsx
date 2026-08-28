@@ -134,11 +134,14 @@ export default function Nav({
   brand,
   brands,
   role,
+  notifCount = 0,
 }: {
   email: string;
   brand: string;
   brands: Brand[];
   role: "team" | "talent";
+  /** Unread activity (new comments on watched styles) — the bell badge. */
+  notifCount?: number;
 }) {
   const pathname = usePathname();
   // A talent sees only the ideation half of their brand (multi-brand phase 2):
@@ -312,6 +315,17 @@ export default function Nav({
             footer"). It was never a destination like the others — it is the
             go-live checklist — so it reads better as a quiet footer link than as
             a tab-height item in the top bar. Team only, there and here. */}
+        {/* The activity bell: new comments on styles you watch (Tess, 2026-08-26).
+            A count badge appears only when there's something unread. */}
+        <Link
+          href="/activity"
+          className={"nav-bell" + (isActive("/activity") ? " active" : "")}
+          title="Activity — new comments"
+          aria-label={notifCount > 0 ? `Activity, ${notifCount} new` : "Activity"}
+        >
+          <span aria-hidden="true">🔔</span>
+          {notifCount > 0 && <span className="nav-bell-badge">{notifCount > 99 ? "99+" : notifCount}</span>}
+        </Link>
         {/* Personal settings hang off your own name rather than taking a tab. */}
         <Link href="/notifications" className="who" title="Notification settings">
           {email}
@@ -386,6 +400,15 @@ export default function Nav({
                 </div>
               )}
               <div className="nav-drawer-account">
+                {/* The bell has no room in the drawer; Activity gets a plain link
+                    with the unread count spelled out (Tess, 2026-08-26). */}
+                <Link
+                  href="/activity"
+                  className={"nav-drawer-sub" + (isActive("/activity") ? " active" : "")}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Activity{notifCount > 0 ? ` (${notifCount > 99 ? "99+" : notifCount})` : ""}
+                </Link>
                 {/* Setup moved to the footer (Tess, 2026-08-11) — the footer
                     shows on every page at both widths, so it is still reachable
                     on a phone without also sitting in the drawer. */}

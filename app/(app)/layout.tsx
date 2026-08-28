@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser, DEV_BYPASS, DEV_BYPASS_REFUSED } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { loadBrands } from "@/lib/brandsServer";
+import { activityUnreadCount } from "./activity/data";
 import Nav from "./Nav";
 import AppFooter from "./AppFooter";
 
@@ -10,10 +11,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getSessionUser();
   if (!user) redirect("/login");
   const [brand, brands] = await Promise.all([activeBrand(), loadBrands()]);
+  // The activity-bell badge (Tess, 2026-08-26). Guarded to 0 inside, so it never
+  // delays or breaks a page; the count is the unread comments on styles you watch.
+  const notifCount = await activityUnreadCount(user.email, brand);
 
   return (
     <>
-      <Nav email={user.email} brand={brand} brands={brands} role={user.role} />
+      <Nav
+        email={user.email}
+        brand={brand}
+        brands={brands}
+        role={user.role}
+        notifCount={notifCount}
+      />
       {DEV_BYPASS && (
         <div className="wrap" style={{ paddingTop: 12 }}>
           <div className="notice">

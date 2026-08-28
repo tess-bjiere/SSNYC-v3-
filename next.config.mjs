@@ -4,6 +4,11 @@ const nextConfig = {
   // with plain <img> tags, so no next/image remote config is required.
   reactStrictMode: true,
 
+  // nodemailer is a CommonJS package with dynamic requires; keep it out of the
+  // bundle so the SMTP mailer works in the server-action runtime (Tess,
+  // 2026-08-26: send comment notifications through Google Workspace SMTP, no DNS).
+  serverExternalPackages: ["nodemailer"],
+
   experimental: {
     serverActions: {
       // Uploads go through a Server Action, and Next caps those request bodies at

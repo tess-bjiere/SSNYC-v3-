@@ -25,7 +25,13 @@ export default async function SetupPage() {
     devBypassRefused: DEV_BYPASS_REFUSED,
     hasServiceRoleKey: PUBLIC_READ_ELEVATED,
     anonCanReadPrivateTable: await anonCanReadPrivateTable(),
-    hasMailer: Boolean(process.env.RESEND_API_KEY && process.env.NOTIFY_FROM),
+    // Either provider counts — Resend, or SMTP (Google Workspace) which needs no
+    // DNS (Tess, 2026-08-26).
+    hasMailer: Boolean(
+      process.env.NOTIFY_FROM &&
+        (process.env.RESEND_API_KEY ||
+          (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS))
+    ),
     hasImagegen: Boolean(process.env.IMAGE_API_KEY && process.env.IMAGE_API_URL),
     // Read individually rather than as a pair, so the page can tell "neither"
     // apart from "one of the two", which is the state that actually confuses
