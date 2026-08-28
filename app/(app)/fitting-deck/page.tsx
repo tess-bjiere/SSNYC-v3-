@@ -265,12 +265,10 @@ export default async function FittingDeckPage({
                           <p>{slide.material}</p>
                         </div>
                       )}
-                      {slide.colors && (
-                        <div className="deck-note">
-                          <h3>Colours</h3>
-                          <p>{slide.colors}</p>
-                        </div>
-                      )}
+                      {/* Colours left off the deck for now (Tess, 2026-08-28:
+                          "let's leave colours off the decks for now"). The field
+                          is still carried on the slide, so putting the block back
+                          is these six lines — the data has not moved. */}
                       {slide.techPack && (
                         <div className="deck-note">
                           <h3>Tech pack</h3>
