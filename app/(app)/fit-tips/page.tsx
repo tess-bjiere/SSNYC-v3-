@@ -18,63 +18,63 @@ export default function FitTipsPage() {
       <h2>Photos</h2>
       <ul>
         <li>
-          <b>Steam the sample first.</b> Shipping creases read as fit problems,
-          and then you chase something the press would have fixed.
+          <b>Always front, back and side.</b> That is the set every product gets,
+          every round. Anything else — three-quarter, seated, in motion, a
+          close-up of an issue, the labels — is per product, shot when the garment
+          needs it.
         </li>
         <li>
-          <b>Rake the light across black, don&rsquo;t face it.</b> Key light at
-          45° to the side, overexpose about +1 stop, no direct flash, and a white
-          board on the shadow side. Turn the overheads off — one light source.
+          <b>Steam the sample first.</b> Shipping creases look like fit problems,
+          and you&rsquo;ll waste a round chasing something a press would have fixed.
         </li>
         <li>
-          <b>Set the room the same every round.</b> Tape the floor marks for the
-          model and tripod so two rounds line up and you can see what changed.
+          <b>Light black from the side, not head-on.</b> One light at 45°, about a
+          stop brighter than usual, no direct flash, and a white board on the
+          shadow side. Overheads off — one light source.
         </li>
         <li>
-          <b>On a phone:</b> use the 2× lens (1× bows the body), tap the garment
-          to lock focus and exposure, turn off portrait and HDR, and send
-          originals by AirDrop or upload — not iMessage or Slack, which
-          recompress them.
+          <b>Set the room up the same every round.</b> Tape floor marks for the
+          model and the tripod, so two rounds line up and you can see what changed.
         </li>
         <li>
-          <b>Mark the problem in white</b> — chalk, tape or pins — and lay a tape
-          measure in frame when the amount matters, so the photo shows it.
+          <b>On a phone:</b> use the 2× lens — the 1× curves the body — tap the
+          garment to lock focus and exposure, turn off Portrait and HDR, and send
+          originals by AirDrop or upload, not iMessage or Slack (they recompress).
         </li>
         <li>
-          <b>Shoot the same set each round:</b> front, back, both sides,
-          three-quarter, seated, in motion, a detail frame for every issue, and
-          the labels.
+          <b>Mark the problem in white</b> — chalk, tape or pins — and put a tape
+          measure in the frame when the amount matters, so the photo shows it.
         </li>
       </ul>
 
       <h2>Notes</h2>
       <ul>
         <li>
-          <b>Log the sample on arrival.</b> Measure it against the tech pack and
-          flag blockers — wrong fabric, missing trim — before you book the
+          <b>Log the sample when it arrives.</b> Measure it against the tech pack
+          and flag blockers — wrong fabric, missing trim — before you book the
           fitting.
         </li>
         <li>
           <b>Two people in the room:</b> one handles the garment and talks, one
-          writes and shoots. Write verbatim, and put the photo number in the note
-          as you go.
+          writes and shoots. Write it down word for word, and note the photo
+          number as you go.
         </li>
         <li>
-          <b>Separate what you see from what you&rsquo;re asking for.</b> Every
-          issue needs both — an observation and an instruction.
+          <b>Write what you see and what you&rsquo;re asking for.</b> Every issue
+          needs both — the observation and the fix.
         </li>
         <li>
-          <b>One shape per issue:</b> area · observed · action · amount ·
-          priority · photo · owner · status.
+          <b>Give every issue the same fields:</b> area · what you saw · the fix ·
+          amount · priority · photo · owner · status.
         </li>
         <li>
-          <b>Direction and amount, always</b> — never &ldquo;tighter&rdquo; or
+          <b>Always a direction and an amount</b> — never &ldquo;tighter&rdquo; or
           &ldquo;a bit.&rdquo; One name per component; left and right are the
-          wearer&rsquo;s. Keep fabric issues (hand, recovery, shade) apart from
-          fit corrections.
+          wearer&rsquo;s. Keep fabric issues (hand, recovery, shade) separate from
+          fit fixes.
         </li>
         <li>
-          <b>Clean up within a day</b> and carry every open issue forward from
+          <b>Clean up within a day,</b> and carry every open issue forward from
           the last round, marked resolved or still open. Cold-read test: hand it
           to someone who wasn&rsquo;t there — if they have a question, it&rsquo;s
           not finished.
