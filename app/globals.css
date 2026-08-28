@@ -3276,16 +3276,20 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* Extra bottom padding reserves a clear band for the footer mark so the fit
      notes never crowd it (Tess, 2026-08-27: "need more space between text and
      logo"). */
+  /* Margins halved to give the page more room (Tess, 2026-08-28: "reduce margins
+     by 50% on top bottom left and right to have more space on the page"):
+     0.5/0.7/0.85in → 0.25/0.35/0.425in. */
   .deck-slide{position:relative;height:98vh;overflow:hidden;box-sizing:border-box;
-    justify-content:space-between;padding:0.5in 0.7in 0.85in;break-before:page;break-inside:avoid;border-top:none}
+    justify-content:space-between;padding:0.25in 0.35in 0.425in;break-before:page;break-inside:avoid;border-top:none}
   /* The brand mark — the name in the serif wordmark face — small in the bottom-
      LEFT corner, flush with the content's left edge (Tess, 2026-08-27: "Sous Sous
      logo should be in bottom left corner and even smaller" + "font"). Absolute so
      it never shifts the notes; each slide is its own page, so it reads as a page
      footer. */
-  .deck-slide-foot{position:absolute;left:0.7in;right:auto;bottom:0.32in;
+  .deck-slide-foot{position:absolute;left:0.35in;right:auto;bottom:0.16in;
     display:flex;justify-content:flex-start;align-items:center}
-  .deck-slide-foot img{height:0.15in;width:auto;opacity:.85}
+  /* Wordmark up 30% (Tess, 2026-08-28: "up logo by 30%"): 0.15in → 0.195in. */
+  .deck-slide-foot img{height:0.195in;width:auto;opacity:.85}
   .deck-slide-foot span{font-family:var(--serif);font-size:12px;letter-spacing:.02em;
     color:#666;font-weight:400;line-height:1}
   /* A style with no fitting yet has only its header and one line — let it sit at
