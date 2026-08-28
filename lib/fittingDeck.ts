@@ -88,17 +88,20 @@ export function noteLines(value: string | null | undefined): DeckNoteLine[] {
   const s = typeof value === "string" ? value : "";
   if (!s.trim()) return [];
   const out: DeckNoteLine[] = [];
+  // A break, unless the last thing pushed is already one — so leading breaks and
+  // runs of them collapse to a single gap.
+  const pushBreak = () => {
+    if (out.length && out[out.length - 1].kind !== "break") {
+      out.push({ kind: "break", depth: 0, marker: "", text: "" });
+    }
+  };
   for (const raw of s.split("\n")) {
     const line = raw.replace(/\s+$/, "");
     if (!line.trim()) {
       // A blank line the writer put between notes is kept as a break, so the
       // export shows the same spacing they typed (Tess, 2026-08-28: "if user has
       // a line break between notes -- be sure to export it that way as well").
-      // Leading breaks and runs of them collapse to one, so the column never
-      // opens with empty space or grows an accidental double-return into a gap.
-      if (out.length && out[out.length - 1].kind !== "break") {
-        out.push({ kind: "break", depth: 0, marker: "", text: "" });
-      }
+      pushBreak();
       continue;
     }
     const m = NOTE_BULLET_RE.exec(line);
@@ -108,6 +111,14 @@ export function noteLines(value: string | null | undefined): DeckNoteLine[] {
       const depth = Math.floor(m[1].replace(/\t/g, "  ").length / 2);
       out.push({ kind: "bullet", depth, marker: m[2], text: m[3].trim() });
     } else {
+      // A paragraph that follows a bulleted list is a new aside or section — the
+      // editor gives it block spacing above, but docToText joins the list and the
+      // paragraph with a single newline, dropping that space. Restore it so the
+      // export reads like the note did (Tess, 2026-08-28: "needs space above
+      // 'edits' and above 'postmortem' -- the space was included in the notes").
+      // Only after a bullet: a paragraph directly under another paragraph, or a
+      // list directly under its intro line, keeps its existing tight spacing.
+      if (out.length && out[out.length - 1].kind === "bullet") pushBreak();
       out.push({ kind: "text", depth: 0, marker: "", text: line.trim() });
     }
   }

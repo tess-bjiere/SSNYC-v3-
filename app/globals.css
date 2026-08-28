@@ -3312,8 +3312,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      footer. */
   .deck-slide-foot{position:absolute;left:0.35in;right:auto;bottom:0.16in;
     display:flex;justify-content:flex-start;align-items:center}
-  /* Wordmark up 30% (Tess, 2026-08-28: "up logo by 30%"): 0.15in → 0.195in. */
-  .deck-slide-foot img{height:0.195in;width:auto;opacity:.85}
+  /* Wordmark on the internal (per-style) pages, down 35% (Tess, 2026-08-28:
+     "reduce logo size on the internal pages by 35%"): 0.195in → 0.127in. */
+  .deck-slide-foot img{height:0.127in;width:auto;opacity:.85}
   .deck-slide-foot span{font-family:var(--serif);font-size:12px;letter-spacing:.02em;
     color:#666;font-weight:400;line-height:1}
   /* A style with no fitting yet has only its header and one line — let it sit at
@@ -3326,15 +3327,24 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      Fixed height (not max-) so every shot on the sheet lands at one height. Sized
      as large as three portrait shots fit in one row of the left zone (Tess,
      2026-08-27: "bump the images to be bigger when they fit"). */
-  .deck-shots img{height:330px}
-  /* Three model shots (front/back/side) wrap to two rows on the right — two up,
-     one below. At the larger height the second row and its caption ran past the
-     page bottom, so the third shot was clipped (Tess, 2026-08-28: "the 3rd image
-     for the bras gets cut off, they need to fit on the page with the style info
-     and other photos"). When a slide has a third shot, drop every shot to a
-     height at which both rows and their captions clear the bottom; one or two
-     shots (a single row) keep the larger size. */
-  .deck-shots:has(figure:nth-child(3)) img{height:288px}
+  /* Shots are bound by a box, not a fixed height. A fixed height turned a wide
+     (landscape) shot into a very wide image — so wide that only one sat per row,
+     and three of them ran onto three rows and off the page (Tess, 2026-08-28:
+     "bra shots are still getting cut-off -- they all need to fit on one page").
+     Capping the WIDTH at just under half the column guarantees at least two shots
+     share a row whatever their shape, so three wrap two-up-then-one; capping the
+     HEIGHT keeps those two rows on the sheet. Same-shaped shots (a style's
+     front/back/side share a crop) still come out the same size, so the row stays
+     even. */
+  /* A fixed max-width, not a percentage: a % on the image resolves against its
+     shrink-to-fit <figure>, not the column, so it collapses and the shots stack
+     one per row again. The print column is a known width (landscape letter, less
+     the margins and the 34% notes column ≈ 6.4in / 613px), so 286px lets two
+     shots plus the gap share a row (2·286 + 24 < 613) whatever their shape. */
+  .deck-shots img{height:auto;max-height:330px;max-width:286px}
+  /* With a third shot the pair-plus-one is two rows; trim the height a little so
+     both rows and their captions clear the bottom even when a caption runs long. */
+  .deck-shots:has(figure:nth-child(3)) img{max-height:300px}
   /* A slightly narrower notes column gives the shots room to be bigger. The
      column width now lives on the left column (title + notes), so the shots on
      the right get the rest of the sheet. */

@@ -135,3 +135,21 @@ test("noteLines keeps a blank line between notes as a break", () => {
     { kind: "text", depth: 0, marker: "", text: "second" },
   ]);
 });
+
+test("a paragraph after a bulleted list gets space above it", () => {
+  // docToText joins a list and a following paragraph with a single newline, so
+  // the block spacing the writer saw is gone; noteLines restores it as a break
+  // above the paragraph — but NOT above a list that follows its intro line, nor
+  // between consecutive bullets.
+  const lines = noteLines("• a\n• b\nEdits from Conley:\n• c\n• d\nPostmortem note");
+  assert.deepEqual(lines, [
+    { kind: "bullet", depth: 0, marker: "•", text: "a" },
+    { kind: "bullet", depth: 0, marker: "•", text: "b" },
+    { kind: "break", depth: 0, marker: "", text: "" },
+    { kind: "text", depth: 0, marker: "", text: "Edits from Conley:" },
+    { kind: "bullet", depth: 0, marker: "•", text: "c" },
+    { kind: "bullet", depth: 0, marker: "•", text: "d" },
+    { kind: "break", depth: 0, marker: "", text: "" },
+    { kind: "text", depth: 0, marker: "", text: "Postmortem note" },
+  ]);
+});
