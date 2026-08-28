@@ -17,7 +17,9 @@ import { readNotes } from "@/lib/imageNotes";
 import { docToText } from "@/lib/richNote";
 import {
   buildFittingDeck,
+  noteLines,
   type DeckImage,
+  type DeckNoteLine,
   type DeckSlideInput,
 } from "@/lib/fittingDeck";
 import DeckActions from "./DeckActions";
@@ -66,6 +68,36 @@ function modelImages(sample: StyleSample | null): DeckImage[] {
   return out;
 }
 
+/**
+ * A note (fit notes, factory comments) rendered line by line. A bullet line is a
+ * marker column and a text column, so when the text wraps its second line aligns
+ * under the first line's text rather than under the bullet (Tess, 2026-08-28:
+ * "when bullets wrap the second line aligns with the first"). Plain paragraph
+ * lines render as ordinary text.
+ */
+function NoteBody({ text }: { text: string | null }) {
+  const lines = noteLines(text);
+  if (!lines.length) return null;
+  return (
+    <div className="deck-notebody">
+      {lines.map((l: DeckNoteLine, i) =>
+        l.kind === "bullet" ? (
+          <div className="deck-bullet" key={i} style={{ paddingLeft: `${l.depth * 14}px` }}>
+            <span className="deck-bullet-mark" aria-hidden="true">
+              {l.marker}
+            </span>
+            <span className="deck-bullet-text">{l.text}</span>
+          </div>
+        ) : (
+          <p className="deck-para" key={i}>
+            {l.text}
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
 export default async function FittingDeckPage({
   searchParams,
 }: {
@@ -102,6 +134,10 @@ export default async function FittingDeckPage({
     .map((st) => {
       const rounds = sortSamples(roundsByStyle.get(st.id) ?? [], SAMPLE_ROUNDS);
       const round = latestSample(rounds, SAMPLE_ROUNDS);
+      // The sketch lives on the STYLE (styles.photos), not the round — the front
+      // technical sketch, or the front croquis when there is no flat drawing
+      // (Tess, 2026-08-28: "a small sketch should be included under the header").
+      const stPhotos = normalizePhotos(st.photos);
       return {
         styleNo: st.style_no,
         name: st.name,
@@ -123,6 +159,7 @@ export default async function FittingDeckPage({
         // "include material, colors and link to techpack").
         colors: st.colors,
         techPack: st.tech_pack_url,
+        sketch: stPhotos.sketch ?? stPhotos.croquis ?? null,
       };
     });
 
@@ -198,6 +235,14 @@ export default async function FittingDeckPage({
                     {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
                   </header>
 
+                  {/* A small sketch of the style, under the header and before the
+                      notes (Tess, 2026-08-28). Shown whenever the style has one,
+                      even on a style with no fitting recorded yet. */}
+                  {slide.sketch && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="deck-sketch" src={slide.sketch} alt="" />
+                  )}
+
                   {slide.empty ? (
                     <p className="deck-empty">No fitting recorded for this style yet.</p>
                   ) : (
@@ -205,13 +250,13 @@ export default async function FittingDeckPage({
                       {slide.fitNotes && (
                         <div className="deck-note">
                           <h3>Fit notes</h3>
-                          <p>{slide.fitNotes}</p>
+                          <NoteBody text={slide.fitNotes} />
                         </div>
                       )}
                       {slide.factoryComments && (
                         <div className="deck-note">
                           <h3>Factory comments</h3>
-                          <p>{slide.factoryComments}</p>
+                          <NoteBody text={slide.factoryComments} />
                         </div>
                       )}
                       {slide.material && (

@@ -4,6 +4,7 @@ import {
   buildFittingDeck,
   buildFittingSlide,
   materialLine,
+  noteLines,
   type DeckSlideInput,
 } from "./fittingDeck.ts";
 
@@ -86,4 +87,31 @@ test("the cover carries the season, the brand and the list of products", () => {
   const bare = buildFittingDeck([{ name: "x", images: [] }], { generatedOn: "2026-08-10" });
   assert.equal(bare.season, null);
   assert.equal(bare.brand, null);
+});
+
+test("the sketch url is carried onto the slide, trimmed, null when blank", () => {
+  assert.equal(buildFittingSlide({ name: "x", images: [], sketch: " https://s/sketch.png " }).sketch,
+    "https://s/sketch.png");
+  assert.equal(buildFittingSlide({ name: "x", images: [] }).sketch, null);
+  assert.equal(buildFittingSlide({ name: "x", images: [], sketch: "   " }).sketch, null);
+});
+
+test("noteLines splits a flattened note into bullet and text lines with depth", () => {
+  // The shape docToText produces: "• " at the top, "  - " nested two spaces deep.
+  const lines = noteLines("Body corrected.\n• Neckline gaps 0.5cm\n• Armhole drag\n  - fix before bulk");
+  assert.deepEqual(lines, [
+    { kind: "text", depth: 0, marker: "", text: "Body corrected." },
+    { kind: "bullet", depth: 0, marker: "•", text: "Neckline gaps 0.5cm" },
+    { kind: "bullet", depth: 0, marker: "•", text: "Armhole drag" },
+    { kind: "bullet", depth: 1, marker: "-", text: "fix before bulk" },
+  ]);
+});
+
+test("noteLines is empty for a blank note and skips blank separator lines", () => {
+  assert.deepEqual(noteLines(""), []);
+  assert.deepEqual(noteLines(null), []);
+  assert.deepEqual(noteLines("• one\n\n• two"), [
+    { kind: "bullet", depth: 0, marker: "•", text: "one" },
+    { kind: "bullet", depth: 0, marker: "•", text: "two" },
+  ]);
 });

@@ -34,6 +34,10 @@ export type DeckSlideInput = {
   // (Tess, 2026-08-27: "include material, colors and link to techpack").
   colors?: string | null;
   techPack?: string | null;
+  // The style's sketch/croquis — a small drawing shown under the header before
+  // the fit notes (Tess, 2026-08-28: "a small sketch should be included under the
+  // header info before the fit notes").
+  sketch?: string | null;
 };
 
 export type DeckSlide = {
@@ -51,9 +55,49 @@ export type DeckSlide = {
   colors: string | null;
   /** The tech-pack URL, or null — rendered as a link on the page. */
   techPack: string | null;
+  /** The style's sketch/croquis URL, or null — a small drawing under the header. */
+  sketch: string | null;
   /** True when there is genuinely nothing to show — no shots, no notes. */
   empty: boolean;
 };
+
+/** One rendered line of a note — a bullet (with its depth for nesting) or a
+ *  plain paragraph. The page draws each as its own block so a wrapped bullet's
+ *  continuation aligns under the first line's text, not under the marker (Tess,
+ *  2026-08-28: "when bullets wrap the second line aligns with the first"). */
+export type DeckNoteLine = {
+  kind: "text" | "bullet";
+  /** Nesting level, 0 for a top-level line; only meaningful for bullets. */
+  depth: number;
+  /** The bullet glyph as authored ("•" top level, "-" nested); "" for text. */
+  marker: string;
+  text: string;
+};
+
+// docToText (lib/richNote) flattens a note to bulleted text: "• " at the top
+// level, "  - " (two spaces per level) below. This reads that back into lines so
+// the deck can render each as a hanging-indent row.
+const NOTE_BULLET_RE = /^(\s*)([•\-])\s+(.*)$/;
+
+export function noteLines(value: string | null | undefined): DeckNoteLine[] {
+  const s = typeof value === "string" ? value : "";
+  if (!s.trim()) return [];
+  const out: DeckNoteLine[] = [];
+  for (const raw of s.split("\n")) {
+    const line = raw.replace(/\s+$/, "");
+    if (!line.trim()) continue; // blank separator lines add nothing on the page
+    const m = NOTE_BULLET_RE.exec(line);
+    if (m) {
+      // Two spaces per nesting level, matching docToText's indentation. Tabs are
+      // counted as two spaces so a hand-typed note still nests sensibly.
+      const depth = Math.floor(m[1].replace(/\t/g, "  ").length / 2);
+      out.push({ kind: "bullet", depth, marker: m[2], text: m[3].trim() });
+    } else {
+      out.push({ kind: "text", depth: 0, marker: "", text: line.trim() });
+    }
+  }
+  return out;
+}
 
 /** One line on the cover's contents list — a product in the deck. */
 export type DeckContentsItem = { name: string; styleNo: string | null };
@@ -103,6 +147,7 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
     material,
     colors: t(input.colors),
     techPack: t(input.techPack),
+    sketch: t(input.sketch),
     // A style someone selected but that has no shots and nothing written is not
     // dropped — the deck says so on its page rather than silently skipping a
     // style the person asked for.

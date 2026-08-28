@@ -3226,6 +3226,20 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-shot-note{display:block;margin-top:2px;color:#555}
 .deck-note h3{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:#888;margin:0 0 5px}
 .deck-note p{margin:0;white-space:pre-wrap;font-size:var(--t-sm);line-height:1.5}
+/* A note rendered line by line (fit notes, factory comments). Each bullet is a
+   marker column and a text column, so a wrapped line's continuation aligns with
+   the text of the first line, not under the bullet (Tess, 2026-08-28: "when
+   bullets wrap the second line aligns with the first"). */
+.deck-notebody{display:flex;flex-direction:column;gap:3px}
+.deck-notebody .deck-para{margin:0;font-size:var(--t-sm);line-height:1.5}
+.deck-bullet{display:flex;gap:6px;font-size:var(--t-sm);line-height:1.5}
+.deck-bullet-mark{flex:0 0 auto;color:#888}
+.deck-bullet-text{flex:1 1 auto;min-width:0}
+/* The small sketch under the header, before the notes. A drawing, not a marked-up
+   shot, so object-fit is fine here — no pins ride on it (Tess, 2026-08-28: "a
+   small sketch should be included under the header info before the fit notes"). */
+.deck-sketch{display:block;width:100%;max-width:2.4in;max-height:1.7in;height:auto;
+  object-fit:contain;object-position:left top;border:1px solid #eee;background:#fafafa}
 /* Material · Colours · Tech pack stacked in one column beside the notes. */
 .deck-specs{display:flex;flex-direction:column;gap:15px}
 .deck-empty{color:#888;font-style:italic;font-size:var(--t-sm)}
