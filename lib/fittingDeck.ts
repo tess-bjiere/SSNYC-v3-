@@ -30,6 +30,10 @@ export type DeckSlideInput = {
   materialType?: string | null;
   materialContents?: string | null;
   materialSupplier?: string | null;
+  // The style's colourway line and its tech-pack link, carried onto the page
+  // (Tess, 2026-08-27: "include material, colors and link to techpack").
+  colors?: string | null;
+  techPack?: string | null;
 };
 
 export type DeckSlide = {
@@ -43,6 +47,10 @@ export type DeckSlide = {
   factoryComments: string | null;
   /** "Nylon · 100% Poly · XX Premiere", or null when nothing is recorded. */
   material: string | null;
+  /** The style's colourway line, or null. */
+  colors: string | null;
+  /** The tech-pack URL, or null — rendered as a link on the page. */
+  techPack: string | null;
   /** True when there is genuinely nothing to show — no shots, no notes. */
   empty: boolean;
 };
@@ -93,6 +101,8 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
     fitNotes,
     factoryComments,
     material,
+    colors: t(input.colors),
+    techPack: t(input.techPack),
     // A style someone selected but that has no shots and nothing written is not
     // dropped — the deck says so on its page rather than silently skipping a
     // style the person asked for.

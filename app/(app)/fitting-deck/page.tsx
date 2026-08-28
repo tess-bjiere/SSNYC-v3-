@@ -119,19 +119,25 @@ export default async function FittingDeckPage({
         materialType: round?.material_type,
         materialContents: round?.material_contents,
         materialSupplier: round?.material_supplier,
+        // The style's colourway line and tech-pack link (Tess, 2026-08-27:
+        // "include material, colors and link to techpack").
+        colors: st.colors,
+        techPack: st.tech_pack_url,
       };
     });
 
   const generatedOn = studioToday();
   const deck = buildFittingDeck(slideInputs, { generatedOn });
 
-  // The brand mark on the deck is the brand NAME set in type (Tess, 2026-08-27:
-  // "Logo needs to be sous sous"). The uploaded logo is the light version made
-  // for the dark app UI, so it prints invisibly on this white sheet — the deck
-  // sets the name in Instrument Serif instead, matching the linesheet wordmark.
+  // The brand mark on the deck. SOUS SOUS ships a black-on-transparent wordmark
+  // that reads on the white sheet (Tess, 2026-08-27: "use this logo on the deck"),
+  // self-hosted at /brand so it never depends on an external host. Any other brand
+  // falls back to its name set in Instrument Serif — the uploaded app logo is the
+  // light version and would print invisibly here.
   const brandSlug = await activeBrand();
   const brands = await loadBrands();
   const brandLabel = brandName(brandSlug, brands);
+  const deckLogo = brandSlug === "sous-sous" ? "/brand/sous-sous-deck.png" : null;
 
   return (
     <div className="page deck-page">
@@ -151,12 +157,14 @@ export default async function FittingDeckPage({
       ) : (
         <article id="fitting-deck" className="deck">
           <section className="deck-slide deck-cover">
-            {/* The brand mark, set as its NAME in black — not the uploaded logo
-                (Tess, 2026-08-27: "Logo needs to be sous sous"). A brand's stored
-                logo is the light version made for the dark app UI, so it prints
-                invisibly on this white sheet; the deck sets the name in type
-                instead, the same call the linesheet's wordmark makes. */}
-            <div className="deck-cover-wordmark">{brandLabel}</div>
+            {/* The brand mark: SOUS SOUS's black wordmark image, else the name in
+                type (Tess, 2026-08-27: "use this logo on the deck"). */}
+            {deckLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="deck-cover-logo" src={deckLogo} alt={brandLabel} />
+            ) : (
+              <div className="deck-cover-wordmark">{brandLabel}</div>
+            )}
             <div className="deck-cover-head">
               {/* The brand is the wordmark above; the kicker carries the season
                   (multi-brand: brand is a slug now, and the masthead already
@@ -237,10 +245,34 @@ export default async function FittingDeckPage({
                         <p>{slide.factoryComments}</p>
                       </div>
                     )}
-                    {slide.material && (
-                      <div className="deck-note">
-                        <h3>Material</h3>
-                        <p>{slide.material}</p>
+                    {/* The spec facts stacked in one column beside the notes:
+                        material, colours, and the tech-pack link (Tess, 2026-08-27:
+                        "include material, colors and link to techpack"). The link
+                        stays clickable in the saved PDF. */}
+                    {(slide.material || slide.colors || slide.techPack) && (
+                      <div className="deck-note deck-specs">
+                        {slide.material && (
+                          <div>
+                            <h3>Material</h3>
+                            <p>{slide.material}</p>
+                          </div>
+                        )}
+                        {slide.colors && (
+                          <div>
+                            <h3>Colours</h3>
+                            <p>{slide.colors}</p>
+                          </div>
+                        )}
+                        {slide.techPack && (
+                          <div>
+                            <h3>Tech pack</h3>
+                            <p>
+                              <a className="deck-link" href={slide.techPack} target="_blank" rel="noreferrer">
+                                Open tech pack ↗
+                              </a>
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                 </div>
@@ -251,7 +283,12 @@ export default async function FittingDeckPage({
                   "Logo needs to be sous sous"). Print-only, absolutely positioned
                   so it never disturbs the space-between that drops the notes. */}
               <div className="deck-slide-foot" aria-hidden="true">
-                <span>{brandLabel}</span>
+                {deckLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={deckLogo} alt="" />
+                ) : (
+                  <span>{brandLabel}</span>
+                )}
               </div>
             </section>
           ))}
