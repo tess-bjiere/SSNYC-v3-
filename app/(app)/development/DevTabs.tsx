@@ -648,7 +648,10 @@ export default function DevTabs({
 
       {/* The floating picker bar — only while choosing and only once something is
           chosen, so it is never an empty toolbar. It carries the picked ids to
-          the deck in the order they sit in the grid. */}
+          the deck in the order they were ticked (Tess, 2026-08-27: "user should
+          be able to decide the order of pages based on order of how they
+          select") — `picked` is a Set, so spreading it preserves the click
+          order; a style filtered out of the current view is dropped. */}
       {picking && picked.size > 0 && (
         <div className="pickbar no-print">
           <span className="pickbar-count">
@@ -656,7 +659,7 @@ export default function DevTabs({
           </span>
           <Link
             className="btn sm"
-            href={`/fitting-deck?ids=${shown.filter((s) => picked.has(s.id)).map((s) => s.id).join(",")}`}
+            href={`/fitting-deck?ids=${[...picked].filter((id) => shown.some((s) => s.id === id)).join(",")}`}
           >
             Fitting deck
           </Link>

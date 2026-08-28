@@ -3246,28 +3246,33 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      wherever it is saved. Kept as min-width, not a fixed width, so a wide
      desktop page still fills the sheet rather than gaining side margins. */
   .deck{box-shadow:none;margin:0;max-width:none;min-width:960px;scroll-snap-type:none}
-  /* One product per landscape sheet, generously inset, filling the page so the
-     fit notes spread to the foot the way the cover already spreads its contents
-     — a designed page, not a strip anchored at the top. */
-  .deck-slide{position:relative;min-height:98vh;box-sizing:border-box;justify-content:space-between;
-    padding:0.5in 0.7in;break-before:page;break-inside:avoid;border-top:none}
-  /* The brand mark, small at the foot of each slide (Tess, 2026-08-24: "use Sous
-     Sous logo small on bottom of page"). Absolute within the slide so it never
-     shifts the notes; each slide is its own page, so it reads as a page footer. */
-  .deck-slide-foot{position:absolute;left:0;right:0;bottom:0.26in;
-    display:flex;justify-content:center;align-items:center}
-  .deck-slide-foot img{height:0.2in;width:auto;opacity:.8}
-  .deck-slide-foot span{font-size:8px;letter-spacing:.24em;text-transform:uppercase;
+  /* One product per landscape sheet, and EXACTLY one — every style's info fits on
+     a single page and never spills onto a second (Tess, 2026-08-27: "make sure
+     each style has all info on 1 page -- do not overflow"). The slide is pinned to
+     the page height and clips anything past it, so a long fitting can never push a
+     trailing page; the image height below is kept modest so the notes have room
+     and clipping stays a rare edge, not the norm. */
+  .deck-slide{position:relative;height:98vh;overflow:hidden;box-sizing:border-box;
+    justify-content:space-between;padding:0.5in 0.7in;break-before:page;break-inside:avoid;border-top:none}
+  /* The brand mark, small in the bottom-LEFT corner of each slide, flush with the
+     content's left edge (Tess, 2026-08-27: "Sous Sous logo should be in bottom
+     left corner and even smaller"). Absolute so it never shifts the notes; each
+     slide is its own page, so it reads as a page footer. */
+  .deck-slide-foot{position:absolute;left:0.7in;right:auto;bottom:0.3in;
+    display:flex;justify-content:flex-start;align-items:center}
+  .deck-slide-foot img{height:0.13in;width:auto;opacity:.75}
+  .deck-slide-foot span{font-size:7px;letter-spacing:.22em;text-transform:uppercase;
     color:#9a9a9a;font-weight:600}
   /* A style with no fitting yet has only its header and one line — let it sit at
      the top of its page rather than spreading a header-and-a-sentence across the
      full sheet. */
-  .deck-slide:has(> .deck-empty){min-height:auto;justify-content:flex-start}
+  .deck-slide:has(> .deck-empty){height:auto;min-height:auto;overflow:visible;justify-content:flex-start}
   .deck-cover{break-after:page}
   /* Height in px, not vh: on a phone's print pass vh resolves against the device
      viewport, not the page, so the shots would size differently than on desktop.
-     Fixed height (not max-) so every shot on the sheet lands at one height. */
-  .deck-shots img{height:300px}
+     Fixed height (not max-) so every shot on the sheet lands at one height. Kept
+     modest so the shots and the notes both fit one page (Tess, 2026-08-27). */
+  .deck-shots img{height:250px}
 }
 /* A wrapping row of equal-height shots (Tess, 2026-08-24: "Size images the same
    heights on the exports"), the way the sketch pair above already sits. A grid of
