@@ -70,10 +70,11 @@ export type DeckSlide = {
  *  continuation aligns under the first line's text, not under the marker (Tess,
  *  2026-08-28: "when bullets wrap the second line aligns with the first"). */
 export type DeckNoteLine = {
-  kind: "text" | "bullet";
+  /** A paragraph line, a bullet, or a blank line the writer left between notes. */
+  kind: "text" | "bullet" | "break";
   /** Nesting level, 0 for a top-level line; only meaningful for bullets. */
   depth: number;
-  /** The bullet glyph as authored ("•" top level, "-" nested); "" for text. */
+  /** The bullet glyph as authored ("•" top level, "-" nested); "" otherwise. */
   marker: string;
   text: string;
 };
@@ -89,7 +90,17 @@ export function noteLines(value: string | null | undefined): DeckNoteLine[] {
   const out: DeckNoteLine[] = [];
   for (const raw of s.split("\n")) {
     const line = raw.replace(/\s+$/, "");
-    if (!line.trim()) continue; // blank separator lines add nothing on the page
+    if (!line.trim()) {
+      // A blank line the writer put between notes is kept as a break, so the
+      // export shows the same spacing they typed (Tess, 2026-08-28: "if user has
+      // a line break between notes -- be sure to export it that way as well").
+      // Leading breaks and runs of them collapse to one, so the column never
+      // opens with empty space or grows an accidental double-return into a gap.
+      if (out.length && out[out.length - 1].kind !== "break") {
+        out.push({ kind: "break", depth: 0, marker: "", text: "" });
+      }
+      continue;
+    }
     const m = NOTE_BULLET_RE.exec(line);
     if (m) {
       // Two spaces per nesting level, matching docToText's indentation. Tabs are
@@ -100,6 +111,8 @@ export function noteLines(value: string | null | undefined): DeckNoteLine[] {
       out.push({ kind: "text", depth: 0, marker: "", text: line.trim() });
     }
   }
+  // A note ending on a blank line leaves no trailing gap.
+  while (out.length && out[out.length - 1].kind === "break") out.pop();
   return out;
 }
 

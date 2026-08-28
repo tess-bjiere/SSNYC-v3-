@@ -116,11 +116,22 @@ test("noteLines splits a flattened note into bullet and text lines with depth", 
   ]);
 });
 
-test("noteLines is empty for a blank note and skips blank separator lines", () => {
+test("noteLines is empty for a blank note", () => {
   assert.deepEqual(noteLines(""), []);
   assert.deepEqual(noteLines(null), []);
+});
+
+test("noteLines keeps a blank line between notes as a break", () => {
+  // A single blank line the writer left is preserved as one break.
   assert.deepEqual(noteLines("• one\n\n• two"), [
     { kind: "bullet", depth: 0, marker: "•", text: "one" },
+    { kind: "break", depth: 0, marker: "", text: "" },
     { kind: "bullet", depth: 0, marker: "•", text: "two" },
+  ]);
+  // Leading, trailing and doubled blanks do not open or grow the column.
+  assert.deepEqual(noteLines("\n\nfirst\n\n\nsecond\n\n"), [
+    { kind: "text", depth: 0, marker: "", text: "first" },
+    { kind: "break", depth: 0, marker: "", text: "" },
+    { kind: "text", depth: 0, marker: "", text: "second" },
   ]);
 });

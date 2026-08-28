@@ -3134,7 +3134,9 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-cover{justify-content:space-between}
 /* align-self so the flex column does not stretch the wordmark to full width and
    squash it — it keeps its own aspect at 34px tall (Tess, 2026-08-10). */
-.deck-cover-logo{height:40px;width:auto;max-width:60%;object-fit:contain;display:block;align-self:flex-start}
+/* The cover wordmark, 30% smaller (Tess, 2026-08-28: "reduce size of logo on
+   title page by 30%"): 40px → 28px. */
+.deck-cover-logo{height:28px;width:auto;max-width:60%;object-fit:contain;display:block;align-self:flex-start}
 /* The brand name is the masthead, set in the serif wordmark face — the uploaded
    logo prints invisibly on white, so the name carries it (Tess, 2026-08-27:
    "Logo needs to be sous sous" + "font"). Matches the linesheet wordmark's serif. */
@@ -3235,6 +3237,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-bullet{display:flex;gap:6px;font-size:var(--t-sm);line-height:1.5}
 .deck-bullet-mark{flex:0 0 auto;color:#888}
 .deck-bullet-text{flex:1 1 auto;min-width:0}
+/* A blank line the writer left between notes, kept in the export (Tess,
+   2026-08-28: "if user has a line break between notes -- be sure to export it
+   that way as well"). Roughly one line tall so it reads as their break. */
+.deck-break{height:0.7em}
 /* The small sketch(es) under the header, before the notes. A drawing, not a
    marked-up shot, so object-fit is fine here — no pins ride on it (Tess,
    2026-08-28: "a small sketch should be included under the header info before the

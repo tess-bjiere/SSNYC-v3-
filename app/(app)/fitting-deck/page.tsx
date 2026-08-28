@@ -81,7 +81,9 @@ function NoteBody({ text }: { text: string | null }) {
   return (
     <div className="deck-notebody">
       {lines.map((l: DeckNoteLine, i) =>
-        l.kind === "bullet" ? (
+        l.kind === "break" ? (
+          <div className="deck-break" key={i} aria-hidden="true" />
+        ) : l.kind === "bullet" ? (
           <div className="deck-bullet" key={i} style={{ paddingLeft: `${l.depth * 14}px` }}>
             <span className="deck-bullet-mark" aria-hidden="true">
               {l.marker}
