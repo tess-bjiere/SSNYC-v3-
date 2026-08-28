@@ -3134,9 +3134,13 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-cover{justify-content:space-between}
 /* align-self so the flex column does not stretch the wordmark to full width and
    squash it — it keeps its own aspect at 34px tall (Tess, 2026-08-10). */
-/* The cover wordmark, 30% smaller (Tess, 2026-08-28: "reduce size of logo on
-   title page by 30%"): 40px → 28px. */
-.deck-cover-logo{height:28px;width:auto;max-width:60%;object-fit:contain;display:block;align-self:flex-start}
+/* The cover wordmark, sized and placed to match the front page Tess adjusted by
+   hand in the exported PDF (Tess, 2026-08-28: "I adjusted the front page logo
+   placement -- please update the pdf export to be sized and placed exactly like
+   this"). Measured off SS_Fitting_2026-08-28.pdf: 0.207in tall, its top-left at
+   0.344in / 0.316in from the page edges. The 0.35in cover padding already gives
+   the left; the margin-top drops it from the 0.25in top padding to 0.316in. */
+.deck-cover-logo{height:0.207in;margin-top:0.066in;width:auto;max-width:60%;object-fit:contain;display:block;align-self:flex-start}
 /* The brand name is the masthead, set in the serif wordmark face — the uploaded
    logo prints invisibly on white, so the name carries it (Tess, 2026-08-27:
    "Logo needs to be sous sous" + "font"). Matches the linesheet wordmark's serif. */
