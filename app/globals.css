@@ -337,10 +337,12 @@ body.notes-open .wrap{padding-right:378px}
   text-decoration-thickness:1.5px;text-underline-offset:5px}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
 .who{font-size:var(--t-cap);color:var(--faint);text-transform:uppercase;letter-spacing:.12em;line-height:1;padding-top:.21em}
-/* The activity bell + unread badge (Tess, 2026-08-26). */
+/* The activity bell + unread badge (Tess, 2026-08-26). A line icon in the app's
+   icon idiom: currentColor stroke, muted at rest, ink on hover / when active. */
 .nav-bell{position:relative;display:inline-flex;align-items:center;text-decoration:none;
-  font-size:15px;line-height:1;opacity:.75;filter:grayscale(1)}
-.nav-bell:hover,.nav-bell.active{opacity:1;filter:none}
+  color:var(--faint)}
+.nav-bell:hover,.nav-bell.active{color:var(--ink)}
+.nav-bell-ico{display:block}
 .nav-bell-badge{position:absolute;top:-7px;right:-9px;min-width:16px;height:16px;padding:0 4px;
   border-radius:8px;background:var(--danger);color:#fff;font-size:10px;font-weight:var(--w-title);
   line-height:16px;text-align:center;letter-spacing:0}

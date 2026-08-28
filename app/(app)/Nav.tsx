@@ -323,7 +323,24 @@ export default function Nav({
           title="Activity — new comments"
           aria-label={notifCount > 0 ? `Activity, ${notifCount} new` : "Activity"}
         >
-          <span aria-hidden="true">🔔</span>
+          {/* A line bell in the app's own icon idiom (currentColor stroke, like
+              SizeToggle), not the emoji (Tess, 2026-08-26: "change the
+              notifications icon to a line icon to match style of the app"). */}
+          <svg
+            className="nav-bell-ico"
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
           {notifCount > 0 && <span className="nav-bell-badge">{notifCount > 99 ? "99+" : notifCount}</span>}
         </Link>
         {/* Personal settings hang off your own name rather than taking a tab. */}
