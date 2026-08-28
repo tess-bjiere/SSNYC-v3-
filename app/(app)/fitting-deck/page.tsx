@@ -125,12 +125,12 @@ export default async function FittingDeckPage({
   const generatedOn = studioToday();
   const deck = buildFittingDeck(slideInputs, { generatedOn });
 
-  // The masthead is the active brand's logo now (Tess, 2026-08-11: a brand's
-  // uploaded logo is "used on deck / pdf exports"). SOUS SOUS points at its
-  // existing static wordmark; a brand with no logo yet falls back to its name.
+  // The brand mark on the deck is the brand NAME set in type (Tess, 2026-08-27:
+  // "Logo needs to be sous sous"). The uploaded logo is the light version made
+  // for the dark app UI, so it prints invisibly on this white sheet — the deck
+  // sets the name in Instrument Serif instead, matching the linesheet wordmark.
   const brandSlug = await activeBrand();
   const brands = await loadBrands();
-  const brandLogo = brands.find((b) => b.slug === brandSlug)?.logo_url || null;
   const brandLabel = brandName(brandSlug, brands);
 
   return (
@@ -151,15 +151,12 @@ export default async function FittingDeckPage({
       ) : (
         <article id="fitting-deck" className="deck">
           <section className="deck-slide deck-cover">
-            {/* The active brand's logo at the masthead (Tess, 2026-08-11). SOUS
-                SOUS points at its static wordmark; an uploaded logo is a stored
-                URL; a brand with none falls back to its name in type. */}
-            {brandLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="deck-cover-logo" src={brandLogo} alt={brandLabel} />
-            ) : (
-              <div className="deck-cover-wordmark">{brandLabel}</div>
-            )}
+            {/* The brand mark, set as its NAME in black — not the uploaded logo
+                (Tess, 2026-08-27: "Logo needs to be sous sous"). A brand's stored
+                logo is the light version made for the dark app UI, so it prints
+                invisibly on this white sheet; the deck sets the name in type
+                instead, the same call the linesheet's wordmark makes. */}
+            <div className="deck-cover-wordmark">{brandLabel}</div>
             <div className="deck-cover-head">
               {/* The brand is the wordmark above; the kicker carries the season
                   (multi-brand: brand is a slug now, and the masthead already
@@ -248,17 +245,13 @@ export default async function FittingDeckPage({
                     )}
                 </div>
               )}
-              {/* The brand mark, small at the foot of every slide (Tess,
-                  2026-08-24: "use Sous Sous logo small on bottom of page").
-                  Absolutely positioned so it never disturbs the space-between
-                  that drops the notes to the foot; print-only. */}
+              {/* The brand mark, small in the bottom-left of every slide, set as
+                  the brand NAME in type — the uploaded logo is the light app
+                  version and prints invisibly (Tess, 2026-08-24 / 2026-08-27:
+                  "Logo needs to be sous sous"). Print-only, absolutely positioned
+                  so it never disturbs the space-between that drops the notes. */}
               <div className="deck-slide-foot" aria-hidden="true">
-                {brandLogo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={brandLogo} alt="" />
-                ) : (
-                  <span>{brandLabel}</span>
-                )}
+                <span>{brandLabel}</span>
               </div>
             </section>
           ))}

@@ -3135,8 +3135,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* align-self so the flex column does not stretch the wordmark to full width and
    squash it — it keeps its own aspect at 34px tall (Tess, 2026-08-10). */
 .deck-cover-logo{height:34px;width:auto;max-width:60%;object-fit:contain;display:block;align-self:flex-start}
-/* When a brand has no uploaded logo, its name stands in as the masthead. */
-.deck-cover-wordmark{font-size:26px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#111;align-self:flex-start}
+/* The brand name is the masthead, set in the serif wordmark face — the uploaded
+   logo prints invisibly on white, so the name carries it (Tess, 2026-08-27:
+   "Logo needs to be sous sous" + "font"). Matches the linesheet wordmark's serif. */
+.deck-cover-wordmark{font-family:var(--serif);font-size:34px;font-weight:400;
+  letter-spacing:.01em;color:#111;align-self:flex-start;line-height:1}
 
 /* The brand switcher in the nav (multi-brand phase 1) — wide enough that the
    brand name is not clipped to "SOUS S…". */
@@ -3252,17 +3255,20 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      the page height and clips anything past it, so a long fitting can never push a
      trailing page; the image height below is kept modest so the notes have room
      and clipping stays a rare edge, not the norm. */
+  /* Extra bottom padding reserves a clear band for the footer mark so the fit
+     notes never crowd it (Tess, 2026-08-27: "need more space between text and
+     logo"). */
   .deck-slide{position:relative;height:98vh;overflow:hidden;box-sizing:border-box;
-    justify-content:space-between;padding:0.5in 0.7in;break-before:page;break-inside:avoid;border-top:none}
-  /* The brand mark, small in the bottom-LEFT corner of each slide, flush with the
-     content's left edge (Tess, 2026-08-27: "Sous Sous logo should be in bottom
-     left corner and even smaller"). Absolute so it never shifts the notes; each
-     slide is its own page, so it reads as a page footer. */
-  .deck-slide-foot{position:absolute;left:0.7in;right:auto;bottom:0.3in;
+    justify-content:space-between;padding:0.5in 0.7in 0.85in;break-before:page;break-inside:avoid;border-top:none}
+  /* The brand mark — the name in the serif wordmark face — small in the bottom-
+     LEFT corner, flush with the content's left edge (Tess, 2026-08-27: "Sous Sous
+     logo should be in bottom left corner and even smaller" + "font"). Absolute so
+     it never shifts the notes; each slide is its own page, so it reads as a page
+     footer. */
+  .deck-slide-foot{position:absolute;left:0.7in;right:auto;bottom:0.32in;
     display:flex;justify-content:flex-start;align-items:center}
-  .deck-slide-foot img{height:0.13in;width:auto;opacity:.75}
-  .deck-slide-foot span{font-size:7px;letter-spacing:.22em;text-transform:uppercase;
-    color:#9a9a9a;font-weight:600}
+  .deck-slide-foot span{font-family:var(--serif);font-size:12px;letter-spacing:.02em;
+    color:#666;font-weight:400;line-height:1}
   /* A style with no fitting yet has only its header and one line — let it sit at
      the top of its page rather than spreading a header-and-a-sentence across the
      full sheet. */
