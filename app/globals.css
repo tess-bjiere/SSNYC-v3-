@@ -3184,21 +3184,23 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    align"). The images cap at 38vh so they leave room for the text below them
    ("images can shrink to give more room for text"); capping the height rather
    than cropping keeps the picture whole so the mark-up pins stay true. */
-.deck-slide-head{margin:0 0 24px}
+.deck-slide-head{margin:0}
 .deck-slide-head h2{font-size:28px;font-weight:500;letter-spacing:.01em;margin:0 0 4px}
 /* The fitting date, a small uppercase line under the subtitle. */
 .deck-fitdate{margin:6px 0 0;font-size:var(--t-micro);letter-spacing:.14em;
   text-transform:uppercase;color:#888}
-/* Shots on the left, everything (fit notes, factory comments, material, colours,
-   tech pack) stacked in one column on the right (Tess, 2026-08-27: "fit notes,
-   comments, materials, colours and techpack link are all in a column on the
-   right"). A style slide sits top-aligned, not spread; the cover keeps its own
-   top-to-bottom spread. */
+/* The title and all the notes (fit notes, factory comments, material, colours,
+   tech pack) stack in a left column; the shots sit to the right and now start at
+   the top of the page beside the title, rather than below a full-width header
+   (Tess, 2026-08-27: "all notes are on left under the titles / etc -- then images
+   are to the right and can start higher on the page"). A style slide sits
+   top-aligned, not spread; the cover keeps its own top-to-bottom spread. */
 .deck-slide:not(.deck-cover){justify-content:flex-start}
-.deck-slide-body{display:flex;gap:34px;align-items:flex-start;margin-top:22px}
-.deck-detail{flex:0 0 34%;min-width:0;display:flex;flex-direction:column;gap:18px}
+.deck-slide-body{display:flex;gap:40px;align-items:flex-start}
+.deck-slide-left{flex:0 0 36%;min-width:0;display:flex;flex-direction:column;gap:20px}
+.deck-detail{min-width:0;display:flex;flex-direction:column;gap:18px}
 /* On a narrow screen the on-screen preview stacks (print always lays out wide). */
-@media(max-width:760px){.deck-slide-body{flex-direction:column;gap:20px}.deck-detail{flex-basis:auto;width:100%}}
+@media(max-width:760px){.deck-slide-body{flex-direction:column;gap:20px}.deck-slide-left{flex-basis:auto;width:100%}}
 /* Every shot on the slide at one height and one gap (Tess, 2026-08-24: "all
    images on a page should be the same height and distance apart for fit deck
    exports"). The 3-column grid gave each shot an equal cell but not an equal
@@ -3289,7 +3291,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* A style with no fitting yet has only its header and one line — let it sit at
      the top of its page rather than spreading a header-and-a-sentence across the
      full sheet. */
-  .deck-slide:has(> .deck-empty){height:auto;min-height:auto;overflow:visible;justify-content:flex-start}
+  .deck-slide:has(.deck-empty){height:auto;min-height:auto;overflow:visible;justify-content:flex-start}
   .deck-cover{break-after:page}
   /* Height in px, not vh: on a phone's print pass vh resolves against the device
      viewport, not the page, so the shots would size differently than on desktop.
@@ -3297,8 +3299,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      as large as three portrait shots fit in one row of the left zone (Tess,
      2026-08-27: "bump the images to be bigger when they fit"). */
   .deck-shots img{height:330px}
-  /* A slightly narrower notes column gives the shots room to be bigger. */
-  .deck-detail{flex-basis:30%}
+  /* A slightly narrower notes column gives the shots room to be bigger. The
+     column width now lives on the left column (title + notes), so the shots on
+     the right get the rest of the sheet. */
+  .deck-slide-left{flex-basis:34%}
 }
 /* A wrapping row of equal-height shots (Tess, 2026-08-24: "Size images the same
    heights on the exports"), the way the sketch pair above already sits. A grid of

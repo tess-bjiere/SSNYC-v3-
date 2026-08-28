@@ -186,88 +186,88 @@ export default async function FittingDeckPage({
 
           {deck.slides.map((slide, i) => (
             <section className="deck-slide" key={i}>
-              <header className="deck-slide-head">
-                <h2>{slide.name}</h2>
-                {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
-                {/* The fitting date of this round, on its own line so it reads as
-                    the date the page is a record of (Tess, 2026-08-24: "fit decks
-                    should include date of fitting for each style"). */}
-                {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
-              </header>
+              {/* The title and all the notes stacked in a left column; the shots
+                  to the right, starting at the top of the page (Tess, 2026-08-27:
+                  "all notes are on left under the titles / etc -- then images are
+                  to the right and can start higher on the page"). */}
+              <div className="deck-slide-body">
+                <div className="deck-slide-left">
+                  <header className="deck-slide-head">
+                    <h2>{slide.name}</h2>
+                    {slide.subtitle && <p className="deck-sub">{slide.subtitle}</p>}
+                    {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
+                  </header>
 
-              {slide.empty ? (
-                <p className="deck-empty">No fitting recorded for this style yet.</p>
-              ) : (
-                /* Shots on the left, everything else stacked in one column on the
-                   right (Tess, 2026-08-27: "fit notes, comments, materials, colours
-                   and techpack link are all in a column on the right"). */
-                <div className="deck-slide-body">
-                  {slide.images.length > 0 && (
-                    <div className="deck-shots">
-                      {slide.images.map((im) => (
-                        <figure key={im.url}>
-                          <span className="paper-shot-frame">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={im.url} alt={im.label} />
-                            {im.pins.map((pin, pi) => (
-                              <span
-                                className="paper-pin"
-                                key={pi}
-                                style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
-                                aria-hidden="true"
-                              >
-                                {pi + 1}
-                              </span>
-                            ))}
-                          </span>
-                          <figcaption>
-                            <strong>{im.label}</strong>
-                            {im.note && <span className="deck-shot-note">{im.note}</span>}
-                          </figcaption>
-                        </figure>
-                      ))}
+                  {slide.empty ? (
+                    <p className="deck-empty">No fitting recorded for this style yet.</p>
+                  ) : (
+                    <div className="deck-detail">
+                      {slide.fitNotes && (
+                        <div className="deck-note">
+                          <h3>Fit notes</h3>
+                          <p>{slide.fitNotes}</p>
+                        </div>
+                      )}
+                      {slide.factoryComments && (
+                        <div className="deck-note">
+                          <h3>Factory comments</h3>
+                          <p>{slide.factoryComments}</p>
+                        </div>
+                      )}
+                      {slide.material && (
+                        <div className="deck-note">
+                          <h3>Material</h3>
+                          <p>{slide.material}</p>
+                        </div>
+                      )}
+                      {slide.colors && (
+                        <div className="deck-note">
+                          <h3>Colours</h3>
+                          <p>{slide.colors}</p>
+                        </div>
+                      )}
+                      {slide.techPack && (
+                        <div className="deck-note">
+                          <h3>Tech pack</h3>
+                          {/* The link stays clickable in the saved PDF. */}
+                          <p>
+                            <a className="deck-link" href={slide.techPack} target="_blank" rel="noreferrer">
+                              Open tech pack ↗
+                            </a>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
-
-                  <div className="deck-detail">
-                    {slide.fitNotes && (
-                      <div className="deck-note">
-                        <h3>Fit notes</h3>
-                        <p>{slide.fitNotes}</p>
-                      </div>
-                    )}
-                    {slide.factoryComments && (
-                      <div className="deck-note">
-                        <h3>Factory comments</h3>
-                        <p>{slide.factoryComments}</p>
-                      </div>
-                    )}
-                    {slide.material && (
-                      <div className="deck-note">
-                        <h3>Material</h3>
-                        <p>{slide.material}</p>
-                      </div>
-                    )}
-                    {slide.colors && (
-                      <div className="deck-note">
-                        <h3>Colours</h3>
-                        <p>{slide.colors}</p>
-                      </div>
-                    )}
-                    {slide.techPack && (
-                      <div className="deck-note">
-                        <h3>Tech pack</h3>
-                        {/* The link stays clickable in the saved PDF. */}
-                        <p>
-                          <a className="deck-link" href={slide.techPack} target="_blank" rel="noreferrer">
-                            Open tech pack ↗
-                          </a>
-                        </p>
-                      </div>
-                    )}
-                  </div>
                 </div>
-              )}
+
+                {!slide.empty && slide.images.length > 0 && (
+                  <div className="deck-shots">
+                    {slide.images.map((im) => (
+                      <figure key={im.url}>
+                        <span className="paper-shot-frame">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={im.url} alt={im.label} />
+                          {im.pins.map((pin, pi) => (
+                            <span
+                              className="paper-pin"
+                              key={pi}
+                              style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
+                              aria-hidden="true"
+                            >
+                              {pi + 1}
+                            </span>
+                          ))}
+                        </span>
+                        <figcaption>
+                          <strong>{im.label}</strong>
+                          {im.note && <span className="deck-shot-note">{im.note}</span>}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
+              </div>
               {/* The brand mark, small in the bottom-left of every slide, set as
                   the brand NAME in type — the uploaded logo is the light app
                   version and prints invisibly (Tess, 2026-08-24 / 2026-08-27:
