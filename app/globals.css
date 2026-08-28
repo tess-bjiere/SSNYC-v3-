@@ -4445,10 +4445,14 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-coloredit-add{display:flex;align-items:center;gap:8px}
 .ls-coloredit-add .input{width:150px}
 /* The native colour picker as a small square swatch button. */
+/* The swatch is a square that matches the height of the name field beside it —
+   28 on desktop, 36 on touch — so the add-a-colour row lines up (Tess, 2026-08-27:
+   "heights should look clean and consistent"). */
 .ls-hexpick{width:28px;height:28px;padding:0;border:1px solid var(--line);background:none;
   cursor:pointer;flex:0 0 auto;border-radius:0}
 .ls-hexpick::-webkit-color-swatch-wrapper{padding:2px}
 .ls-hexpick::-webkit-color-swatch{border:none}
+@media(pointer:coarse){.ls-hexpick{width:36px;height:36px}}
 /* Each chip circle is itself a colour picker (Tess, 2026-08-26): the swatch is a
    label over a hidden native colour input, so a click opens the picker on that
    chip. A little ring on hover says it is pressable. */
