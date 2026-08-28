@@ -160,6 +160,7 @@ export default async function FittingDeckPage({
         colors: st.colors,
         techPack: st.tech_pack_url,
         sketch: stPhotos.sketch ?? stPhotos.croquis ?? null,
+        sketchBack: stPhotos.sketch_back ?? stPhotos.croquis_back ?? null,
       };
     });
 
@@ -235,12 +236,22 @@ export default async function FittingDeckPage({
                     {slide.fitDate && <p className="deck-fitdate">Fitted {slide.fitDate}</p>}
                   </header>
 
-                  {/* A small sketch of the style, under the header and before the
-                      notes (Tess, 2026-08-28). Shown whenever the style has one,
-                      even on a style with no fitting recorded yet. */}
-                  {slide.sketch && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img className="deck-sketch" src={slide.sketch} alt="" />
+                  {/* A small sketch of the style, front and back, under the header
+                      and before the notes (Tess, 2026-08-28: "a small sketch
+                      should be included ..." + "show back of sketch as well").
+                      Shown whenever the style has either, even with no fitting
+                      recorded yet; the two sit side by side when both exist. */}
+                  {(slide.sketch || slide.sketchBack) && (
+                    <div className="deck-sketches">
+                      {slide.sketch && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="deck-sketch" src={slide.sketch} alt="" />
+                      )}
+                      {slide.sketchBack && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="deck-sketch" src={slide.sketchBack} alt="" />
+                      )}
+                    </div>
                   )}
 
                   {slide.empty ? (

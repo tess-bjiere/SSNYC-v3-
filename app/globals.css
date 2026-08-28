@@ -3235,10 +3235,14 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-bullet{display:flex;gap:6px;font-size:var(--t-sm);line-height:1.5}
 .deck-bullet-mark{flex:0 0 auto;color:#888}
 .deck-bullet-text{flex:1 1 auto;min-width:0}
-/* The small sketch under the header, before the notes. A drawing, not a marked-up
-   shot, so object-fit is fine here — no pins ride on it (Tess, 2026-08-28: "a
-   small sketch should be included under the header info before the fit notes"). */
-.deck-sketch{display:block;width:100%;max-width:2.4in;max-height:1.7in;height:auto;
+/* The small sketch(es) under the header, before the notes. A drawing, not a
+   marked-up shot, so object-fit is fine here — no pins ride on it (Tess,
+   2026-08-28: "a small sketch should be included under the header info before the
+   fit notes"). Front and back sit side by side, each capped to half the column so
+   the pair fits (Tess, 2026-08-28: "show back of sketch as well"); a lone sketch
+   simply stays small at the same half-column size. */
+.deck-sketches{display:flex;gap:12px;align-items:flex-start}
+.deck-sketch{display:block;width:auto;height:auto;max-width:calc(50% - 6px);max-height:1.5in;
   object-fit:contain;object-position:left top;border:1px solid #eee;background:#fafafa}
 /* Material · Colours · Tech pack stacked in one column beside the notes. */
 .deck-specs{display:flex;flex-direction:column;gap:15px}
@@ -3317,6 +3321,14 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      as large as three portrait shots fit in one row of the left zone (Tess,
      2026-08-27: "bump the images to be bigger when they fit"). */
   .deck-shots img{height:330px}
+  /* Three model shots (front/back/side) wrap to two rows on the right — two up,
+     one below. At the larger height the second row and its caption ran past the
+     page bottom, so the third shot was clipped (Tess, 2026-08-28: "the 3rd image
+     for the bras gets cut off, they need to fit on the page with the style info
+     and other photos"). When a slide has a third shot, drop every shot to a
+     height at which both rows and their captions clear the bottom; one or two
+     shots (a single row) keep the larger size. */
+  .deck-shots:has(figure:nth-child(3)) img{height:288px}
   /* A slightly narrower notes column gives the shots room to be bigger. The
      column width now lives on the left column (title + notes), so the shots on
      the right get the rest of the sheet. */

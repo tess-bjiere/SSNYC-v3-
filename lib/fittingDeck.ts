@@ -36,8 +36,10 @@ export type DeckSlideInput = {
   techPack?: string | null;
   // The style's sketch/croquis — a small drawing shown under the header before
   // the fit notes (Tess, 2026-08-28: "a small sketch should be included under the
-  // header info before the fit notes").
+  // header info before the fit notes"). Front and back (Tess, 2026-08-28: "show
+  // back of sketch as well").
   sketch?: string | null;
+  sketchBack?: string | null;
 };
 
 export type DeckSlide = {
@@ -55,8 +57,10 @@ export type DeckSlide = {
   colors: string | null;
   /** The tech-pack URL, or null — rendered as a link on the page. */
   techPack: string | null;
-  /** The style's sketch/croquis URL, or null — a small drawing under the header. */
+  /** The style's front sketch/croquis URL, or null — a small drawing under the header. */
   sketch: string | null;
+  /** The back sketch/croquis URL, or null — shown beside the front when present. */
+  sketchBack: string | null;
   /** True when there is genuinely nothing to show — no shots, no notes. */
   empty: boolean;
 };
@@ -148,6 +152,7 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
     colors: t(input.colors),
     techPack: t(input.techPack),
     sketch: t(input.sketch),
+    sketchBack: t(input.sketchBack),
     // A style someone selected but that has no shots and nothing written is not
     // dropped — the deck says so on its page rather than silently skipping a
     // style the person asked for.

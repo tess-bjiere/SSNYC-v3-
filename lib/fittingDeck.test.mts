@@ -96,6 +96,15 @@ test("the sketch url is carried onto the slide, trimmed, null when blank", () =>
   assert.equal(buildFittingSlide({ name: "x", images: [], sketch: "   " }).sketch, null);
 });
 
+test("the back sketch is carried onto the slide, independent of the front", () => {
+  const s = buildFittingSlide({ name: "x", images: [], sketch: "f.png", sketchBack: " b.png " });
+  assert.equal(s.sketch, "f.png");
+  assert.equal(s.sketchBack, "b.png");
+  // A style with only a back drawing still carries it; a front-only style has null back.
+  assert.equal(buildFittingSlide({ name: "x", images: [], sketchBack: "b.png" }).sketchBack, "b.png");
+  assert.equal(buildFittingSlide({ name: "x", images: [], sketch: "f.png" }).sketchBack, null);
+});
+
 test("noteLines splits a flattened note into bullet and text lines with depth", () => {
   // The shape docToText produces: "• " at the top, "  - " nested two spaces deep.
   const lines = noteLines("Body corrected.\n• Neckline gaps 0.5cm\n• Armhole drag\n  - fix before bulk");
