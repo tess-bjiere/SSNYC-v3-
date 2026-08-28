@@ -593,13 +593,14 @@ export default function MaterialsClient({
           </button>
         </div>
         {canOrder && canEdit && selecting && (
-          <button type="button" className="btn ghost sm" onClick={leaveSelect}>
+          <button type="button" className="btn ghost" onClick={leaveSelect}>
             Cancel
           </button>
         )}
         {canOrder && canEdit && !selecting && (
-          <button type="button" className="btn ghost sm" onClick={() => setSelecting(true)}>
-            {/* Select mode now feeds an order OR a quote (Tess, 2026-08-26). */}
+          <button type="button" className="btn ghost" onClick={() => setSelecting(true)}>
+            {/* Select mode now feeds an order OR a quote (Tess, 2026-08-26). Sized
+                to match the +Add button beside it, not one step smaller. */}
             Select
           </button>
         )}

@@ -432,6 +432,8 @@ body.notes-open .wrap{padding-right:378px}
 @media(pointer:coarse){
   .btn,.btn.sm,.input,.select,.sel-trigger,.tab,.lib-tab{min-height:36px}
   .tab,.lib-tab{display:inline-flex;align-items:center}
+  /* The materials page-head grid/list toggle matches its 36px action buttons. */
+  .page-head .mat-viewtoggle{height:36px}
 }
 
 /* Buttons */
@@ -635,9 +637,17 @@ body.notes-open .wrap{padding-right:378px}
 /* Grid ⇄ list toggle, grouped headers, and the list view (Tess, 2026-08-19:
    "add list view" + "the results should show the swatches under labeled headers
    for how each is divided up"). */
-.mat-viewtoggle{display:inline-flex;border:1px solid var(--line)}
-.mat-vt{background:none;border:none;color:var(--muted);font-family:inherit;font-size:15px;line-height:1;
-  padding:5px 9px;cursor:pointer}
+/* The grid⇄list toggle takes the height of the controls beside it so it never
+   stands a few px short (Tess, 2026-08-27: "heights should look clean and
+   consistent"). It lives in two places: the development sortbar, beside the
+   compact Filter/Sort (28/30), and the materials page-head, beside the action
+   buttons (34/36). Scoped to each so it matches its own row. The icon centres in
+   the height rather than driving it with padding. */
+.mat-viewtoggle{display:inline-flex;align-items:stretch;border:1px solid var(--line)}
+.sortbar .mat-viewtoggle{height:28px}
+.page-head .mat-viewtoggle{height:34px}
+.mat-vt{display:inline-flex;align-items:center;background:none;border:none;color:var(--muted);
+  font-family:inherit;font-size:15px;line-height:1;padding:0 9px;cursor:pointer}
 .mat-vt + .mat-vt{border-left:1px solid var(--line)}
 .mat-vt.on{background:var(--chip);color:var(--ink)}
 
@@ -812,8 +822,11 @@ body.notes-open .wrap{padding-right:378px}
 
 /* Tier filter chips — All / FRED at home / Campaign. */
 .pg-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
-.pg-filter{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
-  font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.08em;padding:5px 12px;cursor:pointer}
+/* The kind/filter chips take the compact toolbar height (28 desktop, 30 mobile)
+   so they line up with the sort control beside them (Tess, 2026-08-27). */
+.pg-filter{display:inline-flex;align-items:center;height:28px;background:none;border:1px solid var(--line);
+  color:var(--muted);font-family:inherit;font-size:var(--t-meta);text-transform:uppercase;
+  letter-spacing:.08em;padding:0 12px;cursor:pointer}
 .pg-filter:hover{color:var(--ink);border-color:var(--muted)}
 .pg-filter.on{background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
 /* Continent / country / city dropdowns — the same treatment as the Library and
@@ -4223,6 +4236,10 @@ textarea.input,textarea.select,.textarea{height:auto}
   .btn.sm.dev-filter-toggle,
   .sortbar .sel-trigger,
   .sortbar .select{height:30px;min-height:30px}
+  /* The dev sortbar's grid/list toggle rides the same 30px as the sort beside it. */
+  .sortbar .mat-viewtoggle{height:30px}
+  /* Kind/filter chips match the 30px sort in their row on mobile. */
+  .pg-filter{height:30px}
   .tab,
   .btn.sm.dev-filter-toggle,
   #devsort,
