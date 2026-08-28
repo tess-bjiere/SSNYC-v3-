@@ -1859,7 +1859,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .sr-note .k{display:inline-block;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-right:8px;vertical-align:1px}
 .sr-form{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
 .sr-form.add{border-top:none;padding-top:0;margin-top:14px}
-.sr-legend{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:16px 0 10px}
+.sr-legend{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:16px 0 10px}
+/* The quiet pointer to /fit-tips, pushed to the right of the legend (Tess,
+   2026-08-26). Normal-case so it reads as a link, not a label. */
+.sr-tips{margin-left:auto;font-size:var(--t-meta);text-transform:none;letter-spacing:.02em;color:var(--muted);text-decoration:none}
+.sr-tips:hover{color:var(--ink);text-decoration:underline}
 /* No top gap on the first legend in a form — the form's own padding already sets
    it off; the 16px is for the space BETWEEN sections. */
 .sr-form > .sr-legend:first-child,

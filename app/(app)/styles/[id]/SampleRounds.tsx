@@ -1530,6 +1530,11 @@ function RoundCard({
       <div className="sr-shoot">
         <div className="sr-legend">
           Sample images <span className="ph-progress">{photoProgressLabel(slotPhotos)}</span>
+          {/* The pointer to the short shooting/notes standard, right where the
+              camera work happens (Tess, 2026-08-26). */}
+          <Link href="/fit-tips" className="sr-tips no-print" title="How to shoot fit photos and write notes">
+            Fit photos &amp; notes ↗
+          </Link>
         </div>
         <SlotCards
           styleId={styleId}
