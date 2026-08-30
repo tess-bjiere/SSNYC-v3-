@@ -3262,6 +3262,28 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* Material · Colours · Tech pack stacked in one column beside the notes. */
 .deck-specs{display:flex;flex-direction:column;gap:15px}
 .deck-empty{color:#888;font-style:italic;font-size:var(--t-sm)}
+/* The export-scope toggle (Latest round / + History) beside Save as PDF — a
+   no-print toolbar above the deck (Tess, 2026-08-28: "a toggle that says export
+   most recent sample or export sample + history"). */
+.deck-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 4px}
+.deck-mode{display:inline-flex;border:1px solid var(--hair);border-radius:6px;overflow:hidden}
+.deck-mode-opt{padding:5px 12px;font-size:var(--t-sm);color:var(--muted);text-decoration:none;line-height:1.2}
+.deck-mode-opt + .deck-mode-opt{border-left:1px solid var(--hair)}
+.deck-mode-opt.is-active{color:var(--ink);background:var(--field)}
+/* The prior-rounds strip under the current round's notes in the +history export.
+   Each round: label · date · rating dot, then its words a notch smaller than the
+   current round — so the column reads as "now, and how it got here". */
+.deck-history{margin-top:2px;padding-top:12px;border-top:1px solid #e5e5e5;
+  display:flex;flex-direction:column;gap:11px}
+.deck-history > h3{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:#888;margin:0}
+.deck-history-round{display:flex;flex-direction:column;gap:3px}
+.deck-history-head{display:flex;align-items:center;gap:8px}
+.deck-history-label{font-size:var(--t-meta);font-weight:600;color:#222}
+.deck-history-date{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:#999}
+.deck-history .deck-notebody{gap:2px}
+.deck-history .deck-bullet,.deck-history .deck-para{font-size:var(--t-meta);line-height:1.45}
+.deck-history-fc{margin:0;font-size:var(--t-meta);line-height:1.45;color:#444}
+.deck-history-fc-label{color:#999;font-weight:600}
 @media print{
   /* The fitting deck follows the same export rules the linesheet deck was tuned
      to (Tess, 2026-08-12: "apply these same design rules ... to the exports for

@@ -7,6 +7,7 @@ import { brandName } from "@/lib/brands";
 import {
   SAMPLE_ROUNDS,
   SAMPLE_ROUND_LABELS,
+  sampleRatingLabel,
   type SampleRound,
   type Style,
   type StyleSample,
@@ -103,12 +104,16 @@ function NoteBody({ text }: { text: string | null }) {
 export default async function FittingDeckPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ids?: string }>;
+  searchParams: Promise<{ ids?: string; history?: string }>;
 }) {
   await requireTeam(); // product side, team only
-  const { ids: raw } = await searchParams;
+  const { ids: raw, history: historyRaw } = await searchParams;
   // Selection order is kept — the deck reads in the order the styles were picked.
   const ids = (raw ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  // "+ History" export: each style also carries its prior rounds, condensed
+  // (Tess, 2026-08-28: "export sample + history ... to show open questions /
+  // recurring issues on the style"). Default is the latest round only.
+  const historyOn = historyRaw === "1";
 
   const supabase = await createClient();
   let styles: Style[] = [];
@@ -136,6 +141,18 @@ export default async function FittingDeckPage({
     .map((st) => {
       const rounds = sortSamples(roundsByStyle.get(st.id) ?? [], SAMPLE_ROUNDS);
       const round = latestSample(rounds, SAMPLE_ROUNDS);
+      // Prior rounds for the history strip: everything before the current one
+      // (sortSamples is cycle-ascending, so the current round is the last),
+      // newest-first. Only assembled for the +history export.
+      const priorRounds = historyOn
+        ? rounds.slice(0, -1).reverse().map((r) => ({
+            roundLabel: SAMPLE_ROUND_LABELS[r.round as SampleRound] ?? r.round,
+            fittingDate: r.fitting_date ? shortDate(r.fitting_date) : null,
+            rating: r.rating,
+            fitNotes: docToText(r.fit_notes),
+            factoryComments: docToText(r.comments),
+          }))
+        : undefined;
       // The sketch lives on the STYLE (styles.photos), not the round — the front
       // technical sketch, or the front croquis when there is no flat drawing
       // (Tess, 2026-08-28: "a small sketch should be included under the header").
@@ -166,6 +183,7 @@ export default async function FittingDeckPage({
         techPack: st.tech_pack_url,
         sketch: stPhotos.sketch ?? stPhotos.croquis ?? null,
         sketchBack: stPhotos.sketch_back ?? stPhotos.croquis_back ?? null,
+        history: priorRounds,
       };
     });
 
@@ -190,7 +208,29 @@ export default async function FittingDeckPage({
         </Link>
       </div>
 
-      <DeckActions fileTitle={`SS_Fitting_${generatedOn}`} />
+      <div className="deck-toolbar no-print">
+        {/* Export scope: latest round only, or the latest plus each style's prior
+            rounds condensed (Tess, 2026-08-28: "a toggle that says export most
+            recent sample or export sample + history"). Two links, so the choice
+            is a plain URL the print then captures. */}
+        {ids.length > 0 && (
+          <div className="deck-mode" role="group" aria-label="Export scope">
+            <Link
+              href={`/fitting-deck?ids=${ids.join(",")}`}
+              className={`deck-mode-opt${historyOn ? "" : " is-active"}`}
+            >
+              Latest round
+            </Link>
+            <Link
+              href={`/fitting-deck?ids=${ids.join(",")}&history=1`}
+              className={`deck-mode-opt${historyOn ? " is-active" : ""}`}
+            >
+              + History
+            </Link>
+          </div>
+        )}
+        <DeckActions fileTitle={`SS_Fitting_${generatedOn}`} />
+      </div>
 
       {deck.slides.length === 0 ? (
         <p className="export-note no-print">
@@ -294,6 +334,37 @@ export default async function FittingDeckPage({
                               Open tech pack ↗
                             </a>
                           </p>
+                        </div>
+                      )}
+                      {/* The prior rounds, condensed, in the +history export —
+                          each round's verdict and words under the current one so a
+                          recurring or unresolved issue reads down the column
+                          (Tess, 2026-08-28: "show open questions / recurring
+                          issues on the style"). */}
+                      {slide.history.length > 0 && (
+                        <div className="deck-history">
+                          <h3>History</h3>
+                          {slide.history.map((h, hi) => (
+                            <div className="deck-history-round" key={hi}>
+                              <div className="deck-history-head">
+                                <span className="deck-history-label">{h.roundLabel ?? "Round"}</span>
+                                {h.fitDate && <span className="deck-history-date">{h.fitDate}</span>}
+                                {h.rating && (
+                                  <span
+                                    className={`sib-dot ${h.rating}`}
+                                    title={sampleRatingLabel(h.rating)}
+                                    aria-hidden="true"
+                                  />
+                                )}
+                              </div>
+                              {h.fitNotes && <NoteBody text={h.fitNotes} />}
+                              {h.factoryComments && (
+                                <p className="deck-history-fc">
+                                  <span className="deck-history-fc-label">Factory:</span> {h.factoryComments}
+                                </p>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

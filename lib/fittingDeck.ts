@@ -12,6 +12,26 @@
 export type DeckPin = { x: number; y: number; text: string };
 export type DeckImage = { url: string; label: string; note: string | null; pins: DeckPin[] };
 
+/** A prior round condensed for the history strip — the words, the verdict, and
+ *  when, with no photos. Reading down these is how a recurring complaint or an
+ *  unanswered question shows itself (Tess, 2026-08-28: "more history on each
+ *  style ... to show open questions / recurring issues"). */
+export type DeckHistoryRoundInput = {
+  roundLabel?: string | null;
+  /** The fitting date, already formatted for display. */
+  fittingDate?: string | null;
+  rating?: string | null;
+  fitNotes?: string | null;
+  factoryComments?: string | null;
+};
+export type DeckHistoryRound = {
+  roundLabel: string | null;
+  fitDate: string | null;
+  rating: string | null;
+  fitNotes: string | null;
+  factoryComments: string | null;
+};
+
 /** One style's contribution to the deck, before it is shaped into a slide. */
 export type DeckSlideInput = {
   styleNo?: string | null;
@@ -45,6 +65,9 @@ export type DeckSlideInput = {
   // back of sketch as well").
   sketch?: string | null;
   sketchBack?: string | null;
+  // Prior rounds, newest-first, for the history strip. Empty/absent in the
+  // default latest-only export (Tess, 2026-08-28: "export sample + history").
+  history?: DeckHistoryRoundInput[];
 };
 
 export type DeckSlide = {
@@ -66,6 +89,8 @@ export type DeckSlide = {
   sketch: string | null;
   /** The back sketch/croquis URL, or null — shown beside the front when present. */
   sketchBack: string | null;
+  /** Prior rounds, newest-first, condensed; empty in the latest-only export. */
+  history: DeckHistoryRound[];
   /** True when there is genuinely nothing to show — no shots, no notes. */
   empty: boolean;
 };
@@ -166,6 +191,29 @@ export function materialLine(s: {
   return dots([s.materialType, s.materialContents, s.materialSupplier]) || null;
 }
 
+/** The prior rounds condensed and cleaned — order preserved (the caller passes
+ *  them newest-first), each field trimmed, and any round with nothing to say
+ *  (no rating and no notes) dropped, since an empty row adds only clutter. */
+function buildHistory(rounds: DeckHistoryRoundInput[] | undefined): DeckHistoryRound[] {
+  if (!rounds || !rounds.length) return [];
+  const out: DeckHistoryRound[] = [];
+  for (const r of rounds) {
+    const rating = t(r.rating);
+    const fitNotes = t(r.fitNotes);
+    const factoryComments = t(r.factoryComments);
+    // A round the reader can learn nothing from is not worth a row.
+    if (!rating && !fitNotes && !factoryComments) continue;
+    out.push({
+      roundLabel: t(r.roundLabel),
+      fitDate: t(r.fittingDate),
+      rating,
+      fitNotes,
+      factoryComments,
+    });
+  }
+  return out;
+}
+
 export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
   const fitNotes = t(input.fitNotes);
   const factoryComments = t(input.factoryComments);
@@ -183,6 +231,7 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
     techPack: t(input.techPack),
     sketch: t(input.sketch),
     sketchBack: t(input.sketchBack),
+    history: buildHistory(input.history),
     // A style someone selected but that has no shots and nothing written is not
     // dropped — the deck says so on its page rather than silently skipping a
     // style the person asked for.

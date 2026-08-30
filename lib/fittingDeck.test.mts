@@ -89,6 +89,40 @@ test("the cover carries the season, the brand and the list of products", () => {
   assert.equal(bare.brand, null);
 });
 
+test("history carries prior rounds in the given order, trimmed", () => {
+  const slide = buildFittingSlide({
+    name: "x", images: [],
+    history: [
+      { roundLabel: "2nd Proto", fittingDate: "12 Aug 26", rating: "workable",
+        fitNotes: " Shoulder still wide ", factoryComments: " " },
+      { roundLabel: "1st Proto", fittingDate: "1 Jul 26", rating: "poor",
+        fitNotes: "Body 2cm long", factoryComments: "Wrong rib" },
+    ],
+  });
+  assert.deepEqual(slide.history, [
+    { roundLabel: "2nd Proto", fitDate: "12 Aug 26", rating: "workable",
+      fitNotes: "Shoulder still wide", factoryComments: null },
+    { roundLabel: "1st Proto", fitDate: "1 Jul 26", rating: "poor",
+      fitNotes: "Body 2cm long", factoryComments: "Wrong rib" },
+  ]);
+});
+
+test("history drops rounds with nothing to show but keeps a rating-only round", () => {
+  const slide = buildFittingSlide({
+    name: "x", images: [],
+    history: [
+      { roundLabel: "PPS", fittingDate: "1 Sep 26", rating: "good" }, // rating only — kept
+      { roundLabel: "SMS", fittingDate: "20 Aug 26" },                // nothing — dropped
+      { roundLabel: "2nd Proto", rating: null, fitNotes: "Neckline gaps" },
+    ],
+  });
+  assert.deepEqual(slide.history.map((h) => h.roundLabel), ["PPS", "2nd Proto"]);
+});
+
+test("history is empty when no prior rounds are passed (latest-only mode)", () => {
+  assert.deepEqual(buildFittingSlide({ name: "x", images: [] }).history, []);
+});
+
 test("material falls back to the style's free-text spec when the round has none", () => {
   // Round-level structured material wins when present.
   assert.equal(
