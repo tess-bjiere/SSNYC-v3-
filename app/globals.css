@@ -3298,8 +3298,18 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
      min-width holds the landscape layout the desktop gets — the browser then
      scales that whole width onto the sheet — so the slide reads the same
      wherever it is saved. Kept as min-width, not a fixed width, so a wide
-     desktop page still fills the sheet rather than gaining side margins. */
-  .deck{box-shadow:none;margin:0;max-width:none;min-width:960px;scroll-snap-type:none}
+     desktop page still fills the sheet rather than gaining side margins.
+
+     Then a phone still exported at the wrong size, because a min-width in px lets
+     the mobile print engine scale the whole layout onto the sheet by some factor
+     of its own, and the height below was in vh — which on a phone resolves
+     against the device screen, not the page (Tess, 2026-08-28: "when exporting
+     decks on mobile they should also be sized the same as they are on desktop --
+     8.5x11 landscape pages"). Pinning the deck to the page's OWN width in inches
+     (11in = the landscape letter width) means the content already matches the
+     sheet, so there is nothing to scale and a phone renders it 1:1 like the
+     desktop. Everything below is in inches for the same reason. */
+  .deck{box-shadow:none;margin:0;width:11in;min-width:11in;max-width:none;scroll-snap-type:none}
   /* One product per landscape sheet, and EXACTLY one — every style's info fits on
      a single page and never spills onto a second (Tess, 2026-08-27: "make sure
      each style has all info on 1 page -- do not overflow"). The slide is pinned to
@@ -3312,7 +3322,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* Margins halved to give the page more room (Tess, 2026-08-28: "reduce margins
      by 50% on top bottom left and right to have more space on the page"):
      0.5/0.7/0.85in → 0.25/0.35/0.425in. */
-  .deck-slide{position:relative;height:98vh;overflow:hidden;box-sizing:border-box;
+  /* Height in inches, not vh: landscape letter is 8.5in tall, and a fixed inch
+     height renders the same on a phone and a laptop (vh resolved against the
+     phone's screen). 8.4in leaves a hair under the 8.5in sheet so a full slide
+     never rounds onto a trailing blank page. */
+  .deck-slide{position:relative;height:8.4in;overflow:hidden;box-sizing:border-box;
     justify-content:space-between;padding:0.25in 0.35in 0.425in;break-before:page;break-inside:avoid;border-top:none}
   /* The brand mark — the name in the serif wordmark face — small in the bottom-
      LEFT corner, flush with the content's left edge (Tess, 2026-08-27: "Sous Sous
