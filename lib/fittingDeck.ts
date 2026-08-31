@@ -45,6 +45,11 @@ export type DeckSlideInput = {
    *  2026-08-24: "fit decks should include date of fitting for each style"). */
   fittingDate?: string | null;
   images: DeckImage[];
+  // How the garment should fit — the design target, shown above the fit notes on
+  // the deck (Tess, 2026-08-28: "the description of the fit to live above the fit
+  // notes when exporting the fitting deck"). Style-level, so it is the same on
+  // every round's page.
+  intendedFit?: string | null;
   fitNotes?: string | null;
   factoryComments?: string | null;
   materialType?: string | null;
@@ -77,6 +82,8 @@ export type DeckSlide = {
   /** When this round was fitted, formatted for display; null when unrecorded. */
   fitDate: string | null;
   images: DeckImage[];
+  /** How the garment should fit — the design target, above the fit notes. */
+  intendedFit: string | null;
   fitNotes: string | null;
   factoryComments: string | null;
   /** "Nylon · 100% Poly · XX Premiere", or null when nothing is recorded. */
@@ -215,6 +222,7 @@ function buildHistory(rounds: DeckHistoryRoundInput[] | undefined): DeckHistoryR
 }
 
 export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
+  const intendedFit = t(input.intendedFit);
   const fitNotes = t(input.fitNotes);
   const factoryComments = t(input.factoryComments);
   // The round's own fabric line, else the style's free-text material spec.
@@ -224,6 +232,7 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
     subtitle: dots([input.styleNo, input.roundLabel, input.garment, input.factory]),
     fitDate: t(input.fittingDate),
     images: input.images,
+    intendedFit,
     fitNotes,
     factoryComments,
     material,
@@ -235,7 +244,7 @@ export function buildFittingSlide(input: DeckSlideInput): DeckSlide {
     // A style someone selected but that has no shots and nothing written is not
     // dropped — the deck says so on its page rather than silently skipping a
     // style the person asked for.
-    empty: input.images.length === 0 && !fitNotes && !factoryComments && !material,
+    empty: input.images.length === 0 && !intendedFit && !fitNotes && !factoryComments && !material,
   };
 }
 

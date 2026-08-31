@@ -89,6 +89,16 @@ test("the cover carries the season, the brand and the list of products", () => {
   assert.equal(bare.brand, null);
 });
 
+test("intended fit is carried onto the slide, trimmed; it alone is not empty", () => {
+  assert.equal(
+    buildFittingSlide({ name: "x", images: [], intendedFit: "  Relaxed, hits at the hip.  " }).intendedFit,
+    "Relaxed, hits at the hip."
+  );
+  assert.equal(buildFittingSlide({ name: "x", images: [] }).intendedFit, null);
+  // A style with only an intended fit still has a page — it is not "empty".
+  assert.equal(buildFittingSlide({ name: "x", images: [], intendedFit: "Slim." }).empty, false);
+});
+
 test("history carries prior rounds in the given order, trimmed", () => {
   const slide = buildFittingSlide({
     name: "x", images: [],

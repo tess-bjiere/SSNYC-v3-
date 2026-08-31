@@ -167,6 +167,10 @@ export default async function FittingDeckPage({
         factory: round?.factory ?? st.factory,
         fittingDate: round?.fitting_date ? shortDate(round.fitting_date) : null,
         images: modelImages(round),
+        // The style's intended fit — how it should sit, above the fit notes on
+        // the deck (Tess, 2026-08-28: "the description of the fit to live above
+        // the fit notes when exporting the fitting deck").
+        intendedFit: st.intended_fit,
         // A note may now be a TipTap doc — flatten to its bulleted text so the
         // deck reads it, never raw JSON (Tess, 2026-08-24: "go with TipTap").
         fitNotes: docToText(round?.fit_notes),
@@ -303,6 +307,16 @@ export default async function FittingDeckPage({
                     <p className="deck-empty">No fitting recorded for this style yet.</p>
                   ) : (
                     <div className="deck-detail">
+                      {/* How the garment should fit — the design target, above the
+                          fit notes (Tess, 2026-08-28: "the description of the fit
+                          to live above the fit notes when exporting the fitting
+                          deck"). */}
+                      {slide.intendedFit && (
+                        <div className="deck-note">
+                          <h3>Intended fit</h3>
+                          <NoteBody text={slide.intendedFit} />
+                        </div>
+                      )}
                       {slide.fitNotes && (
                         <div className="deck-note">
                           <h3>Fit notes</h3>
