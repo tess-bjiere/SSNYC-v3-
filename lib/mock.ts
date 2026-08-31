@@ -85,6 +85,7 @@ export const mockStyles: Style[] = [
   wip_url: "https://example.com/wip",
   notes: i === 0 ? "Repurpose of SS26 tank — new washed-pastel colorway." : null,
   fit_notes: i === 0 ? "Runs long through the body — the block still needs 1cm off the front rise." : null,
+  intended_fit: i === 0 ? "Relaxed through the body, hits at the high hip, with a dropped shoulder and a sleeve that ends at the wristbone. Meant to be worn loose but not oversized." : null,
   // The first two styles are drawn, so MOCK mode exercises the profile-picture
   // resolution in lib/styleCover.ts rather than only its cover_image fallback:
   // one with a front/back pair, one with a front alone, and the rest still

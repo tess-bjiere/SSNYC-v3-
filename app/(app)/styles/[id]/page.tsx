@@ -966,6 +966,17 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 fact about the style, like the fabric and the tech pack, so it
                 is a row in the same grid, on the same rhythm as Notes, and it
                 reads before the button that edits it. */}
+            {/* How the garment should fit — the design target, read before the
+                running "Fit" story below it: intent first, then what happened
+                (Tess, 2026-08-28: "a description of how the garment should fit
+                ... single sentence to a short paragraph"). Plain text, so Linked
+                rather than the rich renderer the notes use. */}
+            {st.intended_fit && (
+              <div className="kv kv-wide">
+                <span className="k">Intended fit</span>
+                <Linked text={st.intended_fit} />
+              </div>
+            )}
             {st.fit_notes && (
               <div className="kv kv-wide">
                 <span className="k">Fit</span>
@@ -1138,6 +1149,16 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 )}
               </div>
               <div className="field"><label>Notes</label><RichNotesField name="notes" defaultValue={st.notes} /></div>
+              <div className="field">
+                <label>Intended fit — how it should sit on the body</label>
+                <textarea
+                  className="textarea"
+                  name="intended_fit"
+                  defaultValue={st.intended_fit ?? ""}
+                  rows={2}
+                  placeholder="e.g. Slim through the body, hits at the high hip, sleeve ends at the wristbone."
+                />
+              </div>
               <div className="field">
                 <label>Fit notes — the running story across rounds</label>
                 <RichNotesField name="fit_notes" defaultValue={st.fit_notes} />

@@ -434,6 +434,12 @@ export type Style = {
   // The running fit story that carries across sample rounds — block, pattern,
   // the thing we keep getting wrong. Per-round fit is on StyleSample.
   fit_notes: string | null;
+  // How the garment SHOULD sit — the design target, a sentence to a short
+  // paragraph (Tess, 2026-08-28: "a description of how the garment should fit
+  // ... single sentence to a short paragraph"). Distinct from fit_notes above,
+  // which records what keeps going wrong; this is the intent. Plain text,
+  // nullable and additive — every style that predates it reads blank.
+  intended_fit: string | null;
   // The photography standard's slots, keyed by slot id. See lib/photoSlots.ts —
   // always read this through normalizePhotos rather than indexing it directly.
   photos: Record<string, string> | null;

@@ -203,6 +203,8 @@ export async function updateStyle(id: string, form: FormData) {
     tech_pack_url: s(form, "tech_pack_url"),
     notes: s(form, "notes"),
     fit_notes: s(form, "fit_notes"),
+    // How the garment should fit — the design target (Tess, 2026-08-28).
+    intended_fit: s(form, "intended_fit"),
     evergreen: form.get("evergreen") === "on",
     ...(status ? { status } : {}),
     updated_at: new Date().toISOString(),
