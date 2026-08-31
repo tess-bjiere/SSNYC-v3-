@@ -974,7 +974,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
             {st.intended_fit && (
               <div className="kv kv-wide">
                 <span className="k">Intended fit</span>
-                <Linked text={st.intended_fit} />
+                <RichNote value={st.intended_fit} />
               </div>
             )}
             {st.fit_notes && (
@@ -1151,13 +1151,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               <div className="field"><label>Notes</label><RichNotesField name="notes" defaultValue={st.notes} /></div>
               <div className="field">
                 <label>Intended fit — how it should sit on the body</label>
-                <textarea
-                  className="textarea"
-                  name="intended_fit"
-                  defaultValue={st.intended_fit ?? ""}
-                  rows={2}
-                  placeholder="e.g. Slim through the body, hits at the high hip, sleeve ends at the wristbone."
-                />
+                {/* Rich like Notes and Fit notes, so it can be bulleted (Tess,
+                    2026-08-28: "option to bullet like other sections"). */}
+                <RichNotesField name="intended_fit" defaultValue={st.intended_fit} />
               </div>
               <div className="field">
                 <label>Fit notes — the running story across rounds</label>

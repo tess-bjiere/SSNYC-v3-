@@ -3220,7 +3220,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-slide:not(.deck-cover){justify-content:flex-start}
 .deck-slide-body{display:flex;gap:40px;align-items:flex-start}
 .deck-slide-left{flex:0 0 36%;min-width:0;display:flex;flex-direction:column;gap:20px}
-.deck-detail{min-width:0;display:flex;flex-direction:column;gap:18px}
+/* More air between the note sections (Intended fit, Fit notes, Factory comments,
+   Material, Tech pack) so the export reads cleanly rather than as one dense block
+   (Tess, 2026-08-28: "add more space between each text section on the export for
+   readability"). */
+.deck-detail{min-width:0;display:flex;flex-direction:column;gap:26px}
 /* On a narrow screen the on-screen preview stacks (print always lays out wide). */
 @media(max-width:760px){.deck-slide-body{flex-direction:column;gap:20px}.deck-slide-left{flex-basis:auto;width:100%}}
 /* Every shot on the slide at one height and one gap (Tess, 2026-08-24: "all

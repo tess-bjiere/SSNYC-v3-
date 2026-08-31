@@ -169,8 +169,9 @@ export default async function FittingDeckPage({
         images: modelImages(round),
         // The style's intended fit — how it should sit, above the fit notes on
         // the deck (Tess, 2026-08-28: "the description of the fit to live above
-        // the fit notes when exporting the fitting deck").
-        intendedFit: st.intended_fit,
+        // the fit notes when exporting the fitting deck"). Now a TipTap doc so it
+        // can be bulleted — flatten to text like the other notes.
+        intendedFit: docToText(st.intended_fit),
         // A note may now be a TipTap doc — flatten to its bulleted text so the
         // deck reads it, never raw JSON (Tess, 2026-08-24: "go with TipTap").
         fitNotes: docToText(round?.fit_notes),
