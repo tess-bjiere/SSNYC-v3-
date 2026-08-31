@@ -3410,10 +3410,18 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   /* With a third shot the pair-plus-one is two rows; trim the height a little so
      both rows and their captions clear the bottom even when a caption runs long. */
   .deck-shots:has(figure:nth-child(3)) img{max-height:300px}
-  /* A slightly narrower notes column gives the shots room to be bigger. The
-     column width now lives on the left column (title + notes), so the shots on
-     the right get the rest of the sheet. */
-  .deck-slide-left{flex-basis:34%}
+  /* Force the two-column layout for every export, whatever the viewport. The
+     narrow-screen rule (@media max-width:760px) stacks the body into a column and
+     widens the notes to full width — meant for reading the deck on a phone — but
+     it also fires when you PRINT from a phone, which pushed the photos below the
+     notes and off the bottom of the sheet (Tess, 2026-08-28: "photos have now
+     been pushed down on the export -- they need to be on the right side and fit
+     on the single page"). Print always lays the deck out at 11in, so the notes
+     stay a narrow column on the left and the shots take the right. A slightly
+     narrower notes column also gives the shots room to be bigger. */
+  .deck-slide-body{flex-direction:row;gap:40px}
+  .deck-slide-left{flex:0 0 34%;width:auto}
+  .deck-shots{flex:1 1 auto}
 }
 /* A wrapping row of equal-height shots (Tess, 2026-08-24: "Size images the same
    heights on the exports"), the way the sketch pair above already sits. A grid of
