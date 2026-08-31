@@ -17,6 +17,7 @@ import {
 } from "@/lib/commentEdit";
 import { STYLE_STATUSES, type StyleStatus } from "@/lib/types";
 import { parseMentions } from "@/lib/mentions";
+import { isHeicUpload, isAcceptableImage } from "@/lib/imageUpload";
 import { DESIGN_SLOTS, isPhotoSlot, writePhotos } from "@/lib/photoSlots";
 import {
   COLORWAYS_KEY,
@@ -1043,16 +1044,30 @@ async function resolveImage(
   const file = form.get("file");
 
   if (file instanceof File && file.size > 0) {
-    if (!file.type.startsWith("image/")) return { error: "That file is not an image." };
+    // An empty-MIME HEIC an iPhone hands over must not be rejected as "not an
+    // image"; isAcceptableImage lets it through and the conversion below makes it
+    // a JPEG (Tess, 2026-08-28: "we just uploaded iphone photos and are getting
+    // broken link errors").
+    if (!isAcceptableImage(file.name, file.type)) return { error: "That file is not an image." };
     if (isOversize(file.size)) return { error: oversizeError(file.name, file.size) };
 
-    const path = `${pathPrefix}-${crypto.randomUUID()}.${photoExt(file.type)}`;
+    let buf: Uint8Array = Buffer.from(await file.arrayBuffer());
+    let ext = photoExt(file.type);
+    let contentType = file.type || "image/jpeg";
+    // HEIC/HEIF (iPhone photos) upload fine but most browsers can't display them,
+    // so convert to JPEG on the way in — the same path the materials uploader
+    // already uses. sharp decodes HEIF; the stored image is a normal JPEG, which
+    // is why these were showing as broken links before.
+    if (isHeicUpload(file.name, file.type)) {
+      buf = await sharp(buf).rotate().jpeg({ quality: 85 }).toBuffer();
+      ext = "jpg";
+      contentType = "image/jpeg";
+    }
+
+    const path = `${pathPrefix}-${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from(REFERENCES_BUCKET)
-      .upload(path, Buffer.from(await file.arrayBuffer()), {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
+      .upload(path, buf, { contentType, upsert: false });
     if (upErr) return { error: upErr.message };
 
     const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
