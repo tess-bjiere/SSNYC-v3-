@@ -3380,12 +3380,12 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   .deck-slide{position:relative;height:8.4in;overflow:hidden;box-sizing:border-box;
     justify-content:space-between;padding:0.25in 0.35in 0.425in;break-before:page;break-inside:avoid;border-top:none}
   /* The brand mark — the name in the serif wordmark face — small in the bottom-
-     LEFT corner, flush with the content's left edge (Tess, 2026-08-27: "Sous Sous
-     logo should be in bottom left corner and even smaller" + "font"). Absolute so
-     it never shifts the notes; each slide is its own page, so it reads as a page
-     footer. */
-  .deck-slide-foot{position:absolute;left:0.35in;right:auto;bottom:0.16in;
-    display:flex;justify-content:flex-start;align-items:center}
+     RIGHT corner, flush with the content's right edge (Tess, 2026-08-28: "move
+     bottom logo to bottom right corner"; it began bottom-left per 2026-08-27).
+     Absolute so it never shifts the notes; each slide is its own page, so it
+     reads as a page footer. */
+  .deck-slide-foot{position:absolute;right:0.35in;left:auto;bottom:0.16in;
+    display:flex;justify-content:flex-end;align-items:center}
   /* Wordmark on the internal (per-style) pages, down 35% (Tess, 2026-08-28:
      "reduce logo size on the internal pages by 35%"): 0.195in → 0.127in. */
   .deck-slide-foot img{height:0.127in;width:auto;opacity:.85}
