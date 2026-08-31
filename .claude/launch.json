@@ -6,6 +6,13 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "ssync-mock",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NEXT_PUBLIC_MOCK=1", "PORT=4193", "npm", "run", "dev"],
+      "port": 4193,
+      "url": "http://localhost:4193"
     }
   ]
 }

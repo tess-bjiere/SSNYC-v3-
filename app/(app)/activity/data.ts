@@ -6,6 +6,7 @@ import {
   type ActivityComment,
   type ActivityItem,
 } from "@/lib/activity";
+import { localPart, parseMentions } from "@/lib/mentions";
 
 // The database side of the in-app activity feed (Tess, 2026-08-26). The pure feed
 // logic lives in lib/activity; this reads the rows it needs. Every read is guarded
@@ -37,7 +38,8 @@ async function watchedIds(
   brand: string,
   me: string | null
 ): Promise<{ watched: Set<string>; names: Map<string, string> }> {
-  const [createdRes, commentedRes] = await Promise.all([
+  if (!me) return { watched: new Set<string>(), names: new Map<string, string>() };
+  const [createdRes, commentedRes, mentionedRes] = await Promise.all([
     supabase
       .from("styles")
       .select("id,name")
@@ -45,13 +47,27 @@ async function watchedIds(
       .eq("created_by", me)
       .is("deleted_at", null),
     supabase.from("style_comments").select("style_id").eq("author", me),
+    // Styles where a comment tags me. The ilike narrows to bodies that mention my
+    // handle; parseMentions then confirms it is really a tag of me and not a
+    // longer name that merely contains it (Tess, 2026-08-28: @mentions surface in
+    // the feed so a tagged person can follow the thread).
+    supabase
+      .from("style_comments")
+      .select("style_id,body")
+      .ilike("body", `%@${localPart(me)}%`)
+      .is("deleted_at", null)
+      .limit(500),
   ]);
   const created = (createdRes.data ?? []) as { id: string; name: string | null }[];
   const commented = ((commentedRes.data ?? []) as { style_id: string }[]).map((r) => r.style_id);
+  const mentioned = ((mentionedRes.data ?? []) as { style_id: string; body: string | null }[])
+    .filter((r) => parseMentions(r.body, [me]).length > 0)
+    .map((r) => r.style_id);
   const watched = watchedStyleIds({
     me,
     createdStyleIds: created.map((s) => s.id),
-    commentedStyleIds: commented,
+    // Mentioned-in styles behave like commented-on ones: I care about them.
+    commentedStyleIds: [...commented, ...mentioned],
   });
   const names = new Map(created.map((s) => [s.id, s.name || "a style"]));
   return { watched, names };

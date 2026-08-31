@@ -26,6 +26,7 @@ import {
   duplicateStyle,
   deleteStyle,
   restoreStyle,
+  mentionableEmails,
 } from "@/app/actions/styles";
 import { unlinkReferenceForm } from "@/app/actions/styleRefs";
 import { normalizePhotos, DESIGN_SLOTS, PHOTO_SLOTS } from "@/lib/photoSlots";
@@ -1341,6 +1342,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
         rounds={roundOptions}
         photoNotes={photoNotes}
         viewerEmail={viewer?.email ?? null}
+        team={await mentionableEmails()}
       />
     </div>
   );

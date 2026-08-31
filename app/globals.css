@@ -1376,6 +1376,22 @@ body.nav-open .notes-tab{display:none}
 .note-reply-form{display:flex;gap:6px;margin-top:10px}
 .note-reply-form .input{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
 .note-add{border-top:1px solid var(--line);padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+/* @-mention typeahead (Tess, 2026-08-28: "yes build @mentions"). The field is the
+   app's own textarea/input; a menu of teammates drops under it while you type an
+   "@token", and picking one splices "@name " in. */
+.mention-wrap{position:relative;display:block}
+.note-reply-form .mention-wrap{flex:1}
+.mention-wrap > .textarea,.mention-wrap > .input{width:100%;box-sizing:border-box}
+.mention-menu{position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:40;margin:0;padding:4px;
+  list-style:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 10px 28px rgba(0,0,0,.45);max-height:210px;overflow:auto}
+.mention-opt{display:flex;align-items:baseline;gap:8px;padding:6px 9px;border-radius:5px;cursor:pointer;
+  font-size:var(--t-sm);color:var(--ink)}
+.mention-opt.is-active{background:rgba(236,238,241,.08)}
+.mention-opt b{font-weight:600}
+.mention-email{color:var(--muted);font-size:var(--t-meta)}
+/* A resolved @name inside a posted comment — a quiet emphasis, not a link. */
+.mention-tag{font-weight:600;color:var(--ink)}
 
 /* Empty state */
 .empty{border:1px dashed var(--line);padding:48px;text-align:center;color:var(--faint);font-size:var(--t-sm)}

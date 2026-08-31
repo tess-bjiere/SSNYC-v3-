@@ -20,6 +20,7 @@ import {
   filterPhotoNotes,
   type PhotoNoteEntry,
 } from "@/lib/photoNotes";
+import MentionInput from "./MentionInput";
 import { canDeleteComment, canEditComment } from "@/lib/commentEdit";
 import { APP } from "@/lib/appConfig";
 import Linked from "@/app/components/Linked";
@@ -332,12 +333,15 @@ export default function CommentsDrawer({
   rounds = [],
   photoNotes = [],
   viewerEmail = null,
+  team = [],
 }: {
   styleId: string;
   threads: CommentThread<StyleComment>[];
   total: number;
   /** Every sample round on this style, in cycle order. */
   rounds?: RoundOption[];
+  /** The addresses a comment can @mention — the workspace's people. */
+  team?: string[];
   /**
    * Everything written on the photographs, derived from the same photos jsonb
    * the viewer writes. Not comments, not stored here, not editable here.
@@ -543,7 +547,7 @@ export default function CommentsDrawer({
                   className="note-reply-form"
                 >
                   <input type="hidden" name="parent_id" value={t.comment.id} />
-                  <input className="input" name="body" placeholder="Reply…" autoComplete="off" autoFocus />
+                  <MentionInput team={team} className="input" name="body" placeholder="Reply… (@ to tag)" autoFocus />
                   <button className="btn ghost sm" type="submit">
                     Reply
                   </button>
@@ -580,12 +584,14 @@ export default function CommentsDrawer({
           {/* The scope goes with the comment. Selecting a round and typing is
               the whole filing gesture — there is no second step to forget. */}
           {postingTo && <input type="hidden" name="sample_id" value={postingTo} />}
-          <textarea
+          <MentionInput
+            multiline
+            team={team}
             className="textarea"
             name="body"
-            placeholder={postingTo ? `Add a comment about ${postingLabel}…` : "Add a comment…"}
+            placeholder={postingTo ? `Add a comment about ${postingLabel}…` : "Add a comment… (@ to tag)"}
             required
-            style={{ minHeight: 64 }}
+            minHeight={64}
           />
           {/* Just "Post". The placeholder in the box above it already says what
               this is about, and "Post to 2nd Proto" under "Add a comment about

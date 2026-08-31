@@ -16,6 +16,7 @@ import {
   type EditableCommentLike,
 } from "@/lib/commentEdit";
 import { STYLE_STATUSES, type StyleStatus } from "@/lib/types";
+import { parseMentions } from "@/lib/mentions";
 import { DESIGN_SLOTS, isPhotoSlot, writePhotos } from "@/lib/photoSlots";
 import {
   COLORWAYS_KEY,
@@ -654,6 +655,39 @@ export async function addVersion(styleId: string, form: FormData) {
   revalidatePath(`/styles/${styleId}`);
 }
 
+/**
+ * The people a comment can @mention — everyone the workspace knows about.
+ *
+ * There is no single roster table: org-domain teammates are allowed by domain
+ * and never listed anywhere, so the mentionable set is assembled from where
+ * people actually show up — the guest/talent allowlist, plus everyone who has
+ * created a style or written a comment. That covers the whole active team; a
+ * brand-new colleague who has not touched anything yet won't appear until they
+ * do, which is an acceptable edge for "tag someone already in the loop".
+ */
+export async function mentionableEmails(): Promise<string[]> {
+  const supabase = await createClient();
+  const [allow, comments, styles] = await Promise.all([
+    supabase.from("app_allowlist").select("email"),
+    supabase.from("style_comments").select("author").not("author", "is", null),
+    supabase.from("styles").select("created_by").not("created_by", "is", null),
+  ]);
+  const raw = [
+    ...((allow.data ?? []) as { email: string | null }[]).map((r) => r.email),
+    ...((comments.data ?? []) as { author: string | null }[]).map((r) => r.author),
+    ...((styles.data ?? []) as { created_by: string | null }[]).map((r) => r.created_by),
+  ];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of raw) {
+    const e = (v ?? "").trim().toLowerCase();
+    if (!e || !e.includes("@") || seen.has(e)) continue;
+    seen.add(e);
+    out.push(e);
+  }
+  return out.sort();
+}
+
 export async function addComment(styleId: string, form: FormData) {
   const supabase = await createClient();
   const user = await requireTeam();
@@ -700,12 +734,19 @@ export async function addComment(styleId: string, form: FormData) {
 
   revalidatePath(`/styles/${styleId}`);
 
+  // Resolve any @mentions in the body to real teammates, so they are notified of
+  // this comment even if they don't watch the style (Tess, 2026-08-28: "comment
+  // at someone and make sure they see the note"). lib/notify adds them to the
+  // recipients past their comment switch and sends them the "mentioned you" mail.
+  const mentions = parseMentions(body, await mentionableEmails());
+
   await notify({
     kind: "comment",
     styleId,
     styleName: (style?.name as string) ?? "a style",
     actor: user?.email ?? null,
     body,
+    mentions,
   });
 }
 

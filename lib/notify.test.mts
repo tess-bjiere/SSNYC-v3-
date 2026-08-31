@@ -210,3 +210,25 @@ test("a stored preferences blob is read defensively", () => {
     { "kara@theloyalist.com": { comment: false, status: true } }
   );
 });
+
+test("a mentioned teammate is notified off-watch and past their comment switch", () => {
+  // lucas is not a watcher (not in TEAM) and gabby switched comment mail off —
+  // both still reach because an @mention is a direct ask. The actor (kara) never
+  // hears their own comment.
+  const mentioned: NotifyEvent = { ...COMMENT, mentions: ["lucas@theloyalist.com", "gabby@theloyalist.com"] };
+  const prefs: NotifyPrefs = { "gabby@theloyalist.com": { comment: false } };
+  assert.deepEqual(recipientsFor(mentioned, TEAM, prefs), [
+    "gabby@theloyalist.com",
+    "lucas@theloyalist.com",
+    "tess@theloyalist.com",
+  ]);
+});
+
+test("a mentioned teammate gets a 'mentioned you' email; watchers get the usual one", () => {
+  const mentioned: NotifyEvent = { ...COMMENT, mentions: ["gabby@theloyalist.com"] };
+  const mails = buildEmails(mentioned, TEAM, {}, "https://app.example");
+  const toGabby = mails.find((m) => m.to === "gabby@theloyalist.com");
+  const toTess = mails.find((m) => m.to === "tess@theloyalist.com");
+  assert.ok(toGabby && /mentioned you/i.test(toGabby.subject));
+  assert.ok(toTess && /New comment/i.test(toTess.subject));
+});

@@ -41,6 +41,11 @@ export type NotifyEvent =
       styleName: string;
       actor: string | null;
       body: string;
+      /** Teammates tagged with @name in the body — notified even if they don't
+       *  watch the style, and past their comment-mail switch, because a tag is a
+       *  direct ask (Tess, 2026-08-28: "comment at someone and make sure they see
+       *  the note"). Resolved to real addresses by the caller. */
+      mentions?: string[];
     }
   | {
       kind: "status";
@@ -123,12 +128,23 @@ export function recipientsFor(
 
   // Marking a comment received is a reply to one person. Mailing the whole
   // style about it turns an answer into an announcement.
-  const pool =
-    event.kind === "comment_received"
-      ? [norm(event.commentAuthor)].filter(Boolean as unknown as (v: string | null) => v is string)
-      : uniq(watchers.map(norm));
+  if (event.kind === "comment_received") {
+    return [norm(event.commentAuthor)]
+      .filter(Boolean as unknown as (v: string | null) => v is string)
+      .filter((e) => e !== actor && wantsEmail(prefs, e, channel))
+      .sort();
+  }
 
-  return pool.filter((e) => e !== actor && wantsEmail(prefs, e, channel)).sort();
+  // Tagged teammates are added to the pool and reach past their comment switch —
+  // an @mention is a direct ask, not the ambient traffic the switch silences.
+  // Watchers still go only if they haven't switched comment mail off.
+  const mentioned = new Set(
+    event.kind === "comment" ? uniq((event.mentions ?? []).map(norm)).filter(Boolean) : []
+  );
+  const pool = uniq([...watchers.map(norm), ...mentioned]);
+  return pool
+    .filter((e) => e !== actor && (mentioned.has(e) || wantsEmail(prefs, e, channel)))
+    .sort();
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -208,7 +224,28 @@ export function bodyFor(event: NotifyEvent, baseUrl: string): string {
   return lines.join("\n");
 }
 
-/** One event in, the actual messages out. Empty when nobody should hear about it. */
+/** The mail a tagged teammate gets — "mentioned you", so a person who does not
+ *  watch the style knows why it reached them, not a bare "new comment". */
+function mentionSubjectFor(event: NotifyEvent): string {
+  return event.kind === "comment"
+    ? `${actorName(event.actor)} mentioned you on ${event.styleName}`
+    : subjectFor(event);
+}
+function mentionBodyFor(event: NotifyEvent, baseUrl: string): string {
+  if (event.kind !== "comment") return bodyFor(event, baseUrl);
+  return [
+    `${actorName(event.actor)} mentioned you on ${event.styleName}:`,
+    "",
+    excerpt(event.body),
+    "",
+    styleUrl(baseUrl, event.styleId),
+    "",
+    "— SSYNC",
+  ].join("\n");
+}
+
+/** One event in, the actual messages out. Empty when nobody should hear about it.
+ *  A tagged teammate gets the "mentioned you" mail; everyone else the usual one. */
 export function buildEmails(
   event: NotifyEvent,
   watchers: string[],
@@ -217,7 +254,14 @@ export function buildEmails(
 ): Email[] {
   const subject = subjectFor(event);
   const text = bodyFor(event, baseUrl);
-  return recipientsFor(event, watchers, prefs).map((to) => ({ to, subject, text }));
+  const mentioned = new Set(
+    event.kind === "comment" ? (event.mentions ?? []).map(norm) : []
+  );
+  return recipientsFor(event, watchers, prefs).map((to) =>
+    mentioned.has(to)
+      ? { to, subject: mentionSubjectFor(event), text: mentionBodyFor(event, baseUrl) }
+      : { to, subject, text }
+  );
 }
 
 // ---------------------------------------------------------------------------
