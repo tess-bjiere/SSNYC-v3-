@@ -3134,6 +3134,15 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    .paper-shot-frame / .paper-pin so a mark-up lands where it was placed. */
 .deck{background:#fff;color:#111;font-family:"Barlow Semi Condensed",Arial,sans-serif;
   max-width:1120px;margin:0 auto 40px;box-shadow:var(--shadow);scroll-snap-type:y proximity}
+/* A tighter type scale for the deck alone (Tess, 2026-08-28: "reduce font size
+   and paragraph spacing by 15-20%"). Redefining the tokens on .deck scales every
+   token-based line at once — ~17% down — without touching the app's own scale;
+   the few raw sizes (the titles) and the section gaps are trimmed to match
+   below. */
+.deck{
+  --t-display:15.8px; --t-lead:11.6px; --t-title:10.8px; --t-body:10.4px;
+  --t-sm:9.5px; --t-meta:8.7px; --t-cap:7.9px; --t-micro:7.5px;
+}
 /* space-between so a style slide's notes sit at the foot of the page, under the
    shots at the top (Tess, 2026-08-10: "fit notes, factory comments and material
    should sit at bottom"). The cover uses the same to spread wordmark, title and
@@ -3160,7 +3169,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The brand name is the masthead, set in the serif wordmark face — the uploaded
    logo prints invisibly on white, so the name carries it (Tess, 2026-08-27:
    "Logo needs to be sous sous" + "font"). Matches the linesheet wordmark's serif. */
-.deck-cover-wordmark{font-family:var(--serif);font-size:34px;font-weight:400;
+.deck-cover-wordmark{font-family:var(--serif);font-size:28px;font-weight:400;
   letter-spacing:.01em;color:#111;align-self:flex-start;line-height:1}
 
 /* The brand switcher in the nav (multi-brand phase 1) — wide enough that the
@@ -3189,7 +3198,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .deck-cover-kicker{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.22em;color:#888;margin:0 0 16px}
 /* Smaller title (Tess, 2026-08-27: "shrink fitting deck title") — it was 52px,
    louder than the wordmark above it; 34px reads as a heading, not a billboard. */
-.deck-cover h1{font-size:34px;font-weight:500;letter-spacing:.01em;line-height:1.05;margin:0 0 8px}
+.deck-cover h1{font-size:28px;font-weight:500;letter-spacing:.01em;line-height:1.05;margin:0 0 8px}
 /* The tech-pack link on a slide — a blue hyperlink that stays clickable in the
    saved PDF (Tess, 2026-08-27: "link to techpack"). */
 .deck-link{color:#2563eb;text-decoration:underline}
@@ -3207,7 +3216,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    ("images can shrink to give more room for text"); capping the height rather
    than cropping keeps the picture whole so the mark-up pins stay true. */
 .deck-slide-head{margin:0}
-.deck-slide-head h2{font-size:28px;font-weight:500;letter-spacing:.01em;margin:0 0 4px}
+.deck-slide-head h2{font-size:23px;font-weight:500;letter-spacing:.01em;margin:0 0 4px}
 /* The fitting date, a small uppercase line under the subtitle. */
 .deck-fitdate{margin:6px 0 0;font-size:var(--t-micro);letter-spacing:.14em;
   text-transform:uppercase;color:#888}
@@ -3219,12 +3228,12 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    top-aligned, not spread; the cover keeps its own top-to-bottom spread. */
 .deck-slide:not(.deck-cover){justify-content:flex-start}
 .deck-slide-body{display:flex;gap:40px;align-items:flex-start}
-.deck-slide-left{flex:0 0 36%;min-width:0;display:flex;flex-direction:column;gap:20px}
+.deck-slide-left{flex:0 0 36%;min-width:0;display:flex;flex-direction:column;gap:17px}
 /* More air between the note sections (Intended fit, Fit notes, Factory comments,
    Material, Tech pack) so the export reads cleanly rather than as one dense block
    (Tess, 2026-08-28: "add more space between each text section on the export for
    readability"). */
-.deck-detail{min-width:0;display:flex;flex-direction:column;gap:26px}
+.deck-detail{min-width:0;display:flex;flex-direction:column;gap:22px}
 /* On a narrow screen the on-screen preview stacks (print always lays out wide). */
 @media(max-width:760px){.deck-slide-body{flex-direction:column;gap:20px}.deck-slide-left{flex-basis:auto;width:100%}}
 /* Every shot on the slide at one height and one gap (Tess, 2026-08-24: "all
@@ -3293,8 +3302,8 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The prior-rounds strip under the current round's notes in the +history export.
    Each round: label · date · rating dot, then its words a notch smaller than the
    current round — so the column reads as "now, and how it got here". */
-.deck-history{margin-top:2px;padding-top:12px;border-top:1px solid #e5e5e5;
-  display:flex;flex-direction:column;gap:11px}
+.deck-history{margin-top:2px;padding-top:10px;border-top:1px solid #e5e5e5;
+  display:flex;flex-direction:column;gap:9px}
 .deck-history > h3{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em;color:#888;margin:0}
 .deck-history-round{display:flex;flex-direction:column;gap:3px}
 .deck-history-head{display:flex;align-items:center;gap:8px}
