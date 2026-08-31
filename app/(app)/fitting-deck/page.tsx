@@ -318,9 +318,13 @@ export default async function FittingDeckPage({
                           <NoteBody text={slide.intendedFit} />
                         </div>
                       )}
+                      {/* The latest round's fit notes — labelled as such so it
+                          reads as the current state, distinct from the history
+                          strip below (Tess, 2026-08-28: change "Fit notes" to
+                          "most recent fitting notes"). */}
                       {slide.fitNotes && (
                         <div className="deck-note">
-                          <h3>Fit notes</h3>
+                          <h3>Most recent fitting notes</h3>
                           <NoteBody text={slide.fitNotes} />
                         </div>
                       )}
