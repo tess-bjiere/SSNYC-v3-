@@ -314,7 +314,7 @@ export default async function FittingDeckPage({
                           deck"). */}
                       {slide.intendedFit && (
                         <div className="deck-note">
-                          <h3>Intended fit</h3>
+                          <h3>Intended fit &amp; features</h3>
                           <NoteBody text={slide.intendedFit} />
                         </div>
                       )}

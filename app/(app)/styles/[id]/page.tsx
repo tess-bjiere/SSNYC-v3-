@@ -973,7 +973,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 rather than the rich renderer the notes use. */}
             {st.intended_fit && (
               <div className="kv kv-wide">
-                <span className="k">Intended fit</span>
+                <span className="k">Intended fit &amp; features</span>
                 <RichNote value={st.intended_fit} />
               </div>
             )}
@@ -1150,7 +1150,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
               </div>
               <div className="field"><label>Notes</label><RichNotesField name="notes" defaultValue={st.notes} /></div>
               <div className="field">
-                <label>Intended fit — how it should sit on the body</label>
+                <label>Intended fit &amp; features — how it should sit and what it includes</label>
                 {/* Rich like Notes and Fit notes, so it can be bulleted (Tess,
                     2026-08-28: "option to bullet like other sections"). */}
                 <RichNotesField name="intended_fit" defaultValue={st.intended_fit} />
