@@ -7,6 +7,9 @@ import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import sharp from "sharp";
+// The crop rect + sharp crop live in a shared module now, so materials and the
+// reference uploaders crop identically (Tess, 2026-09-04).
+import { cropBuffer, type CropRect } from "./imageOps";
 
 // Every column a create/edit is allowed to set — kept explicit so a stray key
 // can never touch id / created_by / deleted_at.
@@ -39,27 +42,6 @@ function extFor(type: string): string {
   if (type === "image/gif") return "gif";
   if (type === "image/avif") return "avif";
   return "jpg";
-}
-
-// A normalized crop rectangle (each value 0..1), as the client cropper reports it.
-export type CropRect = { x: number; y: number; w: number; h: number };
-
-// Apply a normalized crop to image bytes with sharp (Tess, 2026-08-20: "add
-// ability to crop images"). EXIF orientation is baked in first so the pixels
-// match what the browser showed the user when they drew the box; then the rect,
-// clamped to real pixel bounds, is extracted. A degenerate/near-full rect that
-// rounds to the whole image just re-encodes.
-async function cropBuffer(buf: Uint8Array, rect: CropRect): Promise<Uint8Array> {
-  const upright = await sharp(buf).rotate().toBuffer();
-  const meta = await sharp(upright).metadata();
-  const W = meta.width ?? 0;
-  const H = meta.height ?? 0;
-  if (!W || !H) return buf;
-  const left = Math.max(0, Math.min(W - 1, Math.round(rect.x * W)));
-  const top = Math.max(0, Math.min(H - 1, Math.round(rect.y * H)));
-  const width = Math.max(1, Math.min(W - left, Math.round(rect.w * W)));
-  const height = Math.max(1, Math.min(H - top, Math.round(rect.h * H)));
-  return await sharp(upright).extract({ left, top, width, height }).jpeg({ quality: 90 }).toBuffer();
 }
 
 // Swatch images go into the same references bucket as everything else — a

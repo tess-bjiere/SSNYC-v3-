@@ -1029,6 +1029,17 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .up-add{display:flex;align-items:center;justify-content:center;width:78px;height:100px;border:1px dashed var(--line);color:var(--muted);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.08em;background:none;font-family:inherit;cursor:pointer}
 .up-add:hover:not(:disabled){color:var(--ink);border-color:var(--muted)}
 .up-add:disabled{opacity:.5;cursor:default}
+/* The per-thumbnail Crop button (Tess, 2026-09-04: crop images on the reference
+   upload and when adding to a reference). A full-width strip along the bottom of
+   the staged thumbnail; a cropped image gets a green outline and a ticked label. */
+.up-crop{position:absolute;left:0;right:0;bottom:0;border:none;background:rgba(12,12,12,.72);
+  color:#fff;font-size:var(--t-micro);letter-spacing:.06em;text-transform:uppercase;line-height:1;
+  padding:4px 0;cursor:pointer;font-family:inherit}
+.up-crop:hover{background:rgba(12,12,12,.9)}
+.up-thumb.cropped{outline:2px solid #6fae7a;outline-offset:-2px}
+.up-thumb.cropped .up-crop{background:#3f7a4c}
+/* The "Add N images" commit button on the reference detail's add-images area. */
+.detail-addimgs{margin-top:10px;align-self:flex-start}
 /* Edit-form image manager: reference's main image + extra angles, add/remove
    (Tess, 2026-08-12: "upload multiple images for a single reference"). */
 .detail-editimgs{margin-bottom:16px}

@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser, requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
+import { cropBuffer, parseCrop, heicToJpeg, type CropRect } from "./imageOps";
+import { isHeicUpload, isAcceptableImage } from "@/lib/imageUpload";
 import type { ExtraImage } from "@/lib/types";
 import {
   REFERENCES_BUCKET,
@@ -128,10 +130,18 @@ export async function addReferenceImages(
   formData: FormData
 ): Promise<{ ok: boolean; extra_images: ExtraImage[]; errors: string[] }> {
   await requireUser();
-  const files = formData
+  // Files paired with an optional crop rect by position (Tess, 2026-09-04:
+  // "add more images, i should be able to drag them in and crop"). isAcceptable
+  // lets an empty-MIME iPhone HEIC through, converted below.
+  const rawCrops = formData.getAll("crops");
+  const jobs = formData
     .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
-  if (!id || files.length === 0) {
+    .map((f, i) => ({ file: f, crop: parseCrop(rawCrops[i]) }))
+    .filter(
+      (j): j is { file: File; crop: CropRect | null } =>
+        j.file instanceof File && j.file.size > 0 && isAcceptableImage(j.file.name, j.file.type)
+    );
+  if (!id || jobs.length === 0) {
     return { ok: false, extra_images: [], errors: ["No image files provided."] };
   }
 
@@ -145,19 +155,29 @@ export async function addReferenceImages(
 
   const added: string[] = [];
   const errors: string[] = [];
-  for (const file of files) {
+  for (const { file, crop } of jobs) {
     if (isOversize(file.size)) {
       errors.push(oversizeError(file.name, file.size));
       continue;
     }
     try {
-      const path = `${crypto.randomUUID()}/full.${extFor(file.type)}`;
+      let buf: Uint8Array = Buffer.from(await file.arrayBuffer());
+      let ext = extFor(file.type);
+      let contentType = file.type || "image/jpeg";
+      if (isHeicUpload(file.name, file.type)) {
+        buf = await heicToJpeg(buf);
+        ext = "jpg";
+        contentType = "image/jpeg";
+      }
+      if (crop) {
+        buf = await cropBuffer(buf, crop);
+        ext = "jpg";
+        contentType = "image/jpeg";
+      }
+      const path = `${crypto.randomUUID()}/full.${ext}`;
       const { error: upErr } = await supabase.storage
         .from(REFERENCES_BUCKET)
-        .upload(path, Buffer.from(await file.arrayBuffer()), {
-          contentType: file.type || "image/jpeg",
-          upsert: false,
-        });
+        .upload(path, buf, { contentType, upsert: false });
       if (upErr) {
         errors.push(`${file.name}: ${upErr.message}`);
         continue;

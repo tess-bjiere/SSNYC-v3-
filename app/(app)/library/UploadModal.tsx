@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { uploadReferences } from "@/app/actions/upload";
 import { thumbDims } from "@/lib/thumbnail";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
+import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import Combo from "./Combo";
 
 // Downscale a picked image in the browser before it is uploaded, so the library
@@ -37,7 +38,7 @@ async function makeThumb(file: File): Promise<File | null> {
   }
 }
 
-type Picked = { file: File; url: string };
+type Picked = { file: File; url: string; crop?: CropRect | null };
 type Field = { key: string; label: string; type?: "textarea"; suggest?: boolean; hint?: string };
 
 // `suggest` fields autocomplete from the curated dropdown lists (lib/lists.ts).
@@ -89,6 +90,9 @@ export default function UploadModal({
   const [picked, setPicked] = useState<Picked[]>([]);
   const [vals, setVals] = useState<Record<string, string>>({});
   const [drag, setDrag] = useState(false);
+  // Which staged image (if any) is open in the cropper. Cropping is optional —
+  // a per-thumbnail button, not a forced step (Tess, 2026-09-04).
+  const [cropIdx, setCropIdx] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -127,7 +131,7 @@ export default function UploadModal({
       const errors: string[] = [];
 
       for (let i = 0; i < picked.length; i++) {
-        const { file } = picked[i];
+        const { file, crop } = picked[i];
         setProgress(picked.length > 1 ? `Uploading ${i + 1} of ${picked.length}…` : "Uploading…");
 
         if (isOversize(file.size)) {
@@ -142,6 +146,8 @@ export default function UploadModal({
         fd.append("files", file);
         const t = await makeThumb(file);
         fd.append("thumbs", t ?? new File([], "none"));
+        // The crop rect (or "" for none), position-matched to the file above.
+        fd.append("crops", crop ? JSON.stringify(crop) : "");
         // Which grid this row belongs to. The server whitelists the value, so a
         // library upload and an editorial upload differ only by this one field.
         fd.append("type", kind);
@@ -210,9 +216,12 @@ export default function UploadModal({
             ) : (
               <div className="up-thumbs">
                 {picked.map((p, i) => (
-                  <div className="up-thumb" key={i}>
+                  <div className={"up-thumb" + (p.crop ? " cropped" : "")} key={i}>
                     <img src={p.url} alt="" />
                     <button className="up-x" onClick={(e) => { e.stopPropagation(); removeAt(i); }} title="Remove">×</button>
+                    <button className="up-crop" onClick={(e) => { e.stopPropagation(); setCropIdx(i); }} title="Crop this image">
+                      {p.crop ? "Cropped ✓" : "Crop"}
+                    </button>
                   </div>
                 ))}
                 <div className="up-add">+ more</div>
@@ -269,6 +278,21 @@ export default function UploadModal({
           </button>
         </div>
       </div>
+
+      {/* The crop overlay for the one image whose Crop button was pressed. Its
+          rect is remembered on that staged file and applied server-side on save,
+          reusing the same cropper the materials and style photos use. */}
+      {cropIdx !== null && picked[cropIdx] && (
+        <ImageCropper
+          src={picked[cropIdx].url}
+          title="Crop image"
+          onCancel={() => setCropIdx(null)}
+          onApply={(rect) => {
+            setPicked((p) => p.map((x, i) => (i === cropIdx ? { ...x, crop: rect } : x)));
+            setCropIdx(null);
+          }}
+        />
+      )}
     </div>
   );
 }

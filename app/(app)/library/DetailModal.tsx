@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refImage, extraImageUrls, type Reference } from "@/lib/types";
 import Lightbox from "@/app/components/Lightbox";
+import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import {
   updateReference,
   softDeleteReference,
@@ -90,23 +91,46 @@ export default function DetailModal({
   const [confirmDel, setConfirmDel] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [pending, start] = useTransition();
-  // Adding / removing images on this one reference (extra angles).
+  // Adding / removing images on this one reference (extra angles). New images are
+  // STAGED first — dropped or picked, optionally cropped — then added together
+  // (Tess, 2026-09-04: "add more images, i should be able to drag them in and
+  // crop"). Same shape and cropper as the library upload modal.
   const imgInputRef = useRef<HTMLInputElement>(null);
   const [imgBusy, setImgBusy] = useState(false);
+  const [staged, setStaged] = useState<{ file: File; url: string; crop?: CropRect | null }[]>([]);
+  const [stageCropIdx, setStageCropIdx] = useState<number | null>(null);
+  const [imgDrag, setImgDrag] = useState(false);
 
-  function addImages(list: FileList | null) {
-    if (!list || list.length === 0) return;
-    const files = Array.from(list).filter((f) => f.type.startsWith("image/"));
-    if (files.length === 0) return;
+  function stageFiles(list: FileList | null) {
+    if (!list) return;
+    const imgs = Array.from(list).filter((f) => f.type.startsWith("image/"));
+    if (imgs.length === 0) return;
+    setStaged((s) => [...s, ...imgs.map((file) => ({ file, url: URL.createObjectURL(file) }))]);
+  }
+  function removeStaged(i: number) {
+    setStaged((s) => {
+      const copy = [...s];
+      const [gone] = copy.splice(i, 1);
+      if (gone) URL.revokeObjectURL(gone.url);
+      return copy;
+    });
+  }
+  function addStaged() {
+    if (staged.length === 0) return;
     setImgBusy(true);
     start(async () => {
       const fd = new FormData();
-      for (const f of files) fd.append("files", f);
+      for (const s of staged) {
+        fd.append("files", s.file);
+        fd.append("crops", s.crop ? JSON.stringify(s.crop) : "");
+      }
       const res = await addReferenceImages(cur.id, fd);
       setImgBusy(false);
       if (res.ok) {
         setCur((c) => ({ ...c, extra_images: res.extra_images }));
         onToast(res.errors.length ? `Added · ${res.errors.length} failed` : "Images added");
+        staged.forEach((s) => URL.revokeObjectURL(s.url));
+        setStaged([]);
       } else {
         onToast(res.errors[0] || "Could not add the images.");
       }
@@ -320,6 +344,19 @@ export default function DetailModal({
             />
           )}
 
+          {/* Crop a staged image before it is added to this reference. */}
+          {stageCropIdx !== null && staged[stageCropIdx] && (
+            <ImageCropper
+              src={staged[stageCropIdx].url}
+              title="Crop image"
+              onCancel={() => setStageCropIdx(null)}
+              onApply={(rect) => {
+                setStaged((s) => s.map((x, i) => (i === stageCropIdx ? { ...x, crop: rect } : x)));
+                setStageCropIdx(null);
+              }}
+            />
+          )}
+
           <div className="detail-info">
             <button className="detail-x" onClick={onClose} aria-label="Close">×</button>
 
@@ -335,6 +372,7 @@ export default function DetailModal({
                     here; extras get an ×, and "+ add" appends more. */}
                 <div className="detail-editimgs">
                   <label>Images</label>
+                  {/* The images already on this reference — first is primary. */}
                   <div className="up-thumbs">
                     {[refImage(cur), ...extraImageUrls(cur)].filter(Boolean).map((im, i) => (
                       <div className="up-thumb" key={im}>
@@ -352,23 +390,47 @@ export default function DetailModal({
                         )}
                       </div>
                     ))}
-                    <button
-                      type="button"
-                      className="up-add"
-                      disabled={imgBusy}
-                      onClick={() => imgInputRef.current?.click()}
-                    >
-                      {imgBusy ? "…" : "+ add"}
-                    </button>
                   </div>
-                  <input
-                    ref={imgInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    style={{ display: "none" }}
-                    onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ""; }}
-                  />
+
+                  {/* Drag more in (or click), crop any of them, then add together. */}
+                  <div
+                    className={"up-drop" + (imgDrag ? " over" : "")}
+                    onClick={() => imgInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setImgDrag(true); }}
+                    onDragLeave={() => setImgDrag(false)}
+                    onDrop={(e) => { e.preventDefault(); setImgDrag(false); stageFiles(e.dataTransfer.files); }}
+                  >
+                    <input
+                      ref={imgInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: "none" }}
+                      onChange={(e) => { stageFiles(e.target.files); e.currentTarget.value = ""; }}
+                    />
+                    {staged.length === 0 ? (
+                      <span>Drop images here, or click to choose.</span>
+                    ) : (
+                      <div className="up-thumbs">
+                        {staged.map((s, i) => (
+                          <div className={"up-thumb" + (s.crop ? " cropped" : "")} key={i}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={s.url} alt="" />
+                            <button className="up-x" onClick={(e) => { e.stopPropagation(); removeStaged(i); }} title="Remove">×</button>
+                            <button className="up-crop" onClick={(e) => { e.stopPropagation(); setStageCropIdx(i); }} title="Crop this image">
+                              {s.crop ? "Cropped ✓" : "Crop"}
+                            </button>
+                          </div>
+                        ))}
+                        <div className="up-add">+ more</div>
+                      </div>
+                    )}
+                  </div>
+                  {staged.length > 0 && (
+                    <button className="btn sm detail-addimgs" disabled={imgBusy} onClick={addStaged}>
+                      {imgBusy ? "Adding…" : `Add ${staged.length} image${staged.length > 1 ? "s" : ""}`}
+                    </button>
+                  )}
                   <span className="field-hint">The first image is the main one; add more angles or details.</span>
                 </div>
 
