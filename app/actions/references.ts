@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser, requireTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
-import { cropBuffer, parseCrop, heicToJpeg, type CropRect } from "./imageOps";
+import { cropBuffer, parseCrop, heicToJpeg, thumbFrom, type CropRect } from "./imageOps";
 import { isHeicUpload, isAcceptableImage } from "@/lib/imageUpload";
 import type { ExtraImage } from "@/lib/types";
 import {
@@ -219,6 +219,74 @@ export async function removeReferenceImage(
   revalidatePath("/library");
   revalidatePath("/editorial");
   return { ok: true, extra_images: next as ExtraImage[] };
+}
+
+/**
+ * Re-crop an image already on a reference (Tess, 2026-09-04: "add crop
+ * functionality to upload and edit of reference images"). The stored image is
+ * fetched, cropped with the shared sharp crop, and stored as a fresh object; the
+ * URL is then swapped in place — the primary `image_url` (with a regenerated
+ * thumbnail) or the matching `extra_images` entry. Mirrors cropMaterialImage.
+ * The old object is left in storage, exactly like every other image edit here —
+ * nothing is deleted, only stopped being read.
+ */
+export async function cropReferenceImage(
+  id: string,
+  url: string,
+  rect: CropRect
+): Promise<{ ok: boolean; url?: string; thumb_url?: string; extra_images?: ExtraImage[]; error?: string }> {
+  await requireUser();
+  if (!id || !url) return { ok: false, error: "Missing image." };
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("references")
+    .select("image_url,thumb_url,extra_images")
+    .eq("id", id)
+    .maybeSingle();
+  if (!row) return { ok: false, error: "That reference no longer exists." };
+
+  const extras: unknown[] = Array.isArray(row.extra_images) ? (row.extra_images as unknown[]) : [];
+  const isPrimary = url === row.image_url || url === row.thumb_url;
+  const isExtra = extras.some((e) => extraUrl(e) === url);
+  if (!isPrimary && !isExtra) return { ok: false, error: "That image is not on this reference." };
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { ok: false, error: `Could not read the image (${res.status}).` };
+    const cropped = await cropBuffer(Buffer.from(await res.arrayBuffer()), rect);
+
+    const folder = crypto.randomUUID();
+    const { error: upErr } = await supabase.storage
+      .from(REFERENCES_BUCKET)
+      .upload(`${folder}/full.jpg`, cropped, { contentType: "image/jpeg", upsert: false });
+    if (upErr) return { ok: false, error: upErr.message };
+    const newUrl = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(`${folder}/full.jpg`).data?.publicUrl;
+    if (!newUrl) return { ok: false, error: "Upload failed." };
+
+    if (isPrimary) {
+      // The primary drives the grid thumbnail, so a fresh one is made from the
+      // cropped bytes; if it fails, thumb_url falls back to the full image.
+      let newThumb = newUrl;
+      const { error: tErr } = await supabase.storage
+        .from(REFERENCES_BUCKET)
+        .upload(`${folder}/thumb.jpg`, await thumbFrom(cropped), { contentType: "image/jpeg", upsert: false });
+      if (!tErr) {
+        newThumb = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(`${folder}/thumb.jpg`).data?.publicUrl ?? newUrl;
+      }
+      await supabase.from("references").update({ image_url: newUrl, thumb_url: newThumb }).eq("id", id);
+      revalidatePath("/library");
+      revalidatePath("/editorial");
+      return { ok: true, url: newUrl, thumb_url: newThumb };
+    }
+
+    const nextExtras = extras.map((e) => (extraUrl(e) === url ? newUrl : e)) as ExtraImage[];
+    await supabase.from("references").update({ extra_images: nextExtras }).eq("id", id);
+    revalidatePath("/library");
+    revalidatePath("/editorial");
+    return { ok: true, url: newUrl, extra_images: nextExtras };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Crop failed." };
+  }
 }
 
 // Soft delete: moves a reference to the Trash (recoverable) rather than

@@ -25,6 +25,7 @@ import {
   softDeleteReference,
   addReferenceImages,
   removeReferenceImage,
+  cropReferenceImage,
 } from "@/app/actions/references";
 import {
   developFromReference,
@@ -100,6 +101,32 @@ export default function DetailModal({
   const [staged, setStaged] = useState<{ file: File; url: string; crop?: CropRect | null }[]>([]);
   const [stageCropIdx, setStageCropIdx] = useState<number | null>(null);
   const [imgDrag, setImgDrag] = useState(false);
+  // Re-cropping an image already on this reference: the URL being cropped.
+  const [recropUrl, setRecropUrl] = useState<string | null>(null);
+  const [recropBusy, setRecropBusy] = useState(false);
+
+  function applyRecrop(rect: CropRect) {
+    const url = recropUrl;
+    if (!url) return;
+    setRecropBusy(true);
+    start(async () => {
+      const res = await cropReferenceImage(cur.id, url, rect);
+      setRecropBusy(false);
+      setRecropUrl(null);
+      if (res.ok) {
+        setCur((c) =>
+          res.extra_images
+            ? { ...c, extra_images: res.extra_images }
+            : { ...c, image_url: res.url ?? c.image_url, thumb_url: res.thumb_url ?? c.thumb_url }
+        );
+        // Keep the large view pointing at the same image after its URL changes.
+        setActive((a) => (a === url ? res.url ?? a : a));
+        onToast("Image cropped");
+      } else {
+        onToast(res.error || "Couldn't crop the image.");
+      }
+    });
+  }
 
   function stageFiles(list: FileList | null) {
     if (!list) return;
@@ -357,6 +384,17 @@ export default function DetailModal({
             />
           )}
 
+          {/* Re-crop an image already on the reference — applied server-side. */}
+          {recropUrl && (
+            <ImageCropper
+              src={recropUrl}
+              title="Crop image"
+              busy={recropBusy}
+              onCancel={() => setRecropUrl(null)}
+              onApply={applyRecrop}
+            />
+          )}
+
           <div className="detail-info">
             <button className="detail-x" onClick={onClose} aria-label="Close">×</button>
 
@@ -388,6 +426,16 @@ export default function DetailModal({
                             ×
                           </button>
                         )}
+                        {/* Re-crop this existing image in place (Tess, 2026-09-04:
+                            "crop functionality to ... edit of reference images"). */}
+                        <button
+                          className="up-crop"
+                          title="Crop this image"
+                          disabled={recropBusy}
+                          onClick={() => setRecropUrl(im)}
+                        >
+                          Crop
+                        </button>
                       </div>
                     ))}
                   </div>
