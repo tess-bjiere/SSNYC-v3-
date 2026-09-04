@@ -20,6 +20,7 @@ import Link from "next/link";
 import { refImage, extraImageUrls, type Reference } from "@/lib/types";
 import Lightbox from "@/app/components/Lightbox";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
+import { downscaleImage } from "@/app/components/downscaleImage";
 import {
   updateReference,
   softDeleteReference,
@@ -148,7 +149,11 @@ export default function DetailModal({
     start(async () => {
       const fd = new FormData();
       for (const s of staged) {
-        fd.append("files", s.file);
+        // Shrink before sending so a large original doesn't blow past the upload
+        // Server Action's request-body cap (Tess, 2026-09-04). Same helper as the
+        // library upload and materials; the crop rect is fractional so it still
+        // lines up on the smaller image.
+        fd.append("files", await downscaleImage(s.file));
         fd.append("crops", s.crop ? JSON.stringify(s.crop) : "");
       }
       const res = await addReferenceImages(cur.id, fd);

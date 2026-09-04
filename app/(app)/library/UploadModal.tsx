@@ -6,6 +6,7 @@ import { uploadReferences } from "@/app/actions/upload";
 import { thumbDims } from "@/lib/thumbnail";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
+import { downscaleImage } from "@/app/components/downscaleImage";
 import Combo from "./Combo";
 
 // Downscale a picked image in the browser before it is uploaded, so the library
@@ -134,8 +135,16 @@ export default function UploadModal({
         const { file, crop } = picked[i];
         setProgress(picked.length > 1 ? `Uploading ${i + 1} of ${picked.length}…` : "Uploading…");
 
-        if (isOversize(file.size)) {
-          errors.push(oversizeError(file.name, file.size));
+        // Shrink the image in the browser before it is sent — a phone photo runs
+        // 5–40 MB and the upload Server Action's request body is capped (Vercel's
+        // ~4.5 MB serverless limit, which the 25 MB Next setting can't lift), so a
+        // large original was rejected as "an unexpected response from the server"
+        // (Tess, 2026-09-04: "lots of problems" on bulk/single uploads). The same
+        // helper materials already uses; a crop still lines up because its rect is
+        // stored as fractions of the image, not pixels.
+        const toSend = await downscaleImage(file);
+        if (isOversize(toSend.size)) {
+          errors.push(oversizeError(file.name, toSend.size));
           continue;
         }
 
@@ -143,8 +152,8 @@ export default function UploadModal({
         // "files" and "thumbs" are paired by position — one thumb entry per file,
         // even when generating it failed (an empty placeholder keeps the indexes
         // lined up, and the server treats it as "no thumbnail").
-        fd.append("files", file);
-        const t = await makeThumb(file);
+        fd.append("files", toSend);
+        const t = await makeThumb(toSend);
         fd.append("thumbs", t ?? new File([], "none"));
         // The crop rect (or "" for none), position-matched to the file above.
         fd.append("crops", crop ? JSON.stringify(crop) : "");
