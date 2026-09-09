@@ -99,26 +99,46 @@ export type Moodboard = {
 // into that section — both of those are deliberate moves.
 export function applyReorder(items: MBItem[], orderedIds: string[]): MBItem[] {
   const pos = new Map(orderedIds.map((id, i) => [id, i]));
+  const idOf = (it: MBItem): string | null =>
+    itemKind(it) === "divider"
+      ? (it as MBDividerItem).tid
+      : itemKind(it) === "image"
+        ? (it as MBImageItem).iid
+        : null;
 
   let lastDividerPos = -1;
   for (const it of items) {
-    const d = it as MBDividerItem;
-    if (d.kind === "divider" && pos.has(d.tid)) {
-      lastDividerPos = Math.max(lastDividerPos, pos.get(d.tid) as number);
+    if (itemKind(it) === "divider") {
+      const p = pos.get((it as MBDividerItem).tid);
+      if (p !== undefined) lastDividerPos = Math.max(lastDividerPos, p);
     }
   }
 
-  return items.map((it) => {
-    const kind = itemKind(it);
-    if (kind === "text") return it;
-    const isDivider = kind === "divider";
-    const id = isDivider ? (it as MBDividerItem).tid : (it as MBImageItem).iid;
+  // Tag each sectioned item with its new gi. A loose image that stays past the
+  // last divider keeps no gi — the trailing unsectioned group, as it always has.
+  const tagged = items.map((it) => {
+    if (itemKind(it) === "text") return it;
+    const id = idOf(it) as string;
     if (!pos.has(id)) return it;
     const at = pos.get(id) as number;
     const wasLoose = typeof it.gi !== "number";
-    if (!isDivider && wasLoose && at > lastDividerPos) return it;
+    if (itemKind(it) === "image" && wasLoose && at > lastDividerPos) return it;
     return { ...it, gi: at };
   });
+
+  // Also reorder the array to match the drag. Loose images render in array order
+  // (they carry no gi), so without this a move on a board with no dividers — or in
+  // the trailing group — saved nothing and reverted on reload (Tess, 2026-09-09:
+  // "when i move photos they seem to revert to previous placement"). A stable sort
+  // keeps items outside the order (notes) in their relative place, at the end.
+  const rank = (it: MBItem): number => {
+    const id = idOf(it);
+    return id !== null && pos.has(id) ? (pos.get(id) as number) : Number.POSITIVE_INFINITY;
+  };
+  return tagged
+    .map((it, i) => ({ it, i }))
+    .sort((a, b) => rank(a.it) - rank(b.it) || a.i - b.i)
+    .map((x) => x.it);
 }
 
 // Insert new image items into a board. With no `sectionTid` they are appended
@@ -177,6 +197,30 @@ export function removeImage(items: MBItem[], iid: string): MBItem[] {
   return items.filter(
     (it) => !(itemKind(it) === "image" && (it as MBImageItem).iid === iid)
   );
+}
+
+/**
+ * Take a tile off the board AND every hidden duplicate of it.
+ *
+ * The grid de-duplicates images by what they point at (see toSections), so a
+ * reference added twice shows as one tile. Removing only the visible iid left the
+ * twin behind, which then surfaced — the image "came back" (Tess, 2026-09-09:
+ * "when i delete photos they seem to revert"). Deleting the tile removes the exact
+ * iid and any other placement of the same reference/style, so it is actually gone.
+ * A tile that points at nothing identifiable removes just its own iid.
+ */
+export function removeImageAndDupes(items: MBItem[], iid: string): MBItem[] {
+  const target = items.find(
+    (it) => itemKind(it) === "image" && (it as MBImageItem).iid === iid
+  ) as MBImageItem | undefined;
+  if (!target) return items;
+  const key = imageKey(target);
+  return items.filter((it) => {
+    if (itemKind(it) !== "image") return true;
+    const im = it as MBImageItem;
+    if (im.iid === iid) return false;
+    return !(key && imageKey(im) === key);
+  });
 }
 
 // Note on `w`: image items carry a stored width from the original tool. The grid

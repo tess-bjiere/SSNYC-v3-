@@ -37,9 +37,14 @@ export default function Board({ boardId, sections: initial }: { boardId: string;
   // click on "Remove?" does it. Clicking anywhere else disarms.
   const [armedIid, setArmedIid] = useState<string | null>(null);
 
-  // Re-sync from the server when the board's content actually changes
-  // (new refs added, board switched, etc.) without clobbering local drags.
-  const sig = flatten(initial).join(",");
+  // Re-sync from the server when the board's content changes — a new/removed tile,
+  // a reorder, a switched board, OR a renamed section. The signature includes the
+  // section LABELS as well as the id order, so a divider rename actually shows up
+  // instead of the old name lingering until a hard reload (Tess, 2026-09-09:
+  // "when i rename them they are not saving").
+  const sig = JSON.stringify(
+    initial.map((s) => [s.tid ?? "", s.label ?? "", s.images.map((i) => i.iid)])
+  );
   useEffect(() => {
     setSections(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -7,7 +7,7 @@ import { DEV_BYPASS, requireUser } from "@/lib/access";
 import { checkSuperAdmin } from "@/lib/brandsServer";
 import { activeBrand } from "@/lib/activeBrand";
 import { REFERENCES_BUCKET } from "@/lib/storage";
-import { applyReorder, insertItems, removeImage } from "@/lib/moodboard";
+import { applyReorder, insertItems, removeImageAndDupes } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
 import { normalizePalette, type Palette } from "@/lib/palette";
 
@@ -198,8 +198,8 @@ export async function reorderImages(boardId: string, orderedIds: string[]) {
 }
 
 // Take one image off a board. This only removes the tile — the reference itself
-// stays in the library, and any other placement of it on this board stays too.
-// See `removeImage` in lib/moodboard.ts.
+// stays in the library. Every hidden duplicate of the tile goes too, so a deleted
+// image does not "come back" via a de-duplicated twin (see removeImageAndDupes).
 export async function removeImageFromBoard(boardId: string, iid: string) {
   await requireUser();
   const supabase = await createClient();
@@ -209,7 +209,7 @@ export async function removeImageFromBoard(boardId: string, iid: string) {
     .eq("id", boardId)
     .maybeSingle();
   const items: MBItem[] = (board?.items as MBItem[]) ?? [];
-  const next = removeImage(items, iid);
+  const next = removeImageAndDupes(items, iid);
   if (next.length === items.length) return; // nothing matched — leave the board alone
   await supabase
     .from("moodboards")

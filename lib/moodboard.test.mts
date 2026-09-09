@@ -10,6 +10,7 @@ import {
   applyReorder,
   insertItems,
   removeImage,
+  removeImageAndDupes,
   toSections,
   itemKind,
   imageKey,
@@ -369,4 +370,30 @@ test("inserting a style into a section does not disturb the references in it", (
     secs[0].images.map((i) => i.iid),
     ["r1", "r2", "t1"]
   );
+});
+
+test("applyReorder persists a reorder of loose images (board without dividers)", () => {
+  // The bug: a move on an undivided board saved nothing and reverted on reload,
+  // because loose images carry no gi and render in array order (Tess, 2026-09-09).
+  const loose = [img("x"), img("y"), img("z2")]; // all loose — no gi
+  const after = applyReorder(loose, ["z2", "x", "y"]);
+  const order = toSections(after).sections.flatMap((s) => s.images.map((i) => i.iid));
+  assert.deepEqual(order, ["z2", "x", "y"]);
+});
+
+test("applyReorder still leaves the trailing loose group without gi", () => {
+  const after = applyReorder(board(), ["d1", "a", "b", "d2", "c", "loose1", "loose2"]);
+  const loose = after.filter(
+    (i) => itemKind(i) === "image" && (i as MBImageItem).iid.startsWith("loose")
+  );
+  assert.equal(loose.length, 2);
+  for (const l of loose) assert.equal(typeof l.gi, "undefined");
+});
+
+test("removeImageAndDupes takes every copy of a duplicated image off the board", () => {
+  const dupA: MBImageItem = { ...img("p1"), ref_id: "same" };
+  const dupB: MBImageItem = { ...img("p2"), ref_id: "same" };
+  const other: MBImageItem = { ...img("q1"), ref_id: "other" };
+  const after = removeImageAndDupes([dupA, dupB, other], "p1");
+  assert.deepEqual(after.map((i) => (i as MBImageItem).iid), ["q1"]);
 });
