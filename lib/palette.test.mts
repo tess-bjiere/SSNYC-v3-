@@ -1,6 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeHex, normalizeSwatch, normalizePalette } from "./palette.ts";
+import {
+  normalizeHex,
+  normalizeSwatch,
+  normalizePalette,
+  normalizePaletteLibrary,
+  normalizeBoardPalettes,
+  filledSlots,
+  resolveBoardPalettes,
+  slotLabel,
+  EVERGREEN_KEY,
+  UNFILED_SEASON,
+} from "./palette.ts";
 
 // The palette is written by hand into a brand row, so every reader defends
 // against half-typed and pasted junk. These pin the rules a future edit could
@@ -54,4 +65,90 @@ test("normalizePalette is total — missing or malformed input becomes empty gro
   assert.deepEqual(normalizePalette(null), { seasonal: [], evergreen: [] });
   assert.deepEqual(normalizePalette({ seasonal: "not-an-array" }), { seasonal: [], evergreen: [] });
   assert.deepEqual(normalizePalette(undefined), { seasonal: [], evergreen: [] });
+});
+
+// ---------------------------------------------------------------------------
+// Palette library — one palette per season + an evergreen one, added to a board
+// on purpose (Tess, 2026-09-09: "saved to a season and then allowed to be added
+// to a moodboard -- not just applied to all moodboards").
+
+test("normalizePaletteLibrary reads the new shape and drops empty seasons", () => {
+  const lib = normalizePaletteLibrary({
+    evergreen: [{ hex: "#000000", name: "Black" }],
+    seasons: {
+      FW26: [{ hex: "#8b0000", name: "Oxblood" }, { hex: "", name: "" }],
+      SS26: [{ hex: "", name: "" }], // all junk -> season vanishes
+      "  ": [{ hex: "#fff" }], // blank key -> ignored
+    },
+  });
+  assert.deepEqual(lib.evergreen, [{ hex: "#000000", name: "Black" }]);
+  assert.deepEqual(Object.keys(lib.seasons), ["FW26"]);
+  assert.deepEqual(lib.seasons.FW26, [{ hex: "#8b0000", name: "Oxblood" }]);
+});
+
+test("normalizePaletteLibrary migrates the legacy {seasonal, evergreen} palette", () => {
+  const lib = normalizePaletteLibrary({
+    seasonal: [{ hex: "#ff0000", name: "Poppy" }],
+    evergreen: [{ hex: "#000000", name: "Black" }],
+  });
+  assert.deepEqual(lib.evergreen, [{ hex: "#000000", name: "Black" }]);
+  // The untagged seasonal list is preserved under Unfiled, not lost.
+  assert.deepEqual(lib.seasons[UNFILED_SEASON], [{ hex: "#ff0000", name: "Poppy" }]);
+});
+
+test("normalizePaletteLibrary does not re-migrate once a seasons map exists", () => {
+  // A row already on the new shape may still carry a stray `seasonal` key; it is
+  // ignored so a migrated row does not keep resurrecting Unfiled.
+  const lib = normalizePaletteLibrary({
+    seasonal: [{ hex: "#ff0000", name: "Poppy" }],
+    seasons: { FW26: [{ hex: "#8b0000", name: "Oxblood" }] },
+    evergreen: [],
+  });
+  assert.deepEqual(Object.keys(lib.seasons), ["FW26"]);
+  assert.equal(lib.seasons[UNFILED_SEASON], undefined);
+});
+
+test("normalizePaletteLibrary is total for junk input", () => {
+  assert.deepEqual(normalizePaletteLibrary(null), { evergreen: [], seasons: {} });
+  assert.deepEqual(normalizePaletteLibrary("nope"), { evergreen: [], seasons: {} });
+});
+
+test("filledSlots lists evergreen first, then seasons by name, colours only", () => {
+  const lib = normalizePaletteLibrary({
+    evergreen: [{ hex: "#000000", name: "Black" }],
+    seasons: {
+      SS26: [{ hex: "#87ceeb", name: "Sky" }],
+      FW26: [{ hex: "#8b0000", name: "Oxblood" }],
+    },
+  });
+  assert.deepEqual(
+    filledSlots(lib).map((s) => [s.key, s.label]),
+    [[EVERGREEN_KEY, "Evergreen"], ["FW26", "FW26"], ["SS26", "SS26"]]
+  );
+});
+
+test("normalizeBoardPalettes trims, de-dupes and keeps order", () => {
+  assert.deepEqual(normalizeBoardPalettes(["FW26", " FW26 ", "evergreen", 7, ""]), [
+    "FW26",
+    "evergreen",
+  ]);
+  assert.deepEqual(normalizeBoardPalettes(null), []);
+});
+
+test("resolveBoardPalettes returns only the board's keys, in order, that still hold colour", () => {
+  const lib = normalizePaletteLibrary({
+    evergreen: [{ hex: "#000000", name: "Black" }],
+    seasons: { FW26: [{ hex: "#8b0000", name: "Oxblood" }] },
+  });
+  // SS26 was added to the board but has since been emptied -> skipped.
+  const shown = resolveBoardPalettes(lib, ["FW26", "SS26", "evergreen"]);
+  assert.deepEqual(
+    shown.map((s) => [s.key, s.swatches.length]),
+    [["FW26", 1], ["evergreen", 1]]
+  );
+});
+
+test("slotLabel names evergreen and passes season keys through", () => {
+  assert.equal(slotLabel(EVERGREEN_KEY), "Evergreen");
+  assert.equal(slotLabel("FW26"), "FW26");
 });

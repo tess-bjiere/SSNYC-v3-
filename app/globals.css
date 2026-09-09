@@ -1307,6 +1307,24 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
   padding:0 14px;height:40px;align-self:center}
 .mb-swatch-add:hover{color:var(--ink);border-color:var(--muted)}
 
+/* Per-board palettes (Tess, 2026-09-09): a header with an Add-palette menu and a
+   Manage-palettes link; each attached palette is a titled group with a remove × */
+.mb-palette-actions{display:flex;align-items:baseline;gap:var(--sp-ctl)}
+.mb-add-palette{position:relative}
+.mb-add-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:160px;
+  background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px;
+  box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.mb-add-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+  background:none;border:none;color:var(--ink);cursor:pointer;font-family:inherit;
+  font-size:var(--t-meta);padding:6px 8px;border-radius:4px;text-align:left}
+.mb-add-item:hover{background:var(--panel)}
+.mb-add-count{color:var(--faint);font-size:var(--t-micro)}
+.mb-palette-group h3{display:flex;align-items:center;gap:8px}
+.mb-palette-remove{background:none;border:none;color:var(--faint);cursor:pointer;
+  font-size:var(--t-meta);line-height:1;padding:0}
+.mb-palette-remove:hover{color:var(--danger)}
+.mb-season-add{display:flex;flex-wrap:wrap;gap:var(--sp-chip)}
+
 /* Moodboard sections (matches the original: header + rule, clean image rows) */
 .mb-sec{margin:30px 0}
 .mb-sec-head{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px;min-height:14px}

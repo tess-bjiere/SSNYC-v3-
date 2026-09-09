@@ -9,7 +9,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import { applyReorder, insertItems, removeImageAndDupes } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
-import { normalizePalette, type Palette } from "@/lib/palette";
+import { normalizePaletteLibrary, normalizeBoardPalettes, type PaletteLibrary } from "@/lib/palette";
 
 export async function createBoard(form: FormData) {
   const name = (form.get("name") as string)?.trim();
@@ -421,26 +421,48 @@ export async function addStylesToBoard(
   revalidatePath("/moodboard");
 }
 
-// The moodboard colour palette (Tess, 2026-08-12). Stored per brand on the brands
-// row, so it is the same palette whichever board is open. requireUser, not
-// requireTeam, to match every other moodboard edit — a talent works on their
-// brand's boards, and the palette is part of that.
+// The brand's colour palette LIBRARY — one palette per season plus an evergreen
+// one (Tess, 2026-09-09: "color palettes should be saved to a season and then
+// allowed to be added to a moodboard -- not just applied to all moodboards as
+// many of these would be seasonal"). Stored on the brands row, as the single
+// palette was; the shape changed from { seasonal, evergreen } to
+// { evergreen, seasons } and normalizePaletteLibrary migrates the old one in
+// place on the first save. requireUser, not requireTeam, to match every other
+// moodboard edit — a talent works on their brand's boards, palettes included.
 //
-// The whole palette is saved at once: it is a handful of swatches, and sending
-// the full set sidesteps any per-swatch ordering or merge question. It is cleaned
-// through normalizePalette on the way in so nothing half-typed reaches the row.
-export async function saveColorPalette(palette: Palette) {
+// The whole library is saved at once: a handful of seasons of a few dozen
+// swatches, so sending the full set sidesteps any per-slot merge question. It is
+// cleaned through normalizePaletteLibrary so nothing half-typed reaches the row.
+export async function savePaletteLibrary(library: PaletteLibrary) {
   const supabase = await createClient();
   await requireUser();
   const brand = await activeBrand();
-  const clean = normalizePalette(palette);
+  const clean = normalizePaletteLibrary(library);
   await supabase.from("brands").update({ palette: clean }).eq("slug", brand);
+  revalidatePath("/moodboard");
+}
+
+// Which palettes a single board shows — the keys ("evergreen" and/or season
+// names) it has been given. A palette is added to a board on purpose now, so a
+// season's colours no longer appear on every board. Stored on the board row
+// (moodboards.palettes). If that column does not exist yet — the p26 migration
+// has not been run — the update errors softly and the change simply does not
+// persist, the same graceful path the palette read takes, rather than throwing.
+export async function setBoardPalettes(boardId: string, keys: string[]) {
+  await requireUser();
+  const supabase = await createClient();
+  const clean = normalizeBoardPalettes(keys);
+  const { error } = await supabase
+    .from("moodboards")
+    .update({ palettes: clean, updated_at: new Date().toISOString() })
+    .eq("id", boardId);
+  if (error) return; // column missing (pre-migration) or a transient failure — no crash
   revalidatePath("/moodboard");
 }
 
 // Upload a pattern / print image for a palette swatch (Tess, 2026-08-12: "you can
 // upload swatch for pattern if needed"). Returns the public URL; the client puts
-// it on the swatch and persists it with the next saveColorPalette — the same
+// it on the swatch and persists it with the next savePaletteLibrary — the same
 // two-step the brand-logo uploader uses. requireUser, matching every moodboard
 // edit. Images only; the picker downscales before sending, so these stay small.
 export async function uploadSwatchImage(form: FormData): Promise<string | null> {

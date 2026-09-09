@@ -6,7 +6,8 @@ import { activeBrand } from "@/lib/activeBrand";
 import { refThumb, type Reference } from "@/lib/types";
 import { styleCoverUrl } from "@/lib/styleCover";
 import { toSections, itemKind, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
-import { normalizePalette } from "@/lib/palette";
+import { normalizePaletteLibrary, normalizeBoardPalettes } from "@/lib/palette";
+import { resolveList, type ListsSetting } from "@/lib/lists";
 import AddRefs from "./AddRefs";
 import NotesDrawer from "./NotesDrawer";
 import Toolbar from "./Toolbar";
@@ -36,15 +37,25 @@ export default async function MoodboardPage({
     .order("created_at", { ascending: true });
   const allBoards = (boardsData ?? []) as Moodboard[];
 
-  // The brand's colour palette (Tess, 2026-08-12). select("*") so a project that
-  // has not run the p9 migration yet reads no palette and shows an empty section,
-  // rather than erroring on an unknown column.
+  // The brand's colour palette LIBRARY — one palette per season plus an evergreen
+  // one (Tess, 2026-09-09). select("*") so a project that has not run p9 reads no
+  // palette and shows an empty section rather than erroring on an unknown column;
+  // normalizePaletteLibrary migrates the old { seasonal, evergreen } value too.
   const { data: brandRow } = await supabase
     .from("brands")
     .select("*")
     .eq("slug", brand)
     .maybeSingle();
-  const palette = normalizePalette((brandRow as { palette?: unknown } | null)?.palette);
+  const paletteLibrary = normalizePaletteLibrary((brandRow as { palette?: unknown } | null)?.palette);
+
+  // The curated season list, so "Manage palettes" offers the same seasons the
+  // rest of the app does (lib/lists reconstructs the dropdown from this diff).
+  const { data: listRow } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "lists")
+    .maybeSingle();
+  const seasonOptions = resolveList("season", (listRow?.value ?? {}) as ListsSetting);
 
   const activeBoards = allBoards.filter((b) => !b.archived);
   const archivedBoards = allBoards.filter((b) => b.archived);
@@ -156,16 +167,22 @@ export default async function MoodboardPage({
         archivedCount={archivedBoards.length}
       />
 
-      {/* Brand-level colour reference, shown whichever board is open (Tess,
-          2026-08-12). Above the boards, out of the export capture below. */}
-      <ColorPalette initial={palette} />
-
       {!current ? (
         <div className="empty">
           {showingArchived ? "No archived boards." : "No boards yet. Create one from the toolbar."}
         </div>
       ) : (
         <>
+          {/* Colour palettes given to THIS board (Tess, 2026-09-09). Above the
+              board and out of the #mb-capture export below. Palettes are added
+              per board now, so a season's colours no longer show on every one. */}
+          <ColorPalette
+            boardId={current.id}
+            library={paletteLibrary}
+            boardKeys={normalizeBoardPalettes((current as { palettes?: unknown }).palettes)}
+            seasonOptions={seasonOptions}
+          />
+
           {shownImageCount === 0 && sections.length === 0 ? (
             <div className="empty">This board has no images yet. Add references from your Library below.</div>
           ) : (
