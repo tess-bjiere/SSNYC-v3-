@@ -39,7 +39,7 @@ async function makeThumb(file: File): Promise<File | null> {
   }
 }
 
-type Picked = { file: File; url: string; crop?: CropRect | null };
+type Picked = { file: File; url: string; crop?: CropRect | null; group?: number | null };
 type Field = { key: string; label: string; type?: "textarea"; suggest?: boolean; hint?: string };
 
 // `suggest` fields autocomplete from the curated dropdown lists (lib/lists.ts).
@@ -94,6 +94,10 @@ export default function UploadModal({
   // Which staged image (if any) is open in the cropper. Cropping is optional —
   // a per-thumbnail button, not a forced step (Tess, 2026-09-04).
   const [cropIdx, setCropIdx] = useState<number | null>(null);
+  // Stacking: which staged thumbnails are ticked, waiting to be grouped into one
+  // product (Tess, 2026-09-09: "stack images of the same garment ... into one
+  // profile"). Each Picked's `group` number says which stack it belongs to.
+  const [stackSel, setStackSel] = useState<Set<number>>(new Set());
   const [err, setErr] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -114,7 +118,36 @@ export default function UploadModal({
       if (gone) URL.revokeObjectURL(gone.url);
       return copy;
     });
+    setStackSel(new Set());
   }
+
+  function toggleStackSel(i: number) {
+    setStackSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
+
+  // Group the ticked thumbnails into one product. A fresh group number, or, if the
+  // selection already touches a stack, that stack — so you can add to one.
+  function stackSelected() {
+    if (stackSel.size < 2) return;
+    setPicked((p) => {
+      const existing = [...stackSel].map((i) => p[i]?.group).find((g) => typeof g === "number");
+      const g = typeof existing === "number" ? existing : (Math.max(0, ...p.map((x) => x.group ?? 0)) + 1);
+      return p.map((x, i) => (stackSel.has(i) ? { ...x, group: g } : x));
+    });
+    setStackSel(new Set());
+  }
+
+  function unstackSelected() {
+    setPicked((p) => p.map((x, i) => (stackSel.has(i) ? { ...x, group: null } : x)));
+    setStackSel(new Set());
+  }
+
+  const selHasStacked = [...stackSel].some((i) => picked[i]?.group != null);
 
   function save() {
     if (picked.length === 0) {
@@ -123,40 +156,51 @@ export default function UploadModal({
     }
     setErr(null);
     start(async () => {
-      // One request per image rather than one request for the whole batch. A
-      // Server Action body is capped (see lib/uploadLimits.ts), and a bulk add of
-      // twenty photos would blow past any sane ceiling if sent together. Sending
-      // them one at a time also means a single bad file fails on its own instead
-      // of taking the rest of the batch down with it.
+      // Build the upload units: each stack (a group of images tied to one garment)
+      // becomes ONE profile in a single request; every ungrouped image is its own
+      // profile in its own request. One request per unit keeps a single bad file
+      // from taking the rest of the batch down, and — with each image shrunk in the
+      // browser first — keeps the request under the Server Action's body cap.
+      const groups = new Map<number, Picked[]>();
+      const singles: Picked[] = [];
+      for (const p of picked) {
+        if (p.group != null) {
+          const arr = groups.get(p.group) ?? [];
+          arr.push(p);
+          groups.set(p.group, arr);
+        } else singles.push(p);
+      }
+      const units: { items: Picked[]; combine: boolean }[] = [
+        ...[...groups.values()].map((items) => ({ items, combine: true })),
+        ...singles.map((p) => ({ items: [p], combine: false })),
+      ];
+
       let added = 0;
       const errors: string[] = [];
 
-      for (let i = 0; i < picked.length; i++) {
-        const { file, crop } = picked[i];
-        setProgress(picked.length > 1 ? `Uploading ${i + 1} of ${picked.length}…` : "Uploading…");
-
-        // Shrink the image in the browser before it is sent — a phone photo runs
-        // 5–40 MB and the upload Server Action's request body is capped (Vercel's
-        // ~4.5 MB serverless limit, which the 25 MB Next setting can't lift), so a
-        // large original was rejected as "an unexpected response from the server"
-        // (Tess, 2026-09-04: "lots of problems" on bulk/single uploads). The same
-        // helper materials already uses; a crop still lines up because its rect is
-        // stored as fractions of the image, not pixels.
-        const toSend = await downscaleImage(file);
-        if (isOversize(toSend.size)) {
-          errors.push(oversizeError(file.name, toSend.size));
-          continue;
-        }
+      for (let u = 0; u < units.length; u++) {
+        const unit = units[u];
+        setProgress(units.length > 1 ? `Uploading ${u + 1} of ${units.length}…` : "Uploading…");
 
         const fd = new FormData();
-        // "files" and "thumbs" are paired by position — one thumb entry per file,
-        // even when generating it failed (an empty placeholder keeps the indexes
-        // lined up, and the server treats it as "no thumbnail").
-        fd.append("files", toSend);
-        const t = await makeThumb(toSend);
-        fd.append("thumbs", t ?? new File([], "none"));
-        // The crop rect (or "" for none), position-matched to the file above.
-        fd.append("crops", crop ? JSON.stringify(crop) : "");
+        let anyFile = false;
+        for (const p of unit.items) {
+          // Shrink each image in the browser first — a phone photo runs 5–40 MB and
+          // the upload Server Action's body is capped at ~4.5 MB on Vercel, which
+          // the 25 MB Next setting can't lift (Tess, 2026-09-04). A crop still lines
+          // up because its rect is stored as fractions of the image.
+          const toSend = await downscaleImage(p.file);
+          if (isOversize(toSend.size)) {
+            errors.push(oversizeError(p.file.name, toSend.size));
+            continue;
+          }
+          fd.append("files", toSend);
+          fd.append("thumbs", (await makeThumb(toSend)) ?? new File([], "none"));
+          fd.append("crops", p.crop ? JSON.stringify(p.crop) : "");
+          anyFile = true;
+        }
+        if (!anyFile) continue;
+        if (unit.combine) fd.append("combine", "1");
         // Which grid this row belongs to. The server whitelists the value, so a
         // library upload and an editorial upload differ only by this one field.
         fd.append("type", kind);
@@ -167,7 +211,7 @@ export default function UploadModal({
           added += res.count;
           errors.push(...res.errors);
         } catch (e) {
-          errors.push(`${file.name}: ${e instanceof Error ? e.message : "upload failed"}`);
+          errors.push(`${unit.items[0].file.name}: ${e instanceof Error ? e.message : "upload failed"}`);
         }
       }
 
@@ -225,9 +269,26 @@ export default function UploadModal({
             ) : (
               <div className="up-thumbs">
                 {picked.map((p, i) => (
-                  <div className={"up-thumb" + (p.crop ? " cropped" : "")} key={i}>
+                  <div
+                    className={
+                      "up-thumb" +
+                      (p.crop ? " cropped" : "") +
+                      (p.group != null ? " stacked" : "") +
+                      (stackSel.has(i) ? " picksel" : "")
+                    }
+                    key={i}
+                  >
                     <img src={p.url} alt="" />
                     <button className="up-x" onClick={(e) => { e.stopPropagation(); removeAt(i); }} title="Remove">×</button>
+                    {/* Tick to select this image for stacking into one product. */}
+                    <button
+                      className={"up-pick" + (stackSel.has(i) ? " on" : "")}
+                      onClick={(e) => { e.stopPropagation(); toggleStackSel(i); }}
+                      title="Select to stack with others"
+                    >
+                      {stackSel.has(i) ? "✓" : ""}
+                    </button>
+                    {p.group != null && <span className="up-groupbadge">Stack {p.group}</span>}
                     <button className="up-crop" onClick={(e) => { e.stopPropagation(); setCropIdx(i); }} title="Crop this image">
                       {p.crop ? "Cropped ✓" : "Crop"}
                     </button>
@@ -237,6 +298,24 @@ export default function UploadModal({
               </div>
             )}
           </div>
+
+          {/* Stack controls — tick same-garment images and combine them into one
+              profile (Tess, 2026-09-09). Shown once there is more than one image. */}
+          {bulk && (
+            <div className="up-stackbar">
+              <span className="up-stackhint">
+                Same garment shot several ways? Tick those images, then stack them into one profile.
+              </span>
+              {stackSel.size >= 2 && (
+                <button className="btn ghost sm" type="button" onClick={stackSelected}>
+                  {selHasStacked ? `Add ${stackSel.size} to the stack` : `Stack ${stackSel.size} into one profile`}
+                </button>
+              )}
+              {selHasStacked && (
+                <button className="btn link" type="button" onClick={unstackSelected}>Unstack</button>
+              )}
+            </div>
+          )}
 
           {bulk && (
             <div className="up-note">These details apply to all {picked.length} images. You can edit each one individually afterward.</div>

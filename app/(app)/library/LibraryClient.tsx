@@ -10,8 +10,10 @@ import {
   softDeleteReference,
   bulkUpdateReferences,
   bulkSoftDeleteReferences,
+  mergeReferences,
 } from "@/app/actions/references";
 import BulkEditModal, { type BulkField } from "./BulkEditModal";
+import MergeModal from "./MergeModal";
 import {
   LIST_FIELDS,
   resolveDesigners,
@@ -78,6 +80,8 @@ export default function LibraryClient({
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkEditing, setBulkEditing] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const [mergeBusy, setMergeBusy] = useState(false);
   const [bulkArm, setBulkArm] = useState(false);
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -248,6 +252,33 @@ export default function LibraryClient({
       router.refresh();
     });
     leaveSelect();
+  }
+
+  // The selected references as pick-the-keeper options for the merge dialog.
+  const mergeRefs = Array.from(selected)
+    .map((id) => list.find((r) => r.id === id))
+    .filter((r): r is Reference => Boolean(r))
+    .map((r) => ({
+      id: r.id,
+      thumb: refThumb(r),
+      label: [r.designer, r.garment, r.color].filter(Boolean).join(" · "),
+    }));
+  async function applyMerge(keeperId: string) {
+    const others = Array.from(selected).filter((id) => id !== keeperId);
+    if (others.length === 0) return;
+    setMergeBusy(true);
+    const res = await mergeReferences(keeperId, others);
+    setMergeBusy(false);
+    setMerging(false);
+    if (res.ok) {
+      // The merged-away profiles vanish from the grid immediately.
+      setHidden((prev) => new Set([...prev, ...others]));
+      flashToast(`Merged ${others.length + 1} into one`);
+      router.refresh();
+      leaveSelect();
+    } else {
+      flashToast(res.error || "Couldn't merge.");
+    }
   }
 
   return (
@@ -422,6 +453,16 @@ export default function LibraryClient({
           >
             Edit
           </button>
+          {/* Combine several profiles into one (Tess, 2026-09-09). Needs at least
+              two selected — one to keep, one to fold in. */}
+          <button
+            type="button"
+            className="btn ghost sm"
+            disabled={selected.size < 2}
+            onClick={() => setMerging(true)}
+          >
+            Merge
+          </button>
           <button
             type="button"
             className={"btn ghost sm bulk-del" + (bulkArm ? " arm" : "")}
@@ -440,6 +481,15 @@ export default function LibraryClient({
           fields={bulkFields}
           onClose={() => setBulkEditing(false)}
           onApply={applyBulkEdit}
+        />
+      )}
+
+      {merging && mergeRefs.length >= 2 && (
+        <MergeModal
+          refs={mergeRefs}
+          busy={mergeBusy}
+          onClose={() => setMerging(false)}
+          onMerge={applyMerge}
         />
       )}
 

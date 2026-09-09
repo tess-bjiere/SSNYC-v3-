@@ -95,6 +95,14 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
   const errors: string[] = [];
   let count = 0;
 
+  // "combine" makes the whole batch ONE profile — the first image is the main and
+  // the rest its extra angles (Tess, 2026-09-09: "stack images of the same garment
+  // ... into one profile"). Off (the default), each image becomes its own profile.
+  const combine = (formData.get("combine") as string | null) === "1";
+
+  // Upload every image first, collecting the stored URLs, so the reference row(s)
+  // can be assembled once all the pictures are in place.
+  const uploaded: { url: string; thumbUrl: string }[] = [];
   for (const { file, thumb, crop } of jobs) {
     try {
       const folder = crypto.randomUUID();
@@ -124,15 +132,16 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
         errors.push(`${file.name}: ${upErr.message}`);
         continue;
       }
+      const url = supabase.storage.from(BUCKET).getPublicUrl(path).data?.publicUrl ?? null;
+      if (!url) {
+        errors.push(`${file.name}: the image uploaded but has no public URL.`);
+        continue;
+      }
 
-      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const url = pub?.publicUrl ?? null;
-
-      // The thumbnail sits beside the full image at <folder>/thumb.jpg, matching
-      // the layout the original tool used. If it fails to upload, thumb_url just
-      // points at the full image — a slower grid, never a missing one. When the
-      // image was processed (HEIC/crop) the browser thumb is of the ORIGINAL, so
-      // it is regenerated from the stored bytes to match.
+      // The thumbnail sits beside the full image at <folder>/thumb.jpg. If it fails
+      // to upload, thumb_url just points at the full image. When the image was
+      // processed (HEIC/crop) the browser thumb is of the ORIGINAL, so it is
+      // regenerated from the stored bytes to match.
       let thumbUrl = url;
       const thumbBytes: Uint8Array | null =
         heic || crop ? await thumbFrom(buf) : thumb ? Buffer.from(await thumb.arrayBuffer()) : null;
@@ -141,28 +150,31 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
         const { error: tErr } = await supabase.storage
           .from(BUCKET)
           .upload(thumbPath, thumbBytes, { contentType: "image/jpeg", upsert: false });
-        if (!tErr) {
-          const { data: tPub } = supabase.storage.from(BUCKET).getPublicUrl(thumbPath);
-          thumbUrl = tPub?.publicUrl ?? url;
-        }
+        if (!tErr) thumbUrl = supabase.storage.from(BUCKET).getPublicUrl(thumbPath).data?.publicUrl ?? url;
       }
-
-      const { error: insErr } = await supabase.from("references").insert({
-        ...meta,
-        image_url: url,
-        thumb_url: thumbUrl,
-        type: kind,
-        brand,
-        created_by: createdBy,
-      });
-      if (insErr) {
-        errors.push(`${file.name}: ${insErr.message}`);
-        continue;
-      }
-      count += 1;
+      uploaded.push({ url, thumbUrl });
     } catch (e) {
       errors.push(`${file.name}: ${e instanceof Error ? e.message : "upload failed"}`);
     }
+  }
+
+  // One reference row for the whole stack when combining, else one per image.
+  const rows =
+    combine && uploaded.length > 0
+      ? [
+          {
+            image_url: uploaded[0].url,
+            thumb_url: uploaded[0].thumbUrl,
+            extra_images: uploaded.slice(1).map((u) => u.url),
+          },
+        ]
+      : uploaded.map((u) => ({ image_url: u.url, thumb_url: u.thumbUrl }));
+  for (const row of rows) {
+    const { error: insErr } = await supabase
+      .from("references")
+      .insert({ ...meta, ...row, type: kind, brand, created_by: createdBy });
+    if (insErr) errors.push(insErr.message);
+    else count += 1;
   }
 
   if (count > 0) revalidatePath(kind === "editorial" ? "/editorial" : "/library");

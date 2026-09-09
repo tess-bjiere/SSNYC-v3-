@@ -7,6 +7,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { cropBuffer, parseCrop, heicToJpeg, thumbFrom, type CropRect } from "./imageOps";
 import { isHeicUpload, isAcceptableImage } from "@/lib/imageUpload";
+import { mergedExtraImages } from "@/lib/referenceMerge";
 import type { ExtraImage } from "@/lib/types";
 import {
   REFERENCES_BUCKET,
@@ -219,6 +220,46 @@ export async function removeReferenceImage(
   revalidatePath("/library");
   revalidatePath("/editorial");
   return { ok: true, extra_images: next as ExtraImage[] };
+}
+
+/**
+ * Merge several reference profiles into one (Tess, 2026-09-09: "combine profile
+ * into one profile"). The keeper stays with all its fields; every other profile's
+ * images are folded onto it (see mergedExtraImages), and the others go to Trash —
+ * recoverable, never hard-deleted, like every removal in this app.
+ */
+export async function mergeReferences(
+  keeperId: string,
+  otherIds: string[]
+): Promise<{ ok: boolean; error?: string }> {
+  await requireUser();
+  const others = Array.from(new Set((otherIds ?? []).filter((id) => id && id !== keeperId)));
+  if (!keeperId || others.length === 0) {
+    return { ok: false, error: "Choose a profile to keep and at least one to merge in." };
+  }
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("references")
+    .select("id,image_url,extra_images")
+    .in("id", [keeperId, ...others])
+    .is("deleted_at", null);
+  type Row = { id: string; image_url: string | null; extra_images: ExtraImage[] | null };
+  const byId = new Map(((rows ?? []) as Row[]).map((r) => [r.id, r]));
+  const keeper = byId.get(keeperId);
+  if (!keeper) return { ok: false, error: "The profile to keep no longer exists." };
+  const otherRows = others.map((id) => byId.get(id)).filter(Boolean) as Row[];
+  if (otherRows.length === 0) return { ok: false, error: "Nothing left to merge." };
+
+  const nextExtras = mergedExtraImages(keeper, otherRows);
+  await supabase.from("references").update({ extra_images: nextExtras }).eq("id", keeperId);
+  // The merged-away profiles move to Trash, recoverable, rather than being erased.
+  await supabase
+    .from("references")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", otherRows.map((r) => r.id));
+  revalidatePath("/library");
+  revalidatePath("/editorial");
+  return { ok: true };
 }
 
 /**
