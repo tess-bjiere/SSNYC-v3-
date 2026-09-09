@@ -1,0 +1,57 @@
+<!doctype html><meta charset="utf-8">
+<title>Ref classification sheet</title>
+<style>
+  body{font:13px/1.4 system-ui;margin:16px;background:#fff;color:#111}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .cell{border:1px solid #ddd;border-radius:6px;padding:6px}
+  .cell img{width:100%;height:230px;object-fit:contain;background:#f3f3f3;border-radius:4px}
+  .n{font-weight:700;font-size:13px;margin-top:4px}
+  .meta{margin-top:2px;font-size:11px}
+  .cur{color:#888}
+  .note{color:#444;font-style:italic;margin-top:2px;font-size:11px}
+</style>
+<div class="grid" id="g"></div>
+<script>
+const rows = [
+{n:1,d:"Unknown",c:"Outerwear",g:null,note:"Need to bring this in, great material / weight and cut",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/5cc8f8e0-803f-439d-9e9d-7ec357162da4/thumb.jpg"},
+{n:2,d:"Unknown",c:"Color",g:null,note:"Color reference from AC for washed Greecian blue",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/0a0c06ec-55dc-4911-9afb-7cbf0f2014df/thumb.jpg"},
+{n:3,d:"Eterne",c:"Fabric",g:null,note:"AC love the idea or terry cloth, but doesnt like current in market shapes",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/ccb19af6-1688-4fdb-a7ba-a1cf189a2ef0/thumb.jpg"},
+{n:4,d:"Eterne",c:"Bottoms",g:null,note:"Short from AC for shape reference.",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/6dd79391-ff52-47b2-a69b-dc6b8a874d4c/thumb.jpg"},
+{n:5,d:"Rag & Bone",c:"Tops",g:null,note:"almost a rugby style anorak, actual ref in tafetta",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/a39aa6f4-e7e0-4539-9f24-874a47096dbf/thumb.jpg"},
+{n:6,d:"Relax Lacrosse Brand",c:"Performance",g:null,note:"AC loves linen and shape",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/30028087-da59-4fb5-baa1-6d081b84f027/thumb.jpg"},
+{n:7,d:"Zara",c:null,g:null,note:"Outerwear reference from AC",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/fa14da37-0eeb-4754-ab73-4ebec54bb18b/thumb.jpg"},
+{n:8,d:"Zara",c:"Outerwear",g:null,note:"Outerwear reference from AC",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/8e7f4156-2c9e-42e8-b755-318b763f925a/thumb.jpg"},
+{n:9,d:"Zara",c:null,g:null,note:"AC love model look, imperfectness of hair and overall styling",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/e0175c8d-5233-405a-9ee4-3ba1e6ade189/thumb.jpg"},
+{n:10,d:"Zara",c:null,g:null,note:"AC love model look, imperfectness of hair and overall styling",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/b539ee64-c353-483a-8045-3b7f9eee6479/thumb.jpg"},
+{n:11,d:"Zara",c:null,g:null,note:"AC love model look, imperfectness of hair and overall styling",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/8ebfd4e6-3e5b-413d-9891-c837e1cc53d3/thumb.jpg"},
+{n:12,d:"Zara",c:null,g:null,note:"AC love model look, imperfectness of hair and overall styling",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/32a32541-9331-48d4-bb42-ad49ddf5860d/thumb.jpg"},
+{n:13,d:"Zara",c:null,g:null,note:"AC love model look, imperfectness of hair and overall styling",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/e62a1849-3f05-4171-8c24-532e973203ba/thumb.jpg"},
+{n:14,d:"Zara",c:null,g:null,note:"AC love model look, imperfectness of hair and overall styling",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/b0eb877c-9bbe-4c05-a0ed-c068884cc7b3/thumb.jpg"},
+{n:15,d:"Unknown",c:null,g:null,note:"AC ref - reversible plaid windbreaker",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/280d7cc8-cf6c-4cb1-9f2f-28de609bb1e7/thumb.jpg"},
+{n:16,d:"Agolde",c:null,g:null,note:"AC refs",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/1bb46fc5-3246-4dda-84dc-97235443b034/thumb.jpg"},
+{n:17,d:"Unknown",c:null,g:null,note:"AC refs",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/6f60d994-2de1-4a4d-a54b-e3f00f03a359/thumb.jpg"},
+{n:18,d:"Unknown",c:null,g:null,note:"(no note)",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/383b7ff0-0e22-4d8e-a873-412b7931a0d9/thumb.jpg"},
+{n:19,d:"Unknown",c:null,g:null,note:"(no note)",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/f9246eb9-ffed-4076-9675-61136a45dfd8/thumb.jpg"},
+{n:20,d:"Unknown",c:null,g:null,note:"(no note)",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/8b728af7-713f-441f-8837-4b451cec659b/thumb.jpg"},
+{n:21,d:"Unknown",c:null,g:null,note:"(no note)",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/08eeb87a-12d8-4790-8649-0a1617e60c30/thumb.jpg"},
+{n:22,d:"Unknown",c:null,g:null,note:"(no note)",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/75bf48e1-09ae-43e2-ad75-5feb700216b8/thumb.jpg"},
+{n:23,d:"Unknown",c:null,g:null,note:"AC ref - loves funnel neck",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/ea36bd38-1509-4ffb-95df-8b383cef7864/thumb.jpg"},
+{n:24,d:"Unknown",c:null,g:null,note:"(no note)",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/74e508a3-1a75-444a-b8bd-dca9ee51e6e8/thumb.jpg"},
+{n:25,d:"Wales Bonner",c:null,g:null,note:"AC ref -- into hood and shapes",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/edce9a13-6cf0-40d8-b9a3-dde214e40e84/thumb.jpg"},
+{n:26,d:"Loro Piana",c:null,g:null,note:"AC ref -- loves the blue",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/49637672-4fe1-4d08-9514-8fc9e8f472f5/thumb.jpg"},
+{n:27,d:"Dries Van Noten",c:null,g:null,note:"turn this into a knit jacket with sweatshirt material",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/96e77382-c122-45c6-b70a-696d8b52b0db/thumb.jpg"},
+{n:28,d:"Unknown",c:null,g:null,note:"loves idea of waffle set for holiday",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/bab9442f-e1de-49b8-bf6b-f9a215ad4b31/thumb.jpg"},
+{n:29,d:"Unknown",c:null,g:null,note:"AC Refs",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/a50d2588-496a-4e83-95d3-894adff1cd6c/thumb.jpg"},
+{n:30,d:"Unknown",c:null,g:null,note:"AC Refs",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/e1186c3e-23ed-4e26-819b-f36ac882751a/thumb.jpg"},
+{n:31,d:"Unknown",c:null,g:null,note:"AC Refs",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/bb49b2bc-4091-492b-a2cf-ea244de13304/thumb.jpg"},
+{n:32,d:"Unknown",c:null,g:null,note:"AC Refs",t:"https://axwavdjhzvtluvsixfjq.supabase.co/storage/v1/object/public/references/3e7a0844-2808-4213-8551-b864f06f6ce1/thumb.jpg"},
+];
+const g=document.getElementById('g');
+for(const r of rows){
+  const d=document.createElement('div');d.className='cell';
+  d.innerHTML=`<img src="${r.t}" loading="eager"><div class="n">#${r.n} · ${r.d}</div>`+
+    `<div class="meta cur">cat: ${r.c||'—'} · gar: ${r.g||'—'}</div>`+
+    `<div class="note">${r.note}</div>`;
+  g.appendChild(d);
+}
+</script>
