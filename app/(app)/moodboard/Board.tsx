@@ -59,6 +59,17 @@ export default function Board({ boardId, sections: initial }: { boardId: string;
     return ids;
   }
 
+  // The tiles that live inside a titled section (one with a divider). The model
+  // uses this to tell a deliberate drop into the LAST section apart from the
+  // trailing unsectioned group, which otherwise look identical once flattened
+  // (Tess, 2026-09-09: "when i drag images into matching sets it bumps them back
+  // out"). Sections without a tid are the loose groups and are left out.
+  function sectioned(secs: Sec[]) {
+    const ids: string[] = [];
+    for (const s of secs) if (s.tid) for (const im of s.images) ids.push(im.iid);
+    return ids;
+  }
+
   function move(iid: string, secIdx: number, beforeIid: string | null) {
     let tile: Tile | undefined;
     for (const s of sections) {
@@ -77,7 +88,7 @@ export default function Board({ boardId, sections: initial }: { boardId: string;
     setSections(next);
     setDragIid(null);
     setOverIid(null);
-    reorderImages(boardId, flatten(next));
+    reorderImages(boardId, flatten(next), sectioned(next));
   }
 
   // Swap a whole section with its neighbour. Only sections that have a divider can
@@ -88,7 +99,7 @@ export default function Board({ boardId, sections: initial }: { boardId: string;
     if (to < 0 || to >= next.length || !next[to].tid || !next[si].tid) return;
     [next[si], next[to]] = [next[to], next[si]];
     setSections(next);
-    reorderImages(boardId, flatten(next));
+    reorderImages(boardId, flatten(next), sectioned(next));
   }
 
   // Take one image off the board. The reference stays in the library — this only

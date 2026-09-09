@@ -390,6 +390,40 @@ test("applyReorder still leaves the trailing loose group without gi", () => {
   for (const l of loose) assert.equal(typeof l.gi, "undefined");
 });
 
+test("applyReorder files a loose image dropped into the LAST titled section when the UI says so", () => {
+  // The bug: MATCHING SETS was the last section, so an image dropped into it fell
+  // after the last divider — indistinguishable from the trailing group by position
+  // alone — and reverted on reload (Tess, 2026-09-09: "when i drag images into
+  // matching sets it bumps them back out"). The UI passes the ids it shows inside
+  // titled sections; loose1 is now one of them, loose2 is not.
+  const order = ["d1", "a", "b", "d2", "c", "loose1", "loose2"];
+  const after = applyReorder(board(), order, ["a", "b", "c", "loose1"]);
+  const { sections } = toSections(after);
+  assert.deepEqual(
+    sections.map((s) => [s.label, s.images.map((i) => i.iid)]),
+    [
+      ["Outerwear", ["a", "b"]],
+      ["Knitwear", ["c", "loose1"]],
+      [null, ["loose2"]],
+    ],
+    "loose1 sticks in the last section; loose2 stays in the trailing group"
+  );
+});
+
+test("applyReorder files an image into an EMPTY last section (the reported case)", () => {
+  const items: MBItem[] = [div("D", "Matching Sets", 1), img("X")];
+  // Without the UI hint it would revert (documents the old behaviour).
+  assert.equal(
+    toSections(applyReorder(items, ["D", "X"])).sections.find((s) => s.label === "Matching Sets")
+      ?.images.length,
+    0
+  );
+  // With the hint, X lands in the section.
+  const after = applyReorder(items, ["D", "X"], ["X"]);
+  const sec = toSections(after).sections.find((s) => s.label === "Matching Sets");
+  assert.deepEqual(sec?.images.map((i) => i.iid), ["X"]);
+});
+
 test("removeImageAndDupes takes every copy of a duplicated image off the board", () => {
   const dupA: MBImageItem = { ...img("p1"), ref_id: "same" };
   const dupB: MBImageItem = { ...img("p2"), ref_id: "same" };

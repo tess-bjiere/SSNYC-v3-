@@ -97,8 +97,22 @@ export type Moodboard = {
 // image that already belonged to a section keeps its section even when it is the
 // last thing on the board, and a loose image dragged up above a divider is filed
 // into that section — both of those are deliberate moves.
-export function applyReorder(items: MBItem[], orderedIds: string[]): MBItem[] {
+//
+// `sectionedIds` is the ids the UI shows *inside a titled section*, and it wins
+// over the "after the last divider ⇒ trailing" heuristic. Without it, a loose
+// image dropped into the LAST section falls after the last divider — positionally
+// identical to the trailing group — so it reverted on reload (Tess, 2026-09-09:
+// "when i drag images into matching sets it bumps them back out"). The grid knows
+// which section a tile is in, so it passes that intent through; the heuristic
+// still governs every id it does not name (older callers pass nothing and keep
+// the exact previous behaviour).
+export function applyReorder(
+  items: MBItem[],
+  orderedIds: string[],
+  sectionedIds?: string[]
+): MBItem[] {
   const pos = new Map(orderedIds.map((id, i) => [id, i]));
+  const forced = sectionedIds ? new Set(sectionedIds) : null;
   const idOf = (it: MBItem): string | null =>
     itemKind(it) === "divider"
       ? (it as MBDividerItem).tid
@@ -115,14 +129,20 @@ export function applyReorder(items: MBItem[], orderedIds: string[]): MBItem[] {
   }
 
   // Tag each sectioned item with its new gi. A loose image that stays past the
-  // last divider keeps no gi — the trailing unsectioned group, as it always has.
+  // last divider keeps no gi — the trailing unsectioned group, as it always has —
+  // unless the UI names it as living inside a titled section (see above).
   const tagged = items.map((it) => {
     if (itemKind(it) === "text") return it;
     const id = idOf(it) as string;
     if (!pos.has(id)) return it;
     const at = pos.get(id) as number;
     const wasLoose = typeof it.gi !== "number";
-    if (itemKind(it) === "image" && wasLoose && at > lastDividerPos) return it;
+    const stayLoose =
+      itemKind(it) === "image" &&
+      wasLoose &&
+      at > lastDividerPos &&
+      !(forced && forced.has(id));
+    if (stayLoose) return it;
     return { ...it, gi: at };
   });
 

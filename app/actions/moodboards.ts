@@ -179,7 +179,11 @@ export async function renameBoard(boardId: string, form: FormData) {
 
 // Persist a new image/section order — see `applyReorder` in lib/moodboard.ts for
 // the ordering rules.
-export async function reorderImages(boardId: string, orderedIds: string[]) {
+export async function reorderImages(
+  boardId: string,
+  orderedIds: string[],
+  sectionedIds?: string[]
+) {
   await requireUser();
   const supabase = await createClient();
   const { data: board } = await supabase
@@ -188,7 +192,7 @@ export async function reorderImages(boardId: string, orderedIds: string[]) {
     .eq("id", boardId)
     .maybeSingle();
   const items: MBItem[] = (board?.items as MBItem[]) ?? [];
-  const next = applyReorder(items, orderedIds);
+  const next = applyReorder(items, orderedIds, sectionedIds);
 
   await supabase
     .from("moodboards")
