@@ -56,6 +56,22 @@ export async function updateReference(id: string, patch: Record<string, string |
   revalidatePath("/editorial");
 }
 
+// Star / un-star a reference (Tess, 2026-09-09: "add functionality for arielle to
+// star favorite references and then view favorites"). One SHARED list — the flag
+// lives on the row, so anyone can toggle it and everyone sees the same stars. If
+// the p27 column does not exist yet the update errors softly and the star simply
+// does not persist, the same graceful path setBoardPalettes takes, rather than
+// throwing on a live page before the migration is run.
+export async function toggleReferenceFavorite(id: string, favorite: boolean) {
+  await requireUser();
+  if (!id) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("references").update({ favorite }).eq("id", id);
+  if (error) return; // column missing (pre-migration) or a transient failure — no crash
+  revalidatePath("/library");
+  revalidatePath("/editorial");
+}
+
 // Bulk edit and bulk delete for the References and Campaign grids (Tess,
 // 2026-08-19: "add bulk select / edit / delete option for references and
 // campaign libraries"). Both take a list of ids and go through the same

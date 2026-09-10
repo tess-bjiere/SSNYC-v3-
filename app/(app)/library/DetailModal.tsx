@@ -76,6 +76,8 @@ export default function DetailModal({
   onDeleted,
   actions = "library",
   options = {},
+  favorited,
+  onToggleFavorite,
 }: {
   r: Reference;
   onClose: () => void;
@@ -86,6 +88,11 @@ export default function DetailModal({
   // The curated dropdown vocabulary per field (category, garment, …). When a
   // field has options they show as an autocomplete; otherwise it's a plain input.
   options?: Record<string, string[]>;
+  // Favorites (Tess, 2026-09-09). Optional: the star only appears when the opener
+  // wires it (the Library does; the moodboard, which reuses this card, does not),
+  // so the shared modal stays unchanged everywhere else.
+  favorited?: boolean;
+  onToggleFavorite?: () => void;
 }) {
   const router = useRouter();
   const [cur, setCur] = useState<Reference>(r);
@@ -402,6 +409,21 @@ export default function DetailModal({
 
           <div className="detail-info">
             <button className="detail-x" onClick={onClose} aria-label="Close">×</button>
+            {/* Star this reference while viewing it (Tess, 2026-09-09). Only shown
+                when the opener wired favorites — the Library does, the moodboard
+                does not — so the same card stays unchanged there. */}
+            {onToggleFavorite && (
+              <button
+                type="button"
+                className={"detail-fav" + (favorited ? " on" : "")}
+                onClick={onToggleFavorite}
+                aria-pressed={!!favorited}
+                title={favorited ? "Remove from favorites" : "Add to favorites"}
+                aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+              >
+                {favorited ? "★" : "☆"}
+              </button>
+            )}
 
             {editing ? (
               <>

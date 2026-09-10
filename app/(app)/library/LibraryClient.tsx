@@ -11,6 +11,7 @@ import {
   bulkUpdateReferences,
   bulkSoftDeleteReferences,
   mergeReferences,
+  toggleReferenceFavorite,
 } from "@/app/actions/references";
 import BulkEditModal, { type BulkField } from "./BulkEditModal";
 import MergeModal from "./MergeModal";
@@ -64,6 +65,16 @@ export default function LibraryClient({
   // (Tess, 2026-08-11, ref ssnyclibrary: "easy ability to upload, sort, etc").
   // Desktop ignores this — the filters are always shown there.
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Favorites (Tess, 2026-09-09: "add functionality for arielle to star favorite
+  // references and then view favorites"). One SHARED list — the star lives on the
+  // row (references.favorite). Held here as a Set so a click flips instantly and
+  // then persists, the same optimistic shape as `hidden` below. `favOnly` is the
+  // ★ Favorites filter toggle in the bar.
+  const [favs, setFavs] = useState<Set<string>>(
+    () => new Set(refs.filter((r) => r.favorite).map((r) => r.id))
+  );
+  const [favOnly, setFavOnly] = useState(false);
 
   const [detail, setDetail] = useState<Reference | null>(null);
   const [picker, setPicker] = useState<Reference | null>(null);
@@ -154,6 +165,7 @@ export default function LibraryClient({
   const list = useMemo(() => {
     let out = refs.filter((r) => {
       if (hidden.has(r.id)) return false;
+      if (favOnly && !favs.has(r.id)) return false;
       const n = yearNum(r.year);
       if (tab === "archival" && !(n != null && n < 2010)) return false;
       if (tab === "market" && !(n != null && n >= 2010)) return false;
@@ -177,7 +189,7 @@ export default function LibraryClient({
       return (b.created_at || "").localeCompare(a.created_at || "");
     });
     return out;
-  }, [refs, tab, q, sel, sort, hidden]);
+  }, [refs, tab, q, sel, sort, hidden, favOnly, favs]);
 
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
@@ -198,6 +210,20 @@ export default function LibraryClient({
       await softDeleteReference(id);
       router.refresh();
     });
+  }
+
+  // Star / un-star a reference. Flips the local Set at once (so the card and the
+  // ★ Favorites filter react immediately), then persists the new value. Shared
+  // list, so no per-user bookkeeping — just the row's flag.
+  function toggleFav(id: string) {
+    const on = !favs.has(id);
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    toggleReferenceFavorite(id, on);
   }
 
   // --- Bulk select / edit / delete ---
@@ -338,6 +364,17 @@ export default function LibraryClient({
               {l}
             </button>
           ))}
+          {/* Shared ★ Favorites filter (Tess, 2026-09-09). Sits beside the tabs
+              and stacks with search + the facet filters. The count is the whole
+              board's stars, so it reads even while another filter narrows the grid. */}
+          <button
+            className={"lib-tab lib-fav-tab" + (favOnly ? " active" : "")}
+            onClick={() => setFavOnly((v) => !v)}
+            aria-pressed={favOnly}
+            title="Show only starred references"
+          >
+            {favOnly ? "★" : "☆"} Favorites{favs.size ? ` (${favs.size})` : ""}
+          </button>
         </div>
         <input className="input lib-search" placeholder="Search designer, garment, color, notes…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
@@ -405,15 +442,30 @@ export default function LibraryClient({
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
                   {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
                   {!selecting && (
-                    <button
-                      type="button"
-                      className="card-del"
-                      title="Delete (moves to Trash)"
-                      aria-label="Delete image"
-                      onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
-                    >
-                      ✕
-                    </button>
+                    <>
+                      {/* Star toggle — shared favorites (Tess, 2026-09-09). Filled
+                          when starred; always visible when set so the grid reads
+                          at a glance, and stops the click from opening the card. */}
+                      <button
+                        type="button"
+                        className={"card-fav" + (favs.has(r.id) ? " on" : "")}
+                        title={favs.has(r.id) ? "Remove from favorites" : "Add to favorites"}
+                        aria-label={favs.has(r.id) ? "Remove from favorites" : "Add to favorites"}
+                        aria-pressed={favs.has(r.id)}
+                        onClick={(e) => { e.stopPropagation(); toggleFav(r.id); }}
+                      >
+                        {favs.has(r.id) ? "★" : "☆"}
+                      </button>
+                      <button
+                        type="button"
+                        className="card-del"
+                        title="Delete (moves to Trash)"
+                        aria-label="Delete image"
+                        onClick={(e) => { e.stopPropagation(); removeCard(r.id); }}
+                      >
+                        ✕
+                      </button>
+                    </>
                   )}
                 </div>
                 <div className="meta">
@@ -568,6 +620,8 @@ export default function LibraryClient({
           onAdd={() => { setPicker(detail); setDetail(null); }}
           onToast={flashToast}
           onDeleted={() => { setDetail(null); flashToast("Moved to Trash"); }}
+          favorited={favs.has(detail.id)}
+          onToggleFavorite={() => toggleFav(detail.id)}
         />
       )}
 

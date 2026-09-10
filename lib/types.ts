@@ -22,6 +22,9 @@ export type Reference = {
   price: string | null;
   notes: string | null;
   type: string | null;
+  // One shared "favorite" star (Tess, 2026-09-09). Optional so a row read before
+  // the p27 column exists is simply not favorited rather than a type error.
+  favorite?: boolean | null;
   extra_images: ExtraImage[] | null;
   created_by: string | null;
   deleted_at: string | null;
