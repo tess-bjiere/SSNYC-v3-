@@ -8,6 +8,7 @@ import {
   normalizeBoardPalettes,
   filledSlots,
   resolveBoardPalettes,
+  remapBoardKeys,
   slotLabel,
   EVERGREEN_KEY,
   UNFILED_SEASON,
@@ -151,4 +152,32 @@ test("resolveBoardPalettes returns only the board's keys, in order, that still h
 test("slotLabel names evergreen and passes season keys through", () => {
   assert.equal(slotLabel(EVERGREEN_KEY), "Evergreen");
   assert.equal(slotLabel("FW26"), "FW26");
+});
+
+test("remapBoardKeys renames a board's key so a renamed palette stays attached", () => {
+  assert.deepEqual(
+    remapBoardKeys(["evergreen", "Spring / Summer 2027"], [
+      { from: "Spring / Summer 2027", to: "SS27" },
+    ]),
+    ["evergreen", "SS27"]
+  );
+});
+
+test("remapBoardKeys leaves boards that never had the palette untouched", () => {
+  assert.deepEqual(
+    remapBoardKeys(["evergreen", "FW26"], [{ from: "SS27", to: "Spring 2027" }]),
+    ["evergreen", "FW26"]
+  );
+});
+
+test("remapBoardKeys de-dupes when a rename collides with a key the board already has", () => {
+  // Board had both FW26 and "Fall"; renaming Fall -> FW26 must not duplicate.
+  assert.deepEqual(
+    remapBoardKeys(["FW26", "Fall"], [{ from: "Fall", to: "FW26" }]),
+    ["FW26"]
+  );
+});
+
+test("remapBoardKeys with no renames just normalizes the list", () => {
+  assert.deepEqual(remapBoardKeys(["FW26", " FW26 ", "", 3 as unknown as string], []), ["FW26"]);
 });

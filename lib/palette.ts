@@ -183,3 +183,24 @@ export function resolveBoardPalettes(lib: PaletteLibrary, keys: string[]): Palet
   }
   return out;
 }
+
+// Apply palette renames to a board's key list (Tess, 2026-09-14: "easily change
+// the palette name"). Boards store palettes by name, so when a palette is renamed
+// its key must follow — otherwise a board that had "Spring / Summer 2027" would
+// silently lose it. Every board is remapped through this on save, so a rename
+// keeps the palette on whatever boards already showed it. Order is preserved and
+// a rename that lands on a key the board already carries is de-duplicated.
+export function remapBoardKeys(keys: string[], renames: { from: string; to: string }[]): string[] {
+  const clean = normalizeBoardPalettes(keys);
+  if (!renames.length) return clean;
+  const map = new Map(renames.map((r) => [r.from, r.to]));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const k of clean) {
+    const nk = (map.get(k) ?? k).trim();
+    if (!nk || seen.has(nk)) continue;
+    seen.add(nk);
+    out.push(nk);
+  }
+  return out;
+}

@@ -9,7 +9,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import { applyReorder, insertItems, removeImageAndDupes } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
-import { normalizePaletteLibrary, normalizeBoardPalettes, type PaletteLibrary } from "@/lib/palette";
+import { normalizePaletteLibrary, normalizeBoardPalettes, remapBoardKeys, type PaletteLibrary } from "@/lib/palette";
 
 export async function createBoard(form: FormData) {
   const name = (form.get("name") as string)?.trim();
@@ -433,12 +433,44 @@ export async function addStylesToBoard(
 // The whole library is saved at once: a handful of seasons of a few dozen
 // swatches, so sending the full set sidesteps any per-slot merge question. It is
 // cleaned through normalizePaletteLibrary so nothing half-typed reaches the row.
-export async function savePaletteLibrary(library: PaletteLibrary) {
+// `renames` carries any palette that was re-named in the manager, old→new (Tess,
+// 2026-09-14: "easily change the palette name"). Renaming the colours is a global
+// edit — they show wherever the palette appears — but a rename also has to follow
+// onto the boards that already show that palette, or a board that had
+// "Spring / Summer 2027" would silently lose it when the name changed. So after
+// the library is written, every board on this brand is remapped through the
+// renames. Adding/removing a palette on a board is NOT here — that stays local to
+// the board (see setBoardPalettes), which is the whole point of per-board palettes.
+export async function savePaletteLibrary(
+  library: PaletteLibrary,
+  renames: { from: string; to: string }[] = []
+) {
   const supabase = await createClient();
   await requireUser();
   const brand = await activeBrand();
   const clean = normalizePaletteLibrary(library);
   await supabase.from("brands").update({ palette: clean }).eq("slug", brand);
+
+  // Cascade renames onto this brand's boards. Only boards whose key list actually
+  // changes are written. Guarded: if the palettes column is missing (pre-p26) the
+  // select errors and we simply skip, the same graceful path elsewhere takes.
+  const real = renames.filter((r) => r.from && r.to && r.from !== r.to);
+  if (real.length) {
+    const { data: boards, error } = await supabase
+      .from("moodboards")
+      .select("id, palettes")
+      .eq("brand", brand);
+    if (!error) {
+      for (const b of boards ?? []) {
+        const cur = normalizeBoardPalettes((b as { palettes?: unknown }).palettes);
+        const next = remapBoardKeys(cur, real);
+        if (JSON.stringify(next) !== JSON.stringify(cur)) {
+          await supabase.from("moodboards").update({ palettes: next }).eq("id", b.id);
+        }
+      }
+    }
+  }
+
   revalidatePath("/moodboard");
 }
 

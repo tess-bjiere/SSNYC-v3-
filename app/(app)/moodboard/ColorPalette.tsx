@@ -6,11 +6,18 @@ import {
   filledSlots,
   normalizePaletteLibrary,
   resolveBoardPalettes,
-  slotLabel,
+  remapBoardKeys,
   EVERGREEN_KEY,
   type PaletteLibrary,
   type Swatch,
 } from "@/lib/palette";
+
+// One editable row in the Manage-palettes drawer (Tess, 2026-09-14: "easily
+// change the palette name"). The row keeps a stable `id` so the name field can be
+// retyped without the palette being re-keyed mid-edit, and remembers `origName`
+// so a save can tell a rename (origName → name) from a brand-new palette (no
+// origName) and carry the rename onto the boards that already show it.
+type EditSlot = { id: string; origName: string | null; name: string; swatches: Swatch[] };
 
 // The moodboard colour palette (Tess, 2026-08-12: "add color palette section to
 // moodboard"; reworked 2026-09-09: "color palettes should be saved to a season
@@ -100,6 +107,18 @@ export default function ColorPalette({
   // Which swatch is mid-upload, as "FW26-2", so its Pattern button reads busy.
   const [busy, setBusy] = useState<string | null>(null);
 
+  // The drawer edits a SNAPSHOT of the library, not `lib` directly, so a palette
+  // keeps a stable row while its name is retyped (no re-key mid-keystroke, no lost
+  // focus) and Cancel just throws the snapshot away. Snapshotted in openManager(),
+  // written in saveLibrary(). `mgrEver` = evergreen swatches; `mgrSeasons` = one
+  // row per season palette; `newName` = the free-form "New palette" field.
+  const [mgrEver, setMgrEver] = useState<Swatch[]>([]);
+  const [mgrSeasons, setMgrSeasons] = useState<EditSlot[]>([]);
+  const [newName, setNewName] = useState("");
+  // Two-click arm before a palette is removed (CLAUDE.md: no confirm()). The
+  // removal is only local until Save, and Cancel restores it.
+  const [armDelId, setArmDelId] = useState<string | null>(null);
+
   const shown = resolveBoardPalettes(lib, keys);
   const addable = filledSlots(lib).filter((s) => !keys.includes(s.key));
 
@@ -117,56 +136,180 @@ export default function ColorPalette({
   }
 
   // --- library editing (the drawer) -------------------------------------------
-  // The manager slots: evergreen always, then whatever seasons hold colours, so a
-  // season appears here the moment it has a swatch and disappears when emptied.
-  const managerKeys = [EVERGREEN_KEY, ...Object.keys(lib.seasons).sort((a, b) => a.localeCompare(b))];
-  const seasonsToAdd = seasonOptions.filter((s) => s !== EVERGREEN_KEY && !(s in lib.seasons));
-
-  function slotSwatches(key: string): Swatch[] {
-    return key === EVERGREEN_KEY ? lib.evergreen : lib.seasons[key] ?? [];
-  }
-  function setSlot(key: string, next: Swatch[]) {
-    setLib((l) =>
-      key === EVERGREEN_KEY
-        ? { ...l, evergreen: next }
-        : { ...l, seasons: { ...l.seasons, [key]: next } }
+  // Open the drawer on a fresh snapshot of the library: evergreen swatches, and a
+  // row per season with its current name remembered as origName.
+  function openManager() {
+    setMgrEver(lib.evergreen.map((s) => ({ ...s })));
+    setMgrSeasons(
+      Object.keys(lib.seasons)
+        .sort((a, b) => a.localeCompare(b))
+        .map((name) => ({
+          id: crypto.randomUUID(),
+          origName: name,
+          name,
+          swatches: lib.seasons[name].map((s) => ({ ...s })),
+        }))
     );
+    setNewName("");
+    setArmDelId(null);
+    setManaging(true);
   }
-  function addSwatch(key: string) {
+
+  // Season names already in the drawer, so the curated quick-adds only offer ones
+  // that are not already present.
+  const seasonsToAdd = seasonOptions.filter(
+    (s) => s !== EVERGREEN_KEY && !mgrSeasons.some((x) => x.name.trim() === s)
+  );
+
+  // Swatch editing keyed by a `target`: the evergreen block ("evergreen") or a
+  // season row's id. One set of helpers serves both.
+  function tSwatches(target: string): Swatch[] {
+    return target === EVERGREEN_KEY ? mgrEver : mgrSeasons.find((s) => s.id === target)?.swatches ?? [];
+  }
+  function tSet(target: string, next: Swatch[]) {
+    if (target === EVERGREEN_KEY) setMgrEver(next);
+    else setMgrSeasons((ss) => ss.map((s) => (s.id === target ? { ...s, swatches: next } : s)));
+  }
+  function addSwatch(target: string) {
     // A fresh swatch is a mid-grey — a real, saveable colour, not an empty row
     // that normalize would drop before it reaches the database.
-    setSlot(key, [...slotSwatches(key), { hex: "#cccccc", name: "" }]);
+    tSet(target, [...tSwatches(target), { hex: "#cccccc", name: "" }]);
   }
-  function editSwatch(key: string, i: number, patch: Partial<Swatch>) {
-    setSlot(key, slotSwatches(key).map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  function editSwatch(target: string, i: number, patch: Partial<Swatch>) {
+    tSet(target, tSwatches(target).map((s, j) => (j === i ? { ...s, ...patch } : s)));
   }
-  function removeSwatch(key: string, i: number) {
-    setSlot(key, slotSwatches(key).filter((_, j) => j !== i));
-  }
-  function addSeason(season: string) {
-    if (!season || season in lib.seasons) return;
-    setLib((l) => ({ ...l, seasons: { ...l.seasons, [season]: [{ hex: "#cccccc", name: "" }] } }));
+  function removeSwatch(target: string, i: number) {
+    tSet(target, tSwatches(target).filter((_, j) => j !== i));
   }
 
-  async function uploadPattern(key: string, i: number, file: File) {
-    const id = `${key}-${i}`;
+  function renameSlot(id: string, name: string) {
+    setMgrSeasons((ss) => ss.map((s) => (s.id === id ? { ...s, name } : s)));
+  }
+  function removeSlot(id: string) {
+    setMgrSeasons((ss) => ss.filter((s) => s.id !== id));
+    setArmDelId(null);
+  }
+  // Create a palette with any name (free-form) or from a curated quick-add. It
+  // starts with one grey swatch so it survives the save (an empty palette is
+  // dropped by normalize).
+  function addPalette(name: string) {
+    const nm = name.trim();
+    if (!nm || mgrSeasons.some((s) => s.name.trim() === nm)) return;
+    setMgrSeasons((ss) => [
+      ...ss,
+      { id: crypto.randomUUID(), origName: null, name: nm, swatches: [{ hex: "#cccccc", name: "" }] },
+    ]);
+    setNewName("");
+  }
+
+  async function uploadPattern(target: string, i: number, file: File) {
+    const id = `${target}-${i}`;
     setBusy(id);
     const small = await downscale(file);
     const fd = new FormData();
     fd.append("image", small);
     const url = await uploadSwatchImage(fd);
     setBusy(null);
-    if (url) editSwatch(key, i, { image: url });
+    if (url) editSwatch(target, i, { image: url });
   }
 
   async function saveLibrary() {
     setSaving(true);
-    await savePaletteLibrary(lib);
-    // Reflect the same cleanup the server applied (empty seasons/swatches dropped)
-    // so the drawer shows exactly what was stored.
-    setLib(normalizePaletteLibrary(lib));
+    // Build the library from the rows. Last writer wins if two rows share a name.
+    const seasons: Record<string, Swatch[]> = {};
+    for (const s of mgrSeasons) {
+      const nm = s.name.trim();
+      if (!nm || nm === EVERGREEN_KEY) continue;
+      seasons[nm] = s.swatches;
+    }
+    const nextLib = normalizePaletteLibrary({ evergreen: mgrEver, seasons });
+    // A row whose name changed is a rename — carried onto the boards that show it
+    // (server side), but only when the renamed palette actually survives the save.
+    const renames = mgrSeasons
+      .filter((s) => s.origName && s.name.trim() && s.name.trim() !== s.origName)
+      .map((s) => ({ from: s.origName as string, to: s.name.trim() }))
+      .filter((r) => nextLib.seasons[r.to]);
+
+    await savePaletteLibrary(nextLib, renames);
+    // Keep THIS board's selection pointing at the renamed palette without a reload.
+    if (renames.length) setKeys((ks) => remapBoardKeys(ks, renames));
+    setLib(nextLib);
     setSaving(false);
     setManaging(false);
+  }
+
+  // The colour editor for one palette (evergreen or a season row), keyed by
+  // `target`. Same markup for both, so evergreen and every season stay identical.
+  function swatchEditor(target: string) {
+    const swatches = tSwatches(target);
+    return (
+      <div className="mb-swatches">
+        {swatches.map((sw, i) => (
+          <div className="mb-swatch editing" key={i}>
+            {sw.image ? (
+              <span
+                className="mb-swatch-color mb-swatch-pattern"
+                style={{ backgroundImage: `url(${sw.image})` }}
+              >
+                <button
+                  type="button"
+                  className="mb-swatch-clear"
+                  onClick={() => editSwatch(target, i, { image: undefined })}
+                  aria-label="Remove pattern"
+                  title="Remove pattern"
+                >
+                  ×
+                </button>
+              </span>
+            ) : (
+              <input
+                type="color"
+                className="mb-swatch-color"
+                value={sw.hex || "#cccccc"}
+                onChange={(e) => editSwatch(target, i, { hex: e.target.value })}
+                aria-label="Swatch colour"
+              />
+            )}
+            <input
+              type="text"
+              className="input sm mb-swatch-input"
+              placeholder="Pantone / name"
+              value={sw.name}
+              onChange={(e) => editSwatch(target, i, { name: e.target.value })}
+            />
+            {!sw.image && (
+              <label
+                className={"mb-swatch-upload" + (busy === `${target}-${i}` ? " busy" : "")}
+                title="Upload a pattern or print"
+              >
+                {busy === `${target}-${i}` ? "…" : "Pattern"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadPattern(target, i, f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+            <button
+              type="button"
+              className="mb-swatch-x"
+              onClick={() => removeSwatch(target, i)}
+              aria-label="Remove swatch"
+              title="Remove"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button type="button" className="mb-swatch-add" onClick={() => addSwatch(target)}>
+          + Add
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -196,7 +339,7 @@ export default function ColorPalette({
               )}
             </div>
           )}
-          <button type="button" className="btn link" onClick={() => setManaging(true)}>
+          <button type="button" className="btn link" onClick={openManager}>
             Manage palettes
           </button>
         </div>
@@ -245,103 +388,88 @@ export default function ColorPalette({
 
             <div className="modal-body">
               <p className="up-note">
-                These palettes are shared across the brand. Edit the colours here, then add the ones
-                you want to a board with “Add palette.” Evergreen is the permanent brand set; each
-                season has its own.
+                These palettes are shared across the brand — editing a colour here updates it
+                everywhere the palette shows. Renaming a palette follows onto the boards using it.
+                Add a palette to a board from “Add palette”; that only affects that board.
               </p>
 
-              {managerKeys.map((key) => {
-                const swatches = slotSwatches(key);
-                return (
-                  <div className="mb-palette-group" key={key}>
-                    <h3>{slotLabel(key)}</h3>
-                    <div className="mb-swatches">
-                      {swatches.map((sw, i) => (
-                        <div className="mb-swatch editing" key={i}>
-                          {sw.image ? (
-                            <span
-                              className="mb-swatch-color mb-swatch-pattern"
-                              style={{ backgroundImage: `url(${sw.image})` }}
-                            >
-                              <button
-                                type="button"
-                                className="mb-swatch-clear"
-                                onClick={() => editSwatch(key, i, { image: undefined })}
-                                aria-label="Remove pattern"
-                                title="Remove pattern"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ) : (
-                            <input
-                              type="color"
-                              className="mb-swatch-color"
-                              value={sw.hex || "#cccccc"}
-                              onChange={(e) => editSwatch(key, i, { hex: e.target.value })}
-                              aria-label="Swatch colour"
-                            />
-                          )}
-                          <input
-                            type="text"
-                            className="input sm mb-swatch-input"
-                            placeholder="Pantone / name"
-                            value={sw.name}
-                            onChange={(e) => editSwatch(key, i, { name: e.target.value })}
-                          />
-                          {!sw.image && (
-                            <label
-                              className={"mb-swatch-upload" + (busy === `${key}-${i}` ? " busy" : "")}
-                              title="Upload a pattern or print"
-                            >
-                              {busy === `${key}-${i}` ? "…" : "Pattern"}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const f = e.target.files?.[0];
-                                  if (f) uploadPattern(key, i, f);
-                                  e.target.value = "";
-                                }}
-                              />
-                            </label>
-                          )}
-                          <button
-                            type="button"
-                            className="mb-swatch-x"
-                            onClick={() => removeSwatch(key, i)}
-                            aria-label="Remove swatch"
-                            title="Remove"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                      <button type="button" className="mb-swatch-add" onClick={() => addSwatch(key)}>
-                        + Add
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Evergreen — the permanent brand set. Its name is fixed. */}
+              <div className="mb-palette-group">
+                <h3 className="mb-palette-title">Evergreen</h3>
+                {swatchEditor(EVERGREEN_KEY)}
+              </div>
 
-              {seasonsToAdd.length > 0 && (
-                <div className="mb-palette-group">
-                  <h3>Add a season palette</h3>
+              {/* One row per season palette — the name is editable in place. */}
+              {mgrSeasons.map((slot) => (
+                <div className="mb-palette-group" key={slot.id}>
+                  <div
+                    className="mb-palette-titlerow"
+                    onMouseLeave={() => setArmDelId((a) => (a === slot.id ? null : a))}
+                  >
+                    <input
+                      className="input sm mb-palette-name"
+                      value={slot.name}
+                      placeholder="Palette name"
+                      aria-label="Palette name"
+                      onChange={(e) => renameSlot(slot.id, e.target.value)}
+                    />
+                    {armDelId === slot.id ? (
+                      <button
+                        type="button"
+                        className="btn link sm mb-palette-del armed"
+                        onClick={() => removeSlot(slot.id)}
+                      >
+                        Remove?
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn link sm mb-palette-del"
+                        onClick={() => setArmDelId(slot.id)}
+                        title="Remove this palette from the library (and from every board that shows it)"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  {swatchEditor(slot.id)}
+                </div>
+              ))}
+
+              {/* Create a palette with ANY name (Tess wanted "Spring / Summer 2027",
+                  which is not a curated season), plus the curated seasons as quick-adds. */}
+              <div className="mb-palette-group">
+                <h3 className="mb-palette-title">New palette</h3>
+                <div className="mb-newpalette">
+                  <input
+                    className="input sm"
+                    value={newName}
+                    placeholder="Name a palette (e.g. Spring / Summer 2027)"
+                    aria-label="New palette name"
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); addPalette(newName); }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    onClick={() => addPalette(newName)}
+                    disabled={!newName.trim()}
+                  >
+                    Add
+                  </button>
+                </div>
+                {seasonsToAdd.length > 0 && (
                   <div className="mb-season-add">
                     {seasonsToAdd.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        className="btn ghost sm"
-                        onClick={() => addSeason(s)}
-                      >
+                      <button key={s} type="button" className="btn link sm" onClick={() => addPalette(s)}>
                         + {s}
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="up-foot">
