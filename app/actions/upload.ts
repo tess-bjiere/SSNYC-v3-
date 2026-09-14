@@ -30,6 +30,9 @@ const META_KEYS = [
   "photographer_ig",
   "model",
   "location",
+  // Campaign reference kind — "Editorial" | "Styling" (Tess, 2026-09-14). Sent by
+  // the editorial add form; a library upload never sends it.
+  "ref_kind",
 ] as const;
 
 // `references.type` tells the Library grid and the Editorial grid apart. Only

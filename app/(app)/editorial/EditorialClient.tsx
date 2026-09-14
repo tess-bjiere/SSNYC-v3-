@@ -11,6 +11,7 @@ import {
   bulkSoftDeleteReferences,
 } from "@/app/actions/references";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
+import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
 import UploadModal from "../library/UploadModal";
 import DetailModal from "../library/DetailModal";
 import BulkEditModal, { type BulkField } from "../library/BulkEditModal";
@@ -43,6 +44,10 @@ export default function EditorialClient({
 }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Record<string, string>>({});
+  // Editorial vs Styling reference tabs (Tess, 2026-09-14: "option to sort by
+  // editorial / image references or styling references"). "all" shows everything,
+  // including images not yet tagged; the others filter to that kind.
+  const [tab, setTab] = useState<"all" | "Editorial" | "Styling">("all");
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
   // Campaign view options (Tess, 2026-08-17): show the grid as bare images with
@@ -136,6 +141,7 @@ export default function EditorialClient({
   const list = useMemo(() => {
     let out = refs.filter((r) => {
       if (hidden.has(r.id)) return false;
+      if (tab !== "all" && normalizeCampaignKind(r.ref_kind) !== tab) return false;
       for (const f of FACETS) {
         const v = sel[f.key];
         if (v && (r[f.key] as string) !== v) return false;
@@ -157,7 +163,7 @@ export default function EditorialClient({
       return (b.created_at || "").localeCompare(a.created_at || "");
     });
     return out;
-  }, [refs, q, sel, sort, hidden]);
+  }, [refs, q, sel, sort, hidden, tab]);
 
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
@@ -199,6 +205,11 @@ export default function EditorialClient({
       { key: "season", label: "Season" },
     ] as const
   ).map((f) => ({ key: f.key, label: f.label, options: formOptions[f.key] ?? [] }));
+  // Reference type has a fixed two-value vocabulary, so it carries its own options
+  // rather than drawing from the curated lists (Tess, 2026-09-14). This is the
+  // quickest way to tag the campaign images already on the wall — select a batch,
+  // set Editorial or Styling.
+  bulkFields.push({ key: "ref_kind", label: "Reference type", options: [...CAMPAIGN_KINDS] });
   async function applyBulkEdit(patch: Record<string, string>) {
     const ids = Array.from(selected);
     setBulkEditing(false);
@@ -230,8 +241,9 @@ export default function EditorialClient({
           value={sort}
           onChange={setSort}
           options={[
+            // "Designer A–Z" dropped (Tess, 2026-09-14: "sorting by designer is
+            // less important"); the Designer filter stays in the filter row.
             { value: "newest", label: "Newest" },
-            { value: "designer", label: "Designer A–Z" },
             { value: "photographer", label: "Photographer" },
             { value: "location", label: "Location" },
             { value: "model", label: "Model" },
@@ -276,6 +288,19 @@ export default function EditorialClient({
       </button>
 
       <div className="lib-bar">
+        {/* Editorial / Styling reference tabs (Tess, 2026-09-14). All includes
+            images not yet tagged; the others filter to that kind. */}
+        <div className="lib-tabs">
+          {(["all", "Editorial", "Styling"] as const).map((k) => (
+            <button
+              key={k}
+              className={"lib-tab" + (tab === k ? " active" : "")}
+              onClick={() => setTab(k)}
+            >
+              {k === "all" ? "All" : k}
+            </button>
+          ))}
+        </div>
         <input
           className="input lib-search"
           placeholder="Search campaign by designer, photographer, model, location, year…"

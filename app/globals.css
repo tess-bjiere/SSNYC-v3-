@@ -1360,6 +1360,15 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .mb-newpalette{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-chip);margin-bottom:10px}
 .mb-newpalette .input{flex:1;min-width:200px;max-width:340px}
 
+/* Segmented two/three-way toggle — the campaign Reference type (Editorial /
+   Styling), on the add form and the edit card (Tess, 2026-09-14). */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg-opt{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);
+  cursor:pointer;font-family:inherit;font-size:var(--t-meta);padding:var(--ctl-y-sm) var(--ctl-x-md)}
+.seg-opt:last-child{border-right:none}
+.seg-opt:hover{color:var(--ink)}
+.seg-opt.on{background:var(--chip);color:var(--ink)}
+
 /* Moodboard sections (matches the original: header + rule, clean image rows) */
 .mb-sec{margin:30px 0}
 .mb-sec-head{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px;min-height:14px}

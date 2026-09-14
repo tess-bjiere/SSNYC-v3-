@@ -25,6 +25,10 @@ export type Reference = {
   // One shared "favorite" star (Tess, 2026-09-09). Optional so a row read before
   // the p27 column exists is simply not favorited rather than a type error.
   favorite?: boolean | null;
+  // Campaign reference kind — "Editorial" | "Styling" (Tess, 2026-09-14). Only
+  // campaign (type='editorial') rows carry it; optional so a row read before the
+  // p28 column exists is untagged rather than a type error. See lib/campaign.ts.
+  ref_kind?: string | null;
   extra_images: ExtraImage[] | null;
   created_by: string | null;
   deleted_at: string | null;

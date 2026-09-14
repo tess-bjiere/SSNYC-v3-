@@ -7,6 +7,7 @@ import { thumbDims } from "@/lib/thumbnail";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import { downscaleImage } from "@/app/components/downscaleImage";
+import { CAMPAIGN_KINDS, type CampaignKind } from "@/lib/campaign";
 import Combo from "./Combo";
 
 // Downscale a picked image in the browser before it is uploaded, so the library
@@ -100,6 +101,10 @@ export default function UploadModal({
   const [stackSel, setStackSel] = useState<Set<number>>(new Set());
   const [err, setErr] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  // Campaign reference kind (Tess, 2026-09-14). Editorial-only; defaults to
+  // Editorial (image references are the common case) and is sent with every image
+  // in this add, so a new campaign image lands already labelled.
+  const [refKind, setRefKind] = useState<CampaignKind>("Editorial");
   const [pending, start] = useTransition();
 
   const bulk = picked.length > 1;
@@ -204,6 +209,7 @@ export default function UploadModal({
         // Which grid this row belongs to. The server whitelists the value, so a
         // library upload and an editorial upload differ only by this one field.
         fd.append("type", kind);
+        if (kind === "editorial") fd.append("ref_kind", refKind);
         for (const f of FIELDS) if (vals[f.key]?.trim()) fd.append(f.key, vals[f.key].trim());
 
         try {
@@ -314,6 +320,28 @@ export default function UploadModal({
               {selHasStacked && (
                 <button className="btn link" type="button" onClick={unstackSelected}>Unstack</button>
               )}
+            </div>
+          )}
+
+          {/* Campaign reference kind — Editorial (image inspiration) vs Styling
+              (Tess, 2026-09-14). A two-way choice, so a segmented toggle rather
+              than another text field; applies to every image in this add. */}
+          {kind === "editorial" && (
+            <div className="field up-full">
+              <label>Reference type</label>
+              <div className="seg">
+                {CAMPAIGN_KINDS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={"seg-opt" + (refKind === k ? " on" : "")}
+                    aria-pressed={refKind === k}
+                    onClick={() => setRefKind(k)}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

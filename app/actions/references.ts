@@ -34,6 +34,9 @@ const EDITABLE = [
   "model",
   "location",
   "notes",
+  // Campaign reference kind (Tess, 2026-09-14). Editorial-only, but living in the
+  // shared whitelist so the edit card and bulk edit can both set it.
+  "ref_kind",
 ] as const;
 
 export async function updateReference(id: string, patch: Record<string, string | null>) {

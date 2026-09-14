@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refImage, extraImageUrls, type Reference } from "@/lib/types";
+import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
 import Lightbox from "@/app/components/Lightbox";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import { downscaleImage } from "@/app/components/downscaleImage";
@@ -286,6 +287,8 @@ export default function DetailModal({
   function beginEdit() {
     const d: Record<string, string> = {};
     for (const f of EDIT_FIELDS) d[f.key] = (cur[f.key] as string) || "";
+    // Campaign kind is edited by its own toggle, not in EDIT_FIELDS.
+    d.ref_kind = (cur.ref_kind as string) || "";
     setDraft(d);
     setConfirmDel(false);
     setEditing(true);
@@ -317,6 +320,11 @@ export default function DetailModal({
   }
 
   const rows: [string, React.ReactNode][] = [
+    // Campaign kind reads at the top for editorial cards; null (untagged) and
+    // every non-editorial card simply omit the row.
+    ...(actions === "editorial"
+      ? ([["Reference type", normalizeCampaignKind(cur.ref_kind) || null]] as [string, React.ReactNode][])
+      : []),
     ["Year", cur.year],
     ["Season", cur.season],
     ["Category", cur.category],
@@ -510,6 +518,35 @@ export default function DetailModal({
                 </div>
 
                 <div className="detail-edit">
+                  {/* Campaign reference kind — Editorial vs Styling (Tess,
+                      2026-09-14). Editorial cards only; a segmented toggle, and
+                      "Untagged" clears it back to no kind. */}
+                  {actions === "editorial" && (
+                    <div className="field up-full">
+                      <label>Reference type</label>
+                      <div className="seg">
+                        {CAMPAIGN_KINDS.map((k) => (
+                          <button
+                            key={k}
+                            type="button"
+                            className={"seg-opt" + (normalizeCampaignKind(draft.ref_kind) === k ? " on" : "")}
+                            aria-pressed={normalizeCampaignKind(draft.ref_kind) === k}
+                            onClick={() => setDraft((d) => ({ ...d, ref_kind: k }))}
+                          >
+                            {k}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className={"seg-opt" + (normalizeCampaignKind(draft.ref_kind) === "" ? " on" : "")}
+                          aria-pressed={normalizeCampaignKind(draft.ref_kind) === ""}
+                          onClick={() => setDraft((d) => ({ ...d, ref_kind: "" }))}
+                        >
+                          Untagged
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {EDIT_FIELDS.map((f) => (
                     <div className="field" key={f.key}>
                       <label>{f.label}</label>
