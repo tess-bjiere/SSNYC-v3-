@@ -138,7 +138,14 @@ export const STYLE_GARMENTS = [
 ] as const;
 export type StyleGarment = (typeof STYLE_GARMENTS)[number];
 
-export const SAMPLE_ROUNDS = ["proto1", "proto2", "proto3", "sms", "pps1", "pps2", "bulk"] as const;
+// The order here is the development cycle order — it drives the round dropdown,
+// which round a style is judged to be "on", the progress rank, and the labels.
+// `sizerun` is the fitting of the full graded size run (Tess, 2026-09-14: "another
+// fitting type ... for when we fit the full size run and have notes"), placed after
+// the SMS and before pre-production, where the size set is fitted. `round` is free
+// text on the row, so this is options + order only — no migration, nothing to
+// backfill, and older rounds keep their own value.
+export const SAMPLE_ROUNDS = ["proto1", "proto2", "proto3", "sms", "sizerun", "pps1", "pps2", "bulk"] as const;
 export type SampleRound = (typeof SAMPLE_ROUNDS)[number];
 
 export const SAMPLE_ROUND_LABELS: Record<SampleRound, string> = {
@@ -146,6 +153,7 @@ export const SAMPLE_ROUND_LABELS: Record<SampleRound, string> = {
   proto2: "2nd Proto",
   proto3: "3rd Proto",
   sms: "SMS",
+  sizerun: "Size Run",
   pps1: "1st PPS",
   pps2: "2nd PPS",
   bulk: "Bulk",
