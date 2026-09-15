@@ -9,6 +9,7 @@ import {
   softDeleteReference,
   bulkUpdateReferences,
   bulkSoftDeleteReferences,
+  toggleReferenceFavorite,
 } from "@/app/actions/references";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
 import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
@@ -59,6 +60,16 @@ export default function EditorialClient({
   // filters fold behind one button so the default is search + grid.
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // Favorites — the shared star, mirrored from the References library (Tess,
+  // 2026-09-15: "add ability to add stars to favorites in campaign section"). The
+  // `favorite` flag lives on the row, so campaign images and library references
+  // share the same star column; each grid just filters its own view. Optimistic
+  // Set, same shape as the library.
+  const [favs, setFavs] = useState<Set<string>>(
+    () => new Set(refs.filter((r) => r.favorite).map((r) => r.id))
+  );
+  const [favOnly, setFavOnly] = useState(false);
+
   const [detail, setDetail] = useState<Reference | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -77,6 +88,17 @@ export default function EditorialClient({
   const [bulkEditing, setBulkEditing] = useState(false);
   const [bulkArm, setBulkArm] = useState(false);
   const [pending, start] = useTransition();
+
+  function toggleFav(id: string) {
+    const on = !favs.has(id);
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    toggleReferenceFavorite(id, on);
+  }
 
   function flashToast(m: string) {
     setToast(m);
@@ -141,6 +163,7 @@ export default function EditorialClient({
   const list = useMemo(() => {
     let out = refs.filter((r) => {
       if (hidden.has(r.id)) return false;
+      if (favOnly && !favs.has(r.id)) return false;
       if (tab !== "all" && normalizeCampaignKind(r.ref_kind) !== tab) return false;
       for (const f of FACETS) {
         const v = sel[f.key];
@@ -163,7 +186,7 @@ export default function EditorialClient({
       return (b.created_at || "").localeCompare(a.created_at || "");
     });
     return out;
-  }, [refs, q, sel, sort, hidden, tab]);
+  }, [refs, q, sel, sort, hidden, tab, favOnly, favs]);
 
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
@@ -300,6 +323,15 @@ export default function EditorialClient({
               {k === "all" ? "All" : k}
             </button>
           ))}
+          {/* Shared ★ Favorites filter (Tess, 2026-09-15), same as the Library. */}
+          <button
+            className={"lib-tab lib-fav-tab" + (favOnly ? " active" : "")}
+            onClick={() => setFavOnly((v) => !v)}
+            aria-pressed={favOnly}
+            title="Show only starred campaign images"
+          >
+            {favOnly ? "★" : "☆"} Favorites{favs.size ? ` (${favs.size})` : ""}
+          </button>
         </div>
         <input
           className="input lib-search"
@@ -372,6 +404,20 @@ export default function EditorialClient({
                   {src ? <img src={src} alt={r.photographer || r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
                   {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
+                  {/* Star this campaign image (Tess, 2026-09-15). Bottom-left, and a
+                      starred image keeps its ★ visible so favorites read at a glance. */}
+                  {!selecting && (
+                    <button
+                      type="button"
+                      className={"card-fav" + (favs.has(r.id) ? " on" : "")}
+                      title={favs.has(r.id) ? "Remove from favorites" : "Add to favorites"}
+                      aria-label={favs.has(r.id) ? "Remove from favorites" : "Add to favorites"}
+                      aria-pressed={favs.has(r.id)}
+                      onClick={(e) => { e.stopPropagation(); toggleFav(r.id); }}
+                    >
+                      {favs.has(r.id) ? "★" : "☆"}
+                    </button>
+                  )}
                   {/* The ✕ delete and moodboard + are hidden in select mode — a
                       click on a card there means "tick this one". */}
                   {!selecting && (
@@ -454,6 +500,8 @@ export default function EditorialClient({
           onClose={() => setDetail(null)}
           onToast={flashToast}
           onDeleted={() => { setDetail(null); flashToast("Moved to Trash"); }}
+          favorited={favs.has(detail.id)}
+          onToggleFavorite={() => toggleFav(detail.id)}
         />
       )}
 
