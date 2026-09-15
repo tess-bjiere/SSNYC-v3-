@@ -348,7 +348,16 @@ export default function EditorialClient({
         <div className={"grid dens-" + size + (mono ? " ed-mono" : "")}>
           {list.map((r) => {
             const src = refThumb(r);
-            const sub = [r.year && r.year !== "Unknown" ? r.year : null, r.photographer, r.model]
+            // On Campaign the photographer / DP leads, not the brand (Tess,
+            // 2026-09-15: "the photographer / DP name would be more important than
+            // the brand"). Fall back to the brand, then "Untitled". The brand drops
+            // to the sub-line (skipped there when it is already the lead).
+            const lead = r.photographer || r.designer || "Untitled";
+            const sub = [
+              r.designer && r.designer !== lead ? r.designer : null,
+              r.year && r.year !== "Unknown" ? r.year : null,
+              r.model,
+            ]
               .filter(Boolean)
               .join(" · ");
             const extra = extraImageUrls(r).length;
@@ -360,7 +369,7 @@ export default function EditorialClient({
                 onClick={() => (selecting ? toggleSelect(r.id) : setDetail(r))}
               >
                 <div className="imgwrap">
-                  {src ? <img src={src} alt={r.designer || ""} loading="lazy" /> : null}
+                  {src ? <img src={src} alt={r.photographer || r.designer || ""} loading="lazy" /> : null}
                   {extra > 0 && <span className="card-extra">+{extra}</span>}
                   {selecting && <span className="mat-check">{isSel ? "✓" : ""}</span>}
                   {/* The ✕ delete and moodboard + are hidden in select mode — a
@@ -391,7 +400,7 @@ export default function EditorialClient({
                 {/* The credits, unless "Images only" is on. */}
                 {!imagesOnly && (
                   <div className="meta">
-                    <div className="d">{r.designer || "Untitled"}</div>
+                    <div className="d">{lead}</div>
                     {sub && <div className="s">{sub}</div>}
                   </div>
                 )}

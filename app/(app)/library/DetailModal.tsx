@@ -582,7 +582,11 @@ export default function DetailModal({
             ) : (
               <>
                 <div className="detail-head">
-                  <h2 className="display">{cur.designer || "Reference"}</h2>
+                  {/* On a campaign card the photographer / DP leads (Tess,
+                      2026-09-15); the library keeps leading with the brand. */}
+                  <h2 className="display">
+                    {(actions === "editorial" ? cur.photographer || cur.designer : cur.designer) || "Reference"}
+                  </h2>
                   {cur.year && <div className="yr">{cur.year}</div>}
                 </div>
 
