@@ -1151,6 +1151,10 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .detail-row{display:flex;align-items:flex-start;gap:16px;padding:12px 2px;border-bottom:1px solid var(--line)}
 .detail-row .k{width:118px;flex-shrink:0;font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);padding-top:3px}
 .detail-row .v{flex:1;font-size:var(--t-body);line-height:1.5;white-space:pre-wrap}
+/* Live links in a profile (Tess, 2026-09-15): source link + photographer IG.
+   break-all so a long URL wraps inside the value column instead of overflowing. */
+.detail-link{color:var(--ink);text-decoration:underline;text-underline-offset:2px;word-break:break-all}
+.detail-link:hover{color:var(--accent)}
 .detail-actions{display:flex;flex-wrap:wrap;gap:var(--sp-ctl);margin-top:24px}
 .detail-actions .btn{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta)}
 .btn.danger{background:none;color:var(--danger);border-color:var(--danger)}

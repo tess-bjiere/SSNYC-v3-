@@ -69,6 +69,20 @@ const EDIT_FIELDS: {
 
 export type DetailActions = "library" | "editorial" | "board" | "read-only";
 
+// Turn a typed value into a live href (Tess, 2026-09-15: "make links in campaign
+// profiles live"). A bare "brand.com" gets https://; an already-qualified URL is
+// left alone. An Instagram handle (with or without @) becomes its profile URL.
+function liveHref(raw: string | null | undefined): string {
+  const s = (raw || "").trim();
+  if (!s) return "";
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+}
+function igHref(handle: string | null | undefined): string {
+  const s = (handle || "").trim().replace(/^@/, "");
+  if (!s) return "";
+  return /^https?:\/\//i.test(s) ? s : `https://instagram.com/${s}`;
+}
+
 export default function DetailModal({
   r,
   onClose,
@@ -339,9 +353,27 @@ export default function DetailModal({
       </span>
     ) : null],
     ["Price point", cur.price],
-    ["Photographer", [cur.photographer, cur.photographer_ig].filter(Boolean).join(" · ")],
+    ["Photographer", (cur.photographer || cur.photographer_ig) ? (
+      <span>
+        {cur.photographer}
+        {cur.photographer_ig && (
+          <>
+            {cur.photographer ? " · " : ""}
+            <a href={igHref(cur.photographer_ig)} target="_blank" rel="noopener noreferrer" className="detail-link">
+              {cur.photographer_ig.replace(/^@?/, "@")}
+            </a>
+          </>
+        )}
+      </span>
+    ) : null],
     ["Model", cur.model],
     ["Location", cur.location],
+    // The source / product link, live (Tess, 2026-09-15). Opens in a new tab.
+    ["Link", cur.link ? (
+      <a href={liveHref(cur.link)} target="_blank" rel="noopener noreferrer" className="detail-link">
+        {cur.link}
+      </a>
+    ) : null],
     ["Notes", cur.notes],
   ];
 
