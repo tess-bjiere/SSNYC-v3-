@@ -13,7 +13,7 @@ import {
   mergeReferences,
 } from "@/app/actions/references";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
-import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
+import { CAMPAIGN_KINDS, normalizeCampaignKind, type CampaignKind } from "@/lib/campaign";
 import UploadModal from "../library/UploadModal";
 import DetailModal from "../library/DetailModal";
 import BulkEditModal, { type BulkField } from "../library/BulkEditModal";
@@ -51,7 +51,7 @@ export default function EditorialClient({
   // editorial / image references or styling references"). "all" shows everything,
   // including images not yet tagged; the others filter to that kind. Campaign
   // opens on Editorial (Tess, 2026-09-15: "the default view should be editorial").
-  const [tab, setTab] = useState<"all" | "Editorial" | "Styling">("Editorial");
+  const [tab, setTab] = useState<"all" | CampaignKind>("Editorial");
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
   // Campaign view options (Tess, 2026-08-17): show the grid as bare images with
@@ -349,7 +349,7 @@ export default function EditorialClient({
         {/* Editorial / Styling reference tabs (Tess, 2026-09-14). All includes
             images not yet tagged; the others filter to that kind. */}
         <div className="lib-tabs">
-          {(["Editorial", "Styling", "all"] as const).map((k) => (
+          {([...CAMPAIGN_KINDS, "all" as const] as ("all" | CampaignKind)[]).map((k) => (
             <button
               key={k}
               className={"lib-tab" + (tab === k ? " active" : "")}

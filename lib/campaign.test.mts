@@ -9,6 +9,8 @@ test("normalizeCampaignKind canonicalises case and whitespace", () => {
   assert.equal(normalizeCampaignKind("Editorial"), "Editorial");
   assert.equal(normalizeCampaignKind("editorial"), "Editorial");
   assert.equal(normalizeCampaignKind("  STYLING "), "Styling");
+  assert.equal(normalizeCampaignKind("lo-fi / bts"), "Lo-fi / BTS");
+  assert.equal(normalizeCampaignKind("Lo-fi / BTS"), "Lo-fi / BTS");
 });
 
 test("normalizeCampaignKind returns '' for untagged or unknown", () => {
@@ -18,6 +20,6 @@ test("normalizeCampaignKind returns '' for untagged or unknown", () => {
   assert.equal(normalizeCampaignKind(7), "");
 });
 
-test("the two kinds are exactly Editorial and Styling", () => {
-  assert.deepEqual([...CAMPAIGN_KINDS], ["Editorial", "Styling"]);
+test("the kinds are Editorial, Lo-fi / BTS, Styling — in that order", () => {
+  assert.deepEqual([...CAMPAIGN_KINDS], ["Editorial", "Lo-fi / BTS", "Styling"]);
 });

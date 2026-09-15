@@ -10,12 +10,16 @@
 //
 // Dependency-free like the rest of lib/: declares its own types, imports nothing.
 
-export const CAMPAIGN_KINDS = ["Editorial", "Styling"] as const;
+// Order matters — it is the order the Campaign tabs read (Tess, 2026-09-15: "add a
+// section for lo-fi / bts in campaign, that can come after editorial"). "Lo-fi /
+// BTS" is the behind-the-scenes / low-fidelity set, between the polished Editorial
+// imagery and the Styling references.
+export const CAMPAIGN_KINDS = ["Editorial", "Lo-fi / BTS", "Styling"] as const;
 export type CampaignKind = (typeof CAMPAIGN_KINDS)[number];
 
 /** Canonicalise a stored/typed value to a kind, or "" for untagged/unknown. */
 export function normalizeCampaignKind(raw: unknown): CampaignKind | "" {
   if (typeof raw !== "string") return "";
   const t = raw.trim().toLowerCase();
-  return t === "editorial" ? "Editorial" : t === "styling" ? "Styling" : "";
+  return CAMPAIGN_KINDS.find((k) => k.toLowerCase() === t) ?? "";
 }
