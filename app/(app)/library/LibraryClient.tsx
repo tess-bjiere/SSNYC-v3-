@@ -316,38 +316,11 @@ export default function LibraryClient({
             different places. The route is still /library. */}
         <h1 className="page-title display">References</h1>
         <div className="spacer" />
-        <Select
-          className="select sm lib-sort"
-          aria-label="Sort"
-          value={sort}
-          onChange={setSort}
-          options={[
-            { value: "newest", label: "Newest" },
-            { value: "designer", label: "Designer A–Z" },
-            { value: "category", label: "Category" },
-            { value: "garment", label: "Garment" },
-          ]}
-        />
-        {/* The small tools ride together as one unit so the phone reorder (which
-            flattens the head) can keep them on a single row near the grid. Lists
-            and Trash used to live here; they moved to the footer (Tess,
-            2026-08-11: "lists and trash can be moved to footer") — they are
-            occasional housekeeping, not part of choosing what you are looking
-            at. */}
-        <div className="lib-head-tools">
-          <SizeToggle value={size} onChange={setSize} />
-          {/* Bulk select — pick several, then edit or delete them together
-              (Tess, 2026-08-19). */}
-          <button
-            className={"btn ghost sm lib-add-desk" + (selecting ? " on" : "")}
-            onClick={() => (selecting ? leaveSelect() : setSelecting(true))}
-          >
-            {selecting ? "Done" : "Select"}
-          </button>
-          {/* The desktop add sits in the head; on a phone it folds into the big
-              button below, which is the first thing you can reach. */}
-          <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
-        </div>
+        {/* Design pass 2026-09-15: the title bar carries only the page name and
+            the one primary action. Sort, size and Select moved down into the
+            control bar (lib-head-tools inside lib-bar), so every grid page reads
+            the same way. On a phone the big full-width add below takes over. */}
+        <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
       </div>
 
       {/* Prominent, full-width upload — phone/tablet only. Uploading is the
@@ -377,6 +350,29 @@ export default function LibraryClient({
           </button>
         </div>
         <input className="input lib-search" placeholder="Search designer, garment, color, notes…" value={q} onChange={(e) => setQ(e.target.value)} />
+        {/* The control-bar tools, right-aligned: Select, grid size, then Sort —
+            one fixed order for every grid page (design pass 2026-09-15). */}
+        <div className="lib-head-tools">
+          <button
+            className={"btn ghost sm lib-add-desk" + (selecting ? " on" : "")}
+            onClick={() => (selecting ? leaveSelect() : setSelecting(true))}
+          >
+            {selecting ? "Done" : "Select"}
+          </button>
+          <SizeToggle value={size} onChange={setSize} />
+          <Select
+            className="select sm lib-sort"
+            aria-label="Sort"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { value: "newest", label: "Newest" },
+              { value: "designer", label: "Designer A–Z" },
+              { value: "category", label: "Category" },
+              { value: "garment", label: "Garment" },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Phone/tablet only: the filters start folded behind this. The count

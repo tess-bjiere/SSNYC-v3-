@@ -305,68 +305,9 @@ export default function EditorialClient({
       <div className="page-head">
         <h1 className="page-title display">Campaign</h1>
         <div className="spacer" />
-        <Select
-          className="select sm lib-sort"
-          aria-label="Sort"
-          value={sort}
-          onChange={setSort}
-          options={[
-            // "Designer A–Z" dropped (Tess, 2026-09-14: "sorting by designer is
-            // less important"); the Designer filter stays in the filter row.
-            { value: "newest", label: "Newest" },
-            { value: "photographer", label: "Photographer" },
-            { value: "location", label: "Location" },
-            { value: "model", label: "Model" },
-          ]}
-        />
-        <div className="lib-head-tools">
-          <SizeToggle value={size} onChange={setSize} />
-          {/* The two wall views live in one "View" menu (Tess, 2026-09-15). The
-              button shows a dot when a non-default view is on, so it still reads at
-              a glance which is why the bar can be calmer. */}
-          <div className="view-menu" ref={viewRef}>
-            <button
-              type="button"
-              className={"btn ghost sm" + (imagesOnly || mono ? " on" : "")}
-              aria-expanded={viewOpen}
-              aria-haspopup="menu"
-              onClick={() => setViewOpen((v) => !v)}
-            >
-              View{imagesOnly || mono ? ` (${(imagesOnly ? 1 : 0) + (mono ? 1 : 0)})` : ""}
-            </button>
-            {viewOpen && (
-              <div className="view-pop" role="menu">
-                <button
-                  type="button"
-                  role="menuitemcheckbox"
-                  aria-checked={imagesOnly}
-                  className={"view-opt" + (imagesOnly ? " on" : "")}
-                  onClick={() => setImagesOnly((v) => !v)}
-                >
-                  <span className="view-tick">{imagesOnly ? "✓" : ""}</span> Images only
-                </button>
-                <button
-                  type="button"
-                  role="menuitemcheckbox"
-                  aria-checked={mono}
-                  className={"view-opt" + (mono ? " on" : "")}
-                  onClick={() => setMono((v) => !v)}
-                >
-                  <span className="view-tick">{mono ? "✓" : ""}</span> Black &amp; white
-                </button>
-              </div>
-            )}
-          </div>
-          {/* Bulk select — pick several, then edit or delete together. */}
-          <button
-            type="button"
-            className={"btn ghost sm" + (selecting ? " on" : "")}
-            onClick={() => (selecting ? leaveSelect() : setSelecting(true))}
-          >
-            {selecting ? "Done" : "Select"}
-          </button>
-          <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
-        </div>
+        {/* Design pass 2026-09-15: title bar = page name + the one primary action.
+            Sort, size, View and Select moved into the control bar below. */}
+        <button className="btn lib-add-desk" onClick={() => setUploading(true)}>+ Add</button>
       </div>
 
       {/* Prominent, full-width upload — phone/tablet only, like the library. */}
@@ -403,6 +344,63 @@ export default function EditorialClient({
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        {/* Control-bar tools, right-aligned, one fixed order for every grid page:
+            Select, grid size, View, then Sort (design pass 2026-09-15). */}
+        <div className="lib-head-tools">
+          <button
+            type="button"
+            className={"btn ghost sm lib-add-desk" + (selecting ? " on" : "")}
+            onClick={() => (selecting ? leaveSelect() : setSelecting(true))}
+          >
+            {selecting ? "Done" : "Select"}
+          </button>
+          <SizeToggle value={size} onChange={setSize} />
+          <div className="view-menu" ref={viewRef}>
+            <button
+              type="button"
+              className={"btn ghost sm" + (imagesOnly || mono ? " on" : "")}
+              aria-expanded={viewOpen}
+              aria-haspopup="menu"
+              onClick={() => setViewOpen((v) => !v)}
+            >
+              View{imagesOnly || mono ? ` (${(imagesOnly ? 1 : 0) + (mono ? 1 : 0)})` : ""}
+            </button>
+            {viewOpen && (
+              <div className="view-pop" role="menu">
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={imagesOnly}
+                  className={"view-opt" + (imagesOnly ? " on" : "")}
+                  onClick={() => setImagesOnly((v) => !v)}
+                >
+                  <span className="view-tick">{imagesOnly ? "✓" : ""}</span> Images only
+                </button>
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={mono}
+                  className={"view-opt" + (mono ? " on" : "")}
+                  onClick={() => setMono((v) => !v)}
+                >
+                  <span className="view-tick">{mono ? "✓" : ""}</span> Black &amp; white
+                </button>
+              </div>
+            )}
+          </div>
+          <Select
+            className="select sm lib-sort"
+            aria-label="Sort"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { value: "newest", label: "Newest" },
+              { value: "photographer", label: "Photographer" },
+              { value: "location", label: "Location" },
+              { value: "model", label: "Model" },
+            ]}
+          />
+        </div>
       </div>
 
       <button

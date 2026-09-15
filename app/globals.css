@@ -1235,7 +1235,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
    with the fill only confirming it (Tess, 2026-08-11, ref ssnyclibrary). */
 .lib-tab.active{background:var(--chip);color:var(--ink)}
 .lib-search{flex:1;min-width:220px}
-.page-head .lib-sort{width:170px;flex:0 0 auto;padding:8px 30px 8px 12px}
+.lib-sort{width:170px;flex:0 0 auto;padding:8px 30px 8px 12px}
 /* Bare icons, no box (Tess, 2026-08-11: "make icons like this without being
    boxed in"): the outer border and the divider rules are gone, and the chosen
    density is marked by the icon going to ink rather than by a filled cell. A
@@ -4430,9 +4430,11 @@ textarea.input,textarea.select,.textarea{height:auto}
      Filter can no longer reach the right edge and density crowds up beside it. */
   .lib-page::after{content:"";order:5;flex-basis:100%;height:0;margin:0}
 
-  .lib-page .lib-head-tools{order:6;flex:0 0 auto;margin:0}
-  .lib-page .page-head > .sel{order:7;flex:0 0 auto;margin-left:auto;min-width:0}
-  .lib-page .page-head > .sel .sel-trigger{width:auto;min-width:150px}
+  /* The tools now live in the control bar and carry Sort with them (design pass
+     2026-09-15). On the phone the group is its own full-width row — Select is
+     hidden (lib-add-desk), size sits left, Sort is pushed to the right edge. */
+  .lib-page .lib-head-tools{order:6;flex:1 1 100%;margin:0}
+  .lib-page .lib-head-tools .lib-sort{margin-left:auto;width:auto;min-width:150px}
 
   /* The expanded filters and everything below drop back to full-width rows. */
   .lib-page .lib-filters{order:8;flex:1 1 100%;margin:0}
@@ -4454,7 +4456,10 @@ textarea.input,textarea.select,.textarea{height:auto}
 .lib-add-mobile,.lib-filter-toggle{display:none}
 @media(max-width:900px){
   .lib-add-mobile{display:flex;width:100%;justify-content:center;margin-bottom:16px}
-  .page-head .lib-add-desk{display:none}
+  /* The desktop Add (page-head) and the Select tool (now in the control bar) both
+     carry lib-add-desk and both hide on the phone — the big Add below takes over,
+     and bulk-select is a desktop action (design pass 2026-09-15). */
+  .lib-add-desk{display:none}
   .lib-filter-toggle{display:inline-flex;margin-bottom:14px}
   .lib-filters{display:none;margin-bottom:20px}
   .lib-filters.open{display:flex}
