@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { savePaletteLibrary, setBoardPalettes, uploadSwatchImage } from "@/app/actions/moodboards";
+import { savePaletteLibrary, setBoardPalettes, renamePaletteSeason, uploadSwatchImage } from "@/app/actions/moodboards";
 import {
   filledSlots,
   normalizePaletteLibrary,
@@ -104,6 +104,11 @@ export default function ColorPalette({
   const [managing, setManaging] = useState(false);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Click-to-rename on the board's palette label (Tess, 2026-09-15: "add ability
+  // to change a palette name"). `renamingKey` is the season key being edited (never
+  // evergreen), `renameText` the field value; commits immediately, not on a Save.
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState("");
   // Which swatch is mid-upload, as "FW26-2", so its Pattern button reads busy.
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -133,6 +138,32 @@ export default function ColorPalette({
     const next = keys.filter((k) => k !== key);
     setKeys(next);
     setBoardPalettes(boardId, next);
+  }
+
+  // --- rename a season palette from its label on the board --------------------
+  function beginRename(key: string, label: string) {
+    if (key === EVERGREEN_KEY) return; // the reserved set keeps its name
+    setRenamingKey(key);
+    setRenameText(label);
+  }
+  function commitRename() {
+    const from = renamingKey;
+    const to = renameText.trim();
+    setRenamingKey(null);
+    if (!from || !to || to === from || from === EVERGREEN_KEY) return;
+    // Move the colours under the new name locally and follow the rename onto this
+    // board's own key list, so the label updates at once; the server does the same
+    // to the library and every other board.
+    setLib((l) => {
+      const moved = l.seasons[from];
+      if (!moved) return l;
+      const seasons = { ...l.seasons };
+      delete seasons[from];
+      seasons[to] = moved;
+      return { ...l, seasons };
+    });
+    setKeys((ks) => remapBoardKeys(ks, [{ from, to }]));
+    renamePaletteSeason(from, to);
   }
 
   // --- library editing (the drawer) -------------------------------------------
@@ -355,7 +386,35 @@ export default function ColorPalette({
         shown.map((slot) => (
           <div className="mb-palette-group" key={slot.key}>
             <h3>
-              {slot.label}
+              {slot.key === EVERGREEN_KEY ? (
+                // Evergreen is the reserved set — shown, never renamed.
+                slot.label
+              ) : renamingKey === slot.key ? (
+                <input
+                  className="input sm mb-palette-rename"
+                  autoFocus
+                  value={renameText}
+                  aria-label="Palette name"
+                  onChange={(e) => setRenameText(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); commitRename(); }
+                    if (e.key === "Escape") setRenamingKey(null);
+                  }}
+                />
+              ) : (
+                // Click the name to rename it — everywhere it appears (Tess,
+                // 2026-09-15). A quiet pencil ✎ hints it is editable.
+                <button
+                  type="button"
+                  className="mb-palette-nameedit"
+                  onClick={() => beginRename(slot.key, slot.label)}
+                  title="Rename this palette (updates it everywhere it appears)"
+                >
+                  {slot.label}
+                  <span className="mb-palette-pencil" aria-hidden="true">✎</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="mb-palette-remove"

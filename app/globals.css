@@ -1347,6 +1347,14 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .mb-palette-remove{background:none;border:none;color:var(--faint);cursor:pointer;
   font-size:var(--t-meta);line-height:1;padding:0}
 .mb-palette-remove:hover{color:var(--danger)}
+/* Click-to-rename the palette label on the board (Tess, 2026-09-15). Reads as the
+   heading until hovered, when a quiet pencil shows it is editable. */
+.mb-palette-nameedit{background:none;border:none;color:inherit;font:inherit;
+  letter-spacing:inherit;cursor:text;padding:0;display:inline-flex;align-items:center;gap:6px}
+.mb-palette-nameedit:hover{color:var(--ink)}
+.mb-palette-pencil{opacity:0;font-size:var(--t-micro);color:var(--faint);transition:opacity .12s}
+.mb-palette-nameedit:hover .mb-palette-pencil{opacity:1}
+.mb-palette-rename{max-width:220px}
 .mb-season-add{display:flex;flex-wrap:wrap;gap:var(--sp-chip)}
 
 /* Manage-palettes drawer: an editable name per season palette + a free-form

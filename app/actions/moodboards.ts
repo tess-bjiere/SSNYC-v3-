@@ -9,7 +9,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import { applyReorder, insertItems, removeImageAndDupes } from "@/lib/moodboard";
 import type { MBItem, MBImageItem, MBTextItem, MBDividerItem } from "@/lib/moodboard";
-import { normalizePaletteLibrary, normalizeBoardPalettes, remapBoardKeys, type PaletteLibrary } from "@/lib/palette";
+import { normalizePaletteLibrary, normalizeBoardPalettes, remapBoardKeys, EVERGREEN_KEY, type PaletteLibrary } from "@/lib/palette";
 
 export async function createBoard(form: FormData) {
   const name = (form.get("name") as string)?.trim();
@@ -480,6 +480,48 @@ export async function savePaletteLibrary(
 // (moodboards.palettes). If that column does not exist yet — the p26 migration
 // has not been run — the update errors softly and the change simply does not
 // persist, the same graceful path the palette read takes, rather than throwing.
+// Rename ONE season palette, from the board's palette label (Tess, 2026-09-15:
+// "add ability to change a palette name"). The manager does this too, but only on
+// its Save; this commits at once, where the palette is actually shown. A rename is
+// a library edit — the colours are shared, so the new name shows everywhere — and
+// it cascades onto every board that carried the old name (via remapBoardKeys), so
+// nothing loses the palette. Evergreen cannot be renamed (it is the reserved set).
+export async function renamePaletteSeason(from: string, to: string) {
+  await requireUser();
+  const f = (from || "").trim();
+  const t = (to || "").trim();
+  if (!f || !t || f === t || f === EVERGREEN_KEY || t === EVERGREEN_KEY) return;
+  const supabase = await createClient();
+  const brand = await activeBrand();
+
+  const { data: row } = await supabase.from("brands").select("palette").eq("slug", brand).maybeSingle();
+  const lib = normalizePaletteLibrary((row as { palette?: unknown } | null)?.palette);
+  if (!lib.seasons[f]) return; // the palette is gone — nothing to rename
+
+  const seasons = { ...lib.seasons };
+  const moved = seasons[f];
+  delete seasons[f];
+  seasons[t] = moved; // f's colours become t; on a name clash f wins (rename intent)
+  const nextLib = normalizePaletteLibrary({ evergreen: lib.evergreen, seasons });
+  await supabase.from("brands").update({ palette: nextLib }).eq("slug", brand);
+
+  // Follow the rename onto this brand's boards; only rows that change are written.
+  const { data: boards, error } = await supabase
+    .from("moodboards")
+    .select("id, palettes")
+    .eq("brand", brand);
+  if (!error) {
+    for (const b of boards ?? []) {
+      const cur = normalizeBoardPalettes((b as { palettes?: unknown }).palettes);
+      const next = remapBoardKeys(cur, [{ from: f, to: t }]);
+      if (JSON.stringify(next) !== JSON.stringify(cur)) {
+        await supabase.from("moodboards").update({ palettes: next }).eq("id", b.id);
+      }
+    }
+  }
+  revalidatePath("/moodboard");
+}
+
 export async function setBoardPalettes(boardId: string, keys: string[]) {
   await requireUser();
   const supabase = await createClient();
