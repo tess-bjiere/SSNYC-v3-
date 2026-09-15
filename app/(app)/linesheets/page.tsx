@@ -94,7 +94,7 @@ export default async function LinesheetsPage() {
                 autoComplete="off"
               />
               <button className="btn sm" type="submit">
-                + New
+                + Add linesheet
               </button>
             </form>
           </section>

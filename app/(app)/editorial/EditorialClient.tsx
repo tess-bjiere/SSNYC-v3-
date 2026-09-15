@@ -1,7 +1,7 @@
 "use client";
 
 import Select from "@/app/components/Select";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { addRefsToBoard } from "@/app/actions/moodboards";
@@ -59,6 +59,18 @@ export default function EditorialClient({
   // pictures rather than a filed, captioned list.
   const [imagesOnly, setImagesOnly] = useState(false);
   const [mono, setMono] = useState(false);
+  // The two wall views (images-only, B&W) tuck into one "View" menu so the bar
+  // reads calmer (Tess, 2026-09-15 design pass). Closes on an outside click.
+  const [viewOpen, setViewOpen] = useState(false);
+  const viewRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!viewOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (viewRef.current && !viewRef.current.contains(e.target as Node)) setViewOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [viewOpen]);
   // Same phone organisation as the References library (Tess, 2026-08-11):
   // filters fold behind one button so the default is search + grid.
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -309,25 +321,42 @@ export default function EditorialClient({
         />
         <div className="lib-head-tools">
           <SizeToggle value={size} onChange={setSize} />
-          {/* Two view options for the campaign wall — bare images, and B&W. */}
-          <button
-            type="button"
-            className={"btn ghost sm" + (imagesOnly ? " on" : "")}
-            aria-pressed={imagesOnly}
-            onClick={() => setImagesOnly((v) => !v)}
-            title="Hide the credits — show images only"
-          >
-            Images only
-          </button>
-          <button
-            type="button"
-            className={"btn ghost sm" + (mono ? " on" : "")}
-            aria-pressed={mono}
-            onClick={() => setMono((v) => !v)}
-            title="Show the grid in black &amp; white"
-          >
-            B&amp;W
-          </button>
+          {/* The two wall views live in one "View" menu (Tess, 2026-09-15). The
+              button shows a dot when a non-default view is on, so it still reads at
+              a glance which is why the bar can be calmer. */}
+          <div className="view-menu" ref={viewRef}>
+            <button
+              type="button"
+              className={"btn ghost sm" + (imagesOnly || mono ? " on" : "")}
+              aria-expanded={viewOpen}
+              aria-haspopup="menu"
+              onClick={() => setViewOpen((v) => !v)}
+            >
+              View{imagesOnly || mono ? ` (${(imagesOnly ? 1 : 0) + (mono ? 1 : 0)})` : ""}
+            </button>
+            {viewOpen && (
+              <div className="view-pop" role="menu">
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={imagesOnly}
+                  className={"view-opt" + (imagesOnly ? " on" : "")}
+                  onClick={() => setImagesOnly((v) => !v)}
+                >
+                  <span className="view-tick">{imagesOnly ? "✓" : ""}</span> Images only
+                </button>
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={mono}
+                  className={"view-opt" + (mono ? " on" : "")}
+                  onClick={() => setMono((v) => !v)}
+                >
+                  <span className="view-tick">{mono ? "✓" : ""}</span> Black &amp; white
+                </button>
+              </div>
+            )}
+          </div>
           {/* Bulk select — pick several, then edit or delete together. */}
           <button
             type="button"

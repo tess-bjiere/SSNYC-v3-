@@ -73,7 +73,7 @@ export default async function MaterialOrdersPage() {
           required
         />
         <button className="btn sm" type="submit">
-          + New order
+          + Add order
         </button>
       </form>
 

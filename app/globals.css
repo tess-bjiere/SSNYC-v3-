@@ -4342,7 +4342,9 @@ textarea.input,textarea.select,.textarea{height:auto}
    ============================================================================ */
 @media(max-width:600px){
   .modal-overlay{padding:0}
-  .modal-lg,.modal-up{width:100vw;height:100vh;height:100dvh;max-height:none;border:none}
+  /* Content modals go edge-to-edge on the phone — one behaviour for all of them
+     (Tess, 2026-09-15 design pass): detail/upload, materials, photographer. */
+  .modal-lg,.modal-up,.mat-modal,.pg-profile{width:100vw;height:100vh;height:100dvh;max-height:none;border:none}
   .detail-info{padding:22px 20px}
   .detail-x{top:14px;right:14px;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
   .detail-actions{flex-direction:column;align-items:stretch;gap:10px}
@@ -4374,6 +4376,19 @@ textarea.input,textarea.select,.textarea{height:auto}
 /* Desktop: the small head tools (size toggle, the head add) ride as one inline
    cluster. */
 .lib-head-tools{display:flex;align-items:center;gap:var(--sp-ctl)}
+
+/* Campaign "View" menu — folds the images-only / B&W wall views off the bar
+   (Tess, 2026-09-15 design pass). Same popover idiom as the palette add-menu. */
+.view-menu{position:relative}
+.view-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:170px;
+  background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px;
+  box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.view-opt{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;
+  color:var(--ink);cursor:pointer;font-family:inherit;font-size:var(--t-meta);
+  padding:7px 8px;border-radius:4px;text-align:left}
+.view-opt:hover{background:var(--panel)}
+.view-opt.on{color:var(--ink)}
+.view-tick{display:inline-flex;width:12px;justify-content:center;color:var(--accent)}
 
 /* The library footer — Lists and Trash, occasional housekeeping set apart from
    the grid by a hairline (Tess, 2026-08-11: "lists and trash can be moved to
