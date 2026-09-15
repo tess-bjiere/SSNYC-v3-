@@ -175,8 +175,17 @@ export default async function MoodboardPage({
         <>
           {/* Colour palettes given to THIS board (Tess, 2026-09-09). Above the
               board and out of the #mb-capture export below. Palettes are added
-              per board now, so a season's colours no longer show on every one. */}
+              per board now, so a season's colours no longer show on every one.
+              key={current.id} remounts it per board so its per-board `keys` state
+              resets on a switch — without it, switching boards (a client-side
+              router.push, which keeps the component mounted) left the previous
+              board's selection on screen, and add/remove looked like it hit every
+              board (Tess, 2026-09-15: "when you add a palette to a moodboard it
+              adds to all ... delete from one deletes from all"). The DB writes were
+              per-board correct all along; only the stale UI state made it look
+              global. */}
           <ColorPalette
+            key={current.id}
             boardId={current.id}
             library={paletteLibrary}
             boardKeys={normalizeBoardPalettes((current as { palettes?: unknown }).palettes)}
