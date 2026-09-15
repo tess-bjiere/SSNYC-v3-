@@ -1,9 +1,9 @@
 "use client";
 
 import Select from "@/app/components/Select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createBoard, addDivider } from "@/app/actions/moodboards";
+import { createBoard, addDivider, renameBoard } from "@/app/actions/moodboards";
 import ExportButton from "./ExportButton";
 import SizeToggle from "@/app/components/SizeToggle";
 
@@ -28,6 +28,29 @@ export default function Toolbar({
   // on the moodboard page at all times"). createBoard redirects to the new board,
   // so the modal goes away with the navigation.
   const [newBoardOpen, setNewBoardOpen] = useState(false);
+  // Rename the current board (Tess, 2026-09-15: "how do i edit a moodboard name?").
+  // The renameBoard action existed but was never wired to the UI; this is the way
+  // in. A small modal pre-filled with the name, like New board — but renameBoard
+  // does not redirect, so the client closes it and refreshes the label itself.
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameName, setRenameName] = useState(currentName);
+  const [renaming, startRename] = useTransition();
+
+  function openRename() {
+    setRenameName(currentName);
+    setRenameOpen(true);
+  }
+  function submitRename() {
+    const name = renameName.trim();
+    if (!name || !currentId) return;
+    startRename(async () => {
+      const fd = new FormData();
+      fd.set("name", name);
+      await renameBoard(currentId, fd);
+      setRenameOpen(false);
+      router.refresh();
+    });
+  }
 
   useEffect(() => {
     let s = "md";
@@ -69,6 +92,17 @@ export default function Toolbar({
         options={boards.map((b) => ({ value: b.id, label: b.name }))}
       />
 
+      {currentId && (
+        <button
+          className="btn ghost sm mb-rename"
+          type="button"
+          onClick={openRename}
+          title="Rename this board"
+        >
+          Rename
+        </button>
+      )}
+
       {!showingArchived && (
         <button className="btn ghost" type="button" onClick={() => setNewBoardOpen(true)}>
           + Board
@@ -105,6 +139,38 @@ export default function Toolbar({
           <a className="btn link" href="/moodboard?archived=1">Archived · {archivedCount}</a>
         ) : null}
       </div>
+
+      {renameOpen && (
+        <div className="modal-overlay">
+          <div className="modal modal-sm" role="dialog" aria-modal="true" aria-label="Rename board">
+            <div className="modal-head">
+              <span>Rename board</span>
+              <button className="notes-close" type="button" aria-label="Close" onClick={() => setRenameOpen(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <form
+                className="mb-newboard-form"
+                onSubmit={(e) => { e.preventDefault(); submitRename(); }}
+              >
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
+                <input
+                  className="input"
+                  value={renameName}
+                  onChange={(e) => setRenameName(e.target.value)}
+                  placeholder="Board name…"
+                  autoFocus
+                  autoComplete="off"
+                />
+                <button className="btn" type="submit" disabled={renaming || !renameName.trim()}>
+                  {renaming ? "Saving…" : "Save"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {newBoardOpen && (
         <div className="modal-overlay">
