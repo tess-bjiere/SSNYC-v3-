@@ -611,14 +611,16 @@ export default function MaterialsClient({
         )}
       </div>
 
-      {/* Fabric / Trim / Packaging — three libraries in one, told apart by kind
-          (Tess, 2026-08-19: "add packaging tab to fabric and trims"). */}
-      <div className="pg-filters">
+      {/* Fabric / Trim / Packaging — three libraries in one, switched by kind
+          (Tess, 2026-08-19). These are tabs (they change what the page shows), so
+          they use the shared tab style, not the photographer filter chips (design
+          pass 2026-09-15: one tab style across the tool). */}
+      <div className="lib-tabs mat-tabs">
         {(["fabric", "trim", "packaging"] as MaterialKind[]).map((k) => (
           <button
             key={k}
             type="button"
-            className={"pg-filter" + (kind === k ? " on" : "")}
+            className={"lib-tab" + (kind === k ? " active" : "")}
             aria-pressed={kind === k}
             onClick={() => { setKind(k); setSupplier(""); }}
           >

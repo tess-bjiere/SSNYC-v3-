@@ -1227,6 +1227,9 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 /* Library filter bar */
 .lib-bar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
 .lib-tabs{display:flex;border:1px solid var(--line)}
+/* Materials' kind tabs sit on their own row (not inside a control bar), so they
+   carry the bottom spacing the control bar would otherwise provide. */
+.mat-tabs{align-self:flex-start;margin-bottom:14px}
 .lib-tab{background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:var(--ctl-y-md) var(--ctl-x-md);cursor:pointer;font-family:inherit;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em}
 .lib-tab:last-child{border-right:none}
 .lib-tab:hover{color:var(--ink)}
@@ -1235,7 +1238,9 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
    with the fill only confirming it (Tess, 2026-08-11, ref ssnyclibrary). */
 .lib-tab.active{background:var(--chip);color:var(--ink)}
 .lib-search{flex:1;min-width:220px}
-.lib-sort{width:170px;flex:0 0 auto;padding:8px 30px 8px 12px}
+/* Scoped to the control-bar tools so it sizes References/Campaign's Sort without
+   touching the facet selects on Materials/Development (which reuse .lib-sort). */
+.lib-head-tools .lib-sort{width:170px;flex:0 0 auto;padding:8px 30px 8px 12px}
 /* Bare icons, no box (Tess, 2026-08-11: "make icons like this without being
    boxed in"): the outer border and the divider rules are gone, and the chosen
    density is marked by the icon going to ink rather than by a filled cell. A
