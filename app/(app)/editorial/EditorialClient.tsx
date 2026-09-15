@@ -49,8 +49,9 @@ export default function EditorialClient({
   const [sel, setSel] = useState<Record<string, string>>({});
   // Editorial vs Styling reference tabs (Tess, 2026-09-14: "option to sort by
   // editorial / image references or styling references"). "all" shows everything,
-  // including images not yet tagged; the others filter to that kind.
-  const [tab, setTab] = useState<"all" | "Editorial" | "Styling">("all");
+  // including images not yet tagged; the others filter to that kind. Campaign
+  // opens on Editorial (Tess, 2026-09-15: "the default view should be editorial").
+  const [tab, setTab] = useState<"all" | "Editorial" | "Styling">("Editorial");
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
   // Campaign view options (Tess, 2026-08-17): show the grid as bare images with
@@ -348,7 +349,7 @@ export default function EditorialClient({
         {/* Editorial / Styling reference tabs (Tess, 2026-09-14). All includes
             images not yet tagged; the others filter to that kind. */}
         <div className="lib-tabs">
-          {(["all", "Editorial", "Styling"] as const).map((k) => (
+          {(["Editorial", "Styling", "all"] as const).map((k) => (
             <button
               key={k}
               className={"lib-tab" + (tab === k ? " active" : "")}
