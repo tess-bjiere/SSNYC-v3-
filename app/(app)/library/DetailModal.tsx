@@ -333,26 +333,37 @@ export default function DetailModal({
     });
   }
 
+  const isEd = actions === "editorial";
   const rows: [string, React.ReactNode][] = [
-    // Campaign kind reads at the top for editorial cards; null (untagged) and
-    // every non-editorial card simply omit the row.
-    ...(actions === "editorial"
-      ? ([["Reference type", normalizeCampaignKind(cur.ref_kind) || null]] as [string, React.ReactNode][])
+    // On a campaign card the brand no longer heads the card — the photographer /
+    // DP does — so it reads as a row here, and the garment-library fields
+    // (Category, Garment, Fabric, Colour, Price) do not apply to a campaign image
+    // and stay on the Library only (Tess, 2026-09-15: "on campaign category should
+    // be designer or brand").
+    ...(isEd
+      ? ([
+          ["Reference type", normalizeCampaignKind(cur.ref_kind) || null],
+          ["Brand", cur.designer],
+        ] as [string, React.ReactNode][])
       : []),
     ["Year", cur.year],
     ["Season", cur.season],
-    ["Category", cur.category],
-    ["Garment", cur.garment],
-    ["Fabric", cur.fabric],
-    ["Color", cur.color ? (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-        {cur.color_hex && (
-          <span style={{ width: 16, height: 16, background: cur.color_hex, border: "1px solid var(--line)", display: "inline-block" }} />
-        )}
-        {cur.color}
-      </span>
-    ) : null],
-    ["Price point", cur.price],
+    ...(!isEd
+      ? ([
+          ["Category", cur.category],
+          ["Garment", cur.garment],
+          ["Fabric", cur.fabric],
+          ["Color", cur.color ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+              {cur.color_hex && (
+                <span style={{ width: 16, height: 16, background: cur.color_hex, border: "1px solid var(--line)", display: "inline-block" }} />
+              )}
+              {cur.color}
+            </span>
+          ) : null],
+          ["Price point", cur.price],
+        ] as [string, React.ReactNode][])
+      : []),
     ["Photographer", (cur.photographer || cur.photographer_ig) ? (
       <span>
         {cur.photographer}
@@ -376,6 +387,17 @@ export default function DetailModal({
     ) : null],
     ["Notes", cur.notes],
   ];
+
+  // The edit form mirrors it: a campaign image is credited, not specced, so the
+  // garment-library fields drop out and the brand is labelled "Brand". The Library
+  // keeps the full set. Only the RENDER is trimmed — draft still holds every key,
+  // so a value already on the row (e.g. a stray category) is preserved on save.
+  const LIB_ONLY = ["category", "garment", "fabric", "color", "color_hex", "price"];
+  const editFields = isEd
+    ? EDIT_FIELDS.filter((f) => !LIB_ONLY.includes(f.key as string)).map((f) =>
+        f.key === "designer" ? { ...f, label: "Brand" } : f
+      )
+    : EDIT_FIELDS;
 
   return (
     <div className="modal-overlay">
@@ -579,7 +601,7 @@ export default function DetailModal({
                       </div>
                     </div>
                   )}
-                  {EDIT_FIELDS.map((f) => (
+                  {editFields.map((f) => (
                     <div className="field" key={f.key}>
                       <label>{f.label}</label>
                       {f.type === "textarea" ? (
