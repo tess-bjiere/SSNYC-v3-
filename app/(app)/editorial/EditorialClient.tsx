@@ -10,12 +10,14 @@ import {
   bulkUpdateReferences,
   bulkSoftDeleteReferences,
   toggleReferenceFavorite,
+  mergeReferences,
 } from "@/app/actions/references";
 import { resolveDesigners, resolveList, type ListsSetting } from "@/lib/lists";
 import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
 import UploadModal from "../library/UploadModal";
 import DetailModal from "../library/DetailModal";
 import BulkEditModal, { type BulkField } from "../library/BulkEditModal";
+import MergeModal from "../library/MergeModal";
 import SizeToggle from "@/app/components/SizeToggle";
 
 // Editorial images are credited, not specced: who shot it, who is in it, where.
@@ -87,6 +89,11 @@ export default function EditorialClient({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkEditing, setBulkEditing] = useState(false);
   const [bulkArm, setBulkArm] = useState(false);
+  // Merge several campaign images into one, same as the References library (Tess,
+  // 2026-09-15). Reuses mergeReferences + MergeModal — the images fold onto the
+  // keeper, the others go to Trash.
+  const [merging, setMerging] = useState(false);
+  const [mergeBusy, setMergeBusy] = useState(false);
   const [pending, start] = useTransition();
 
   function toggleFav(id: string) {
@@ -251,6 +258,33 @@ export default function EditorialClient({
       router.refresh();
     });
     leaveSelect();
+  }
+
+  // The selected images as pick-the-keeper options for the merge dialog. Labelled
+  // by credit (photographer / brand), fitting a campaign image.
+  const mergeRefs = Array.from(selected)
+    .map((id) => list.find((r) => r.id === id))
+    .filter((r): r is Reference => Boolean(r))
+    .map((r) => ({
+      id: r.id,
+      thumb: refThumb(r),
+      label: [r.photographer, r.designer, r.model].filter(Boolean).join(" · "),
+    }));
+  async function applyMerge(keeperId: string) {
+    const others = Array.from(selected).filter((id) => id !== keeperId);
+    if (others.length === 0) return;
+    setMergeBusy(true);
+    const res = await mergeReferences(keeperId, others);
+    setMergeBusy(false);
+    setMerging(false);
+    if (res.ok) {
+      setHidden((prev) => new Set([...prev, ...others]));
+      flashToast(`Merged ${others.length + 1} into one`);
+      router.refresh();
+      leaveSelect();
+    } else {
+      flashToast(res.error || "Couldn't merge.");
+    }
   }
 
   return (
@@ -472,6 +506,16 @@ export default function EditorialClient({
           >
             Edit
           </button>
+          {/* Combine several campaign images into one (Tess, 2026-09-15). Needs at
+              least two selected — one to keep, the rest fold in. */}
+          <button
+            type="button"
+            className="btn ghost sm"
+            disabled={selected.size < 2}
+            onClick={() => setMerging(true)}
+          >
+            Merge
+          </button>
           <button
             type="button"
             className={"btn ghost sm bulk-del" + (bulkArm ? " arm" : "")}
@@ -482,6 +526,15 @@ export default function EditorialClient({
             {bulkArm ? `Delete ${selected.size}?` : "Delete"}
           </button>
         </div>
+      )}
+
+      {merging && mergeRefs.length >= 2 && (
+        <MergeModal
+          refs={mergeRefs}
+          busy={mergeBusy}
+          onClose={() => setMerging(false)}
+          onMerge={applyMerge}
+        />
       )}
 
       {bulkEditing && (
