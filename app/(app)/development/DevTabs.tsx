@@ -499,7 +499,7 @@ export default function DevTabs({
                   <div className="dev-lthumb">
                     {thumb ? <img src={thumb} alt={s.name} loading="lazy" /> : <span className="dev-lnoimg" />}
                     {picking && (
-                      <span className={"card-check" + (isPicked ? " on" : "")} aria-hidden="true">
+                      <span className="mat-check" aria-hidden="true">
                         {isPicked ? "✓" : ""}
                       </span>
                     )}
@@ -550,7 +550,7 @@ export default function DevTabs({
                 onClick={picking ? (e) => { e.preventDefault(); togglePick(s.id); } : undefined}
               >
                 {picking && (
-                  <span className={"card-check" + (isPicked ? " on" : "")} aria-hidden="true">
+                  <span className="mat-check" aria-hidden="true">
                     {isPicked ? "✓" : ""}
                   </span>
                 )}
