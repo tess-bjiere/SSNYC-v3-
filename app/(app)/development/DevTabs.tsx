@@ -285,11 +285,11 @@ export default function DevTabs({
 
   return (
     <>
-      <div className="tabs">
+      <div className="lib-tabs page-tabs">
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={"tab" + (tab === t.key ? " active" : "")}
+            className={"lib-tab" + (tab === t.key ? " active" : "")}
             onClick={() => setTab(t.key)}
           >
             {t.label}

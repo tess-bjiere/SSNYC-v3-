@@ -151,11 +151,11 @@ export default function Photography({
         </div>
       )}
 
-      <div className="tabs">
+      <div className="lib-tabs page-tabs">
         {VIEWS.map((v) => (
           <button
             key={v.key}
-            className={"tab" + (view === v.key ? " active" : "")}
+            className={"lib-tab" + (view === v.key ? " active" : "")}
             onClick={() => setView(v.key)}
           >
             {v.label}

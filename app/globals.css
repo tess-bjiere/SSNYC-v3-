@@ -483,19 +483,13 @@ body.notes-open .wrap{padding-right:378px}
 .count{color:var(--faint);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.14em}
 .spacer{flex:1}
 
-/* Tabs */
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px}
-/* These carried a note that tabs read better as words than as "four grey
-   blocks you had to decode one at a time", so they were sentence case. Tess,
-   2026-08-11, then asked for the uppercase micro-caps control language app-wide
-   ("rework buttons and icons ... to have this styling", ref ssnyclibrary), so
-   they now match the library tabs. If the longer labels (Sampling, Production,
-   Evergreen) read as blocks again, revert this one line to text-transform:none
-   — the active tab is still carried by ink + the rule under it, not the caps. */
-.tab{padding:var(--ctl-y-md) 2px;margin-right:22px;font-size:var(--t-meta);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
-.tab:hover{color:var(--ink)}
-.tab.active{color:var(--ink);border-color:var(--ink)}
-.tab .n{margin-left:7px;font-size:var(--t-micro);font-weight:var(--w-body);color:var(--faint)}
+/* Tabs — there is one tab style in the app now, the boxed .lib-tabs / .lib-tab
+   segmented control (Tess, 2026-09-16: "work on the remaining items" → the
+   design pass's "one tab style"). Development and Photography used to carry
+   their own underline .tabs / .tab here; both now use .lib-tabs .page-tabs with
+   a .lib-tab .n count (see the .lib-tab block below). The uppercase micro-caps
+   control language Tess asked for app-wide on 2026-08-11 is already baked into
+   .lib-tab, so nothing is lost in the move. */
 
 /* Grid of cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
@@ -1243,6 +1237,18 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
    cream block it used to be — the reference reads the selection off the ink,
    with the fill only confirming it (Tess, 2026-08-11, ref ssnyclibrary). */
 .lib-tab.active{background:var(--chip);color:var(--ink)}
+/* A count riding inside a tab (Development's pipeline stages, Photography's shot
+   views) — the small faint number the underline .tab .n used to show, kept when
+   those pages moved onto .lib-tab. On the chosen tab it lifts to --muted so it
+   still reads against the fill. */
+.lib-tab .n{margin-left:8px;font-size:var(--t-micro);font-weight:var(--w-body);color:var(--faint)}
+.lib-tab.active .n{color:var(--muted)}
+/* .page-tabs — a .lib-tabs bar used standalone on a plain .page (Development,
+   Photography) rather than inside the lib-bar flex row. It shrinks to its own
+   content instead of stretching the full page width, carries the bottom gap the
+   control bar would give it, and scrolls sideways rather than overflowing if the
+   labels ever outrun a phone. */
+.page-tabs{width:fit-content;max-width:100%;margin-bottom:22px;overflow-x:auto}
 .lib-search{flex:1;min-width:220px}
 /* Scoped to the control-bar tools so it sizes References/Campaign's Sort without
    touching the facet selects on Materials/Development (which reuse .lib-sort). */
