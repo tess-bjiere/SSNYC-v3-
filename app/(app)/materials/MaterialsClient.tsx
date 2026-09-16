@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Select from "@/app/components/Select";
 import MultiSelect from "@/app/components/MultiSelect";
+import SizeToggle from "@/app/components/SizeToggle";
 import Lightbox from "@/app/components/Lightbox";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
 import { downscaleImage } from "@/app/components/downscaleImage";
@@ -191,6 +192,8 @@ export default function MaterialsClient({
   const [sort, setSort] = useState("newest");
   // Grid of swatches, or a compact list (Tess, 2026-08-19: "add list view").
   const [view, setView] = useState<"grid" | "list">("grid");
+  // Grid density (design pass 2026-09-15: the S/M/L size toggle every grid has).
+  const [size, setSize] = useState("md");
   const [adding, setAdding] = useState(false);
   const [detail, setDetail] = useState<Material | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -592,6 +595,9 @@ export default function MaterialsClient({
             ☰
           </button>
         </div>
+        {/* Grid density — the same S/M/L control the other grids have (design pass
+            2026-09-15). Only meaningful in grid view. */}
+        {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
         {canOrder && canEdit && selecting && (
           <button type="button" className="btn ghost" onClick={leaveSelect}>
             Cancel
@@ -721,7 +727,7 @@ export default function MaterialsClient({
       {filtered.length === 0 ? (
         <div className="empty">
           {ofKind.length === 0
-            ? `No ${kindLabelPlural(kind).toLowerCase()} yet.${canEdit ? ` Add one with the button above.` : ""}`
+            ? `No ${kindLabelPlural(kind).toLowerCase()} yet.${canEdit ? ` Use “+ Add” to add the first.` : ""}`
             : `No ${kindLabelPlural(kind).toLowerCase()} match those filters.`}
         </div>
       ) : (
@@ -739,7 +745,7 @@ export default function MaterialsClient({
                 {view === "list" ? (
                   <div className="mat-list">{sub.items.map(swatchRow)}</div>
                 ) : (
-                  <div className="grid dens-md">{sub.items.map(swatchCard)}</div>
+                  <div className={"grid dens-" + size}>{sub.items.map(swatchCard)}</div>
                 )}
               </div>
             ))}

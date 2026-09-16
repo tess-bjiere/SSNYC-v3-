@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, type Reference } from "@/lib/types";
+import SizeToggle from "@/app/components/SizeToggle";
 import {
   buildPhotographerDirectory,
   groupByGeo,
@@ -63,6 +64,8 @@ export default function PhotographersClient({
   // Grid (image cards by place) vs List (a flat, dense name list) — Tess,
   // 2026-08-18: "offer a list view for photographers as well".
   const [view, setView] = useState<"grid" | "list">("grid");
+  // Grid density — the S/M/L control every grid now carries (design pass 2026-09-15).
+  const [size, setSize] = useState("md");
   const [tierFilter, setTierFilter] = useState<"" | PhotographerTier>("");
   const [starredOnly, setStarredOnly] = useState(false);
   const [, startStar] = useTransition();
@@ -356,6 +359,9 @@ export default function PhotographersClient({
             ☰
           </button>
         </div>
+        {/* Grid density — same S/M/L control as the other grids (design pass
+            2026-09-15). Grid view only. */}
+        {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
       </div>
 
       <div className="lib-bar">
@@ -441,7 +447,7 @@ export default function PhotographersClient({
       {shownCities.length === 0 ? (
         <div className="empty">
           {refs.length === 0
-            ? "No campaign images yet. Add photographers' work from the Campaign tab and they'll gather here by place."
+            ? "No photographers yet — they gather here from the credits on your Campaign images."
             : "No photographers match those filters."}
         </div>
       ) : (
@@ -465,7 +471,7 @@ export default function PhotographersClient({
                     {view === "list" ? (
                       <div className="pg-list">{c.photographers.map((p) => listRow(p))}</div>
                     ) : (
-                      <div className="pg-grid">{c.photographers.map((p) => card(p))}</div>
+                      <div className={"pg-grid dens-" + size}>{c.photographers.map((p) => card(p))}</div>
                     )}
                   </section>
                 ))}

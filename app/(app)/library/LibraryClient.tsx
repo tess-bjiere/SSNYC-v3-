@@ -408,7 +408,14 @@ export default function LibraryClient({
       </div>
 
       {list.length === 0 ? (
-        <div className="empty">No references match those filters.</div>
+        <div className="empty">
+          {/* One empty-state voice across the grids (design pass 2026-09-15):
+              "No X yet." when the library is genuinely empty, "No X match those
+              filters." when something is narrowing it. */}
+          {refs.length === 0
+            ? "No references yet. Use “+ Add” to add the first."
+            : "No references match those filters."}
+        </div>
       ) : (
         <div className={"grid dens-" + size}>
           {list.map((r) => {

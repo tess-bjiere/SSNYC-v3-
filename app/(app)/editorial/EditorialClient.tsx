@@ -435,7 +435,7 @@ export default function EditorialClient({
       {list.length === 0 ? (
         <div className="empty">
           {refs.length === 0
-            ? "No campaign images yet. Use + Add to upload the first one."
+            ? "No campaign images yet. Use “+ Add” to add the first."
             : "No campaign images match those filters."}
         </div>
       ) : (
