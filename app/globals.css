@@ -518,12 +518,8 @@ body.notes-open .wrap{padding-right:378px}
 .pg-count{font-size:var(--t-meta);color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
 /* Grid / List view toggle (Tess, 2026-08-18: "offer a list view for
    photographers as well"). */
-.pg-viewtoggle{display:flex;margin-left:16px;border:1px solid var(--line)}
-.pg-vt{background:none;border:none;color:var(--faint);font-family:inherit;font-size:14px;line-height:1;
-  padding:5px 9px;cursor:pointer}
-.pg-vt+.pg-vt{border-left:1px solid var(--line)}
-.pg-vt:hover{color:var(--ink)}
-.pg-vt.on{background:var(--accent);color:var(--btnfg)}
+/* pg-viewtoggle/pg-vt retired 2026-09-15 — Photographers now uses the shared
+   mat-viewtoggle/mat-vt (one grid/list toggle across the tool). */
 /* List view — a dense, alphabetised name list; click a name for the profile. */
 .pg-list{display:flex;flex-direction:column;margin-top:10px}
 .pg-lrow{display:flex;align-items:baseline;gap:12px;padding:9px 4px;border-bottom:1px solid var(--hair)}

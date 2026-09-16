@@ -339,10 +339,12 @@ export default function PhotographersClient({
             {locatedCities === 1 ? "city" : "cities"}
           </span>
         )}
-        <div className="pg-viewtoggle" role="group" aria-label="View">
+        {/* The shared grid/list view toggle (design pass 2026-09-15: one such
+            control, not a per-page duplicate — was its own pg-vt classes). */}
+        <div className="mat-viewtoggle" role="group" aria-label="View">
           <button
             type="button"
-            className={"pg-vt" + (view === "grid" ? " on" : "")}
+            className={"mat-vt" + (view === "grid" ? " on" : "")}
             aria-pressed={view === "grid"}
             title="Grid view"
             onClick={() => setView("grid")}
@@ -351,7 +353,7 @@ export default function PhotographersClient({
           </button>
           <button
             type="button"
-            className={"pg-vt" + (view === "list" ? " on" : "")}
+            className={"mat-vt" + (view === "list" ? " on" : "")}
             aria-pressed={view === "list"}
             title="List view"
             onClick={() => setView("list")}
