@@ -653,8 +653,8 @@ export default function DevTabs({
           select") — `picked` is a Set, so spreading it preserves the click
           order; a style filtered out of the current view is dropped. */}
       {picking && picked.size > 0 && (
-        <div className="pickbar no-print">
-          <span className="pickbar-count">
+        <div className="mo-pickbar no-print">
+          <span className="mo-pickbar-n">
             {picked.size} selected
           </span>
           <Link

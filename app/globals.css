@@ -2751,12 +2751,11 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    Only the card container's own picking/picked states live here. */
 .card.picking{position:relative;cursor:pointer}
 .card.picked{outline:2px solid var(--accent);outline-offset:-1px}
-/* The floating bar that carries the chosen styles to the deck. Centred at the
-   foot of the window so it is reachable without scrolling back up. */
-.pickbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;
-  display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
-  box-shadow:var(--shadow);padding:10px 16px}
-.pickbar-count{font-size:var(--t-sm);color:var(--ink)}
+/* The floating bar that carries the chosen styles to the deck now uses the one
+   shared bulk bar, .mo-pickbar (Tess, 2026-09-16: "work on the remaining items"
+   → the design pass's "one bulk bar"). Development was the last page with its
+   own .pickbar; References, Campaign and Materials already ride .mo-pickbar, so
+   the floating select bar is one control everywhere. */
 /* Who is making it (Tess, 2026-08-05: "factory should be listed small on
    thumbnial"). Its own line, below the style number and garment, because it
    answers a different question than they do — and small, because the style is
