@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { refImage, extraImageUrls, type Reference } from "@/lib/types";
+import { refImage, refThumb, extraImageUrls, type Reference } from "@/lib/types";
 import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
 import Lightbox from "@/app/components/Lightbox";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
@@ -222,6 +222,32 @@ export default function DetailModal({
   // default while a newly-picked one loads.
   const [mainAspect, setMainAspect] = useState<string | undefined>(undefined);
   useEffect(() => setMainAspect(undefined), [active]);
+  // The detail shows the FULL image (2400px), a different file from the grid's
+  // thumbnail, so it fetched fresh on open and popped in a beat late — the box
+  // sat empty while it loaded (Tess, 2026-09-17: "the detail box feels a little
+  // delayed opening -- especially the image"). Show the thumbnail the grid
+  // already has in cache the instant the box opens, then swap up to the full
+  // image the moment it has quietly finished loading in the background. Only the
+  // MAIN image has a matching thumbnail here; an extra angle still loads full.
+  const poster = active && active === images[0] ? refThumb(cur) : "";
+  const [fullReady, setFullReady] = useState(false);
+  useEffect(() => {
+    setFullReady(false);
+    if (!active || !poster || poster === active) {
+      setFullReady(true);
+      return;
+    }
+    const img = new Image();
+    const done = () => setFullReady(true);
+    img.onload = done;
+    img.onerror = done;
+    img.src = active;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [active, poster]);
+  const mainSrc = fullReady || !poster ? active : poster;
   // Click the main image for a full-screen look (Tess, 2026-08-20: "ability to
   // view image in a larger view"). The same Lightbox the materials gallery uses;
   // paging it also moves the modal's own selection, so closing keeps your place.
@@ -425,7 +451,7 @@ export default function DetailModal({
             <div className="detail-main" style={{ aspectRatio: mainAspect }}>
               {active ? (
                 <img
-                  src={active}
+                  src={mainSrc}
                   alt={cur.designer || ""}
                   className="detail-zoom"
                   title="View larger"
