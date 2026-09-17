@@ -902,7 +902,7 @@ function StyleVersions({
 
         <div className="ls-vmodal-foot">
           {standing.approvedStyleId ? (
-            <Link href={`/styles/${standing.approvedStyleId}`} className="btn sm">
+            <Link href={`/styles/${standing.approvedStyleId}`} className="btn ghost sm">
               Open approved profile
             </Link>
           ) : (

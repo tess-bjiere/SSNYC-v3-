@@ -207,7 +207,7 @@ export default function Variations({
 
           <div className="vary-actions">
             {connected ? (
-              <button className="btn sm" type="button" onClick={generate} disabled={!brief.ready || pending}>
+              <button className="btn ghost sm" type="button" onClick={generate} disabled={!brief.ready || pending}>
                 {pending ? "Working…" : "Generate"}
               </button>
             ) : (

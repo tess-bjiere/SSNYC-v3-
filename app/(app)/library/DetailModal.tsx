@@ -575,7 +575,7 @@ export default function DetailModal({
                     )}
                   </div>
                   {staged.length > 0 && (
-                    <button className="btn sm detail-addimgs" disabled={imgBusy} onClick={addStaged}>
+                    <button className="btn ghost sm detail-addimgs" disabled={imgBusy} onClick={addStaged}>
                       {imgBusy ? "Adding…" : `Add ${staged.length} image${staged.length > 1 ? "s" : ""}`}
                     </button>
                   )}
