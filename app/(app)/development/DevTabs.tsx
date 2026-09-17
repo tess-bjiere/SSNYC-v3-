@@ -261,7 +261,7 @@ export default function DevTabs({
     if (options.length < minOptions) return null;
     return (
       <Select
-        className={"select sm" + (filters[field] ? " on" : "")}
+        className={"select" + (filters[field] ? " on" : "")}
         value={filters[field]}
         aria-label={label}
         onChange={(v) => set(field, v)}
@@ -298,13 +298,18 @@ export default function DevTabs({
         ))}
       </div>
 
-      <div className="sortbar">
-        {/* Search gets its own line and the full width — it is the control
-            people reach for before they know which tab the thing is in, and
-            crowding it against the selects was what made the bar feel tight
-            (Tess, 2026-08-09: "layout is cramped/awkward"). */}
+      {/* Development joins the shared library shell (design pass 2026-09-16:
+          header parity — the same .lib-bar / .lib-head-tools / .lib-filters the
+          References and Materials heads use, so there is one control bar and one
+          set of responsive rules across the tool rather than Development's own
+          .sortbar). Search takes the width; the view / density / deck / sort
+          tools ride at the right; the facet run folds behind Filter on a phone. */}
+      <div className="lib-bar">
+        {/* Search gets the full width — the control people reach for before they
+            know which tab a thing is in (Tess, 2026-08-09: "layout is
+            cramped/awkward"). */}
         <input
-          className="input sm findbox"
+          className="input lib-search"
           type="search"
           value={query}
           placeholder="Search styles — name, number, fabric, color, factory…"
@@ -312,92 +317,8 @@ export default function DevTabs({
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        {/* Sort and the filters share the second line. The sort control needs no
-            "Sort" label (Tess, 2026-08-09) — it reads "Recent updates",
-            "A–Z" and so on, which already say what it does; the word above it
-            was furniture. */}
-        <div className="sortbar-row">
-          <Select
-            id="devsort"
-            className="select sm"
-            aria-label="Sort order"
-            value={sort}
-            onChange={setSort}
-            options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
-          />
-
-          {/* On a phone the filter run folds behind this one button so the bar
-              is Search + Sort + Filter, not a wall of selects (Tess, 2026-08-11:
-              "the fields and buttons have too many rows and look really messy").
-              Hidden on desktop, where .dev-filters shows them inline. */}
-          <button
-            type="button"
-            className={"btn ghost sm dev-filter-toggle" + (filtersOpen ? " on" : "")}
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen((o) => !o)}
-          >
-            Filter{activeFilters > 0 ? ` (${activeFilters})` : ""}
-          </button>
-
-          <div className={"dev-filters" + (filtersOpen ? " open" : "")}>
-            {/* Status filters to a SET rather than reordering everything (Tess,
-                2026-08-11: "these should act more as filter not sort"). It reads
-                the same DevSummary the cards do, so the two cannot disagree. */}
-            <Select
-              className={"select sm" + (status ? " on" : "")}
-              aria-label="Status"
-              value={status}
-              onChange={setStatus}
-              options={[
-                { value: "", label: "Status: any" },
-                { value: "attention", label: "Needs attention" },
-                { value: "fitting", label: "Ready for fitting" },
-              ]}
-            />
-
-            {/* Season leads and always lists (min 1). Designer is deliberately
-                not here — Tess, 2026-08-09: "list season instead of designer".
-                Brand self-hides until a second brand exists. */}
-            {facetSelect("season", "Season", seasons, 1)}
-            {facetSelect("factory", "Factory", factories)}
-            {facetSelect("category", "Category", categories)}
-            {facetSelect("brand", "Brand", brands)}
-            {facetSelect("rating", "Rating", ratings, 2, sampleRatingLabel)}
-
-            {/* Only when something is actually in force, so it is never a button
-                that does nothing. */}
-            {narrowed && (
-              <button type="button" className="btn link" onClick={clearAll}>
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Turn the grid into a picker to build a deck. Shortened from "Select
-              for fitting deck" (Tess, 2026-08-11: "change this to 'build a
-              deck'") — the action is building the deck, and the word is the same
-              on Development and the Style Library, which share this control. On
-              shows "Done" beside the count in the floating bar. */}
-          <button
-            type="button"
-            className={"btn link" + (picking ? " on" : "")}
-            onClick={() => (picking ? stopPicking() : setPicking(true))}
-          >
-            {picking ? "Done" : "Build a deck"}
-          </button>
-
-          {/* Both numbers, always, so nothing is hidden quietly. */}
-          <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
-
-          {/* The grid-density toggle is a view control, not a filter, so it sits
-              apart from the filter run at the right edge — the same "toggle at
-              the right" spot the References head puts it — rather than wedged
-              between Status and Season (Tess, 2026-08-11: "the placement of the
-              toggle is not logical at all"). It rides after the hint, which
-              carries margin-left:auto, so the pair floats to the right. */}
-          {/* Density only matters for the card grid; in list view it does
-              nothing, so it steps aside. */}
-          {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
+        <div className="lib-head-tools">
+          {/* Grid ⇄ list. */}
           <div className="mat-viewtoggle" role="group" aria-label="View">
             <button
               type="button"
@@ -418,7 +339,84 @@ export default function DevTabs({
               ☰
             </button>
           </div>
+
+          {/* Density only matters for the card grid; in list view it steps aside. */}
+          {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
+
+          {/* Turn the grid into a picker to build a deck (Tess, 2026-08-11:
+              "build a deck") — the same control the Style Library shares. Kept
+              visible on the phone: unlike the References Select, a fitting deck
+              can be assembled from a phone. On shows "Done" beside the count in
+              the floating bar. */}
+          <button
+            type="button"
+            className={"btn link" + (picking ? " on" : "")}
+            onClick={() => (picking ? stopPicking() : setPicking(true))}
+          >
+            {picking ? "Done" : "Build a deck"}
+          </button>
+
+          {/* Both numbers, always, so nothing is hidden quietly. */}
+          <span className="h">{narrowed ? resultLabel(inThisTab, shown.length) : sortHint}</span>
+
+          {/* Sort needs no "Sort" label (Tess, 2026-08-09) — it reads "Recent
+              updates", "A–Z" and so on. */}
+          <Select
+            id="devsort"
+            className="select sm lib-sort"
+            aria-label="Sort order"
+            value={sort}
+            onChange={setSort}
+            options={DEV_SORTS.map((s) => ({ value: s.id, label: s.label }))}
+          />
         </div>
+      </div>
+
+      {/* On a phone the facet run folds behind this one button so the bar is
+          Search + Filter, not a wall of selects (Tess, 2026-08-11: "the fields
+          and buttons have too many rows and look really messy"). Hidden on
+          desktop, where .lib-filters shows them inline on their own row. */}
+      <button
+        type="button"
+        className={"btn ghost sm lib-filter-toggle" + (filtersOpen ? " on" : "")}
+        aria-expanded={filtersOpen}
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        Filter{activeFilters > 0 ? ` (${activeFilters})` : ""}
+      </button>
+
+      <div className={"lib-filters" + (filtersOpen ? " open" : "")}>
+        {/* Status filters to a SET rather than reordering everything (Tess,
+            2026-08-11: "these should act more as filter not sort"). It reads the
+            same DevSummary the cards do, so the two cannot disagree. */}
+        <Select
+          className={"select" + (status ? " on" : "")}
+          aria-label="Status"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "", label: "Status: any" },
+            { value: "attention", label: "Needs attention" },
+            { value: "fitting", label: "Ready for fitting" },
+          ]}
+        />
+
+        {/* Season leads and always lists (min 1). Designer is deliberately not
+            here — Tess, 2026-08-09: "list season instead of designer". Brand
+            self-hides until a second brand exists. */}
+        {facetSelect("season", "Season", seasons, 1)}
+        {facetSelect("factory", "Factory", factories)}
+        {facetSelect("category", "Category", categories)}
+        {facetSelect("brand", "Brand", brands)}
+        {facetSelect("rating", "Rating", ratings, 2, sampleRatingLabel)}
+
+        {/* Only when something is actually in force, so it is never a button
+            that does nothing. */}
+        {narrowed && (
+          <button type="button" className="btn link" onClick={clearAll}>
+            Clear
+          </button>
+        )}
       </div>
 
       {/* The other half of the answer when a search finds nothing here: it may

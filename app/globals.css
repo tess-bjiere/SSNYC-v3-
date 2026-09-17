@@ -633,12 +633,11 @@ body.notes-open .wrap{padding-right:378px}
    for how each is divided up"). */
 /* The grid⇄list toggle takes the height of the controls beside it so it never
    stands a few px short (Tess, 2026-08-27: "heights should look clean and
-   consistent"). It lives in two places: the development sortbar, beside the
-   compact Filter/Sort (28/30), and the materials page-head, beside the action
-   buttons (34/36). Scoped to each so it matches its own row. The icon centres in
+   consistent"). It sits in the shared control bar's tools group on the materials
+   and development grids (sized by that bar) and in the Photographers page-head
+   beside its action buttons, where this 34px keeps it level. The icon centres in
    the height rather than driving it with padding. */
 .mat-viewtoggle{display:inline-flex;align-items:stretch;border:1px solid var(--line)}
-.sortbar .mat-viewtoggle{height:28px}
 .page-head .mat-viewtoggle{height:34px}
 .mat-vt{display:inline-flex;align-items:center;background:none;border:none;color:var(--muted);
   font-family:inherit;font-size:15px;line-height:1;padding:0 9px;cursor:pointer}
@@ -2702,33 +2701,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .badge.sm{font-size:var(--t-micro);padding:2px 5px;letter-spacing:.1em}
 
 /* The development grid: an order you choose, a round on the thumbnail --------- */
-/* Two lines, not one (Tess, 2026-08-09: "layout is cramped/awkward"). Search
-   owns the first line; sort, the filters and the count share the second. The
-   old single wrapping row put the search box shoulder to shoulder with up to
-   six selects, which is what read as crowded. */
-.sortbar{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin:-8px 0 18px}
-.sortbar label{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint)}
-/* The controls line. Wraps on its own when the filters outrun the width, so a
-   narrow window stacks the selects rather than shoving the count off the edge. */
-.sortbar-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sortbar .select{width:auto;min-width:150px}
-/* Sort is the one control that is always present and always first; give it a
-   little more room than the facets so its longer labels do not truncate. */
-.sortbar-row > .sel:first-child .select{min-width:168px}
-.sortbar .h{font-size:var(--t-meta);color:var(--faint);margin-left:auto;text-align:right}
-/* Search now takes the whole first line — it is the control people reach for
-   before they know which tab the thing is in, and it no longer has to share. */
-.findbox{width:100%;max-width:none}
-/* A filter that is in force has to look different from one that is not — the
-   whole safety of hiding rows is that you can see what did the hiding. */
-.sortbar .select.on{border-color:var(--ink);color:var(--ink)}
-/* Development's filter run folds behind one "Filter" button on a phone (Tess,
-   2026-08-11: "too many rows ... really messy"). On desktop the wrapper is
-   transparent so the selects sit inline in the row exactly as before, and the
-   toggle is hidden. The phone rules below turn the wrapper into a collapsible
-   full-width box and arrange Filter · Sort · icons onto one row. */
-.dev-filters{display:contents}
-.dev-filter-toggle{display:none}
+/* Development and the Style Library share the References/Materials control-bar
+   shell now (design pass 2026-09-16: header parity): .lib-bar + .lib-head-tools
+   + the Filter-folded .lib-filters. Their own .sortbar / .sortbar-row / .findbox
+   / .dev-filters and the whole phone reflow that went with them are gone — the
+   .lib-page rules cover both pages. Two Development-specific bits survive: the
+   count hint that rides in the tools group, and the in-force facet highlight. */
+.lib-head-tools .h{font-size:var(--t-meta);color:var(--faint);white-space:nowrap}
+/* A filter in force has to look different from one that is not — the safety of
+   hiding rows is seeing what did the hiding (the facetSelect helper adds .on). */
+.lib-filters .select.on{border-color:var(--ink);color:var(--ink)}
 /* A button that reads as a link, for the one inside a sentence in an empty
    state. Clearing a search is not a form submission and should not look like one. */
 .linkish{background:none;border:none;padding:0;font:inherit;color:var(--ink);
@@ -2770,26 +2752,6 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .badge.fit{color:#8fbf9f;border-color:#8fbf9f}
 .badge.warn{color:#c8a06a;border-color:#c8a06a}
 
-@media(max-width:900px){
-  /* The sort hint drops to its own line rather than squeezing the sort buttons
-     off the edge — the buttons are the control, the hint is the explanation.
-     The search box takes a whole line of its own for the same reason. */
-  .sortbar .h{flex-basis:100%;margin-left:0;text-align:left;order:6}
-  .findbox{flex-basis:100%;max-width:none}
-
-  /* Filter · Sort · size-icons on one row; the filter selects drop full-width
-     below only when opened. Search already has its own line above. The sort's
-     flex item is the .sel wrapper (first child), not the #devsort trigger. */
-  .dev-filter-toggle{display:inline-flex;order:1;flex:0 0 auto}
-  .sortbar-row > .sel:first-child{order:2;flex:1 1 auto;min-width:0}
-  .sortbar-row > .sel:first-child .select{width:100%;min-width:0}
-  .sortbar-row > .dens{order:3;flex:0 0 auto}
-  .dev-filters{display:none;order:4;flex:1 1 100%}
-  .dev-filters.open{display:flex;flex-wrap:wrap;gap:8px}
-  .dev-filters .sel{flex:1 1 46%;min-width:0}
-  .dev-filters .select{width:100%;min-width:0}
-  .sortbar-row > .btn.link{order:5}
-}
 
 /* Links inside notes (2026-08-04) -------------------------------------------
    Tess: "Make links in notes hyperlink." Every note field in the tool is plain
@@ -4450,14 +4412,21 @@ textarea.input,textarea.select,.textarea{height:auto}
   /* The tools now live in the control bar and carry Sort with them (design pass
      2026-09-15). On the phone the group is its own full-width row — Select is
      hidden (lib-add-desk), size sits left, Sort is pushed to the right edge. */
-  .lib-page .lib-head-tools{order:6;flex:1 1 100%;margin:0}
+  /* The tools group is its own full-width row on a phone. It wraps rather than
+     overflowing — Development carries more here (a Build-a-deck button and the
+     count hint) than the other grids, so on a narrow screen the row folds to a
+     second line instead of pushing Sort off the edge. */
+  .lib-page .lib-head-tools{order:6;flex:1 1 100%;margin:0;flex-wrap:wrap;gap:10px}
   .lib-page .lib-head-tools .lib-sort{margin-left:auto;width:auto;min-width:150px}
 
   /* The expanded filters and everything below drop back to full-width rows. */
   .lib-page .lib-filters{order:8;flex:1 1 100%;margin:0}
-  /* Materials groups its grid inside <section class="mat-group">, so it needs the
-     same order as a bare .grid or it floats above the header on a phone. */
-  .lib-page .grid,.lib-page .empty,.lib-page .mat-group{order:9;flex:1 1 100%}
+  /* Everything that sits below the control bar shares one order so it stacks
+     under the header on a phone rather than floating above it: the bare grid,
+     Materials' <section class="mat-group"> wrapper, Development's list view and
+     its tab notes, and any empty state. Equal order keeps DOM sequence, so a
+     tab-note still reads above the grid it belongs to. */
+  .lib-page .grid,.lib-page .empty,.lib-page .mat-group,.lib-page .dev-list,.lib-page .tab-note{order:9;flex:1 1 100%}
   .lib-page .lib-footer{order:10;flex:1 1 100%}
 }
 
@@ -4540,26 +4509,12 @@ textarea.input,textarea.select,.textarea{height:auto}
   .mb-toolbar .btn.ghost{font-size:var(--t-micro)}
   .lib-tab{padding-inline:var(--ctl-x-sm)}
 
-  /* Development and Style Library ride the same scale (Tess, 2026-08-12: "update
-     buttons on development and style library to match the updates made to sizing
-     on references, campaigns, moodboard"). Both render DevTabs — its .tabs strip
-     and the .sortbar Filter / Sort — so shrinking those covers both pages. */
-  .tab,
-  .btn.sm.dev-filter-toggle,
-  .sortbar .sel-trigger,
-  .sortbar .select{height:30px;min-height:30px}
-  /* The dev sortbar's grid/list toggle rides the same 30px as the sort beside it. */
-  .sortbar .mat-viewtoggle{height:30px}
-  /* Kind/filter chips match the 30px sort in their row on mobile. */
+  /* Development and the Style Library used to carry their own phone control
+     sizing here (Tess, 2026-08-12: "match ... references, campaigns, moodboard").
+     They render DevTabs, which now uses the shared lib-page bar, so the lib-page
+     phone rules above size them — the old .sortbar / .tab overrides are gone.
+     Only the Photographers filter chips still need their own line. */
   .pg-filter{height:30px}
-  .tab,
-  .btn.sm.dev-filter-toggle,
-  #devsort,
-  .sortbar .sel-trigger,
-  .sortbar .select{font-size:var(--t-micro)}
-  /* .tab is not box-sizing:border-box like the boxed controls; trim its block
-     padding so the underline tab lands at the same 30px, not taller. */
-  .tab{padding-block:0}
 }
 
 /* ============================================================================

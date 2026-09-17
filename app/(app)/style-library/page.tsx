@@ -53,7 +53,7 @@ export default async function StyleLibraryPage() {
     .sort((a, b) => String(b.library_at ?? "").localeCompare(String(a.library_at ?? "")));
 
   return (
-    <div className="page">
+    <div className="page lib-page">
       <div className="page-head">
         <h1 className="page-title display">Style Library</h1>
       </div>
