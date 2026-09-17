@@ -82,6 +82,17 @@ function igHref(handle: string | null | undefined): string {
   if (!s) return "";
   return /^https?:\/\//i.test(s) ? s : `https://instagram.com/${s}`;
 }
+// The handle to SHOW. photographer_ig is stored as a full instagram URL on some
+// references and a bare handle on others; pull the handle out either way so it
+// reads "@paulbellaart", not "@https://www.instagram.com/paulbellaart/" (Tess,
+// 2026-09-16). Same idea as igHandle() on the Photographers roster.
+function igLabel(handle: string | null | undefined): string {
+  const s = (handle || "").trim();
+  if (!s) return "";
+  const m = s.match(/instagram\.com\/([^/?#]+)/i);
+  const h = (m ? m[1] : s).replace(/^@/, "").replace(/\/+$/, "");
+  return h ? "@" + h : "";
+}
 
 export default function DetailModal({
   r,
@@ -371,7 +382,7 @@ export default function DetailModal({
           <>
             {cur.photographer ? " · " : ""}
             <a href={igHref(cur.photographer_ig)} target="_blank" rel="noopener noreferrer" className="detail-link">
-              {cur.photographer_ig.replace(/^@?/, "@")}
+              {igLabel(cur.photographer_ig)}
             </a>
           </>
         )}
