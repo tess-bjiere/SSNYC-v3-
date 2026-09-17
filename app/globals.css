@@ -988,6 +988,8 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 
 /* Library cards: + pin, extra-images badge, detail modal */
 .lib-card{cursor:pointer}
+/* Invisible marker the grid watches to grow its window (useWindowed). */
+.win-sentinel{height:1px}
 
 /* ONE clean chrome for every action control that floats on a thumbnail across
    References and Campaign — the moodboard + (.pin on References, .card-mb on
@@ -4442,6 +4444,8 @@ textarea.input,textarea.select,.textarea{height:auto}
      its tab notes, and any empty state. Equal order keeps DOM sequence, so a
      tab-note still reads above the grid it belongs to. */
   .lib-page .grid,.lib-page .empty,.lib-page .mat-group,.lib-page .dev-list,.lib-page .tab-note{order:9;flex:1 1 100%}
+  /* The windowing sentinel sits just under the grid, not above the header. */
+  .lib-page .win-sentinel{order:9;flex:1 1 100%}
   .lib-page .lib-footer{order:10;flex:1 1 100%}
 }
 

@@ -130,7 +130,11 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
 
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
-        .upload(path, buf, { contentType, upsert: false });
+        // A year, not the default hour (Tess, 2026-09-17: "ssync app feels
+        // slow"). Each image lives at a unique <uuid>/ path and is never
+        // rewritten, so it is safe to cache hard — repeat visits then hit the
+        // browser cache instead of re-downloading the whole grid.
+        .upload(path, buf, { contentType, upsert: false, cacheControl: "31536000" });
       if (upErr) {
         errors.push(`${file.name}: ${upErr.message}`);
         continue;
@@ -152,7 +156,7 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
         const thumbPath = `${folder}/thumb.jpg`;
         const { error: tErr } = await supabase.storage
           .from(BUCKET)
-          .upload(thumbPath, thumbBytes, { contentType: "image/jpeg", upsert: false });
+          .upload(thumbPath, thumbBytes, { contentType: "image/jpeg", upsert: false, cacheControl: "31536000" });
         if (!tErr) thumbUrl = supabase.storage.from(BUCKET).getPublicUrl(thumbPath).data?.publicUrl ?? url;
       }
       uploaded.push({ url, thumbUrl });

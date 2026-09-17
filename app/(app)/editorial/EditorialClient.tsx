@@ -1,6 +1,7 @@
 "use client";
 
 import Select from "@/app/components/Select";
+import { useWindowed } from "@/app/components/useWindowed";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
@@ -226,6 +227,9 @@ export default function EditorialClient({
     setBulkArm(false);
   }
   const shownIds = list.map((r) => r.id);
+  // Chunked render so a full campaign board doesn't stream every thumbnail at
+  // once (Tess, 2026-09-17: "ssync app feels slow"). Select-all acts on `list`.
+  const { shown: windowed, sentinelRef, hasMore } = useWindowed(list, 48);
   const allShownSelected = shownIds.length > 0 && shownIds.every((id) => selected.has(id));
   function toggleSelectAll() {
     setSelected((prev) => {
@@ -439,8 +443,9 @@ export default function EditorialClient({
             : "No campaign images match those filters."}
         </div>
       ) : (
+        <>
         <div className={"grid dens-" + size + (mono ? " ed-mono" : "")}>
-          {list.map((r) => {
+          {windowed.map((r) => {
             const src = refThumb(r);
             // On Campaign the photographer / DP leads, not the brand (Tess,
             // 2026-09-15: "the photographer / DP name would be more important than
@@ -516,6 +521,8 @@ export default function EditorialClient({
             );
           })}
         </div>
+        {hasMore && <div ref={sentinelRef} className="win-sentinel" aria-hidden="true" />}
+        </>
       )}
 
       {/* Bulk action bar — appears while selecting (Tess, 2026-08-19). */}

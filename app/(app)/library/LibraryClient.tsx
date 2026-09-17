@@ -1,6 +1,7 @@
 "use client";
 
 import Select from "@/app/components/Select";
+import { useWindowed } from "@/app/components/useWindowed";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -243,6 +244,10 @@ export default function LibraryClient({
   }
   const shownIds = list.map((r) => r.id);
   const allShownSelected = shownIds.length > 0 && shownIds.every((id) => selected.has(id));
+  // The grid renders in chunks so a full board doesn't stream ~120 thumbnails at
+  // once (Tess, 2026-09-17: "ssync app feels slow"). Select-all etc. still act on
+  // the whole filtered `list`, not just what's currently on screen.
+  const { shown: windowed, sentinelRef, hasMore } = useWindowed(list, 48);
   function toggleSelectAll() {
     setSelected((prev) => {
       if (shownIds.every((id) => prev.has(id))) {
@@ -417,8 +422,9 @@ export default function LibraryClient({
             : "No references match those filters."}
         </div>
       ) : (
+        <>
         <div className={"grid dens-" + size}>
-          {list.map((r) => {
+          {windowed.map((r) => {
             const src = refThumb(r);
             const sub = [r.year && r.year !== "Unknown" ? r.year : null, r.garment, r.color].filter(Boolean).join(" · ");
             const extra = extraImageUrls(r).length;
@@ -479,6 +485,9 @@ export default function LibraryClient({
             );
           })}
         </div>
+        {/* Grows the window as it nears the foot of the grid. */}
+        {hasMore && <div ref={sentinelRef} className="win-sentinel" aria-hidden="true" />}
+        </>
       )}
 
       {/* Occasional housekeeping, out of the way at the foot of the library
