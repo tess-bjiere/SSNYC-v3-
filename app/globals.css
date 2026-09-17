@@ -1038,10 +1038,20 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .lib-fav-tab.active{background:var(--chip)}
 
 /* Star in the reference detail card, tucked beside the × close. */
-.detail-fav{position:absolute;top:20px;right:52px;background:none;border:none;color:var(--muted);
-  font-size:20px;line-height:1;cursor:pointer;padding:0}
+/* The favourite star and the × close are one tidy pair in the panel's top-right:
+   the same 32px box, the same centre line, a 4px gap. They used to be two loose
+   glyphs at different font-sizes and tops — and on a phone the × grew into a
+   40px box while the star stayed a bare glyph, so they read as misaligned (Tess,
+   2026-09-17: "the star and the x in the detail view is not aligned — looks
+   messy"). Flex-centring the glyph inside a shared box means the ★ (19px) and
+   the × (24px) sit on one centre line whatever their size. */
+.detail-fav,.detail-x{position:absolute;top:16px;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;color:var(--muted);line-height:1;cursor:pointer;padding:0}
+.detail-x{right:18px;font-size:24px}
+.detail-fav{right:54px;font-size:19px}
+.detail-x:hover{color:var(--ink)}
 .detail-fav:hover,.detail-fav.on{color:#f2c14e}
-@media (max-width:760px){.detail-fav{top:14px;right:60px}}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
 .modal{background:var(--panel);border:1px solid var(--line);max-height:88vh;overflow:auto;box-shadow:var(--shadow)}
@@ -1148,8 +1158,8 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .detail-thumb.active{outline:2px solid var(--ink)}
 .detail-thumb img{width:100%;height:100%;object-fit:cover}
 .detail-info{padding:30px 32px;position:relative;display:flex;flex-direction:column}
-.detail-x{position:absolute;top:20px;right:22px;background:none;border:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer;padding:0}
-.detail-x:hover{color:var(--ink)}
+/* .detail-x / .detail-fav (the close × and the favourite ★) are defined together
+   as an aligned pair up by the .detail-fav block. */
 .detail-head{margin-bottom:16px;padding-right:28px}
 .detail-head h2{font-size:var(--t-display);font-weight:var(--w-title);line-height:1.1;letter-spacing:-.005em;margin:0}
 .detail-head .yr{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.16em;color:var(--faint);margin-top:7px}
@@ -4327,7 +4337,10 @@ textarea.input,textarea.select,.textarea{height:auto}
      (Tess, 2026-09-15 design pass): detail/upload, materials, photographer. */
   .modal-lg,.modal-up,.mat-modal,.pg-profile{width:100vw;height:100vh;height:100dvh;max-height:none;border:none}
   .detail-info{padding:22px 20px}
-  .detail-x{top:14px;right:14px;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+  /* Slightly larger touch targets on a phone, kept as an aligned pair. */
+  .detail-fav,.detail-x{top:12px;width:38px;height:38px}
+  .detail-x{right:10px}
+  .detail-fav{right:52px}
   .detail-actions{flex-direction:column;align-items:stretch;gap:10px}
   .detail-actions .btn{width:100%;justify-content:center;font-size:var(--t-sm)}
   .view-product{margin-top:16px}
