@@ -82,8 +82,8 @@ function Modal({
       <div className={"modal" + (wide ? " modal-lg" : " modal-up")} role="dialog" aria-modal="true" aria-label={label}>
         <div className="modal-head">
           <span>{label}</span>
-          <button type="button" className="btn link" onClick={onClose}>
-            Close
+          <button type="button" className="notes-close" onClick={onClose} aria-label="Close" title="Close">
+            ×
           </button>
         </div>
         <div className="modal-body">{children}</div>

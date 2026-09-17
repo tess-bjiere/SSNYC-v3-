@@ -1104,8 +1104,13 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .combo-opt:last-child{border-bottom:none}
 .combo-opt:hover,.combo-opt.active{background:var(--accent);color:var(--btnfg)}
 .up-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--panel)}
-.modal-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-ctl);padding:15px 18px;border-bottom:1px solid var(--line);font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
-.modal-body{padding:18px}
+/* The one modal shell (design pass 2026-09-16, "modal shell"): every content
+   modal is .modal-overlay > .modal(+size) > .modal-head + .modal-body, closed
+   by the shared × (.notes-close) top-right. Head and body padding used to be
+   set here and then overridden again lower down; the winning values are folded
+   in here so the shell is defined once. */
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-ctl);padding:14px 20px;border-bottom:1px solid var(--line);font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
+.modal-body{padding:20px 20px 22px}
 .board-pick{display:flex;flex-direction:column;gap:8px}
 .board-pick .btn{justify-content:flex-start;display:flex;align-items:center}
 .pick-more{margin-left:auto;color:var(--muted)}
@@ -4125,11 +4130,10 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .row3{gap:16px}
 .field-hint{margin-top:6px}
 
-/* Modals. The body had the same padding as the head, so the first field sat
-   as close to the rule above it as the title did — and on a long form the
-   last control sat on the bottom edge. */
-.modal-body{padding:20px 20px 22px}
-.modal-head{padding:14px 20px}
+/* Modal head/body padding is defined once now, on the .modal-head / .modal-body
+   rules themselves (design pass 2026-09-16). The body carries more bottom than
+   top padding so the first field clears the head rule and the last control does
+   not sit on the bottom edge. */
 
 /* The scale-down half of the instruction, where it makes sense: the smallest
    supporting text on the busiest surfaces. Nothing that is a heading, a name

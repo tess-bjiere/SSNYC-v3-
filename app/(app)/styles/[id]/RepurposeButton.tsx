@@ -64,8 +64,8 @@ export default function RepurposeButton({
           <div className="modal modal-up" role="dialog" aria-modal="true" aria-label="Repurpose into a new season">
             <div className="modal-head">
               <span>Repurpose into a new season</span>
-              <button type="button" className="btn link" onClick={() => setOpen(false)}>
-                Close
+              <button type="button" className="notes-close" onClick={() => setOpen(false)} aria-label="Close" title="Close">
+                ×
               </button>
             </div>
             <div className="modal-body">

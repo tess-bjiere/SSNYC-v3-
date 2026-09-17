@@ -33,9 +33,13 @@ import { ModalCloseContext } from "@/app/components/CloseOnSave";
 //
 // The a11y note, so the next person does not "fix" this back: the ARIA dialog
 // pattern expects Escape to close. What that expectation is protecting is that
-// a keyboard user must never be stuck in a box, and Close satisfies it — it is
-// a real button, it is the first thing in the modal, and it is reachable by Tab
-// from anywhere inside. The convention is gone; the guarantee is not.
+// a keyboard user must never be stuck in a box, and the × button satisfies it —
+// it is a real button with an accessible name (aria-label="Close"), it is the
+// first thing in the modal, and it is reachable by Tab from anywhere inside.
+// The convention is gone; the guarantee is not. (The × is the one close mark
+// every modal in the tool now carries — design pass 2026-09-16, "modal shell";
+// it was a "Close" text button here, the last holdouts along with
+// RepurposeButton and the boxes in VersionStrip / SampleRounds.)
 export default function ModalButton({
   label,
   title,
@@ -113,8 +117,8 @@ export default function ModalButton({
           >
             <div className="modal-head">
               <span>{title ?? label}</span>
-              <button type="button" className="btn link" onClick={close}>
-                Close
+              <button type="button" className="notes-close" onClick={close} aria-label="Close" title="Close">
+                ×
               </button>
             </div>
             {/* The close function goes down as context so that a form

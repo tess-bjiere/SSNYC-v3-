@@ -1192,8 +1192,8 @@ function FullRound({
             {s.rating && <span className={"sr-rate " + s.rating}>{sampleRatingLabel(s.rating)}</span>}
             {s.factory && <span className="sr-full-factory">{s.factory}</span>}
           </span>
-          <button type="button" className="btn link" onClick={onClose}>
-            Close
+          <button type="button" className="notes-close" onClick={onClose} aria-label="Close" title="Close">
+            ×
           </button>
         </div>
         {/* Two columns, one screenful (Tess, 2026-08-05: "FULL VIEW of sample
