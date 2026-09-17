@@ -8,7 +8,12 @@
 // The maths lives here on its own (and is tested in lib/thumbnail.test.mts); the
 // actual downscale happens in the browser at upload time, in UploadModal.
 
-export const THUMB_MAX = 600;
+// 800, not 600 (Tess, 2026-09-17: uploaded images "too compressed / soft"). The
+// grid draws cards up to ~400px wide, and on a 2× (retina) screen that wants an
+// 800px source to stay crisp; 600 was being upscaled and read soft. The grid now
+// renders in chunks (useWindowed), so the larger thumb doesn't cost the whole
+// board's worth of bytes up front.
+export const THUMB_MAX = 800;
 
 // Fit an image inside a `max` × `max` box, keeping its aspect ratio. Images
 // already smaller than the box are left at their own size — upscaling a small

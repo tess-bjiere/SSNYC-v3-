@@ -27,11 +27,18 @@ async function makeThumb(file: File): Promise<File | null> {
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
+    // High-quality downscale + a higher JPEG quality (Tess, 2026-09-17: uploads
+    // "too compressed / soft"). The canvas default is a soft bilinear shrink;
+    // "high" uses a proper multi-tap filter, and 0.9 keeps fabric detail that
+    // 0.82 was smearing. The grid renders in chunks now, so the bigger thumb is
+    // affordable.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close?.();
 
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.82)
+      canvas.toBlob(resolve, "image/jpeg", 0.9)
     );
     if (!blob || blob.size === 0) return null;
     return new File([blob], "thumb.jpg", { type: "image/jpeg" });

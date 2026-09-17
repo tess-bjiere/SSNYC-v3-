@@ -6,6 +6,7 @@
 // Never import this from a client component — it pulls in sharp.
 
 import sharp from "sharp";
+import { THUMB_MAX } from "@/lib/thumbnail";
 
 /** A crop as fractions of the image (0..1), the shape the cropper hands back. */
 export type CropRect = { x: number; y: number; w: number; h: number };
@@ -52,9 +53,13 @@ export async function heicToJpeg(buf: Uint8Array): Promise<Uint8Array> {
 /** A small JPEG for the grid, made from an already-processed (cropped/converted)
  *  buffer so the thumbnail matches what was stored. */
 export async function thumbFrom(buf: Uint8Array): Promise<Uint8Array> {
+  // Match the browser thumbnail: same edge (THUMB_MAX) and a high quality, so a
+  // HEIC/cropped upload doesn't come out softer than a plain one (Tess,
+  // 2026-09-17: uploads "too compressed / soft"). sharp's resize is already a
+  // sharp multi-tap filter.
   return await sharp(buf)
     .rotate()
-    .resize({ width: 640, height: 640, fit: "inside", withoutEnlargement: true })
-    .jpeg({ quality: 82 })
+    .resize({ width: THUMB_MAX, height: THUMB_MAX, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 90 })
     .toBuffer();
 }

@@ -36,6 +36,8 @@ test("unreadable dimensions yield nothing, so the caller skips the thumbnail", (
 });
 
 test("the default box matches what the grids actually display", () => {
-  assert.equal(THUMB_MAX, 600);
-  assert.deepEqual(thumbDims(1200, 1600), { w: 450, h: 600 });
+  // Raised 600 -> 800 (Tess, 2026-09-17: uploads read soft on retina); the grid
+  // now windows so the bigger thumb doesn't cost the whole board up front.
+  assert.equal(THUMB_MAX, 800);
+  assert.deepEqual(thumbDims(1200, 1600), { w: 600, h: 800 });
 });

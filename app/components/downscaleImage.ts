@@ -13,7 +13,7 @@
 // the crop rect is stored as fractions of the image, not pixels.
 
 const MAX_EDGE = 2400; // plenty for a swatch; the grid and lightbox show far less
-const QUALITY = 0.85;
+const QUALITY = 0.92; // Tess, 2026-09-17: uploads read "too compressed / soft" — 0.85 was visibly softening the full image; 0.92 holds detail at a still-modest size
 const SKIP_UNDER = 4 * 1024 * 1024; // already small and web-friendly — leave it be
 
 function isHeic(file: File): boolean {
@@ -41,6 +41,9 @@ export async function downscaleImage(file: File): Promise<File> {
       bitmap.close?.();
       return file;
     }
+    // A proper multi-tap downscale instead of the canvas's soft bilinear default.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close?.();
     const blob: Blob | null = await new Promise((resolve) =>
