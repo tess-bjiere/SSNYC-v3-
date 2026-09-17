@@ -303,7 +303,7 @@ body.notes-open .wrap{padding-right:378px}
    menu show inline?"). They read exactly like the talent bar's inline links —
    faint, brightening on hover, white for the page you are on — so the two bars
    share one link style. */
-.nav-menu{display:inline-flex;align-items:center;gap:18px;margin-left:14px}
+.nav-menu{display:inline-flex;align-items:center;gap:var(--sp-ctl);margin-left:14px}
 .nav-menu-link{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
   letter-spacing:.12em;color:var(--faint);white-space:nowrap;line-height:1;
   padding:calc(4px + .21em) 0 4px}
@@ -352,7 +352,7 @@ body.notes-open .wrap{padding-right:378px}
 .act-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .act-item{border-top:1px solid var(--hair)}
 .act-item:last-child{border-bottom:1px solid var(--hair)}
-.act-link{display:flex;gap:12px;align-items:flex-start;padding:13px 4px;text-decoration:none;color:inherit}
+.act-link{display:flex;gap:var(--sp-chip);align-items:flex-start;padding:13px 4px;text-decoration:none;color:inherit}
 .act-link:hover{background:var(--panel)}
 .act-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;margin-top:5px;background:transparent}
 .act-unread .act-dot{background:var(--accent,#2563eb)}
@@ -402,7 +402,7 @@ body.notes-open .wrap{padding-right:378px}
 .nav-drawer-link:hover{color:var(--ink)}
 .nav-drawer-link.active{color:var(--ink);font-weight:var(--w-title);background:var(--chip)}
 /* Settings & account: set apart below a rule, quieter than the destinations. */
-.nav-drawer-foot{margin-top:auto;display:flex;flex-direction:column;gap:18px;
+.nav-drawer-foot{margin-top:auto;display:flex;flex-direction:column;gap:var(--sp-ctl);
   border-top:1px solid var(--hair);padding-top:20px}
 .nav-drawer-brand{display:flex;flex-direction:column;gap:6px}
 .nav-drawer-brand .brand-switcher{min-width:0;width:100%}
@@ -516,7 +516,7 @@ body.notes-open .wrap{padding-right:378px}
    mat-viewtoggle/mat-vt (one grid/list toggle across the tool). */
 /* List view — a dense, alphabetised name list; click a name for the profile. */
 .pg-list{display:flex;flex-direction:column;margin-top:10px}
-.pg-lrow{display:flex;align-items:baseline;gap:12px;padding:9px 4px;border-bottom:1px solid var(--hair)}
+.pg-lrow{display:flex;align-items:baseline;gap:var(--sp-chip);padding:9px 4px;border-bottom:1px solid var(--hair)}
 .pg-lstar{flex:none;width:16px;text-align:center;background:none;border:none;font-size:11px;line-height:1;
   cursor:pointer;color:rgba(243,239,232,.35);padding:0}
 .pg-lstar.on{color:#a3e635}
@@ -580,7 +580,7 @@ body.notes-open .wrap{padding-right:378px}
   letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;line-height:1;
   background:var(--accent);color:var(--btnfg)}
 .mat-setcover{position:absolute;bottom:6px;left:6px;z-index:3;font-family:inherit;cursor:pointer;
-  font-size:var(--t-micro);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;line-height:1;
+  font-size:var(--t-micro);letter-spacing:.06em;text-transform:uppercase;padding:var(--ctl-y-xs) var(--ctl-x-xs);line-height:1;
   background:rgba(12,12,12,.72);color:var(--ink);border:1px solid var(--line);opacity:0;transition:opacity .12s}
 .mat-gimg:hover .mat-setcover{opacity:1}
 .mat-zoom{cursor:zoom-in}
@@ -655,7 +655,7 @@ body.notes-open .wrap{padding-right:378px}
 
 .mat-list{display:flex;flex-direction:column;border-top:1px solid var(--hair)}
 .mat-lrow{display:grid;grid-template-columns:48px minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.2fr);
-  align-items:center;gap:12px;padding:7px 6px;border-bottom:1px solid var(--hair);cursor:pointer}
+  align-items:center;gap:var(--sp-chip);padding:7px 6px;border-bottom:1px solid var(--hair);cursor:pointer}
 .mat-lrow:hover{background:var(--chip)}
 .mat-lthumb{position:relative;width:44px;height:44px;background:var(--chip);overflow:hidden}
 .mat-lthumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -680,7 +680,7 @@ body.notes-open .wrap{padding-right:378px}
    on one line. Mirrors the materials list. */
 .dev-list{display:flex;flex-direction:column;border-top:1px solid var(--hair)}
 .dev-lrow{display:grid;grid-template-columns:44px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.4fr);
-  align-items:center;gap:12px;padding:7px 6px;border-bottom:1px solid var(--hair);cursor:pointer;
+  align-items:center;gap:var(--sp-chip);padding:7px 6px;border-bottom:1px solid var(--hair);cursor:pointer;
   text-decoration:none;color:inherit}
 .dev-lrow:hover{background:var(--chip)}
 .dev-lthumb{position:relative;width:40px;height:40px;background:var(--chip);overflow:hidden}
@@ -728,7 +728,7 @@ body.notes-open .wrap{padding-right:378px}
 .bulk-edit .bulk-hint,.bulk-edit .bulk-field{grid-column:1 / -1}
 
 /* --- Material orders (Tess, 2026-08-18). --- */
-.mo-head{align-items:flex-start;gap:12px}
+.mo-head{align-items:flex-start;gap:var(--sp-chip)}
 .mo-title-wrap{display:flex;flex-direction:column;gap:3px;min-width:0}
 .mo-name{cursor:pointer;margin:0}
 .mo-name-input{font-size:var(--t-display);max-width:420px}
@@ -758,7 +758,7 @@ body.notes-open .wrap{padding-right:378px}
 .mo-prod-title{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px}
 .mo-prod-name{font-size:var(--t-body);font-weight:var(--w-title);color:var(--ink);line-height:1.2}
 .mo-prod-ref{font-size:var(--t-meta);color:var(--muted);letter-spacing:.03em}
-.mo-prod-edit{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.mo-prod-edit{display:flex;align-items:flex-end;gap:var(--sp-chip);flex-wrap:wrap}
 .mo-edit-field{display:flex;flex-direction:column;gap:3px}
 .mo-edit-k{display:inline-flex;align-items:baseline;gap:7px;font-size:var(--t-micro);
   text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
@@ -789,7 +789,7 @@ body.notes-open .wrap{padding-right:378px}
 /* Ship-to and notes each get their own stacked, full-width section (Tess,
    2026-08-26: "make notes it's own section ... organized ... with multiple lines
    as opposed to squeezing everything onto one line"), a ruled band apart. */
-.mo-meta{display:flex;flex-direction:column;gap:18px;max-width:720px;margin-top:26px}
+.mo-meta{display:flex;flex-direction:column;gap:var(--sp-ctl);max-width:720px;margin-top:26px}
 .mo-metasec{display:flex;flex-direction:column;gap:6px;padding-top:16px;border-top:1px solid var(--hair)}
 .mo-metasec:first-child{padding-top:0;border-top:none}
 .mo-danger{margin-top:4px}
@@ -947,7 +947,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
    value on the right — so tier, medium, cities, past work and notes all line up
    (Tess, 2026-08-17: "neat and logical alignment ... plenty of breathing room").
    Generous row spacing; the group sits clear of the header and the grid. */
-.pg-facts{display:flex;gap:18px;align-items:baseline;margin-bottom:14px}
+.pg-facts{display:flex;gap:var(--sp-ctl);align-items:baseline;margin-bottom:14px}
 .pg-facts:first-of-type{margin-top:4px}
 .pg-facts:last-of-type{margin-bottom:24px}
 .pg-facts .k{flex:none;width:92px;font-size:var(--t-micro);text-transform:uppercase;
@@ -959,7 +959,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 /* Team editor for a photographer's card. */
 .pg-edit-btn{margin:2px 0 14px}
 .pg-editor{border:1px solid var(--line);padding:14px;margin:2px 0 16px;
-  display:flex;flex-direction:column;gap:12px}
+  display:flex;flex-direction:column;gap:var(--sp-chip)}
 .pg-editor-row{display:flex;flex-direction:column;align-items:stretch;gap:7px}
 .pg-editor-label{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
 .pg-seg{display:flex;gap:6px;flex-wrap:wrap}
@@ -1079,7 +1079,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .up-thumb.picksel{outline:2px solid #6fae7a;outline-offset:-2px}
 .up-groupbadge{position:absolute;top:3px;left:24px;background:#5b6ee1;color:#fff;font-size:var(--t-micro);
   padding:1px 5px;border-radius:3px;letter-spacing:.04em;line-height:1.4}
-.up-stackbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 0}
+.up-stackbar{display:flex;align-items:center;gap:var(--sp-chip);flex-wrap:wrap;margin:10px 0 0}
 .up-stackhint{font-size:var(--t-meta);color:var(--muted);flex:1 1 auto;min-width:120px}
 /* Merge dialog — pick the keeper among the selected profiles (Tess, 2026-09-09). */
 .merge-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
@@ -1163,7 +1163,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .detail-actions .btn{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-meta)}
 .btn.danger{background:none;color:var(--danger);border-color:var(--danger)}
 .btn.danger:hover{background:var(--danger);color:var(--btnfg)}
-.detail-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--danger);font-size:var(--t-body)}
+.detail-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp-chip);margin-top:14px;padding:12px 14px;border:1px solid var(--danger);font-size:var(--t-body)}
 /* View product and Share, side by side — the two ways out of a reference, as
    against the row of things you do TO one. Same type on both so neither reads
    as the more important exit. */
@@ -1305,7 +1305,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
    section to moodboard"). A quiet reference block above the boards: a header
    with an Edit link, then Seasonal and Evergreen rows of chips. */
 .mb-palette{margin:0 0 28px}
-.mb-palette-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+.mb-palette-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-chip);
   border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:14px}
 .mb-palette-head h2{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.16em;
   text-transform:uppercase;color:var(--muted)}
@@ -1369,7 +1369,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .mb-add-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:160px;
   background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px;
   box-shadow:0 6px 20px rgba(0,0,0,.18)}
-.mb-add-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+.mb-add-item{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-chip);width:100%;
   background:none;border:none;color:var(--ink);cursor:pointer;font-family:inherit;
   font-size:var(--t-meta);padding:6px 8px;border-radius:4px;text-align:left}
 .mb-add-item:hover{background:var(--panel)}
@@ -1418,14 +1418,14 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .mb-sec-edit{display:flex;gap:6px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .mb-sec-edit .input{max-width:340px;padding:var(--ctl-y-sm) var(--ctl-x-sm)}
 /* section header row: label on the left, reorder arrows on the right */
-.mb-sec-bar{display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.mb-sec-bar{display:flex;align-items:flex-end;gap:var(--sp-chip);border-bottom:1px solid var(--line);margin-bottom:20px}
 .mb-sec-bar > .mb-sec-head,.mb-sec-bar > .mb-sec-edit{flex:1;min-width:0;border-bottom:none;margin-bottom:0}
 .mb-sec-move{display:flex;gap:2px;padding-bottom:8px;opacity:0;transition:opacity .12s}
 .mb-sec-bar:hover .mb-sec-move{opacity:1}
 .mb-sec-arrow{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:var(--t-meta);line-height:1;padding:4px 7px;cursor:pointer}
 .mb-sec-arrow:hover:not(:disabled){background:var(--accent);color:var(--btnfg);border-color:var(--accent)}
 .mb-sec-arrow:disabled{opacity:.28;cursor:default}
-.mb-row{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+.mb-row{display:flex;flex-wrap:wrap;gap:var(--sp-ctl);align-items:flex-start}
 /* Every tile is the same size. --tw/--th come from the board's S/M/L control on
    <body>; nothing scales an individual image. */
 .mb-tile{width:var(--tw,185px);cursor:pointer;position:relative}
@@ -1496,7 +1496,7 @@ body.nav-open .notes-tab{display:none}
 /* Editing your own comment (Tess, 2026-08-05: "make my own comments
    editable"). Save is a real button because it commits; Cancel is quiet
    because backing out should not look like an action. */
-.note-edit-row{display:flex;align-items:center;gap:12px}
+.note-edit-row{display:flex;align-items:center;gap:var(--sp-chip)}
 .note-edit-row .note-edit{margin-left:0}
 .note-edit-hint{font-size:var(--t-meta);color:var(--muted);line-height:1.4}
 /* Mark received and Edit sit on one line under the text. Both are quiet; the
@@ -1753,7 +1753,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 
 /* "In development" tag on a moodboard tile (P3 #42). Sits over the bottom-left
    corner of the image so a glance at a board says what is already being made. */
-.mb-dev-tag{position:absolute;left:0;bottom:0;max-width:100%;background:var(--accent);color:var(--btnfg);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;padding:3px 7px;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1}
+.mb-dev-tag{position:absolute;left:0;bottom:0;max-width:100%;background:var(--accent);color:var(--btnfg);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;padding:var(--ctl-y-xs) var(--ctl-x-xs);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1}
 .mb-dev-tag:hover{background:var(--ink)}
 /* An exported board is a client-facing image — internal status never rides along. */
 .exporting .mb-dev-tag{display:none}
@@ -1787,7 +1787,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 
 /* "Developed from" on the style profile. */
 .devfrom{display:flex;flex-direction:column;gap:10px}
-.devfrom-card{display:flex;align-items:center;gap:12px;border:1px solid var(--hair);background:var(--field);padding:8px 10px}
+.devfrom-card{display:flex;align-items:center;gap:var(--sp-chip);border:1px solid var(--hair);background:var(--field);padding:8px 10px}
 .devfrom-img{display:block;width:52px;height:66px;flex:none;background:var(--chip);overflow:hidden}
 .devfrom-img img{width:100%;height:100%;object-fit:cover;display:block}
 .devfrom-meta{flex:1;min-width:0}
@@ -2009,7 +2009,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* Retired with the tidy-up above, kept because other cards may still be using
    the same vocabulary and a stylesheet is not the place to find out the hard
    way. Nothing reads .sr-timeline/.sr-step/.sr-lead/.sr-status/.sr-note today. */
-.sr-timeline{display:flex;flex-wrap:wrap;gap:18px;margin-top:10px}
+.sr-timeline{display:flex;flex-wrap:wrap;gap:var(--sp-ctl);margin-top:10px}
 .sr-step{display:flex;flex-direction:column;gap:2px}
 .sr-step .l{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
 .sr-step .d{font-size:var(--t-sm)}
@@ -2129,7 +2129,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    --------------------------------------------------------------------------- */
 .ph-progress{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-left:10px}
 .ph-error{color:var(--danger);font-size:var(--t-sm);margin-bottom:10px}
-.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-chip)}
 /* A front/back pair takes half the row each rather than two thirds of it, so
    the two drawings are the same size and sit next to each other — the way they
    are actually compared. Three-up is still the default for the shoot slots. */
@@ -2182,7 +2182,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    the error would only show up on the pictures whose shape differs most from
    the frame — which is exactly where a fit note matters. */
 .ann{grid-column:1/-1;border:1px solid var(--line);background:var(--panel);padding:14px}
-.ann-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ann-head{display:flex;align-items:baseline;gap:var(--sp-chip);flex-wrap:wrap;margin-bottom:12px}
 /* The context strip on its own full-width line under the header controls (Tess,
    2026-08-24): style · number · factory · fit date. */
 .ann-meta{flex-basis:100%;display:flex;flex-wrap:wrap;gap:3px 14px;font-size:var(--t-meta);color:var(--muted)}
@@ -2254,7 +2254,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 }
 .ann-side{min-width:0}
 .ann-editor .textarea{width:100%;min-height:96px}
-.ann-editor-tools{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+.ann-editor-tools{display:flex;align-items:center;gap:var(--sp-chip);margin-top:8px;flex-wrap:wrap}
 /* The reply thread on one mark — a fit comment's conversation. Walled off from
    the mark's own editor with a hairline so it reads as answers to the mark, not
    more of the mark (Tess, 2026-08-17: "Reply to fit comments in thread"). */
@@ -2320,7 +2320,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    A picker down the left, the factory's workload on the right. Only lateness
    gets a colour; everything else stays quiet so the late thing is the thing you
    see first. */
-.fx{display:grid;grid-template-columns:230px 1fr;gap:18px;align-items:start}
+.fx{display:grid;grid-template-columns:230px 1fr;gap:var(--sp-ctl);align-items:start}
 .fx-tabs{display:flex;flex-direction:column;gap:6px}
 .fx-tab{display:flex;flex-direction:column;gap:3px;text-align:left;padding:var(--ctl-y-lg) var(--ctl-x-md);background:var(--panel);
   border:1px solid var(--hair);color:var(--ink);cursor:pointer;font:inherit}
@@ -2481,7 +2481,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .toggle.on .knob{transform:translateX(16px);background:var(--btnfg)}
 .pref-said{font-size:var(--t-meta);color:var(--muted);padding:10px 18px;border-top:1px solid var(--hair)}
 /* The "send test email to me" row (Tess, 2026-08-26). */
-.pref-test{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--hair)}
+.pref-test{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-chip);padding:14px 18px;border-top:1px solid var(--hair)}
 .pref-test-said{font-size:var(--t-meta);color:var(--muted)}
 /* A link inside the muted line still has to look like a link — at this size the
    colour alone doesn't read as clickable. */
@@ -2578,7 +2578,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 
 .vary-brief{ border:1px solid var(--hair); background:var(--field); margin-top:14px }
 .vary-brieftop{
-  display:flex; align-items:center; gap:12px; justify-content:space-between;
+  display:flex; align-items:center; gap:var(--sp-chip); justify-content:space-between;
   padding:8px 10px; border-bottom:1px solid var(--hair);
 }
 .vary-title{ font-size:var(--t-body); color:var(--ink) }
@@ -2633,7 +2633,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .img-strip-head .l{font-size:var(--t-micro);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
 .img-strip-head .n{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
 .img-strip-head .h{font-size:var(--t-meta);line-height:1.5;color:var(--faint);flex:1;min-width:180px}
-.img-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.img-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-chip)}
 .img-tile{border:1px solid var(--hair);background:var(--field);padding:8px}
 .img-tile a{display:block;aspect-ratio:3/4;background:var(--chip);overflow:hidden}
 .img-open{display:block;width:100%;aspect-ratio:3/4;background:var(--chip);overflow:hidden;padding:0;margin:0;border:none;cursor:zoom-in}
@@ -2644,16 +2644,16 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The tools sit under the tile rather than over it: half of this is done on a
    phone, and a control on top of the picture is a control you miss. */
 .img-tools{display:flex;align-items:center;gap:9px;margin-top:8px;flex-wrap:wrap}
-.img-add{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.img-add{display:flex;align-items:center;gap:var(--sp-chip);margin-top:10px;flex-wrap:wrap}
 
 /* Sample round: material line, ETA chip, retired dates ----------------------- */
 .sr-matline{font-size:var(--t-sm);color:var(--ink);margin-top:2px}
 /* The chip that answers "when is it landing?" — amber while it is a promise,
    red once the promise is broken, and absent entirely once it is here. */
-.sr-eta{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;padding:3px 7px;border:1px solid currentColor}
+.sr-eta{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;padding:var(--ctl-y-xs) var(--ctl-x-xs);border:1px solid currentColor}
 .sr-eta.due{color:#c8a06a}
 .sr-eta.late{color:var(--danger)}
-.sr-legacy{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin:2px 0 16px;padding:10px 12px;
+.sr-legacy{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--sp-chip);margin:2px 0 16px;padding:10px 12px;
   border:1px dashed var(--hair);font-size:var(--t-sm);color:var(--muted)}
 .sr-legacy .k{text-transform:uppercase;letter-spacing:.12em;font-size:var(--t-cap)}
 .sr-legacy .h{flex-basis:100%;font-size:var(--t-meta);line-height:1.5;opacity:.85}
@@ -2664,7 +2664,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    without aiming. A native checkbox rounds itself off and shrinks to nothing at
    this scale, and this flag is the difference between a style the studio remakes
    every season and one it does not. */
-.statusctl{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.statusctl{display:flex;flex-direction:column;gap:var(--sp-chip);align-items:flex-start}
 /* The status dropdown was as tall as a full field (Tess, 2026-08-11: "status
    field / dropdown is too tall"); down to the app's compact 28px like the
    other bars. Coarse pointer still gets 44 for touch. */
@@ -2719,7 +2719,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    room. Only ever a promise or a broken one — a sample that has landed says so
    in the round line instead. */
 .card-eta{position:absolute;top:8px;left:8px;z-index:2;background:rgba(20,20,20,.88);
-  font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.1em;padding:3px 7px;border:1px solid currentColor}
+  font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.1em;padding:var(--ctl-y-xs) var(--ctl-x-xs);border:1px solid currentColor}
 .card-eta.due{color:#c8a06a}
 .card-eta.late{color:var(--danger)}
 /* The round line, now able to carry the rating dot in front of it. inline-flex
@@ -2843,7 +2843,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 /* The bullet-aware notes editor (Tess, 2026-08-24). A quiet toolbar over the
    textarea; the textarea itself keeps the plain .textarea look. */
 .notes-field{display:flex;flex-direction:column;gap:3px}
-.notes-toolbar{display:flex;align-items:baseline;gap:12px}
+.notes-toolbar{display:flex;align-items:baseline;gap:var(--sp-chip)}
 .notes-toolbar .ph-link{font-size:var(--t-meta)}
 .notes-hint{font-size:var(--t-micro);color:var(--faint);letter-spacing:.02em}
 .linkified{color:inherit;text-decoration:underline;text-underline-offset:2px;
@@ -3022,7 +3022,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .siblings{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
 .sibling{
   display:inline-flex;align-items:baseline;gap:8px;
-  padding:5px 10px;border:1px solid var(--line);border-radius:999px;
+  padding:var(--ctl-y-sm) var(--ctl-x-sm);border:1px solid var(--line);border-radius:999px;
   background:var(--chip);color:var(--ink);text-decoration:none;font-size:var(--t-body);
 }
 .sibling:hover{border-color:var(--ink)}
@@ -3100,7 +3100,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    place of readable text should look like it belongs to the same card and not
    like a panel that dropped in on top of it. */
 .sr-form-inline{border-top:1px solid var(--hair)}
-.sr-form-inline .row{gap:12px}
+.sr-form-inline .row{gap:var(--sp-chip)}
 .sr-form-inline .field label{font-size:var(--t-micro);letter-spacing:.14em}
 /* Cancel sits beside Save, not under it — leaving the form is as ordinary an
    act as saving it and should cost the same one click in the same place. The
@@ -3375,7 +3375,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    fit notes"). Front and back sit side by side, each capped to half the column so
    the pair fits (Tess, 2026-08-28: "show back of sketch as well"); a lone sketch
    simply stays small at the same half-column size. */
-.deck-sketches{display:flex;gap:12px;align-items:flex-start}
+.deck-sketches{display:flex;gap:var(--sp-chip);align-items:flex-start}
 .deck-sketch{display:block;width:auto;height:auto;max-width:calc(50% - 6px);max-height:1.5in;
   object-fit:contain;object-position:left top;border:1px solid #eee;background:#fafafa}
 /* Material · Colours · Tech pack stacked in one column beside the notes. */
@@ -3668,7 +3668,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    "on 2nd Proto" between them never pushes it out of reach. */
 .sr-sechead{display:flex;align-items:baseline;gap:var(--sp-ctl);flex-wrap:wrap;justify-content:space-between}
 .sr-sechead h3{flex:1 1 auto;min-width:0}
-.sr-foot{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:20px}
+.sr-foot{display:flex;align-items:center;gap:var(--sp-ctl);flex-wrap:wrap;margin-top:20px}
 .sr-foot .sr-today{margin:0;margin-left:auto}
 .sr-history{margin-top:18px}
 
@@ -3761,7 +3761,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
    thinnest, which is exactly what a summary is: the largest claim, made
    quietly. */
 .sumbar{
-  display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;
+  display:flex;align-items:flex-start;gap:var(--sp-ctl);flex-wrap:wrap;
   border:1px solid var(--hair);border-left:3px solid var(--line);
   background:var(--panel);border-radius:3px;padding:11px 13px;margin:0 0 18px;
 }
@@ -4119,7 +4119,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
   display:flex;flex-direction:column;gap:10px}
 .wip-src{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin:0}
 .wip-note{font-size:var(--t-sm);line-height:1.5;color:var(--muted);margin:0}
-.wip-row{display:grid;grid-template-columns:minmax(88px,.8fr) 1fr 1.2fr auto;gap:12px;
+.wip-row{display:grid;grid-template-columns:minmax(88px,.8fr) 1fr 1.2fr auto;gap:var(--sp-chip);
   align-items:baseline;padding:8px 0;border-bottom:1px solid var(--hair)}
 .wip-row:last-of-type{border-bottom:none}
 .wip-f{font-size:var(--t-cap);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);
@@ -4181,7 +4181,7 @@ button.lib-trash-link{background:none;border:none;cursor:pointer;font-family:inh
 .fx-stat .v{font-size:var(--t-lead);font-weight:var(--w-title);color:var(--ink);line-height:1.1}
 .fx-stat .v.late{color:var(--danger)}
 .fx-stat .k{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.13em;color:var(--faint)}
-.fx-stat .quality{display:flex;align-items:center;gap:12px}
+.fx-stat .quality{display:flex;align-items:center;gap:var(--sp-chip)}
 .fx-stat .q{display:inline-flex;align-items:center;gap:5px}
 
 .fx-sec{margin-top:22px}
@@ -4386,7 +4386,7 @@ textarea.input,textarea.select,.textarea{height:auto}
    margins are zeroed here.
    ============================================================================ */
 @media(max-width:900px){
-  .lib-page{display:flex;flex-flow:row wrap;align-items:center;gap:12px}
+  .lib-page{display:flex;flex-flow:row wrap;align-items:center;gap:var(--sp-chip)}
   .lib-page .page-head,.lib-page .lib-bar{display:contents}
   .lib-page .page-head .spacer{display:none}
 
@@ -4540,7 +4540,7 @@ textarea.input,textarea.select,.textarea{height:auto}
 .guide-intro{font-size:var(--t-body);line-height:1.55;color:var(--muted);margin-bottom:8px}
 .guide h2{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;
   letter-spacing:.12em;color:var(--faint);margin:34px 0 14px}
-.guide ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.guide ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-chip)}
 .guide li{font-size:var(--t-body);line-height:1.5;color:var(--muted);
   padding-left:16px;position:relative}
 .guide li::before{content:"";position:absolute;left:0;top:.62em;width:4px;height:4px;
@@ -4575,7 +4575,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 /* New-board modal form + the quiet archive action at the foot of the moodboard
    (Tess, 2026-08-11: "+board should pop up a modal", "archive button should be on
    bottom of page / way less prominent"). */
-.mb-newboard-form{display:flex;flex-direction:column;gap:12px}
+.mb-newboard-form{display:flex;flex-direction:column;gap:var(--sp-chip)}
 .mb-newboard-form .input{width:100%}
 .mb-archive-foot{margin-top:44px;padding-top:20px;border-top:1px solid var(--hair);text-align:center}
 .mb-archive-foot .btn.link{color:var(--faint)}
@@ -4612,7 +4612,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-group h2{font-size:var(--t-cap);font-weight:var(--w-cap);letter-spacing:.14em;
   text-transform:uppercase;color:var(--faint);margin-bottom:12px}
 .ls-empty{font-size:var(--t-body);color:var(--faint)}
-.ls-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.ls-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--sp-chip)}
 .ls-card{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border:1px solid var(--hair);
   background:var(--panel);text-decoration:none;transition:border-color .15s ease}
 .ls-card:hover{border-color:var(--line)}
@@ -4633,7 +4633,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
   background:none;color:var(--ink);line-height:1.12;max-width:100%;border-radius:0}
 .ls-name-edit:focus{outline:none;border-bottom-color:var(--ink)}
 .ls-kind{font-size:var(--t-micro);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.ls-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ls-tools{display:flex;align-items:center;gap:var(--sp-chip);flex-wrap:wrap}
 /* The segmented toggle and the Group button sit next to .btn.sm (Add styles,
    Save as PDF). A .btn's single text run takes the font's normal line-height as
    its flex-item height, so a .btn.sm lands at 28px; a plain button only gets its
@@ -4755,7 +4755,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-imgspot:hover .ls-imgspot-tools{display:inline-flex}
 .ls-imgspot-btn{background:var(--panel);border:1px solid var(--line);color:var(--muted);
   font-family:inherit;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.08em;
-  padding:3px 7px;cursor:pointer}
+  padding:var(--ctl-y-xs) var(--ctl-x-xs);cursor:pointer}
 .ls-imgspot-btn:hover{color:var(--ink)}
 .ls-imgspot-btn.danger:hover,.ls-imgspot-btn.danger.armed{color:var(--danger);border-color:var(--danger)}
 
@@ -4795,7 +4795,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-lay-styled_colorways .ls-visual .ls-hero{object-fit:cover;max-height:66vh}
 .ls-flats{display:flex;gap:16px;align-items:flex-start}
 .ls-flats img{width:100%;max-height:52vh;object-fit:contain;display:block}
-.ls-cw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0}
+.ls-cw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-chip);min-width:0}
 .ls-cw-grid img{width:100%;min-width:0;max-height:30vh;object-fit:contain;display:block;background:var(--field)}
 .ls-flats-mini{display:flex;gap:10px;margin:0 0 18px}
 .ls-flats-mini img{height:150px;width:auto;object-fit:contain;border:1px solid var(--hair);background:var(--field)}
@@ -4845,7 +4845,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-picker-head strong{font-size:var(--t-title);flex:0 0 auto}
 .ls-picker-head .input{flex:1 1 auto}
 .ls-picker-list{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:2px}
-.ls-pick{display:flex;align-items:center;gap:12px;padding:8px 10px;background:none;border:none;
+.ls-pick{display:flex;align-items:center;gap:var(--sp-chip);padding:8px 10px;background:none;border:none;
   cursor:pointer;text-align:left;font-family:inherit;color:var(--ink)}
 .ls-pick:hover:not(:disabled){background:var(--chip)}
 .ls-pick.on{background:var(--chip)}
@@ -4856,7 +4856,7 @@ select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible{
 .ls-pick-no{font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 .ls-pick-mark{flex:0 0 auto;font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .ls-picker-empty{padding:20px;color:var(--faint);font-size:var(--t-body)}
-.ls-picker-foot{display:flex;justify-content:flex-end;gap:12px;padding:14px 20px;border-top:1px solid var(--hair)}
+.ls-picker-foot{display:flex;justify-content:flex-end;gap:var(--sp-chip);padding:14px 20px;border-top:1px solid var(--hair)}
 
 /* When a style opens the factories modal instead of linking, the opener is a
    button — strip the default chrome so it reads exactly like the link did. */
@@ -4867,11 +4867,11 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
 
 /* --- The factories + ratings modal --- */
 .ls-vmodal{width:min(440px,94vw);padding:0}
-.ls-vmodal-head{display:flex;align-items:baseline;gap:12px;padding:18px 20px;border-bottom:1px solid var(--hair)}
+.ls-vmodal-head{display:flex;align-items:baseline;gap:var(--sp-chip);padding:18px 20px;border-bottom:1px solid var(--hair)}
 .ls-vmodal-head strong{font-size:var(--t-title)}
 .ls-vmodal-sub{font-size:var(--t-micro);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
 .ls-vmodal-list{display:flex;flex-direction:column;padding:6px 8px;max-height:60vh;overflow-y:auto}
-.ls-version{display:flex;align-items:center;gap:12px;padding:10px 12px;text-decoration:none;color:var(--ink)}
+.ls-version{display:flex;align-items:center;gap:var(--sp-chip);padding:10px 12px;text-decoration:none;color:var(--ink)}
 .ls-version:hover{background:var(--chip)}
 .ls-version-fac{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;
   font-size:var(--t-body);font-weight:var(--w-mid);text-transform:uppercase;letter-spacing:.08em}
@@ -4882,7 +4882,7 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
 .ls-version-approved{font-size:var(--t-micro);letter-spacing:.1em;text-transform:uppercase;
   color:#8fbf9f;border:1px solid #8fbf9f;padding:1px 6px}
 .ls-version-go{color:var(--faint);flex:0 0 auto}
-.ls-vmodal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+.ls-vmodal-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-chip);
   padding:14px 20px;border-top:1px solid var(--hair)}
 .ls-vmodal-none{font-size:var(--t-meta);color:var(--faint)}
 
@@ -5100,8 +5100,8 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-group-n{color:#999}
   .mo-row{break-inside:avoid;border-color:#e6e6e6;padding:18px 0}
   /* The product header: bold name and ref inline, quantity (orders) pushed right. */
-  .mo-prod-head{display:flex;align-items:baseline;gap:12px}
-  .mo-prod-title{flex:1 1 auto;flex-direction:row;align-items:baseline;gap:12px;min-width:0}
+  .mo-prod-head{display:flex;align-items:baseline;gap:var(--sp-chip)}
+  .mo-prod-title{flex:1 1 auto;flex-direction:row;align-items:baseline;gap:var(--sp-chip);min-width:0}
   .mo-prod-name{font-size:15px;font-weight:700;color:#111;line-height:1.2}
   .mo-prod-ref{font-size:11px;color:#666;letter-spacing:.04em;white-space:nowrap}
   .mo-prod-qty{margin-left:auto;font-size:13px;font-weight:700;color:#111;white-space:nowrap}
@@ -5136,7 +5136,7 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
    parallel to `mat-` for materials and `mo-` for orders. Reuses .mat-form /
    .mat-field / .mat-label / .pg-filters / .modal-* / .mo-pick* wholesale — only
    the swatch chip, the index card and the approvals table are new shapes. --- */
-.cs-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.cs-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--sp-chip)}
 .cs-card{display:flex;align-items:center;gap:14px;padding:14px 16px;
   border:1px solid var(--hair);text-decoration:none;color:inherit}
 .cs-card:hover{border-color:var(--line)}
