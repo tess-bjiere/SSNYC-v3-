@@ -22,25 +22,35 @@ import { useEffect, useRef, useState } from "react";
 export function useWindowed<T>(items: T[], page = 48) {
   const [count, setCount] = useState(page);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const len = items.length;
 
-  // A fresh (filtered) list starts from the top again.
+  // Reset to the first page only when the RESULT-SET SIZE changes (a filter was
+  // applied) — NOT on every render. The callers pass a useMemo'd list, but its
+  // identity still changes whenever the component re-renders for another reason
+  // (e.g. the window itself growing), and depending on that identity pinned the
+  // window at the first page and stopped it growing. `len` is a stable
+  // primitive, and scrolling only changes `count`, so this never fires mid-scroll.
+  const prevLen = useRef(len);
   useEffect(() => {
-    setCount(page);
-  }, [items, page]);
+    if (prevLen.current !== len) {
+      prevLen.current = len;
+      setCount(page);
+    }
+  }, [len, page]);
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || count >= items.length) return;
+    if (!el || count >= len) return;
     const ob = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) setCount((c) => Math.min(c + page, items.length));
+        if (entries[0]?.isIntersecting) setCount((c) => Math.min(c + page, len));
       },
       { rootMargin: "800px 0px" }
     );
     ob.observe(el);
     return () => ob.disconnect();
-  }, [count, items.length, page]);
+  }, [count, len, page]);
 
-  const shown = count >= items.length ? items : items.slice(0, count);
-  return { shown, sentinelRef, hasMore: count < items.length };
+  const shown = count >= len ? items : items.slice(0, count);
+  return { shown, sentinelRef, hasMore: count < len };
 }
