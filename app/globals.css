@@ -4451,7 +4451,9 @@ textarea.input,textarea.select,.textarea{height:auto}
 
   /* The expanded filters and everything below drop back to full-width rows. */
   .lib-page .lib-filters{order:8;flex:1 1 100%;margin:0}
-  .lib-page .grid,.lib-page .empty{order:9;flex:1 1 100%}
+  /* Materials groups its grid inside <section class="mat-group">, so it needs the
+     same order as a bare .grid or it floats above the header on a phone. */
+  .lib-page .grid,.lib-page .empty,.lib-page .mat-group{order:9;flex:1 1 100%}
   .lib-page .lib-footer{order:10;flex:1 1 100%}
 }
 

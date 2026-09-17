@@ -186,6 +186,11 @@ export default function MaterialsClient({
   // Archived are hidden by default; the toggle shows the archived ones instead
   // (Tess, 2026-08-19: "archive a fabric or a trim or packaging item").
   const [showArchived, setShowArchived] = useState(false);
+  // The facet run folds behind one "Filter" button on a phone, exactly as the
+  // References library and Development do (Tess, 2026-09-16: "Materials
+  // facet-fold" — the design pass's header parity). Desktop shows the facets on
+  // their own row; the toggle is CSS-hidden there.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // Sort order (Tess, 2026-08-19: "add ability to sort by garment type or fabric
   // type"). Default keeps the newest-first order the page loads in. A sort other
   // than newest/name also groups the grid under labelled headers.
@@ -352,6 +357,24 @@ export default function MaterialsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ofKind, q, supplier, sourcingF, showArchived, productF, typeF, typeOf, stdF, standards]
   );
+
+  // How many facets are narrowing the grid — the number on the "Filter (N)"
+  // button and the Clear beside them. Search sits on the bar in the open, so it
+  // is not counted here; Archived is a mode link, not a facet, so it is not
+  // either.
+  const activeFilters =
+    (supplier ? 1 : 0) +
+    (sourcingF ? 1 : 0) +
+    (typeF.length ? 1 : 0) +
+    (productF.length ? 1 : 0) +
+    (stdF.length ? 1 : 0);
+  function clearFilters() {
+    setSupplier("");
+    setSourcingF("");
+    setTypeF([]);
+    setProductF([]);
+    setStdF([]);
+  }
 
   // The sorted, grouped result. Newest and Name are flat (one unlabelled group);
   // the type sorts divide the swatches under headers (Tess, 2026-08-19: "the
@@ -574,48 +597,24 @@ export default function MaterialsClient({
       <div className="page-head">
         <h1 className="page-title display">Materials</h1>
         <div className="spacer" />
-        {/* Grid ⇄ list (Tess, 2026-08-19: "add list view"). */}
-        <div className="mat-viewtoggle" role="group" aria-label="View">
-          <button
-            type="button"
-            className={"mat-vt" + (view === "grid" ? " on" : "")}
-            aria-pressed={view === "grid"}
-            title="Grid"
-            onClick={() => setView("grid")}
-          >
-            ▦
-          </button>
-          <button
-            type="button"
-            className={"mat-vt" + (view === "list" ? " on" : "")}
-            aria-pressed={view === "list"}
-            title="List"
-            onClick={() => setView("list")}
-          >
-            ☰
-          </button>
-        </div>
-        {/* Grid density — the same S/M/L control the other grids have (design pass
-            2026-09-15). Only meaningful in grid view. */}
-        {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
-        {canOrder && canEdit && selecting && (
-          <button type="button" className="btn ghost" onClick={leaveSelect}>
-            Cancel
-          </button>
-        )}
-        {canOrder && canEdit && !selecting && (
-          <button type="button" className="btn ghost" onClick={() => setSelecting(true)}>
-            {/* Select mode now feeds an order OR a quote (Tess, 2026-08-26). Sized
-                to match the +Add button beside it, not one step smaller. */}
-            Select
-          </button>
-        )}
+        {/* Slim title bar — just the name and the primary Add, like every other
+            library head (Tess, 2026-09-16 header parity). The view / density /
+            select cluster moved down into the control bar, and the facet run
+            folds behind Filter, so the head no longer carries a row of tools. */}
         {canEdit && !selecting && (
-          <button type="button" className="btn" onClick={() => setAdding(true)}>
+          <button type="button" className="btn lib-add-desk" onClick={() => setAdding(true)}>
             + Add {kindLabel(kind).toLowerCase()}
           </button>
         )}
       </div>
+
+      {/* The phone's full-width Add — the desk one in the head hides below the
+          drawer breakpoint and this takes over (shared lib-page pattern). */}
+      {canEdit && !selecting && (
+        <button type="button" className="btn lib-add-mobile" onClick={() => setAdding(true)}>
+          + Add {kindLabel(kind).toLowerCase()}
+        </button>
+      )}
 
       {/* Fabric / Trim / Packaging — three libraries in one, switched by kind
           (Tess, 2026-08-19). These are tabs (they change what the page shows), so
@@ -642,22 +641,81 @@ export default function MaterialsClient({
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <Select
-          className="select sm lib-sort"
-          aria-label="Sort"
-          value={sort}
-          onChange={setSort}
-          options={[
-            { value: "newest", label: "Newest" },
-            { value: "name", label: "Name A–Z" },
-            // Garment type is only meaningful once products carry types.
-            ...(typeOptions.length > 0 ? [{ value: "garment", label: "Garment type" }] : []),
-            { value: "type", label: `${kindLabel(kind)} type` },
-          ]}
-        />
-        {suppliers.length > 0 && (
+        {/* View / density / select / sort ride at the right of the control bar
+            (search takes the slack) — the same lib-head-tools group the
+            References head uses. On a phone it becomes its own full-width row
+            with Sort pushed to the edge. */}
+        <div className="lib-head-tools">
+          {/* Grid ⇄ list (Tess, 2026-08-19: "add list view"). */}
+          <div className="mat-viewtoggle" role="group" aria-label="View">
+            <button
+              type="button"
+              className={"mat-vt" + (view === "grid" ? " on" : "")}
+              aria-pressed={view === "grid"}
+              title="Grid"
+              onClick={() => setView("grid")}
+            >
+              ▦
+            </button>
+            <button
+              type="button"
+              className={"mat-vt" + (view === "list" ? " on" : "")}
+              aria-pressed={view === "list"}
+              title="List"
+              onClick={() => setView("list")}
+            >
+              ☰
+            </button>
+          </div>
+          {/* Grid density — the same S/M/L control the other grids have (design
+              pass 2026-09-15). Only meaningful in grid view. */}
+          {view === "grid" && <SizeToggle value={size} onChange={setSize} />}
+          {/* Bulk-select feeds an order OR a quote (Tess, 2026-08-26). A desktop
+              action, so it hides on the phone with lib-add-desk (References does
+              the same with its Select). */}
+          {canOrder && canEdit && selecting && (
+            <button type="button" className="btn ghost lib-add-desk" onClick={leaveSelect}>
+              Cancel
+            </button>
+          )}
+          {canOrder && canEdit && !selecting && (
+            <button type="button" className="btn ghost lib-add-desk" onClick={() => setSelecting(true)}>
+              Select
+            </button>
+          )}
           <Select
             className="select sm lib-sort"
+            aria-label="Sort"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { value: "newest", label: "Newest" },
+              { value: "name", label: "Name A–Z" },
+              // Garment type is only meaningful once products carry types.
+              ...(typeOptions.length > 0 ? [{ value: "garment", label: "Garment type" }] : []),
+              { value: "type", label: `${kindLabel(kind)} type` },
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* On a phone the facet run folds behind this one button so the default is
+          search + grid, not a wall of selects (shared lib-page pattern, matching
+          References and Development). Hidden on desktop, where .lib-filters shows
+          them inline on their own row. */}
+      <button
+        type="button"
+        className={"btn ghost sm lib-filter-toggle" + (filtersOpen ? " on" : "")}
+        aria-expanded={filtersOpen}
+        onClick={() => setFiltersOpen((o) => !o)}
+      >
+        Filter{activeFilters > 0 ? ` (${activeFilters})` : ""}
+      </button>
+
+      <div className={"lib-filters" + (filtersOpen ? " open" : "")}>
+        {suppliers.length > 0 && (
+          <Select
+            className="select"
             aria-label="Supplier"
             value={supplier}
             onChange={setSupplier}
@@ -665,7 +723,7 @@ export default function MaterialsClient({
           />
         )}
         <Select
-          className="select sm lib-sort"
+          className="select"
           aria-label="Custom or stock"
           value={sourcingF}
           onChange={(v) => setSourcingF(v as Sourcing | "")}
@@ -677,7 +735,7 @@ export default function MaterialsClient({
         />
         {typeOptions.length > 0 && (
           <MultiSelect
-            className="select sm lib-sort"
+            className="select"
             aria-label="Garment type"
             placeholder="All garment types"
             allLabel="types"
@@ -688,7 +746,7 @@ export default function MaterialsClient({
         )}
         {productOptions.length > 0 && (
           <MultiSelect
-            className="select sm lib-sort"
+            className="select"
             aria-label="Product"
             placeholder="All products"
             allLabel="products"
@@ -702,7 +760,7 @@ export default function MaterialsClient({
             is skipped there: no dangling label, no empty dropdown. */}
         {standards.length > 0 && (
           <MultiSelect
-            className="select sm lib-sort"
+            className="select"
             aria-label="Standard"
             placeholder="All standards"
             allLabel="standards"
@@ -711,9 +769,9 @@ export default function MaterialsClient({
             options={standardOptions}
           />
         )}
-        {/* Archived is a quiet text link off to the side, not a filter chip in
-            the row (Tess, 2026-08-20: "archived can be a smaller text link that's
-            not in the main menu"). */}
+        {/* Archived is a quiet text link off to the side (Tess, 2026-08-20:
+            "archived can be a smaller text link that's not in the main menu") —
+            it is a mode, not a narrowing, so it is not in the facet count. */}
         <button
           type="button"
           className={"btn link sm mat-archived-link" + (showArchived ? " on" : "")}
@@ -722,6 +780,11 @@ export default function MaterialsClient({
         >
           {showArchived ? "← Current materials" : "Archived"}
         </button>
+        {activeFilters > 0 && (
+          <button type="button" className="btn link" onClick={clearFilters}>
+            Clear ({activeFilters})
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
