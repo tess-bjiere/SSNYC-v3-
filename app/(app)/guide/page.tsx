@@ -12,6 +12,12 @@ import { getSessionUser } from "@/lib/access";
 //
 // A page, not a modal: it reads on a phone, and the footer's "How to use" link
 // can be shared like any other.
+//
+// Tess, 2026-09-19: "refresh the instructions on the ssync how to use section
+// based on the latest updates." Added the things that landed since: favourites
+// (star + the ★ tab), merging duplicates, the Campaign Editorial / Lo-fi / BTS /
+// Styling split, a board's seasonal colour palette, Build a deck, and Select /
+// the Filter fold under "Everywhere". Kept the one-line-per-thing shape.
 
 export const dynamic = "force-dynamic";
 
@@ -32,14 +38,19 @@ export default async function GuidePage() {
       <ul>
         <li>
           <b>References</b> — the reference archive. Add an image, tag it, and
-          find it later by search.
+          find it by search or the filters. <b>Star</b> the ones you love — the
+          &#9733; Favorites tab shows just those — and merge duplicates into one.
         </li>
         <li>
-          <b>Moodboard</b> — pull references together onto boards.
+          <b>Moodboard</b> — pull references onto boards, arranged into sections.
+          Give a board the season&rsquo;s <b>colour palette</b>: edit a colour
+          once and it changes everywhere that palette appears.
         </li>
         <li>
-          <b>Campaign</b> — campaign and editorial inspiration (photographer,
-          model, location).
+          <b>Campaign</b> — campaign and editorial inspiration, split into{" "}
+          <b>Editorial</b>, <b>Lo-fi / BTS</b> and <b>Styling</b>. Cards lead
+          with the photographer / DP; star, filter and merge the same as
+          References.
         </li>
       </ul>
 
@@ -48,7 +59,8 @@ export default async function GuidePage() {
           <h2>Product — making the styles</h2>
           <ul>
             <li>
-              <b>Style Development</b> — styles in progress.
+              <b>Style Development</b> — styles in progress. <b>Build a deck</b>{" "}
+              to gather a few into a fitting review.
             </li>
             <li>
               <b>Styles by Factory</b> — the same work, grouped by who is making
@@ -141,8 +153,15 @@ export default async function GuidePage() {
 
       <h2>Everywhere</h2>
       <ul>
-        <li>Search, filter and sort sit at the top of each page.</li>
+        <li>
+          Search, filter and sort sit at the top of each page; on a phone the
+          filters fold behind <b>Filter</b>.
+        </li>
         <li>The column icons resize the grid — more or fewer per row.</li>
+        <li>
+          <b>Select</b> turns a grid into a picker — edit, merge, delete or send
+          several at once.
+        </li>
         <li>
           Nothing is ever deleted. Trash holds it, and Restore brings it back.
         </li>
