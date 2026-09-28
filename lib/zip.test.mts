@@ -7,7 +7,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readZip, zipText } from "./zip.ts";
+import { readZip, zipText, writeZip, crc32 } from "./zip.ts";
 
 type Part = { name: string; body: string; method?: number };
 
@@ -101,4 +101,36 @@ test("readZip skips directory entries", () => {
 test("byte helpers stay little-endian", () => {
   assert.deepEqual(u16(0x0201), bytes(0x01, 0x02));
   assert.deepEqual(u32(0x04030201), bytes(0x01, 0x02, 0x03, 0x04));
+});
+
+// --- Writer (Tess, 2026-09-28: the reference-image export) -----------------
+
+test("crc32 matches the standard test vector", () => {
+  assert.equal(crc32(enc.encode("")), 0);
+  // "123456789" -> 0xCBF43926 is the canonical CRC-32/ISO-HDLC check value.
+  assert.equal(crc32(enc.encode("123456789")), 0xcbf43926);
+});
+
+test("writeZip produces an archive readZip reads back unchanged", () => {
+  // Binary bytes, not just text, since the real payload is JPEG/PNG.
+  const files = [
+    { name: "free-city_2020s_tank.jpg", bytes: new Uint8Array([0xff, 0xd8, 0xff, 0x00, 0x10, 0x20]) },
+    { name: "the-row_2020s.png", bytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47]) },
+    { name: "reference.jpg", bytes: new Uint8Array([]) }, // an empty entry must survive
+  ];
+  const archive = writeZip(files);
+  // method is 0 (stored) throughout, so inflate must never be called.
+  const never = () => {
+    throw new Error("stored zip must not inflate");
+  };
+  const read = readZip(archive, never);
+  assert.deepEqual([...read.keys()], files.map((f) => f.name));
+  for (const f of files) assert.deepEqual([...(read.get(f.name) ?? [])], [...f.bytes]);
+});
+
+test("writeZip of nothing is a valid empty archive", () => {
+  const read = readZip(writeZip([]), () => {
+    throw new Error("no entries");
+  });
+  assert.equal(read.size, 0);
 });

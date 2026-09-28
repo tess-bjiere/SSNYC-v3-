@@ -108,3 +108,115 @@ export function zipText(entries: Map<string, Uint8Array>, name: string): string 
   const e = entries.get(name);
   return e ? utf8.decode(e) : "";
 }
+
+// ---------------------------------------------------------------------------
+// Writing a zip (Tess, 2026-09-28: "how do i export a folder of all the images
+// in the reference library?" → build a "Download images" button).
+//
+// STORE only, never deflate. The reference images are already-compressed JPEG
+// and PNG, so deflating them would burn CPU for essentially no size win — and,
+// just as important, store keeps this module dependency-free (mirrors readZip,
+// which asks the caller for inflate). The browser fetches each image and this
+// stitches them into one .zip entirely client-side; nothing is buffered or
+// zipped on the server.
+//
+// Standard zip, not zip64: a full-library export is tens of megabytes, well
+// under the 4GB point where 32-bit sizes/offsets would overflow.
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+/** CRC-32 (IEEE) of a byte string — every zip entry carries one. */
+export function crc32(bytes: Uint8Array): number {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = (CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8)) >>> 0;
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+const utf8enc = new TextEncoder();
+
+/** Build an uncompressed (stored) zip from named byte blobs, in order. */
+export function writeZip(files: { name: string; bytes: Uint8Array }[]): Uint8Array {
+  const parts: Uint8Array[] = [];
+  const central: Uint8Array[] = [];
+  let offset = 0;
+
+  for (const f of files) {
+    const nameBytes = utf8enc.encode(f.name);
+    const crc = crc32(f.bytes);
+    const size = f.bytes.length;
+
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, LOCAL_SIG, true);
+    lv.setUint16(4, 20, true); // version needed to extract
+    lv.setUint16(6, 0, true); // flags
+    lv.setUint16(8, 0, true); // method 0 = stored
+    lv.setUint16(10, 0, true); // mod time
+    lv.setUint16(12, 0x21, true); // mod date = 1980-01-01
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true); // compressed size (== stored size)
+    lv.setUint32(22, size, true); // uncompressed size
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true); // extra length
+    local.set(nameBytes, 30);
+    parts.push(local, f.bytes);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, CD_SIG, true);
+    cv.setUint16(4, 20, true); // version made by
+    cv.setUint16(6, 20, true); // version needed
+    cv.setUint16(8, 0, true); // flags
+    cv.setUint16(10, 0, true); // method
+    cv.setUint16(12, 0, true); // mod time
+    cv.setUint16(14, 0x21, true); // mod date
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true); // extra length
+    cv.setUint16(32, 0, true); // comment length
+    cv.setUint16(34, 0, true); // disk number start
+    cv.setUint16(36, 0, true); // internal attrs
+    cv.setUint32(38, 0, true); // external attrs
+    cv.setUint32(42, offset, true); // local header offset
+    cd.set(nameBytes, 46);
+    central.push(cd);
+
+    offset += local.length + size;
+  }
+
+  const centralStart = offset;
+  let centralSize = 0;
+  for (const c of central) centralSize += c.length;
+
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, EOCD_SIG, true);
+  ev.setUint16(4, 0, true); // this disk
+  ev.setUint16(6, 0, true); // disk with central dir
+  ev.setUint16(8, files.length, true); // entries on this disk
+  ev.setUint16(10, files.length, true); // total entries
+  ev.setUint32(12, centralSize, true);
+  ev.setUint32(16, centralStart, true);
+  ev.setUint16(20, 0, true); // comment length
+
+  const all = [...parts, ...central, eocd];
+  let total = 0;
+  for (const a of all) total += a.length;
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const a of all) {
+    out.set(a, p);
+    p += a.length;
+  }
+  return out;
+}
