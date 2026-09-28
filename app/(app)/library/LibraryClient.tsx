@@ -5,9 +5,8 @@ import { useWindowed } from "@/app/components/useWindowed";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { refThumb, refImage, extraImageUrls, type Reference } from "@/lib/types";
-import { writeZip } from "@/lib/zip";
-import { refImageName, extFromUrl } from "@/lib/imageExport";
+import { refThumb, extraImageUrls, type Reference } from "@/lib/types";
+import { useImageExport } from "@/app/components/useImageExport";
 import { addRefsToBoard } from "@/app/actions/moodboards";
 import {
   softDeleteReference,
@@ -97,10 +96,6 @@ export default function LibraryClient({
   const [merging, setMerging] = useState(false);
   const [mergeBusy, setMergeBusy] = useState(false);
   const [bulkArm, setBulkArm] = useState(false);
-  // Download a set of references' full images as one zip (Tess, 2026-09-28: "how
-  // do i export a folder of all the images in the reference library?"). Non-null
-  // while a download is being assembled, carrying progress for the button.
-  const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -109,68 +104,8 @@ export default function LibraryClient({
     setTimeout(() => setToast(null), 1800);
   }
 
-  // Fetch the full images for `refs` and hand back one .zip. Everything happens
-  // in the browser: the images are public (CORS-open) so fetch() can read their
-  // bytes, lib/zip.writeZip stitches them (stored, no re-compression — they are
-  // already JPEG/PNG and we want the print-quality originals untouched), and an
-  // <a download> saves the file. Fetched a few at a time so a full-library pull
-  // is not a one-at-a-time crawl; named in list order for a stable folder.
-  async function exportImages(refs: Reference[]) {
-    if (exporting) return;
-    const targets = refs.filter((r) => refImage(r));
-    if (targets.length === 0) {
-      flashToast("No images to download.");
-      return;
-    }
-    setExporting({ done: 0, total: targets.length });
-    const fetched: { idx: number; url: string; bytes: Uint8Array }[] = [];
-    let failed = 0;
-    let next = 0;
-    const worker = async () => {
-      for (;;) {
-        const i = next++;
-        if (i >= targets.length) return;
-        const url = refImage(targets[i]);
-        try {
-          const res = await fetch(url, { cache: "force-cache" });
-          if (!res.ok) throw new Error(String(res.status));
-          fetched.push({ idx: i, url, bytes: new Uint8Array(await res.arrayBuffer()) });
-        } catch {
-          failed++;
-        }
-        setExporting((e) => (e ? { ...e, done: e.done + 1 } : e));
-      }
-    };
-    try {
-      await Promise.all(Array.from({ length: Math.min(6, targets.length) }, worker));
-      fetched.sort((a, b) => a.idx - b.idx);
-      const taken = new Set<string>();
-      const files = fetched.map((f) => ({
-        name: refImageName(targets[f.idx], extFromUrl(f.url), taken),
-        bytes: f.bytes,
-      }));
-      if (files.length === 0) {
-        flashToast("Couldn’t download any images — check your connection.");
-        return;
-      }
-      // .buffer (not the view) so TS is happy it's a plain ArrayBuffer BlobPart;
-      // writeZip returns a fresh zero-offset array, so the buffer is exactly it.
-      const blob = new Blob([writeZip(files).buffer as ArrayBuffer], { type: "application/zip" });
-      const href = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = href;
-      a.download = `SSYNC-references-${new Date().toISOString().slice(0, 10)}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(href), 15000);
-      flashToast(
-        failed ? `Downloaded ${files.length} — ${failed} couldn’t be fetched.` : `Downloaded ${files.length} images.`
-      );
-    } finally {
-      setExporting(null);
-    }
-  }
+  // Download images as a zip (Tess, 2026-09-28). Shared with Campaign.
+  const { exporting, exportImages } = useImageExport(flashToast, "SSYNC-references");
 
   // Deep link: /library?ref=<id> opens that reference's card straight away.
   //

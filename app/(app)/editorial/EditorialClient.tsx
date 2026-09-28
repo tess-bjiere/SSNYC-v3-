@@ -20,6 +20,7 @@ import DetailModal from "../library/DetailModal";
 import BulkEditModal, { type BulkField } from "../library/BulkEditModal";
 import MergeModal from "../library/MergeModal";
 import SizeToggle from "@/app/components/SizeToggle";
+import { useImageExport } from "@/app/components/useImageExport";
 
 // Editorial images are credited, not specced: who shot it, who is in it, where.
 // The filters follow the original tool — designer, year, model — and the search
@@ -125,6 +126,9 @@ export default function EditorialClient({
     setToast(m);
     setTimeout(() => setToast(null), 1800);
   }
+
+  // Download campaign images as a zip (Tess, 2026-09-28). Same as References.
+  const { exporting, exportImages } = useImageExport(flashToast, "SSYNC-campaign");
 
   function addToBoard(boardId: string, label: string, ref: Reference, sectionTid?: string | null) {
     start(() => addRefsToBoard(boardId, [ref.id], sectionTid ?? null));
@@ -351,6 +355,18 @@ export default function EditorialClient({
         {/* Control-bar tools, right-aligned, one fixed order for every grid page:
             Select, grid size, View, then Sort (design pass 2026-09-15). */}
         <div className="lib-head-tools">
+          {/* Download the campaign images you're looking at — all, or the current
+              filter — as one zip of full-res originals (Tess, 2026-09-28). While
+              selecting, the same action for the ticked cards is in the bulk bar. */}
+          <button
+            type="button"
+            className="btn ghost sm"
+            disabled={!!exporting || list.length === 0}
+            onClick={() => exportImages(list)}
+            title="Download the shown images as a zip of full-res originals"
+          >
+            {exporting ? `Zipping ${exporting.done}/${exporting.total}…` : "Download"}
+          </button>
           <button
             type="button"
             className={"btn ghost sm lib-add-desk" + (selecting ? " on" : "")}
@@ -533,6 +549,15 @@ export default function EditorialClient({
             {allShownSelected ? "Clear all" : "Select all"}
           </button>
           <div className="spacer" />
+          <button
+            type="button"
+            className="btn ghost sm"
+            disabled={selected.size === 0 || !!exporting}
+            onClick={() => exportImages(refs.filter((r) => selected.has(r.id)))}
+            title="Download the selected images as a zip of full-res originals"
+          >
+            {exporting ? `Zipping ${exporting.done}/${exporting.total}…` : "Download"}
+          </button>
           <button
             type="button"
             className="btn ghost sm"
