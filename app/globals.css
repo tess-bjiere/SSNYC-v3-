@@ -1434,7 +1434,7 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
    S/M/L keeps working; the 260px floor keeps a one-image look's notes readable.
    The untitled "loose" tray (images not yet sorted into a look) stays full width
    and breaks the row, so the unsorted pile reads as one band. */
-.mb-sec-flow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:34px 28px}
+.mb-sec-flow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:46px 44px}
 .mb-sec-flow > .mb-sec{margin:0}
 .mb-sec.sized{flex:0 0 auto;width:min(100%, max(260px, calc(var(--cols,1) * var(--tw) + (var(--cols,1) - 1) * var(--sp-ctl))))}
 .mb-sec.loose{flex:1 0 100%;width:100%}
