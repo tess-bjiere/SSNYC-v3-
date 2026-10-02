@@ -36,20 +36,17 @@ export default function NotesDrawer({
   canDeleteAll?: boolean;
   readOnly?: boolean;
 }) {
-  // Starts closed, so a phone lands on the board rather than the notes covering
-  // it (Tess, 2026-08-11: "notes drawer should always be closed when you click
-  // into a page on mobile"). Desktop, where the drawer sits beside the content
-  // rather than over it, opens it on mount. Server + first client render both
-  // render closed, so there is no hydration mismatch.
+  // Always starts closed, on desktop as well as a phone — the board is what you
+  // came to see, so the notes wait behind their tab until you ask for them (Tess,
+  // 2026-10-01: "have notes hidden when you click into moodboard"; the same was
+  // already true on mobile, 2026-08-11). Desktop used to open the drawer on
+  // mount; that auto-open is gone. The ‹ Notes tab (with the count) opens it, and
+  // server + first client render both render it closed, so no hydration mismatch.
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   // Which note's Delete is armed. The two-click pattern stands in for a confirm()
   // dialog, which is banned here (it freezes the browser automation).
   const [armed, setArmed] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (window.matchMedia("(min-width: 901px)").matches) setOpen(true);
-  }, []);
 
   // Push the page content aside while the drawer is open (instead of covering it).
   useEffect(() => {
