@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import EditableDivider from "./EditableDivider";
 import { reorderImages, removeImageFromBoard } from "@/app/actions/moodboards";
@@ -136,10 +136,16 @@ export default function Board({
 
   return (
     <>
+      {/* Looks flow left-to-right and each sizes to its own images, so one
+          item/look no longer eats a whole row (Tess, 2026-10-01). A titled group
+          is "sized" (width follows its --cols = image count); the untitled tray
+          is "loose" and stays full width. See .mb-sec-flow in globals.css. */}
+      <div className="mb-sec-flow">
       {sections.map((s, si) => (
         <div
-          className="mb-sec"
+          className={"mb-sec " + (s.tid ? "sized" : "loose")}
           key={s.tid || si}
+          style={s.tid ? ({ "--cols": Math.max(s.images.length, 1) } as React.CSSProperties) : undefined}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -154,17 +160,17 @@ export default function Board({
                   className="mb-sec-arrow"
                   onClick={() => moveSection(si, -1)}
                   disabled={si === 0 || !sections[si - 1]?.tid}
-                  title="Move section up"
+                  title="Move look earlier"
                 >
-                  ↑
+                  ←
                 </button>
                 <button
                   className="mb-sec-arrow"
                   onClick={() => moveSection(si, 1)}
                   disabled={si === sections.length - 1 || !sections[si + 1]?.tid}
-                  title="Move section down"
+                  title="Move look later"
                 >
-                  ↓
+                  →
                 </button>
               </div>
             )}
@@ -267,6 +273,7 @@ export default function Board({
           )}
         </div>
       ))}
+      </div>
 
       {/* Board notes: general ones, plus any note that predates per-group notes
           or whose group was deleted — so nothing is ever lost (Tess, 2026-10-01). */}

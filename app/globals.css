@@ -1424,6 +1424,21 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 
 /* Moodboard sections (matches the original: header + rule, clean image rows) */
 .mb-sec{margin:30px 0}
+
+/* An item/look no longer owns a whole row (Tess, 2026-10-01: "can we make it so
+   one item / look doesnt have to take up a whole row?"). The titled groups flow
+   left-to-right and each sizes to its own images, so small looks pack beside one
+   another and a big look takes more of the row, wrapping its images only when it
+   runs out of width. `--cols` (set per section in Board.tsx = its image count,
+   min 1) drives the width off the same --tw/--sp-ctl the tiles already use, so
+   S/M/L keeps working; the 260px floor keeps a one-image look's notes readable.
+   The untitled "loose" tray (images not yet sorted into a look) stays full width
+   and breaks the row, so the unsorted pile reads as one band. */
+.mb-sec-flow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:34px 28px}
+.mb-sec-flow > .mb-sec{margin:0}
+.mb-sec.sized{flex:0 0 auto;width:min(100%, max(260px, calc(var(--cols,1) * var(--tw) + (var(--cols,1) - 1) * var(--sp-ctl))))}
+.mb-sec.loose{flex:1 0 100%;width:100%}
+.mb-sec.sized .mb-notes{max-width:none;width:100%}
 .mb-sec-head{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.16em;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px;min-height:14px}
 .mb-sec-editable{cursor:pointer;display:flex;align-items:baseline;gap:10px}
 .mb-sec-editable:hover{color:var(--ink)}
@@ -4371,6 +4386,13 @@ textarea.input,textarea.select,.textarea{height:auto}
   .grid.dens-sm{grid-template-columns:repeat(4,minmax(0,1fr))}
   .grid.dens-md{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid.dens-lg{grid-template-columns:minmax(0,1fr)}
+
+  /* Side-by-side looks are too cramped on a phone — stack them one per row and
+     let each fill the width, same as before the flow layout (Tess, 2026-10-01). */
+  .mb-sec-flow{display:block}
+  .mb-sec-flow > .mb-sec{margin:30px 0}
+  .mb-sec.sized{width:auto}
+  .mb-sec.sized .mb-notes{max-width:620px}
 
   .mb-row{display:grid;gap:10px}
   body.tiles-sm .mb-row{grid-template-columns:repeat(4,minmax(0,1fr))}
