@@ -39,6 +39,16 @@ export type AppConfig = {
    * deployment the real list comes from the DB and this is never seen.
    */
   defaultBrand: { slug: string; name: string };
+  /**
+   * Ideation-only deploy: show just References, Moodboard and Campaign — no
+   * Product, no Sourcing (Tess, 2026-10-01: "hide product and sourcing
+   * functionality. Only show references, moodboard and campaign"). The Loyalist
+   * deploy carries only the SOUS SOUS and Renggli accounts, which use the tool
+   * for ideation; development, factories, materials etc. are theirs to run
+   * elsewhere. FRED is a full deploy, so this is false there. Nav hides the two
+   * groups and the middleware sends their routes back to the library.
+   */
+  ideationOnly: boolean;
 };
 
 const APPS: Record<AppId, AppConfig> = {
@@ -49,6 +59,7 @@ const APPS: Record<AppId, AppConfig> = {
     orgDomain: "theloyalist.com",
     company: "The Loyalist",
     defaultBrand: { slug: "sous-sous", name: "SOUS SOUS" },
+    ideationOnly: true,
   },
   fred: {
     id: "fred",
@@ -61,6 +72,7 @@ const APPS: Record<AppId, AppConfig> = {
     orgDomain: "fredathome.com",
     company: "FRED",
     defaultBrand: { slug: "fred", name: "FRED" },
+    ideationOnly: false,
   },
 };
 

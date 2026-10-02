@@ -18,6 +18,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { refImage, refThumb, extraImageUrls, type Reference } from "@/lib/types";
+import { APP } from "@/lib/appConfig";
 import { CAMPAIGN_KINDS, normalizeCampaignKind } from "@/lib/campaign";
 import Lightbox from "@/app/components/Lightbox";
 import ImageCropper, { type CropRect } from "@/app/components/ImageCropper";
@@ -257,7 +258,10 @@ export default function DetailModal({
   // A reference can be developed from the library and from a board — both are
   // places where you are looking at a product reference and deciding to make it.
   // Editorial credits and read-only views are not.
-  const canDevelop = actions === "library" || actions === "board";
+  // "Develop this" turns a reference into a style — a Product action, so it is
+  // hidden on an ideation-only deploy (Tess, 2026-10-01), the same place the nav
+  // drops Development and the middleware blocks /styles.
+  const canDevelop = (actions === "library" || actions === "board") && !APP.ideationOnly;
 
   const [links, setLinks] = useState<LinkedStyle[] | null>(null);
   const [devOpen, setDevOpen] = useState(false);

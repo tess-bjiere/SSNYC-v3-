@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP } from "@/lib/appConfig";
 
 // A quiet footer on every signed-in page (Tess, 2026-08-11: "add link in footer
 // to google doc where people can leave notes for feedback / functionality
@@ -36,9 +37,9 @@ export default function AppFooter({ isTeam = false }: { isTeam?: boolean }) {
         ·
       </span>
       {/* The short fit-photo/notes standard — product work, so team only (Tess,
-          2026-08-26: "a section in the footer that has best practice for fit
-          images and notes ... very simple and short"). */}
-      {isTeam && (
+          2026-08-26) and dropped entirely on an ideation-only deploy, which has
+          no fittings (Tess, 2026-10-01). */}
+      {isTeam && !APP.ideationOnly && (
         <>
           <Link href="/fit-tips" title="Best practice for fit photos and notes">
             Fit photos &amp; notes

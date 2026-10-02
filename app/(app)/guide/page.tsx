@@ -1,4 +1,5 @@
 import { getSessionUser } from "@/lib/access";
+import { APP } from "@/lib/appConfig";
 
 // How to use — the new tool's guide (Tess, 2026-08-12: "in the original ssync we
 // had a guide on how to use. let's do an updated guide for the new tool. keep it
@@ -23,7 +24,10 @@ export const dynamic = "force-dynamic";
 
 export default async function GuidePage() {
   const user = await getSessionUser();
-  const isTeam = user?.role === "team";
+  // Show the Product & Sourcing half only where it exists: a team member on a
+  // full deploy. An ideation-only deploy (Tess, 2026-10-01) describes just the
+  // Ideation sections, the same ones its nav shows.
+  const isTeam = user?.role === "team" && !APP.ideationOnly;
 
   return (
     <div className="guide">

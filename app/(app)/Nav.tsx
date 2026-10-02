@@ -162,7 +162,12 @@ export default function Nav({
   // 2026-08-24: "add the orders tab to sourcing on the sous sous and renggli
   // versions").
   const FRED_ONLY = new Set(["/photographers", "/color-standards"]);
-  const groups = (isTeam ? GROUPS : GROUPS.filter((g) => g.label === "Ideation"))
+  // Ideation-only deploy (the Loyalist's SOUS SOUS / Renggli accounts) sees just
+  // Ideation — References, Moodboard, Campaign — no Product, no Sourcing (Tess,
+  // 2026-10-01: "hide product and sourcing functionality"). A talent is already
+  // pinned to Ideation; this pins the team too on such a deploy.
+  const ideationOnly = APP.ideationOnly || !isTeam;
+  const groups = (ideationOnly ? GROUPS.filter((g) => g.label === "Ideation") : GROUPS)
     .map((g) => ({
       ...g,
       links: g.links.filter((l) => {
@@ -176,7 +181,9 @@ export default function Nav({
     // A group left with no links (all of them FRED-only on SSYNC) drops entirely
     // rather than rendering an empty menu.
     .filter((g) => g.links.length > 0);
-  const home = isTeam ? "/development" : "/library";
+  // The wordmark goes to the product home for a full deploy, otherwise to the
+  // References library — never to a page this deploy has hidden.
+  const home = isTeam && !APP.ideationOnly ? "/development" : "/library";
 
   // Which group's links are showing inline on the team bar. It behaves like a row
   // of tabs (Tess, 2026-08-19: "the inline options should stay open until you
