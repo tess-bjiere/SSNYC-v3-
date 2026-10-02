@@ -1539,12 +1539,41 @@ body.nav-open .notes-tab{display:none}
 
 /* Per-group and board-level notes shown inline on a board (Tess, 2026-10-01:
    "moodboard can be organized by item or look -- allowing multiple reference
-   images and notes"). The .note / .note-add look is shared with the share-view
-   drawer; here it sits in a reading-width column under the group rather than a
-   side panel, so a line of them doesn't stretch the whole board. */
+   images and notes"). These use their own .mbn-* classes, not the .note* ones
+   shared with the share-view drawer and the sample-round threads — a board shows
+   a note per look, often many looks, so the chrome is pared back (Tess,
+   2026-10-02: "a better idea for the notes section underneath each to make it
+   less clunky"). A note is a quiet "Name · text" line; the timestamp and the
+   Reply/Edit/Delete actions only appear on hover; and the composer collapses to
+   a faint "＋ Add note" link until clicked, so an empty look shows one line of
+   furniture instead of a textarea and a button. */
 .mb-notes{max-width:620px;margin:8px 0 2px}
-.mb-notes .note:first-child{padding-top:2px}
-.mb-notes .note-add{border-top:none;padding:8px 0 0}
+.mbn-note{padding:7px 0}
+.mbn-note + .mbn-note{border-top:1px solid var(--hair)}
+.mbn-line{font-size:var(--t-body);line-height:1.5}
+.mbn-by{font-weight:var(--w-title);color:var(--ink);letter-spacing:.01em}
+.mbn-by::after{content:" · ";color:var(--faint);font-weight:400}
+.mbn-text{color:var(--ink)}
+.mbn-replies{margin:6px 0 2px;padding-left:11px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.mbn-replies .mbn-line{font-size:var(--t-sm)}
+.mbn-replies .mbn-by{font-size:var(--t-meta)}
+/* Timestamp + actions: present but out of the way until you point at the note.
+   On touch there is no hover, so a coarse pointer gets them shown always. */
+.mbn-meta{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;margin-top:3px;opacity:0;transition:opacity .12s}
+.mbn-note:hover .mbn-meta,.mbn-note:focus-within .mbn-meta{opacity:1}
+@media(hover:none){.mbn-meta{opacity:1}}
+.mbn-when{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.1em}
+.mbn-act{font-size:var(--t-meta);color:var(--muted);cursor:pointer;background:none;border:none;padding:0;font-family:inherit}
+.mbn-act:hover{color:var(--ink)}
+.mbn-act.danger:hover,.mbn-act.danger.armed{color:var(--danger)}
+/* The collapsed composer, and the open one. */
+.mbn-add{display:inline-flex;align-items:center;gap:5px;font-size:var(--t-sm);color:var(--faint);cursor:pointer;background:none;border:none;padding:0;margin-top:9px;font-family:inherit;letter-spacing:.02em}
+.mbn-add:hover{color:var(--ink)}
+.mbn-add .pl{font-size:var(--t-body);line-height:1}
+.mbn-form{margin-top:9px;display:flex;flex-direction:column;gap:7px}
+.mbn-form .textarea{min-height:52px}
+.mbn-form-row{display:flex;gap:14px;align-items:center}
+.mbn-reply-form{margin-top:8px;display:flex;gap:8px;align-items:center}
 .mb-board-notes{max-width:620px;margin-top:34px;padding-top:6px;border-top:1px solid var(--line)}
 .mb-board-notes-h{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin:14px 0 2px}
 /* @-mention typeahead (Tess, 2026-08-28: "yes build @mentions"). The field is the
