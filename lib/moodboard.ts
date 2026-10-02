@@ -62,6 +62,15 @@ export type MBTextItem = {
   ts?: number;
   listOnly?: boolean;
   gi?: number;
+  /**
+   * The group (a divider's tid) this note is pinned to, so it shows under that
+   * item or look on the board (Tess, 2026-10-01: "moodboard can be organized by
+   * item or look -- allowing multiple reference images and notes"). Absent means
+   * a board-level note — which is every note written before this, and where a
+   * note whose group was later deleted falls back. Unlike `gi` it is not
+   * positional, so reordering the board never knocks a note off its group.
+   */
+  sectionTid?: string | null;
   replies?: MBReply[];
 };
 
@@ -310,4 +319,23 @@ export function toSections(items: MBItem[]): { sections: Section[]; notes: MBTex
   if (freshUnsectioned.length) cleaned.push({ label: null, images: freshUnsectioned });
 
   return { sections: cleaned, notes };
+}
+
+// Split a board's notes into the ones pinned to each group (by a divider's tid)
+// and the board-level rest (Tess, 2026-10-01: notes per item/look). A note whose
+// group no longer exists — its divider was deleted — falls back to board-level,
+// so a note is never lost when the group around it goes.
+export function splitNotesBySection(
+  notes: MBTextItem[],
+  sectionTids: string[]
+): { bySection: Record<string, MBTextItem[]>; boardLevel: MBTextItem[] } {
+  const known = new Set(sectionTids.filter(Boolean));
+  const bySection: Record<string, MBTextItem[]> = {};
+  const boardLevel: MBTextItem[] = [];
+  for (const n of notes) {
+    const tid = n.sectionTid;
+    if (tid && known.has(tid)) (bySection[tid] ||= []).push(n);
+    else boardLevel.push(n);
+  }
+  return { bySection, boardLevel };
 }

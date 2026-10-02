@@ -5,7 +5,9 @@ import Link from "next/link";
 import EditableDivider from "./EditableDivider";
 import { reorderImages, removeImageFromBoard } from "@/app/actions/moodboards";
 import DetailModal from "@/app/(app)/library/DetailModal";
+import NotesPanel from "./NotesPanel";
 import type { Reference } from "@/lib/types";
+import type { MBTextItem } from "@/lib/moodboard";
 
 // Every tile on a board renders at the same size — the board-wide S/M/L control
 // sets it. Image items still carry a per-image `w` in the database from the old
@@ -22,7 +24,24 @@ type Tile = {
 };
 type Sec = { tid?: string; label: string | null; images: Tile[] };
 
-export default function Board({ boardId, sections: initial }: { boardId: string; sections: Sec[] }) {
+export default function Board({
+  boardId,
+  sections: initial,
+  notesBySection,
+  boardNotes,
+  me,
+  canEditAll,
+  canDeleteAll = false,
+}: {
+  boardId: string;
+  sections: Sec[];
+  // Notes pinned to each group (by divider tid), and the board-level rest.
+  notesBySection: Record<string, MBTextItem[]>;
+  boardNotes: MBTextItem[];
+  me: string;
+  canEditAll: boolean;
+  canDeleteAll?: boolean;
+}) {
   const [sections, setSections] = useState<Sec[]>(initial);
   const [dragIid, setDragIid] = useState<string | null>(null);
   const [overIid, setOverIid] = useState<string | null>(null);
@@ -232,8 +251,37 @@ export default function Board({ boardId, sections: initial }: { boardId: string;
             ))}
             {s.images.length === 0 && <div className="mb-drop-hint">Drop images here</div>}
           </div>
+
+          {/* This group's notes, inline under its images — the item/look's own
+              running notes (Tess, 2026-10-01). Only a titled group (one with a
+              divider tid) carries them; loose images fall under Board notes. */}
+          {s.tid && (
+            <NotesPanel
+              boardId={boardId}
+              sectionTid={s.tid}
+              notes={notesBySection[s.tid] ?? []}
+              me={me}
+              canEditAll={canEditAll}
+              canDeleteAll={canDeleteAll}
+            />
+          )}
         </div>
       ))}
+
+      {/* Board notes: general ones, plus any note that predates per-group notes
+          or whose group was deleted — so nothing is ever lost (Tess, 2026-10-01). */}
+      <div className="mb-board-notes">
+        <div className="mb-board-notes-h">Board notes</div>
+        <NotesPanel
+          boardId={boardId}
+          sectionTid={null}
+          notes={boardNotes}
+          me={me}
+          canEditAll={canEditAll}
+          canDeleteAll={canDeleteAll}
+          placeholder="Add a note for the whole board…"
+        />
+      </div>
 
       {detail && (
         <DetailModal

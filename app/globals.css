@@ -1521,6 +1521,17 @@ body.nav-open .notes-tab{display:none}
 .note-reply-form{display:flex;gap:6px;margin-top:10px}
 .note-reply-form .input{padding:var(--ctl-y-sm) var(--ctl-x-sm);font-size:var(--t-body)}
 .note-add{border-top:1px solid var(--line);padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+
+/* Per-group and board-level notes shown inline on a board (Tess, 2026-10-01:
+   "moodboard can be organized by item or look -- allowing multiple reference
+   images and notes"). The .note / .note-add look is shared with the share-view
+   drawer; here it sits in a reading-width column under the group rather than a
+   side panel, so a line of them doesn't stretch the whole board. */
+.mb-notes{max-width:620px;margin:8px 0 2px}
+.mb-notes .note:first-child{padding-top:2px}
+.mb-notes .note-add{border-top:none;padding:8px 0 0}
+.mb-board-notes{max-width:620px;margin-top:34px;padding-top:6px;border-top:1px solid var(--line)}
+.mb-board-notes-h{font-size:var(--t-cap);font-weight:var(--w-cap);text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin:14px 0 2px}
 /* @-mention typeahead (Tess, 2026-08-28: "yes build @mentions"). The field is the
    app's own textarea/input; a menu of teammates drops under it while you type an
    "@token", and picking one splices "@name " in. */

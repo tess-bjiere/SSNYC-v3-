@@ -5,11 +5,10 @@ import { checkSuperAdmin } from "@/lib/brandsServer";
 import { activeBrand } from "@/lib/activeBrand";
 import { refThumb, type Reference } from "@/lib/types";
 import { styleCoverUrl } from "@/lib/styleCover";
-import { toSections, itemKind, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
+import { toSections, itemKind, splitNotesBySection, type MBItem, type MBImageItem, type MBTextItem, type Moodboard } from "@/lib/moodboard";
 import { normalizePaletteLibrary, normalizeBoardPalettes } from "@/lib/palette";
 import { resolveList, type ListsSetting } from "@/lib/lists";
 import AddRefs from "./AddRefs";
-import NotesDrawer from "./NotesDrawer";
 import Toolbar from "./Toolbar";
 import Board from "./Board";
 import ColorPalette from "./ColorPalette";
@@ -69,6 +68,12 @@ export default async function MoodboardPage({
   const notes = items.filter((i) => itemKind(i) === "text") as MBTextItem[];
   const { sections } = toSections(items);
   const shownImageCount = sections.reduce((n, s) => n + s.images.length, 0);
+  // Notes now live with their group (Tess, 2026-10-01). Split them by the titled
+  // sections they're pinned to; the rest are board-level.
+  const { bySection: notesBySection, boardLevel: boardNotes } = splitNotesBySection(
+    notes,
+    sections.map((s) => s.tid).filter(Boolean) as string[]
+  );
 
   const refIds = Array.from(new Set(imageItems.map((i) => i.ref_id).filter(Boolean)));
   let refMap: Record<string, Reference> = {};
@@ -198,6 +203,11 @@ export default async function MoodboardPage({
             <div id="mb-capture">
             <Board
               boardId={current.id}
+              notesBySection={notesBySection}
+              boardNotes={boardNotes}
+              me={me}
+              canEditAll={godMode}
+              canDeleteAll={godMode}
               sections={sections.map((s) => ({
                 tid: s.tid,
                 label: s.label,
@@ -241,7 +251,6 @@ export default async function MoodboardPage({
               .filter((s) => s.tid)
               .map((s) => ({ tid: s.tid as string, label: s.label || "Untitled section" }))}
           />
-          <NotesDrawer boardId={current.id} notes={notes} me={me} canEditAll={godMode} canDeleteAll={godMode} />
 
           {/* Archiving is a rare, end-of-life act, so it sits quietly at the
               foot of the page rather than in the toolbar (Tess, 2026-08-11:

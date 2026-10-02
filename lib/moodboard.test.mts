@@ -14,11 +14,31 @@ import {
   toSections,
   itemKind,
   imageKey,
+  splitNotesBySection,
   type MBItem,
   type MBImageItem,
   type MBDividerItem,
   type MBTextItem,
 } from "./moodboard.ts";
+
+function mkNote(tid: string, sectionTid?: string | null): MBTextItem {
+  return { kind: "text", tid, text: tid, x: 0, y: 0, z: 0, w: 0, sectionTid };
+}
+
+test("splitNotesBySection pins notes to their group, rest board-level", () => {
+  const notes = [mkNote("a", "s1"), mkNote("b"), mkNote("c", "s2"), mkNote("d", "s1")];
+  const { bySection, boardLevel } = splitNotesBySection(notes, ["s1", "s2"]);
+  assert.deepEqual(bySection["s1"]?.map((n) => n.tid), ["a", "d"]);
+  assert.deepEqual(bySection["s2"]?.map((n) => n.tid), ["c"]);
+  assert.deepEqual(boardLevel.map((n) => n.tid), ["b"]);
+});
+
+test("a note whose group is gone falls back to board-level, never lost", () => {
+  const notes = [mkNote("a", "deleted-section"), mkNote("b")];
+  const { bySection, boardLevel } = splitNotesBySection(notes, ["s1"]);
+  assert.deepEqual(Object.keys(bySection), []);
+  assert.deepEqual(boardLevel.map((n) => n.tid), ["a", "b"]);
+});
 
 let z = 0;
 const img = (iid: string, gi?: number): MBImageItem => ({

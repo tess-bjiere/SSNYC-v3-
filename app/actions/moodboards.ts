@@ -31,6 +31,10 @@ export async function createBoard(form: FormData) {
 export async function addNote(boardId: string, form: FormData) {
   const text = (form.get("text") as string)?.trim();
   if (!text) return;
+  // Which group the note belongs to, "" for a board-level note (Tess,
+  // 2026-10-01: notes per item/look). Sent as a hidden field by the per-group
+  // notes panel.
+  const sectionTid = ((form.get("sectionTid") as string) || "").trim() || null;
   const supabase = await createClient();
   const user = await requireUser();
 
@@ -53,6 +57,7 @@ export async function addNote(boardId: string, form: FormData) {
     by: user?.name || user?.email || "Someone",
     ts: Date.now(),
     listOnly: true,
+    sectionTid,
     replies: [],
   };
 
