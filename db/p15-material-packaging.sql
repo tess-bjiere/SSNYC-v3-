@@ -6,7 +6,7 @@
 -- bag / box / mailer / hangtag / …). Its dimensions and make-up reuse the shared
 -- `size` and `material` columns a trim already uses. Additive and nullable.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo), where the
+-- Already applied to the other deployment's database, where the
 -- materials library lives. Run this by hand in the Supabase SQL editor of the
 -- Loyalist project (axwavdjhzvtluvsixfjq) if materials are ever switched on
 -- there too.

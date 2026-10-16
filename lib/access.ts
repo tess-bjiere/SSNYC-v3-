@@ -22,8 +22,8 @@ import { APP } from "@/lib/appConfig";
 
 // The organization domain — anyone with a Google account on it is auto-approved;
 // guests outside it must be added to app_allowlist. It follows the deployment's
-// identity so FRED auto-approves FRED's domain and SSYNC the Loyalist's, from
-// one codebase (see lib/appConfig.ts).
+// identity so each deployment auto-approves its own domain — SSYNC the
+// Loyalist's (see lib/appConfig.ts).
 export const ORG_DOMAIN = APP.orgDomain;
 
 /**
@@ -175,11 +175,11 @@ export async function requireTeam(): Promise<SessionUser> {
   return user;
 }
 
-/** Team, and only on the FRED deployment.
+/** Team, and only with the product extras on (APP.productExtras).
  *
  * The fabric & trim library, the material orders built from it and the
- * photographer directory are FRED-only (Tess, 2026-08-18). Their pages already
- * call notFound() when APP.id is not "fred", so on SSYNC there is no UI and the
+ * photographer directory are extras-only (Tess, 2026-08-18). Their pages already
+ * call notFound() when APP.productExtras is off, so on SSYNC there is no UI and the
  * client never receives a bundle carrying these actions' ids.
  *
  * This closes the gap behind that door. A server action is a POST endpoint in
@@ -189,7 +189,7 @@ export async function requireTeam(): Promise<SessionUser> {
  *
  * The app check runs BEFORE the session lookup — it is a build-time constant,
  * so on SSYNC these actions cost nothing and never touch the database. */
-export async function requireFredTeam(): Promise<SessionUser> {
-  if (APP.id !== "fred") notFound();
+export async function requireExtrasTeam(): Promise<SessionUser> {
+  if (!APP.productExtras) notFound();
   return requireTeam();
 }

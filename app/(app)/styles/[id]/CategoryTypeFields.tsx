@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import Select from "@/app/components/Select";
-import { FRED_CATEGORIES, fredTypesFor } from "@/lib/fredStyleNumber";
+import { PRODUCT_CATEGORIES, typesFor } from "@/lib/styleNumber";
 
-// FRED's Category → Type on the edit form, matching the create form (Tess,
+// The house Category → Type on the edit form, matching the create form (Tess,
 // 2026-08-20: propagate the taxonomy). Type's options follow the chosen Category.
 // Category posts as `category`, Type as `garment` (the column keeps its name). A
 // stored value that predates the taxonomy still shows on the control — the custom
 // Select renders the current value even when it is off the list — so editing an
 // unrelated field never drops it.
-export default function FredCategoryType({
+export default function CategoryTypeFields({
   category: initialCategory = "",
   type: initialType = "",
 }: {
@@ -19,7 +19,7 @@ export default function FredCategoryType({
 }) {
   const [category, setCategory] = useState(initialCategory);
   const [type, setType] = useState(initialType);
-  const types = fredTypesFor(category);
+  const types = typesFor(category);
 
   function onCategory(v: string) {
     setCategory(v);
@@ -36,7 +36,7 @@ export default function FredCategoryType({
           aria-label="Category"
           value={category}
           onChange={onCategory}
-          options={[{ value: "", label: "—" }, ...FRED_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+          options={[{ value: "", label: "—" }, ...PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))]}
         />
       </div>
       <div className="field">

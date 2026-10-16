@@ -356,12 +356,12 @@ export default function CommentsDrawer({
   // mount. Server + first client render both render closed — no hydration
   // mismatch — and the desktop open happens a tick later.
   //
-  // On FRED it stays closed even on desktop until you open it (Tess, 2026-08-20:
+  // With the extras on it stays closed even on desktop until you open it (Tess, 2026-08-20:
   // "comment drawer should be closed on style profiles when you initially click
-  // page open for fred").
+  // page open").
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    if (APP.id === "fred") return;
+    if (APP.productExtras) return;
     if (window.matchMedia("(min-width: 901px)").matches) setOpen(true);
   }, []);
   const [scope, setScope] = useState<CommentScope>("all");

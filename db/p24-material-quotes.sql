@@ -16,7 +16,7 @@
 -- become orders again.
 --
 -- NOT yet applied anywhere as of 2026-08-26 — run it by hand in the Supabase SQL
--- editor of BOTH projects: the FRED project (vjiwcreytvmxvxasyvoo), where
+-- editor of BOTH projects: the other deployment's project, where
 -- material_orders already exists, and the Loyalist project (axwavdjhzvtluvsixfjq),
 -- where material_orders must be created first (db/p12-material-orders.sql) because
 -- material orders were never switched on there. The lists tolerate a missing column

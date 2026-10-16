@@ -4,7 +4,7 @@
 -- library. One table with a `kind` ('fabric' | 'trim'), the shared fields both
 -- need, plus the few specific to each. Soft-delete like everything else.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo). Run this
+-- Already applied to the other deployment's database. Run this
 -- by hand in the Supabase SQL editor of the Loyalist project
 -- (axwavdjhzvtluvsixfjq) to switch the page on there too — until then the
 -- /materials page renders its empty state on SSYNC (the reader tolerates the

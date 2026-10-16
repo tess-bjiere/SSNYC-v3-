@@ -115,8 +115,8 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       // materials").
       { href: "/materials", label: "Materials" },
       // The approved physical colour references materials are matched to (Tess,
-      // 2026-08-23: "can you create a color standard that lives in the tool for
-      // fred?"). FRED-only, like Orders.
+      // 2026-08-23: asked for a colour standard "that lives in the tool").
+      // Extras-only, like Orders.
       { href: "/color-standards", label: "Colour Standards" },
       // Purchase orders assembled from that library (Tess, 2026-08-18: "add
       // ability to create an order for materials from the material library").
@@ -149,19 +149,19 @@ export default function Nav({
   // server too — this only keeps a talent from being shown a door they cannot
   // open. The SSYNC wordmark takes them to References, not Development.
   const isTeam = role === "team";
-  // The photographer directory and material ORDERS are FRED-only. The materials
+  // The photographer directory and material ORDERS are extras-only. The materials
   // library itself is NOT — SOUS SOUS and Renggli document their materials too
   // (Tess, 2026-08-19: "for renggli / sous sous — materials may be provided
   // directly from the factory — so you may not have to order separately … but we
   // do want option to document materials because many will be evergreen"). So the
-  // library shows on every deploy; only ordering and the FRED-at-home
-  // photographer work stay behind the FRED door. Route-level guards back this up.
-  // Still FRED-only on the Loyalist deploy: the FRED-at-home photographer
+  // library shows on every deploy; only ordering and the home-tier
+  // photographer work stay behind APP.productExtras. Route-level guards back this up.
+  // Still extras-only on the Loyalist deploy: the home-tier photographer
   // directory and the colour standards. Material Orders is NO LONGER here — it is
   // gated by brand (ordersEnabled) so SOUS SOUS and Renggli get it too (Tess,
   // 2026-08-24: "add the orders tab to sourcing on the sous sous and renggli
   // versions").
-  const FRED_ONLY = new Set(["/photographers", "/color-standards"]);
+  const EXTRAS_ONLY = new Set(["/photographers", "/color-standards"]);
   // Ideation-only deploy (the Loyalist's SOUS SOUS / Renggli accounts) sees just
   // Ideation — References, Moodboard, Campaign — no Product, no Sourcing (Tess,
   // 2026-10-01: "hide product and sourcing functionality"). A talent is already
@@ -174,11 +174,11 @@ export default function Nav({
         // Orders and Quotes follow the brand, not the deploy: shown wherever
         // ordering is on.
         if (l.href === "/material-orders" || l.href === "/quotes") return ordersEnabled(brand);
-        // Everything else FRED-gated stays FRED-only.
-        return APP.id === "fred" || !FRED_ONLY.has(l.href);
+        // Everything else extras-gated stays behind APP.productExtras.
+        return APP.productExtras || !EXTRAS_ONLY.has(l.href);
       }),
     }))
-    // A group left with no links (all of them FRED-only on SSYNC) drops entirely
+    // A group left with no links (all of them extras-only on SSYNC) drops entirely
     // rather than rendering an empty menu.
     .filter((g) => g.links.length > 0);
   // The wordmark goes to the product home for a full deploy, otherwise to the
@@ -309,7 +309,7 @@ export default function Nav({
             Everything on the page is scoped to it. A talent has no switcher —
             they see only their own brand (phase 2). */}
         {/* Only when there's actually a choice — a single-brand deployment
-            (FRED) shows no switcher at all (Tess, 2026-08-17). */}
+            shows no switcher at all (Tess, 2026-08-17). */}
         {isTeam && brands.length > 1 && <BrandSwitcher active={brand} brands={brands} />}
         {/* + New Style used to sit here (Tess, 2026-08-06: "dont have new style
             in upper navigation -- it's confusing"). It was the only ACTION in a

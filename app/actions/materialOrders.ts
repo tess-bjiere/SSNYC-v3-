@@ -21,7 +21,7 @@ import {
 // app/actions/linesheets.ts: gate, read the row's items jsonb, apply a pure
 // lib/materialOrder.ts helper, write the whole list back. Nothing hard-deletes.
 // The gate closes the write behind the same door the pages use: ordering is on
-// for FRED and for the SOUS SOUS / Renggli brands (Tess, 2026-08-24: "add the
+// with the product extras and for the SOUS SOUS / Renggli brands (Tess, 2026-08-24: "add the
 // orders tab to sourcing on the sous sous and renggli versions"). A server action
 // is a POST endpoint that stays callable even where no page imports it, so the
 // brand check belongs on the write itself, not only on the route. It reads the

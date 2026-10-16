@@ -47,7 +47,7 @@ function igHandle(ig: string): string {
 
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
 // people / profiles in different cities ... look at their work"). Built from the
-// campaign credits; a profile also shows the team-entered side — tier (FRED at
+// campaign credits; a profile also shows the team-entered side — tier (at
 // home vs campaign), whether they shoot video / direct, and a brief client list.
 // The images are still edited from Campaign; only the person's card is edited
 // here, and only by the team.
@@ -378,7 +378,7 @@ export default function PhotographersClient({
       {(hasTiers || hasStarred) && (
         <div className="pg-filters">
           {hasTiers &&
-            ([["", "All"], ["home", "FRED at home"], ["campaign", "Campaign"]] as [
+            ([["", "All"], ["home", "At home"], ["campaign", "Campaign"]] as [
               "" | PhotographerTier,
               string,
             ][]).map(([val, label]) => (
@@ -805,7 +805,7 @@ function ProfileModal({
               <div className="pg-editor-row">
                 <label className="pg-editor-label">Tier</label>
                 <div className="pg-seg">
-                  {([["home", "FRED at home"], ["campaign", "Campaign"]] as [PhotographerTier, string][]).map(
+                  {([["home", "At home"], ["campaign", "Campaign"]] as [PhotographerTier, string][]).map(
                     ([val, label]) => (
                       <button
                         key={val}
@@ -887,7 +887,7 @@ function ProfileModal({
                 disabled={uploading}
                 onClick={() => imgInput.current?.click()}
               >
-                {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add FRED-at-home images"}
+                {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add at-home images"}
               </button>
               {/* Save selected images into the Campaign library (Tess,
                   2026-08-19). Only meaningful once there are images. */}
@@ -906,7 +906,7 @@ function ProfileModal({
                   : workRefs.length > 1
                     ? "Drag to reorder — the first image is the thumbnail"
                     : workRefs.length === 0
-                      ? "Add the 3–5 shots that feel most FRED at home — or drag them in"
+                      ? "Add the 3–5 shots that feel most at home — or drag them in"
                       : ""}
               </span>
             </div>
@@ -971,7 +971,7 @@ function ProfileModal({
               No images saved yet. See their work
               {ig && <> on <a href={ig} target="_blank" rel="noreferrer">Instagram</a></>}
               {site && <> · <a href={site} target="_blank" rel="noreferrer">their site</a></>}
-              {canEdit && <>, then add the FRED-at-home ones with the button above.</>}
+              {canEdit && <>, then add the at-home ones with the button above.</>}
             </div>
           )}
 

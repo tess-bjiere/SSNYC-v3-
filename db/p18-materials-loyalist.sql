@@ -3,7 +3,7 @@
 -- do want option to document materials because many will be evergreen."
 --
 -- The materials LIBRARY is now available on every deploy (only ORDERING stays
--- FRED-only). FRED's database already has this table — it was built up there,
+-- extras-only). The other deployment's database already has this table — it was built up there,
 -- via MCP, across db/p11 + p13 + p14 + p15 + p16. This one script is the whole
 -- thing in one go, to CREATE it on the Loyalist project (axwavdjhzvtluvsixfjq),
 -- which never had it. Run this by hand in that project's SQL editor. Until then,

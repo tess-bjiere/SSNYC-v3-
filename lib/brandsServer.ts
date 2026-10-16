@@ -21,8 +21,8 @@ export const loadBrands = cache(async (): Promise<Brand[]> => {
     // fall through to the app default
   }
   // App-specific fallback, so a deployment that can't read its brands table
-  // shows its OWN brand, never another app's seed (Tess, 2026-08-17: "the fred
-  // version shouldnt show the [switcher] for other brands"). The pure seed in
+  // shows its OWN brand, never another app's seed (Tess, 2026-08-17: the other
+  // version "shouldnt show the [switcher] for other brands"). The pure seed in
   // lib/brands.ts stays the Loyalist's; this is the per-deployment default.
   return [{ slug: APP.defaultBrand.slug, name: APP.defaultBrand.name }];
 });

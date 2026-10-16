@@ -3,12 +3,12 @@
 -- used for multiple [garments]."
 --
 -- Additive, nullable-by-default: one jsonb array on each material holding the
--- product names it is used for. The products are the brand's styles (FRED's
--- website products), so the dropdown is sourced live from the styles table — no
+-- product names it is used for. The products are the brand's styles (the
+-- website's products), so the dropdown is sourced live from the styles table — no
 -- second catalogue to keep in sync. A material can list many; the default is an
 -- empty array.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo), where the
+-- Already applied to the other deployment's database, where the
 -- materials library lives. Run this by hand in the Supabase SQL editor of the
 -- Loyalist project (axwavdjhzvtluvsixfjq) if materials are ever switched on
 -- there too.

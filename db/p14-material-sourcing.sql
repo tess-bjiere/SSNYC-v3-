@@ -4,7 +4,7 @@
 -- off-the-shelf material) or 'custom' (developed / made-to-order). Unset until
 -- someone marks it, so nothing is assumed for the rows already there.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo), where the
+-- Already applied to the other deployment's database, where the
 -- materials library lives. Run this by hand in the Supabase SQL editor of the
 -- Loyalist project (axwavdjhzvtluvsixfjq) if materials are ever switched on
 -- there too.

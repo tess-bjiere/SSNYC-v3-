@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { APP } from "@/lib/appConfig";
 
-// Title and description follow the deployment's identity (SSYNC or FRED) — see
-// lib/appConfig.ts. One codebase, two apps.
+// Title and description follow the deployment's identity — see
+// lib/appConfig.ts.
 export const metadata: Metadata = {
   title: APP.name,
   description: `${APP.name} — reference library + style development tool`,

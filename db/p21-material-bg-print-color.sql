@@ -6,7 +6,7 @@
 -- `color` so a printed hangtag can carry the base and the print at once. Additive,
 -- nullable free text; shown only on the trim and packaging forms.
 --
--- Already applied to the FRED database (vjiwcreytvmxvxasyvoo) via MCP. It is also
+-- Already applied to the other deployment's database via MCP. It is also
 -- folded into db/p18-materials-loyalist.sql, so a fresh Loyalist setup gets it;
 -- run this one on Loyalist only if that table already exists there.
 

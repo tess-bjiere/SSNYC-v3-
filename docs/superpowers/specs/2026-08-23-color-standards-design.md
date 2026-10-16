@@ -1,12 +1,12 @@
 # Colour standards — design
 
 **Date:** 2026-08-23
-**Deployment:** FRED only (`APP.id === "fred"`), like `/material-orders`
+**Deployment:** extras only (`APP.productExtras`), like `/material-orders`
 **Status:** approved in chat, not yet implemented
 
 ## Why
 
-FRED's white decisions currently live in the free-text `materials.notes` field.
+The house white decisions currently live in the free-text `materials.notes` field.
 As of today that field carries a hand-written `WHITE STANDARD` block on seven
 fabrics and two elastics, describing three standards:
 
@@ -48,7 +48,7 @@ way (`material_orders.items`, `styles.material_ids`, `brands.palette`).
 ```
 create table if not exists public.color_standards (
   id uuid primary key default gen_random_uuid(),
-  brand text not null default 'fred',
+  brand text not null default 'sous-sous',
   name text not null,               -- "Standard A"
   label text,                       -- "Cold / optic"
   kind text,                        -- 'white' | 'color'; whites carry no Pantone,
@@ -70,8 +70,8 @@ create table if not exists public.color_standards (
 ```
 
 RLS + grants copied verbatim from `p18-materials-loyalist.sql` (authenticated
-policy plus `grant all to anon, authenticated, service_role`) — the grant FRED's
-tables have needed each time.
+policy plus `grant all to anon, authenticated, service_role`) — the grant the other
+deployment's tables have needed each time.
 
 One `approvals` entry per **material** — fabric, trim or packaging. (The body
 of this spec says "quality" where the point is specifically about cloth; the
@@ -97,12 +97,12 @@ history machinery now is speculative.
 
 ## Gating
 
-FRED-only, following `material-orders` exactly:
+Extras-only, following `material-orders` exactly:
 
-- `app/actions/colorStandards.ts` — every action behind `requireFredTeam`
-- `Nav.tsx` — `/color-standards` added to the `FRED_ONLY` set, in the **Sourcing**
+- `app/actions/colorStandards.ts` — every action behind `requireExtrasTeam`
+- `Nav.tsx` — `/color-standards` added to the `EXTRAS_ONLY` set, in the **Sourcing**
   group beside Materials and Material Orders
-- the page `notFound()`s when `APP.id !== "fred"`
+- the page `notFound()`s when `!APP.productExtras`
 
 The shared codebase means SSYNC will not have this table. Every read tolerates
 its absence and falls back to an empty list, the same way `/materials` tolerated
@@ -165,7 +165,7 @@ Out of scope for this work; flagged separately and undecided.
 - Unit tests in `lib/colorStandards.test.mts`, matching the existing lib suites
 - `npx tsc --noEmit`
 - `npm run build`
-- Render testing needs auth and the FRED DB, so it is not done locally — same
+- Render testing needs auth and the other deployment's DB, so it is not done locally — same
   limitation the materials library shipped under.
 
 ## Out of scope

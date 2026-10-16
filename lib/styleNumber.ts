@@ -1,10 +1,10 @@
 /**
- * FRED style numbers and product taxonomy (Tess, 2026-08-23 spec; 2026-08-20 "i
- * want fred to auto generate style numbers", then "let's do garment level
+ * House style numbers and product taxonomy (Tess, 2026-08-23 spec; 2026-08-20
+ * wanting it "to auto generate style numbers", then "let's do garment level
  * refinement … edit the category and refinement lists to better reflect our
  * product categories / offering").
  *
- * `FR-` + five digits: the first two are a family+category code, the last three a
+ * `ST-` + five digits: the first two are a family+category code, the last three a
  * sequence (001–999, in order of creation, gaps never backfilled). First digit =
  * product family, second = category inside it. No season or year in the number.
  *
@@ -15,24 +15,24 @@
  * "Garment" field because not every family has garments — Home has textiles and
  * objects, Body has fragrance.
  *
- * Canonical reference: ~/fred-shopify/docs/style-numbering.md. The codes at the
+ * Canonical reference: the numbering doc. The codes at the
  * `x0`/`x1`… anchors are frozen there; the higher sub-codes in each family sit in
  * ranges the doc holds open, are proposals until the first number is assigned in
  * them, and are edited HERE in one place. Dependency-free, unit-tested.
  */
 
-export type FredType = { label: string; code: string };
-export type FredCategory = { category: string; types: FredType[] };
+export type ProductType = { label: string; code: string };
+export type ProductCategory = { category: string; types: ProductType[] };
 
 /**
- * The FRED product taxonomy. Order is display order. The first Type in a family is
+ * The house product taxonomy. Order is display order. The first Type in a family is
  * its anchor — the code used when a category is chosen but no Type is (yet).
  *
  * Frozen anchors from the canonical doc: 10, 11, 20, 21, 22, 23, 30, 31, 40, 50,
  * 60, 61, 62, 63, 64, 70, 80, 90. Everything else sits in a held-open range and is
  * a proposal until first used.
  */
-export const FRED_TAXONOMY: FredCategory[] = [
+export const PRODUCT_TAXONOMY: ProductCategory[] = [
   {
     category: "Innerwear",
     types: [
@@ -117,17 +117,17 @@ export const FRED_TAXONOMY: FredCategory[] = [
   },
 ];
 
-/** The category names, in display order — the FRED category picklist. */
-export const FRED_CATEGORIES: string[] = FRED_TAXONOMY.map((c) => c.category);
+/** The category names, in display order — the house category picklist. */
+export const PRODUCT_CATEGORIES: string[] = PRODUCT_TAXONOMY.map((c) => c.category);
 
 /** Every code → what it reads as, derived from the taxonomy. */
-export const FRED_CODE_LABELS: Record<string, string> = Object.fromEntries(
-  FRED_TAXONOMY.flatMap((c) => c.types.map((t) => [t.code, t.label])),
+export const PRODUCT_CODE_LABELS: Record<string, string> = Object.fromEntries(
+  PRODUCT_TAXONOMY.flatMap((c) => c.types.map((t) => [t.code, t.label])),
 );
 
 /** The Types offered under a category (its refinement list), or [] if unknown. */
-export function fredTypesFor(category: string | null | undefined): FredType[] {
-  const cat = FRED_TAXONOMY.find((c) => c.category === (category ?? "").trim());
+export function typesFor(category: string | null | undefined): ProductType[] {
+  const cat = PRODUCT_TAXONOMY.find((c) => c.category === (category ?? "").trim());
   return cat ? cat.types : [];
 }
 
@@ -136,11 +136,11 @@ export function fredTypesFor(category: string | null | undefined): FredType[] {
  * back to the family anchor (the first Type's code). Null when the category is not
  * in the taxonomy (so nothing is auto-numbered and the user just types one).
  */
-export function fredCodeFor(
+export function codeFor(
   category: string | null | undefined,
   type?: string | null,
 ): string | null {
-  const cat = FRED_TAXONOMY.find((c) => c.category === (category ?? "").trim());
+  const cat = PRODUCT_TAXONOMY.find((c) => c.category === (category ?? "").trim());
   if (!cat) return null;
   const t = type ? cat.types.find((x) => x.label === type.trim()) : undefined;
   return t ? t.code : (cat.types[0]?.code ?? null);
@@ -148,23 +148,23 @@ export function fredCodeFor(
 
 /** The family-anchor code for a category (no Type). Kept for callers that only
  *  know the category. */
-export function fredCodeForCategory(category: string | null | undefined): string | null {
-  return fredCodeFor(category);
+export function codeForCategory(category: string | null | undefined): string | null {
+  return codeFor(category);
 }
 
-const NUMBER_RE = /^FR-(\d{2})(\d{3})$/;
+const NUMBER_RE = /^ST-(\d{2})(\d{3})$/;
 
-/** Whether a string is a well-formed FRED style number. */
-export function isFredStyleNumber(value: string | null | undefined): boolean {
+/** Whether a string is a well-formed house style number. */
+export function isHouseStyleNumber(value: string | null | undefined): boolean {
   return typeof value === "string" && NUMBER_RE.test(value.trim());
 }
 
 /**
  * The next sequence for a code: one past the highest already used in it, from 1.
  * Reads the MAX, not the count — gaps are never backfilled — and ignores anything
- * that is not `FR-<code><nnn>` for this exact code.
+ * that is not `ST-<code><nnn>` for this exact code.
  */
-export function fredNextSequence(existing: readonly string[], code: string): number {
+export function nextSequence(existing: readonly string[], code: string): number {
   let max = 0;
   for (const raw of existing) {
     const m = NUMBER_RE.exec((raw ?? "").trim());
@@ -176,9 +176,9 @@ export function fredNextSequence(existing: readonly string[], code: string): num
   return max + 1;
 }
 
-/** `FR-` + code + three-digit sequence. */
-export function formatFredNumber(code: string, sequence: number): string {
-  return `FR-${code}${String(sequence).padStart(3, "0")}`;
+/** `ST-` + code + three-digit sequence. */
+export function formatStyleNumber(code: string, sequence: number): string {
+  return `ST-${code}${String(sequence).padStart(3, "0")}`;
 }
 
 /**
@@ -186,14 +186,14 @@ export function formatFredNumber(code: string, sequence: number): string {
  * category and (optionally) its Type — or null when the category has no code, or
  * the code is full (999), which wants a person rather than a malformed number.
  */
-export function suggestFredNumber(
+export function suggestStyleNumber(
   existing: readonly string[],
   category: string | null | undefined,
   type?: string | null,
 ): string | null {
-  const code = fredCodeFor(category, type);
+  const code = codeFor(category, type);
   if (!code) return null;
-  const seq = fredNextSequence(existing, code);
+  const seq = nextSequence(existing, code);
   if (seq > 999) return null;
-  return formatFredNumber(code, seq);
+  return formatStyleNumber(code, seq);
 }

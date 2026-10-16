@@ -3,7 +3,7 @@
  *
  * Tess, 2026-08-17: "have an easy way to see photographers in different
  * locations and look at their work ... easy to get to a list of people /
- * profiles in different cities." A huge part of FRED's marketing is finding a
+ * profiles in different cities." A huge part of the marketing is finding a
  * photographer in a given city and looking at their work.
  *
  * There is no photographer TABLE — a photographer is just a name that recurs on

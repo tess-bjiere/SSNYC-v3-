@@ -29,9 +29,9 @@ export async function activeBrand(): Promise<string> {
   if (isBrandSlug(cookieBrand, slugs)) return cookieBrand as string;
   // No cookie yet, or a stale one: scope to this deployment's FIRST brand rather
   // than the pure module's hardcoded seed default. On SSYNC that first brand is
-  // still the original seed; on FRED — a separate database with its own `brands`
-  // table — it is a FRED brand, so a fresh FRED session never lands on a Loyalist
-  // slug that carries no rows (Tess, 2026-08-17: FRED must not share Loyalist
+  // still the original seed; on a separate deployment — its own database with its own `brands`
+  // table — it is that deployment's brand, so a fresh session there never lands on a Loyalist
+  // slug that carries no rows (Tess, 2026-08-17: the other deployment must not share Loyalist
   // data). `slugs` already falls back to the seed if the table is unreadable, so
   // this is never empty; brandOr keeps the last-ditch guarantee of a valid slug.
   return slugs[0] ?? brandOr(cookieBrand, slugs);

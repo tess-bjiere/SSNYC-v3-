@@ -10,14 +10,14 @@ export const dynamic = "force-dynamic";
 // The materials library — fabrics, trims and packaging (Tess, 2026-08-18). Its
 // own table, scoped to the active brand, told apart by `kind`. Available on every
 // deploy: SOUS SOUS and Renggli document their (often evergreen) materials too,
-// even though only FRED ORDERS them — the factory provides theirs directly (Tess,
+// even though ordering began extras-only — the factory provides theirs directly (Tess,
 // 2026-08-19). Reads tolerate the table not existing yet: until the materials
 // table is created on the Loyalist database (db/p18-materials-loyalist.sql), this
 // page shows its empty state rather than erroring.
 export default async function MaterialsPage() {
   const supabase = await createClient();
   const brand = await activeBrand();
-  // Ordering follows the brand now: FRED plus SOUS SOUS and Renggli (Tess,
+  // Ordering follows the brand now: the extras plus SOUS SOUS and Renggli (Tess,
   // 2026-08-24: "add the orders tab to sourcing on the sous sous and renggli
   // versions"). The library itself is not gated — every brand documents materials.
   const canOrder = ordersEnabled(brand);
@@ -28,8 +28,8 @@ export default async function MaterialsPage() {
       .eq("brand", brand)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
-    // Open orders (draft or sent) so a selection can be added to one — FRED only;
-    // off FRED there is no orders table, so don't even ask.
+    // Open orders (draft or sent) so a selection can be added to one — only when
+    // canOrder; otherwise there is no orders table, so don't even ask.
     canOrder
       ? supabase
           .from("material_orders")
@@ -50,10 +50,10 @@ export default async function MaterialsPage() {
       .is("deleted_at", null)
       .order("name", { ascending: true }),
     getSessionUser(),
-    // Colour standards are FRED-only (Tess, 2026-08-23: "can you create a color
-    // standard that lives in the tool for fred?") — the `color_standards` table
+    // Colour standards are extras-only (Tess, 2026-08-23: asked for a colour
+    // standard "that lives in the tool") — the `color_standards` table
     // does not exist on the Loyalist database and never will, so this query is
-    // gated behind canOrder (the same FRED-only flag material_orders above uses)
+    // gated behind canOrder (the same flag material_orders above uses)
     // rather than run unconditionally. normalizeStandards(null) is kept as the
     // safety net below regardless: nothing sits between the query result and
     // that call, so if the gate is ever wrong a missing table still degrades to

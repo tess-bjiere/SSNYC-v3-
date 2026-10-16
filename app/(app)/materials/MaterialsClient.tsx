@@ -40,8 +40,8 @@ import {
   setMaterialArchived,
 } from "@/app/actions/materials";
 import { createOrder, addMaterialsToOrder } from "@/app/actions/materialOrders";
-// Colour standards (Tess, 2026-08-23: "can you create a color standard that
-// lives in the tool for fred?") — FRED-only, but this file also renders on
+// Colour standards (Tess, 2026-08-23: asked for a colour standard "that
+// lives in the tool") — extras-only, but this file also renders on
 // SSYNC, where `standards` always arrives as []. `lib/materials.ts` already
 // exports a `specLine`, imported above; this file does not need colorStandards'
 // own specLine, so there's nothing to alias here (see task-5's StandardClient
@@ -156,14 +156,14 @@ export default function MaterialsClient({
 }: {
   materials: Material[];
   canEdit?: boolean;
-  // Ordering (select → create/add-to order) is on for FRED and for the SOUS SOUS
+  // Ordering (select → create/add-to order) is on with the extras and for the SOUS SOUS
   // / Renggli brands (Tess, 2026-08-24); off elsewhere the library is docs only.
   canOrder?: boolean;
   openOrders?: OpenOrder[];
   // The same, for quotes (Tess, 2026-08-26: "put add to quote button in").
   openQuotes?: OpenOrder[];
   products?: Product[];
-  // Colour standards (Tess, 2026-08-23). Empty on every deploy but FRED — the
+  // Colour standards (Tess, 2026-08-23). Empty unless APP.productExtras — the
   // page already reduced a missing table to [] via normalizeStandards, so an
   // empty list here just means "this deploy doesn't have the feature."
   standards?: ColorStandard[];
@@ -311,7 +311,7 @@ export default function MaterialsClient({
   const suppliers = useMemo(() => distinct(ofKind, "supplier"), [ofKind]);
 
   // The standard claiming a material, once. `standards` is [] on every deploy
-  // but FRED, so this is a no-op find over an empty array there.
+  // without the extras, so this is a no-op find over an empty array there.
   const stdFor = (id: string) => standardForMaterial(standards, id);
   const NO_STANDARD = "No standard";
   // Archived means "kept but out of the way" here, same as materials' own
@@ -460,7 +460,7 @@ export default function MaterialsClient({
   // sourcing chip and the in-production badge and was deliberately kept
   // uncrowded (Tess, 2026-08-19). Same `.mat-ibadge` the sourcing chip uses, so
   // nothing new goes onto the swatch. Returns null whenever there's no standard
-  // claiming this material, which — on every deploy but FRED — is always,
+  // claiming this material, which — on every deploy without the extras — is always,
   // since `standards` arrives empty.
   function standardChip(materialId: string) {
     const s = stdFor(materialId);
@@ -756,7 +756,7 @@ export default function MaterialsClient({
           />
         )}
         {/* Colour standard (Tess, 2026-08-23). standards is [] on every deploy
-            but FRED, so this whole filter — not just an empty options list —
+            without the extras, so this whole filter — not just an empty options list —
             is skipped there: no dangling label, no empty dropdown. */}
         {standards.length > 0 && (
           <MultiSelect
@@ -818,7 +818,7 @@ export default function MaterialsClient({
 
       {/* The order pickbar — appears while selecting, once at least one swatch is
           ticked. Create a new order (named), or drop the selection into an open
-          one. FRED only. */}
+          one. Only where ordering is on. */}
       {canOrder && selecting && selected.size > 0 && (
         <div className="mo-pickbar">
           <span className="mo-pickbar-n">
@@ -1133,7 +1133,7 @@ function MaterialDetail({
   material: Material;
   canEdit: boolean;
   products: Product[];
-  // Colour standards (Tess, 2026-08-23). [] on every deploy but FRED.
+  // Colour standards (Tess, 2026-08-23). [] on every deploy without the extras.
   standards: ColorStandard[];
   onClose: () => void;
   onToast: (m: string) => void;
@@ -1496,9 +1496,9 @@ function MaterialDetail({
                 />
                 <span>Current production</span>
               </label>
-              {/* Colour standard (Tess, 2026-08-23: "can you create a color
-                  standard that lives in the tool for fred?"). standards is []
-                  on every deploy but FRED, so this row — like the chip and the
+              {/* Colour standard (Tess, 2026-08-23: asked for a colour
+                  standard "that lives in the tool"). standards is []
+                  on every deploy without the extras, so this row — like the chip and the
                   filter above — is skipped there rather than showing an empty
                   picker. */}
               {standards.length > 0 && (

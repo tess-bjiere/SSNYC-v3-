@@ -1,5 +1,5 @@
--- Colour standards (Tess, 2026-08-23: "can you create a color standard that
--- lives in the tool for fred?" — FRED-only, like the material orders drawn from
+-- Colour standards (Tess, 2026-08-23: asked for a colour standard "that
+-- lives in the tool" — extras-only, like the material orders drawn from
 -- the same library).
 --
 -- A colour standard is the approved PHYSICAL reference a material's colour is
@@ -21,13 +21,13 @@
 -- per material; a `deliveries` list can be added inside each entry later without
 -- restructuring.
 --
--- APPLY: FRED (vjiwcreytvmxvxasyvoo) via the Supabase MCP. NOT applied to the
--- Loyalist DB — the feature is FRED-only and every read tolerates the table
+-- APPLY: the other deployment via the Supabase MCP. NOT applied to the
+-- Loyalist DB — the feature is extras-only and every read tolerates the table
 -- being absent, so SSYNC is unaffected.
 
 create table if not exists public.color_standards (
   id uuid primary key default gen_random_uuid(),
-  brand text not null default 'fred',
+  brand text not null default 'sous-sous',
   name text not null,
   label text,
   kind text,
@@ -72,7 +72,7 @@ create policy color_standards_read on public.color_standards for select to authe
 create policy color_standards_insert on public.color_standards for insert to authenticated with check (true);
 create policy color_standards_update on public.color_standards for update to authenticated using (true);
 
--- The grant FRED's tables have needed every time; RLS alone is not enough here.
+-- The grant the other deployment's tables have needed every time; RLS alone is not enough here.
 grant all on public.color_standards to anon, authenticated, service_role;
 
 create index if not exists color_standards_brand_idx on public.color_standards (brand);

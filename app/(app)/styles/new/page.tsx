@@ -7,21 +7,21 @@ import { STYLE_STATUSES, STYLE_STATUS_LABELS, STYLE_CATEGORIES } from "@/lib/typ
 import { APP } from "@/lib/appConfig";
 import { createClient } from "@/lib/supabase/server";
 import { activeBrand } from "@/lib/activeBrand";
-import FredStyleNumberFields from "./FredStyleNumberFields";
+import StyleNumberFields from "./StyleNumberFields";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewStylePage() {
   await requireTeam(); // product side, team only
-  // FRED doesn't use Season or WIP on a style (Tess, 2026-08-20), so the new-style
+  // The extras don't use Season or WIP on a style (Tess, 2026-08-20), so the new-style
   // form omits them there; SOUS SOUS and Renggli keep them.
-  const isFred = APP.id === "fred";
+  const extras = APP.productExtras;
 
-  // FRED auto-generates the style number, so the form previews the next one live.
-  // Load every number already in use (retired styles included — FRED numbers are
+  // The extras auto-generate the style number, so the form previews the next one live.
+  // Load every number already in use (retired styles included — house numbers are
   // never reused) to read the next in each code.
-  let fredNumbers: string[] = [];
-  if (isFred) {
+  let existingNumbers: string[] = [];
+  if (extras) {
     const supabase = await createClient();
     const brand = await activeBrand();
     const { data } = await supabase
@@ -29,7 +29,7 @@ export default async function NewStylePage() {
       .select("style_no")
       .eq("brand", brand)
       .not("style_no", "is", null);
-    fredNumbers = (data ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
+    existingNumbers = (data ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
   }
   return (
     <div className="page">
@@ -47,12 +47,12 @@ export default async function NewStylePage() {
           <input className="input" name="name" required placeholder="e.g. Cropped Rib Tank" />
         </div>
 
-        {/* On FRED the style number is auto-generated from the category, so the
+        {/* With the extras on the style number is auto-generated from the category, so the
             two fields travel together and preview live (Tess, 2026-08-20).
             Elsewhere the number is a plain field the user types. */}
-        {isFred ? (
+        {extras ? (
           <>
-            <FredStyleNumberFields existing={fredNumbers} />
+            <StyleNumberFields existing={existingNumbers} />
             <div className="row">
               <div className="field">
                 <label>Status</label>
@@ -90,10 +90,10 @@ export default async function NewStylePage() {
         )}
 
         <div className="row3">
-          {/* On FRED, Category and Type live up in the style-number row (all three
+          {/* With the extras on, Category and Type live up in the style-number row (all three
               generate the number together), so only fabric/material sit here.
               Elsewhere Category and Garment are the usual free picklists. */}
-          {!isFred && (
+          {!extras && (
             <>
               <div className="field">
                 <label>Category</label>
@@ -129,8 +129,8 @@ export default async function NewStylePage() {
         </div>
 
         <div className="row3">
-          {/* Season is not used on FRED (Tess, 2026-08-20). */}
-          {!isFred && (
+          {/* Season is not used with the extras on (Tess, 2026-08-20). */}
+          {!extras && (
             <div className="field">
               <label>Season</label>
               <input className="input" name="season" placeholder="SS27" />
@@ -158,8 +158,8 @@ export default async function NewStylePage() {
             <input className="input" name="tech_pack_url" placeholder="https://… (Drive, Dropbox, etc.)" />
           </div>
           {/* The live working folder, beside the specification it works from.
-              Not used on FRED (Tess, 2026-08-20). */}
-          {!isFred && (
+              Not used with the extras on (Tess, 2026-08-20). */}
+          {!extras && (
             <div className="field">
               <label>WIP link</label>
               <input className="input" name="wip_url" placeholder="https://… the live working folder" />

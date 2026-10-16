@@ -1,5 +1,5 @@
 -- ============================================================================
--- SSYNC — full base schema, for standing up a NEW deployment (e.g. FRED)
+-- SSYNC — full base schema, for standing up a NEW deployment
 --
 -- Generated 2026-08-17 by introspecting the live SSYNC/Loyalist database
 -- (Supabase project axwavdjhzvtluvsixfjq), STRUCTURE ONLY — no rows, no data.
@@ -7,7 +7,7 @@
 -- WHY THIS FILE EXISTS. The base tables were originally created by hand in the
 -- Supabase dashboard and were never captured as migrations — only the later
 -- additions (brands, linesheets) live in db/p*.sql. This is that missing base
--- schema, written out in full so a clone — FRED today, any future one later — is
+-- schema, written out in full so a clone — a separate deployment then, any future one later — is
 -- ONE script instead of a manual pg_dump. The db/p*.sql files remain the running
 -- history of changes; this is the whole picture as of the date above and already
 -- includes everything they added.
@@ -22,7 +22,7 @@
 -- company. After running this, do the steps in the commented block at the very
 -- bottom: insert at least one brand row, enable Google auth, add the allowlist.
 -- Without a brand row the app falls back to the code's seed brands (SOUS SOUS /
--- RENGGLI) — so a FRED deployment MUST insert its own brand or it will show the
+-- RENGGLI) — so a new deployment MUST insert its own brand or it will show the
 -- Loyalist's.
 -- ============================================================================
 
@@ -327,7 +327,7 @@ create policy "signed-in can write styles" on public.styles for all    to authen
 -- authenticated API roles get "permission denied for table ..." on the first
 -- write, even though RLS is set up. RLS (above) still gates every row; these
 -- just let the API roles reach the tables at all. (Learned the hard way on the
--- FRED clone, 2026-08-17.)
+-- first clone, 2026-08-17.)
 
 grant usage on schema public to anon, authenticated, service_role;
 
@@ -359,21 +359,21 @@ create policy "refs storage delete" on storage.objects for delete to authenticat
 -- ============================================================================
 --
 -- 1) At least ONE brand row. REQUIRED: with an empty brands table the app falls
---    back to the code's seed brands (SOUS SOUS / RENGGLI), so a FRED deployment
---    would show the Loyalist's brands. Replace with FRED's real brand(s):
+--    back to the code's seed brands (SOUS SOUS / RENGGLI), so a new deployment
+--    would show the Loyalist's brands. Replace with the company's real brand(s):
 --
---    insert into public.brands (slug, name) values ('fred', 'FRED');
+--    insert into public.brands (slug, name) values ('your-brand', 'YOUR BRAND');
 --
 -- 2) Google sign-in: Supabase dashboard → Authentication → Providers → Google,
---    with FRED's own OAuth client. Then set FRED's real Google Workspace domain
---    in lib/appConfig.ts (the fred preset's orgDomain) so that domain is
+--    with the company's own OAuth client. Then set its real Google Workspace domain
+--    in lib/appConfig.ts (APP.orgDomain) so that domain is
 --    auto-approved.
 --
 -- 3) Anyone signing in from outside that domain needs an allowlist row:
 --
 --    insert into public.app_allowlist (email, role, brand)
---      values ('someone@example.com', 'team', 'fred');
+--      values ('someone@example.com', 'team', 'your-brand');
 --
--- Data (references, styles, settings/vocabulary) starts empty — that is FRED's
--- own, built in the app. Nothing from the Loyalist is copied.
+-- Data (references, styles, settings/vocabulary) starts empty — that is the new
+-- company's own, built in the app. Nothing from the Loyalist is copied.
 -- ============================================================================

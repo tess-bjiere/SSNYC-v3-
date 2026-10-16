@@ -90,7 +90,7 @@ export default function RepurposeButton({
                     <input
                       className="input"
                       name="style_no"
-                      placeholder={APP.id === "fred" ? "new number if left blank" : "blank unless you have one"}
+                      placeholder={APP.productExtras ? "new number if left blank" : "blank unless you have one"}
                     />
                   </div>
                 </div>

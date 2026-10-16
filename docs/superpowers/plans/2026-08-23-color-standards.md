@@ -1,10 +1,10 @@
-# FRED Colour Standards Implementation Plan
+# Colour Standards Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give FRED a colour standard record — the approved physical reference a material's colour is matched to — so the A/B/C white decisions stop living in `materials.notes` free text.
+**Goal:** Add a colour standard record — the approved physical reference a material's colour is matched to — so the A/B/C white decisions stop living in `materials.notes` free text.
 
-**Architecture:** One brand-scoped `color_standards` table owning its per-material approvals as a `jsonb` array, following the `material_orders` pattern already in this repo. A pure `lib/colorStandards.ts` owns the stored shape and every edit to it; server actions gate on `requireFredTeam` and write the whole array back; the page renders. One master standard per colour, approved separately on every material.
+**Architecture:** One brand-scoped `color_standards` table owning its per-material approvals as a `jsonb` array, following the `material_orders` pattern already in this repo. A pure `lib/colorStandards.ts` owns the stored shape and every edit to it; server actions gate on `requireExtrasTeam` and write the whole array back; the page renders. One master standard per colour, approved separately on every material.
 
 **Tech Stack:** Next.js App Router (server components + server actions), Supabase Postgres, TypeScript, `node --test` with `--experimental-strip-types` for the pure lib modules.
 
@@ -12,12 +12,12 @@
 
 ## Global Constraints
 
-- **FRED-only.** Every server action gates on `requireFredTeam()` from `@/lib/access`. The page calls `notFound()` when `APP.id !== "fred"`. `/color-standards` is added to the `FRED_ONLY` set in `app/(app)/Nav.tsx`.
+- **Extras-only.** Every server action gates on `requireExtrasTeam()` from `@/lib/access`. The page calls `notFound()` when `!APP.productExtras`. `/color-standards` is added to the `EXTRAS_ONLY` set in `app/(app)/Nav.tsx`.
 - **Reads tolerate a missing table.** The codebase is shared with the SSYNC/Loyalist deployment, which will not have `color_standards`. Every `select` must let a null result fall through to an empty list rather than throwing — the same graceful path `app/(app)/material-orders/page.tsx` documents.
 - **`lib/` modules are pure and unit-tested.** No React, no Supabase, no Next imports. Tests are `lib/<name>.test.mts` using `node:test` + `node:assert/strict`, run by `npm test`.
 - **Brand-scoped.** Every read filters and every insert sets `brand` from `activeBrand()`, matching `materials` and `material_orders`.
 - **Nothing hard-deletes.** Soft-delete via `deleted_at`, archive via `archived`.
-- **House comment style.** Modules open with a comment explaining *why* the shape is what it is, citing the request that prompted it (Tess, 2026-08-23: "can you create a color standard that lives in the tool for fred?"). Match the density of `lib/materialOrder.ts`.
+- **House comment style.** Modules open with a comment explaining *why* the shape is what it is, citing the request that prompted it (Tess, 2026-08-23: asked for a colour standard "that lives in the tool"). Match the density of `lib/materialOrder.ts`.
 - **Commit after every task.** Do not push — Tess pushes.
 
 ---
@@ -159,8 +159,8 @@ Create `lib/colorStandards.ts`:
 
 ```ts
 // A colour standard — the approved physical reference a material's colour is
-// matched to (Tess, 2026-08-23: "can you create a color standard that lives in
-// the tool for fred?"; FRED-only, like the material orders drawn from the same
+// matched to (Tess, 2026-08-23: asked for a colour standard "that lives in
+// the tool"; extras-only, like the material orders drawn from the same
 // library).
 //
 // The standard is a physical object: a signed, dated swatch held in the studio.
@@ -558,8 +558,8 @@ There is no unit test for a migration. The deliverable is verified by applying i
 Create `db/p22-color-standards.sql`:
 
 ```sql
--- Colour standards (Tess, 2026-08-23: "can you create a color standard that
--- lives in the tool for fred?" — FRED-only, like the material orders drawn from
+-- Colour standards (Tess, 2026-08-23: asked for a colour standard "that
+-- lives in the tool" — extras-only, like the material orders drawn from
 -- the same library).
 --
 -- A colour standard is the approved PHYSICAL reference a material's colour is
@@ -581,13 +581,13 @@ Create `db/p22-color-standards.sql`:
 -- per material; a `deliveries` list can be added inside each entry later without
 -- restructuring.
 --
--- APPLY: FRED (vjiwcreytvmxvxasyvoo) via the Supabase MCP. NOT applied to the
--- Loyalist DB — the feature is FRED-only and every read tolerates the table
+-- APPLY: the other deployment via the Supabase MCP. NOT applied to the
+-- Loyalist DB — the feature is extras-only and every read tolerates the table
 -- being absent, so SSYNC is unaffected.
 
 create table if not exists public.color_standards (
   id uuid primary key default gen_random_uuid(),
-  brand text not null default 'fred',
+  brand text not null default 'sous-sous',
   name text not null,
   label text,
   kind text,
@@ -632,22 +632,22 @@ create policy color_standards_read on public.color_standards for select to authe
 create policy color_standards_insert on public.color_standards for insert to authenticated with check (true);
 create policy color_standards_update on public.color_standards for update to authenticated using (true);
 
--- The grant FRED's tables have needed every time; RLS alone is not enough here.
+-- The grant the other deployment's tables have needed every time; RLS alone is not enough here.
 grant all on public.color_standards to anon, authenticated, service_role;
 
 create index if not exists color_standards_brand_idx on public.color_standards (brand);
 create index if not exists color_standards_deleted_idx on public.color_standards (deleted_at);
 ```
 
-- [ ] **Step 2: Apply it to the FRED database**
+- [ ] **Step 2: Apply it to the other deployment's database**
 
-Apply the file's contents to Supabase project `vjiwcreytvmxvxasyvoo` using the Supabase MCP `apply_migration` tool, migration name `color_standards`.
+Apply the file's contents to the other deployment's Supabase project using the Supabase MCP `apply_migration` tool, migration name `color_standards`.
 
 Note: `execute_sql` on this MCP connection is **read-only**, so DDL and any data write must go through `apply_migration`.
 
 - [ ] **Step 3: Verify the table exists and is empty**
 
-Run (via the Supabase MCP `execute_sql` against `vjiwcreytvmxvxasyvoo`):
+Run (via the Supabase MCP `execute_sql` against the other deployment's project):
 
 ```sql
 select count(*) as rows,
@@ -662,7 +662,7 @@ Expected: `rows` = 0, `cols` = 20.
 
 ```bash
 git add db/p22-color-standards.sql
-git commit -m "Colour standards: db/p22 table, applied to FRED"
+git commit -m "Colour standards: db/p22 table, applied to the other deployment"
 ```
 
 ---
@@ -673,8 +673,8 @@ git commit -m "Colour standards: db/p22 table, applied to FRED"
 - Create: `app/actions/colorStandards.ts`
 
 **Interfaces:**
-- Consumes: `normalizeStandard`, `setApproval`, `removeApproval`, `type Approval` from `lib/colorStandards.ts`; `requireFredTeam` from `lib/access`; `activeBrand` from `lib/activeBrand`; `createClient` from `lib/supabase/server`.
-- Produces: `createStandard(form: FormData)`, `updateStandard(id: string, patch: Record<string, unknown>)`, `saveApproval(id: string, materialId: string, patch: Partial<Omit<Approval,"material_id">>)`, `dropApproval(id: string, materialId: string)`, `addStandardImage(id: string, form: FormData, slot: "swatch" | "lab_dip", materialId?: string)`, `archiveStandard(id: string, archived: boolean)`, `softDeleteStandard(id: string)`. All are `"use server"` and gate on `requireFredTeam()`.
+- Consumes: `normalizeStandard`, `setApproval`, `removeApproval`, `type Approval` from `lib/colorStandards.ts`; `requireExtrasTeam` from `lib/access`; `activeBrand` from `lib/activeBrand`; `createClient` from `lib/supabase/server`.
+- Produces: `createStandard(form: FormData)`, `updateStandard(id: string, patch: Record<string, unknown>)`, `saveApproval(id: string, materialId: string, patch: Partial<Omit<Approval,"material_id">>)`, `dropApproval(id: string, materialId: string)`, `addStandardImage(id: string, form: FormData, slot: "swatch" | "lab_dip", materialId?: string)`, `archiveStandard(id: string, archived: boolean)`, `softDeleteStandard(id: string)`. All are `"use server"` and gate on `requireExtrasTeam()`.
 
 Naming note: the actions are `saveApproval`/`dropApproval` rather than `setApproval`/`removeApproval` so they do not shadow the pure lib functions they call.
 
@@ -688,7 +688,7 @@ Create `app/actions/colorStandards.ts`:
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireFredTeam } from "@/lib/access";
+import { requireExtrasTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import {
   normalizeStandard,
@@ -701,7 +701,7 @@ import {
 // Every write to a colour standard goes through here, matching
 // app/actions/materialOrders.ts: gate, read the row, apply a pure
 // lib/colorStandards.ts helper, write the whole approvals list back. Nothing
-// hard-deletes. The gate is requireFredTeam because standards are FRED-only and
+// hard-deletes. The gate is requireExtrasTeam because standards are extras-only and
 // a server action stays callable on SSYNC even with no page there importing it.
 
 const TABLE = "color_standards";
@@ -746,7 +746,7 @@ async function writeApprovals(id: string, approvals: Approval[]) {
 }
 
 export async function createStandard(form: FormData) {
-  const user = await requireFredTeam();
+  const user = await requireExtrasTeam();
   const name = ((form.get("name") as string) || "").trim();
   if (!name) return;
   const patch: Record<string, unknown> = { name };
@@ -769,7 +769,7 @@ export async function createStandard(form: FormData) {
 }
 
 export async function updateStandard(id: string, patch: Record<string, unknown>) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const supabase = await createClient();
   await supabase
     .from(TABLE)
@@ -787,14 +787,14 @@ export async function saveApproval(
   materialId: string,
   patch: Partial<Omit<Approval, "material_id">>,
 ) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const s = await readStandard(id);
   if (!s) return;
   await writeApprovals(id, setApproval(s, materialId, patch));
 }
 
 export async function dropApproval(id: string, materialId: string) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const s = await readStandard(id);
   if (!s) return;
   await writeApprovals(id, removeApproval(s, materialId));
@@ -809,7 +809,7 @@ export async function addStandardImage(
   slot: "swatch" | "lab_dip",
   materialId?: string,
 ) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const file = form.get("file") as File | null;
   if (!file || !file.size) return;
   const supabase = await createClient();
@@ -838,7 +838,7 @@ export async function addStandardImage(
 }
 
 export async function archiveStandard(id: string, archived: boolean) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const supabase = await createClient();
   await supabase
     .from(TABLE)
@@ -848,7 +848,7 @@ export async function archiveStandard(id: string, archived: boolean) {
 }
 
 export async function softDeleteStandard(id: string) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const supabase = await createClient();
   await supabase
     .from(TABLE)
@@ -862,7 +862,7 @@ export async function softDeleteStandard(id: string) {
 - [ ] **Step 2: Typecheck**
 
 Run: `npx tsc --noEmit`
-Expected: no errors. If `requireFredTeam` is reported as not exported, check its name in `lib/access.ts` — `app/actions/materialOrders.ts:6` imports it and is the reference.
+Expected: no errors. If `requireExtrasTeam` is reported as not exported, check its name in `lib/access.ts` — `app/actions/materialOrders.ts:6` imports it and is the reference.
 
 - [ ] **Step 3: Confirm the lib suite still passes**
 
@@ -873,7 +873,7 @@ Expected: PASS — the actions are not unit-tested (they are I/O), but the lib h
 
 ```bash
 git add app/actions/colorStandards.ts
-git commit -m "Colour standards: server actions, FRED-gated"
+git commit -m "Colour standards: server actions, extras-gated"
 ```
 
 ---
@@ -885,13 +885,13 @@ git commit -m "Colour standards: server actions, FRED-gated"
 - Create: `app/(app)/color-standards/StandardsClient.tsx`
 - Create: `app/(app)/color-standards/[id]/page.tsx`
 - Create: `app/(app)/color-standards/[id]/StandardClient.tsx`
-- Modify: `app/(app)/Nav.tsx:148` (the `FRED_ONLY` set) and the Sourcing group at `app/(app)/Nav.tsx:110-121`
+- Modify: `app/(app)/Nav.tsx:148` (the `EXTRAS_ONLY` set) and the Sourcing group at `app/(app)/Nav.tsx:110-121`
 
 **Interfaces:**
 - Consumes: everything exported from `lib/colorStandards.ts`; the actions from Task 4; `Material` and `specLine` from `lib/materials.ts` for the approval rows.
 - Produces: the routes `/color-standards` and `/color-standards/[id]`.
 
-Read `app/(app)/material-orders/page.tsx` and `app/(app)/material-orders/[id]/OrderClient.tsx` first and follow them closely — this page is the same shape (FRED-gated index, detail with an editable list of material lines) and should not invent new patterns.
+Read `app/(app)/material-orders/page.tsx` and `app/(app)/material-orders/[id]/OrderClient.tsx` first and follow them closely — this page is the same shape (extras-gated index, detail with an editable list of material lines) and should not invent new patterns.
 
 - [ ] **Step 1: Write the index page**
 
@@ -901,7 +901,7 @@ Create `app/(app)/color-standards/page.tsx`. It must:
 export const dynamic = "force-dynamic";
 
 export default async function ColorStandardsPage() {
-  if (APP.id !== "fred") notFound();
+  if (!APP.productExtras) notFound();
   await requireTeam();
   const brand = await activeBrand();
   const supabase = await createClient();
@@ -981,15 +981,15 @@ In `app/(app)/Nav.tsx`, add to the Sourcing group's `links` array, after Materia
 
 ```tsx
       // The approved physical colour references materials are matched to (Tess,
-      // 2026-08-23: "can you create a color standard that lives in the tool for
-      // fred?"). FRED-only, like Orders.
+      // 2026-08-23: asked for a colour standard "that lives in the tool").
+      // Extras-only, like Orders.
       { href: "/color-standards", label: "Colour Standards" },
 ```
 
-and add the route to the FRED_ONLY set:
+and add the route to the EXTRAS_ONLY set:
 
 ```tsx
-  const FRED_ONLY = new Set(["/photographers", "/material-orders", "/color-standards"]);
+  const EXTRAS_ONLY = new Set(["/photographers", "/material-orders", "/color-standards"]);
 ```
 
 - [ ] **Step 5: Typecheck and build**
@@ -1026,7 +1026,7 @@ git commit -m "Colour standards: page, detail with approvals, nav"
 In `app/(app)/materials/page.tsx`, alongside the existing `openOrders` query, add:
 
 ```tsx
-  // Colour standards are FRED-only; on SSYNC the query returns null and the
+  // Colour standards are extras-only; on SSYNC the query returns null and the
   // chip simply never renders.
   const { data: stds } = await supabase
     .from("color_standards")
@@ -1097,7 +1097,7 @@ git commit -m "Materials: show and filter by colour standard"
 
 ### Task 7: Seed Standards A, B and C, and trim the notes
 
-**Files:** none — this is a data step against the FRED database, run with the Supabase MCP `apply_migration` tool (`execute_sql` is read-only on this connection).
+**Files:** none — this is a data step against the other deployment's database, run with the Supabase MCP `apply_migration` tool (`execute_sql` is read-only on this connection).
 
 **Interfaces:**
 - Consumes: the table from Task 3 and the approvals shape from Task 1.
@@ -1119,7 +1119,7 @@ Every approval is `pending` — nothing has physically been approved yet, and se
 ```sql
 insert into public.color_standards (brand, name, label, kind, brightener, master_location, spec, approvals)
 values
-  ('fred', 'Standard A', 'Cold / optic', 'white', true,
+  ('your-brand', 'Standard A', 'Cold / optic', 'white', true,
    'NOT YET HELD - no physical master signed',
    'Optic white. Referenced to the existing cold elastic waistband, which is locked for this round, so the ELASTIC is the reference and the fabrics match it. Reverses next round when the tape is re-run less blue.',
    '[{"material_id":"4edc0b63-6905-4a6b-91ad-268f58eec760","status":"pending"},
@@ -1129,11 +1129,11 @@ values
      {"material_id":"34e16ed9-4828-4915-b6a0-8d1605d19ce5","status":"pending"},
      {"material_id":"e35c9531-b587-4458-b130-0cf3d75c50ca","status":"pending"},
      {"material_id":"d88462fe-e025-4ab3-841d-3b21678cf1d3","status":"pending"}]'::jsonb),
-  ('fred', 'Standard B', 'Soft / warm', 'white', false,
+  ('your-brand', 'Standard B', 'Soft / warm', 'white', false,
    'NOT YET HELD - no physical master signed',
    'Tee and socks. A deliberate contrast, not a failed match. Must be specified as a BLEACHED, brightener-free white toned to an approved standard - raw natural cotton shifts delivery to delivery and will not repeat. Approve against the Oxford 009 (Standard C), not only against the optic underwear.',
    '[{"material_id":"72f60c49-03c6-4205-85f4-6a1e35c840c3","status":"pending"}]'::jsonb),
-  ('fred', 'Standard C', 'Neutral, leans cool', 'white', null,
+  ('your-brand', 'Standard C', 'Neutral, leans cool', 'white', null,
    'NOT YET HELD - pull a current Sidogras 009 swatch',
    'The Oxford. Inherited rather than specified: Sidogras 009 accepted as it comes, which makes it the fixed point the other two are judged against.',
    '[{"material_id":"515ad5c1-28ad-4662-8750-ba72c65be007","status":"pending"}]'::jsonb);
@@ -1176,7 +1176,7 @@ Expected: `block_gone_should_be_false` false for every row, `pointer_added` true
 
 - [ ] **Step 5: Record the work**
 
-Append an entry to `/Users/tess/.claude/projects/-Users-tess/memory/WORK-MAP.md` under the marker, per the maintain-work-map rule, and update `fred-materials-library.md` with the new module. Do not restate the spec — link to it.
+Append an entry to `/Users/tess/.claude/projects/-Users-tess/memory/WORK-MAP.md` under the marker, per the maintain-work-map rule, and update the materials-library memory note with the new module. Do not restate the spec — link to it.
 
 - [ ] **Step 6: Commit**
 
@@ -1196,4 +1196,4 @@ After Task 7, the whole feature is verified by:
 npm test && npx tsc --noEmit && npm run build
 ```
 
-Render testing needs auth and the FRED database, so it cannot be done locally — the same limitation the materials library shipped under. Tess pushes; both Vercel projects build from the one branch, and SSYNC must be checked to confirm the Sourcing menu still shows only Materials there.
+Render testing needs auth and the other deployment's database, so it cannot be done locally — the same limitation the materials library shipped under. Tess pushes; both Vercel projects build from the one branch, and SSYNC must be checked to confirm the Sourcing menu still shows only Materials there.

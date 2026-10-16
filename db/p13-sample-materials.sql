@@ -19,16 +19,16 @@
 -- reader resolves ids against the library and simply shows nothing for one it
 -- cannot find.
 --
--- APPLY TO THE FRED DATABASE ONLY (project vjiwcreytvmxvxasyvoo). The materials
+-- APPLY TO THE OTHER DEPLOYMENT'S DATABASE ONLY. The materials
 -- table itself has never been applied to the Loyalist project
 -- (axwavdjhzvtluvsixfjq) — see db/p11-materials.sql — and the library is hidden
 -- on the SSYNC deploy, so SOUS SOUS and Renggli have nothing to link to. The
--- picker only renders when APP.id is "fred"; running this on Loyalist would add
+-- picker only renders when APP.productExtras is on; running this on Loyalist would add
 -- a column nothing writes.
 --
--- APPLIED to FRED (vjiwcreytvmxvxasyvoo) 2026-08-20 via MCP. It had been missed
+-- APPLIED to the other deployment 2026-08-20 via MCP. It had been missed
 -- when the round material picker shipped, and because sampleFields() writes
--- material_ids on FRED, every add/update sample was silently rejected for the
+-- material_ids there, every add/update sample was silently rejected for the
 -- missing column until this ran ("when i add a sample round its not saving").
 -- Loyalist (SOUS SOUS / Renggli) does not get this column — see the note above.
 

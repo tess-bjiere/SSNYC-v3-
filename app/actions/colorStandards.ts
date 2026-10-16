@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireFredTeam } from "@/lib/access";
+import { requireExtrasTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import {
@@ -17,7 +17,7 @@ import {
 // Every write to a colour standard goes through here, matching
 // app/actions/materialOrders.ts: gate, read the row's jsonb, apply a pure
 // lib/colorStandards.ts helper, write the whole list back. Nothing
-// hard-deletes. The gate is requireFredTeam because standards are FRED-only and
+// hard-deletes. The gate is requireExtrasTeam because standards are extras-only and
 // a server action stays callable on SSYNC even with no page there importing it.
 
 const TABLE = "color_standards";
@@ -80,7 +80,7 @@ async function writeApprovals(id: string, approvals: Approval[]) {
 }
 
 export async function createStandard(form: FormData) {
-  const user = await requireFredTeam();
+  const user = await requireExtrasTeam();
   const name = ((form.get("name") as string) || "").trim();
   if (!name) return;
   const patch: Record<string, unknown> = { name };
@@ -103,7 +103,7 @@ export async function createStandard(form: FormData) {
 }
 
 export async function updateStandard(id: string, patch: Record<string, unknown>) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const supabase = await createClient();
   const brand = await activeBrand();
   // Scoped to the active brand, and to live rows: this is the direct write the
@@ -131,14 +131,14 @@ export async function saveApproval(
   materialId: string,
   patch: Partial<Omit<Approval, "material_id">>,
 ) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const s = await readStandard(id);
   if (!s) return;
   await writeApprovals(id, setApproval(s, materialId, patch));
 }
 
 export async function dropApproval(id: string, materialId: string) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const s = await readStandard(id);
   if (!s) return;
   await writeApprovals(id, removeApproval(s, materialId));
@@ -153,7 +153,7 @@ export async function addStandardImage(
   slot: "swatch" | "lab_dip",
   materialId?: string,
 ) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const file = form.get("file") as File | null;
   if (!file || !file.size) return;
 
@@ -192,7 +192,7 @@ export async function addStandardImage(
 }
 
 export async function archiveStandard(id: string, archived: boolean) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const supabase = await createClient();
   const brand = await activeBrand();
   await supabase
@@ -206,7 +206,7 @@ export async function archiveStandard(id: string, archived: boolean) {
 }
 
 export async function softDeleteStandard(id: string) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const supabase = await createClient();
   const brand = await activeBrand();
   await supabase

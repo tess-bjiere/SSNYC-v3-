@@ -239,7 +239,7 @@ export default function VersionStrip({
                   className="input"
                   name="style_no"
                   placeholder={
-                    APP.id === "fred"
+                    APP.productExtras
                       ? "new number if blank — type the original to keep them linked"
                       : "the same number if left blank"
                   }

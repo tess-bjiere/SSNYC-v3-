@@ -54,8 +54,8 @@ test("every column has a value and the row is the same length as the header", ()
   assert.equal(styleCsvValues(null).length, CSV_COLUMNS.length);
 });
 
-test("the FRED variant drops Blank Style — header and value together", () => {
-  // Tess, 2026-08-20: "remove those from style form and csv". FRED does not use
+test("the extras variant drops Blank Style — header and value together", () => {
+  // Tess, 2026-08-20: "remove those from style form and csv". The extras variant does not use
   // Blank Style, so its export is nine columns; the default is untouched.
   const opts = { includeBlankStyle: false };
   const header = styleCsv([], opts).trim();

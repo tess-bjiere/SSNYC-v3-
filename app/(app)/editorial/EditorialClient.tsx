@@ -29,7 +29,7 @@ const FACETS: { key: keyof Reference; label: string }[] = [
   { key: "designer", label: "Designer" },
   // Photographer and Location lead the credit filters — finding a photographer,
   // and seeing who has shot in a city, is most of how Campaign gets used for
-  // FRED's marketing (Tess, 2026-08-17).
+  // marketing (Tess, 2026-08-17).
   { key: "photographer", label: "Photographer" },
   { key: "location", label: "Location" },
   { key: "model", label: "Model" },

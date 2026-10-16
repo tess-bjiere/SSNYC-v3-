@@ -5,7 +5,7 @@
 -- column is on the shared table so it can be surfaced for fabrics/trims later
 -- without another migration.
 --
--- Already applied to the FRED database (vjiwcreytvmxvxasyvoo) via MCP. It is also
+-- Already applied to the other deployment's database via MCP. It is also
 -- folded into db/p18-materials-loyalist.sql, so a fresh Loyalist setup gets it;
 -- run this one on Loyalist only if that table already exists there.
 

@@ -9,7 +9,7 @@
 --   current_production — this material is the one currently being produced in;
 --                        surfaced on its card.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo), where the
+-- Already applied to the other deployment's database, where the
 -- materials library lives. Run this by hand in the Supabase SQL editor of the
 -- Loyalist project (axwavdjhzvtluvsixfjq) if materials are ever switched on
 -- there too.

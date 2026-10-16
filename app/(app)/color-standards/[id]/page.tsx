@@ -17,7 +17,7 @@ export default async function ColorStandardPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  if (APP.id !== "fred") notFound();
+  if (!APP.productExtras) notFound();
   await requireTeam();
   const { id } = await params;
 

@@ -1,7 +1,7 @@
 import Select from "@/app/components/Select";
 import GarmentField from "@/app/components/GarmentField";
 import RichNotesField from "@/app/components/RichNotesField";
-import FredCategoryType from "./FredCategoryType";
+import CategoryTypeFields from "./CategoryTypeFields";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -104,7 +104,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
   let cm: StyleComment[];
   let refs: LinkedRef[] = [];
   // The fabric & trim library the round form's picker offers. Empty on SSYNC,
-  // which has no materials table — see the FRED-only load below.
+  // which has no materials table — see the extras-only load below.
   let library: LinkedMaterial[] = [];
   // Every other style, narrowly. Two things are read off it: which other
   // profiles are the same garment at another factory (lib/styleSiblings.ts),
@@ -147,14 +147,14 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
     vs = (versions ?? []) as StyleVersion[];
     sm = (samples ?? []) as StyleSample[];
 
-    // The fabric & trim library, for the round form's picker. FRED only: the
+    // The fabric & trim library, for the round form's picker. Extras only: the
     // materials table has never been applied to the Loyalist project and the
     // library is hidden on the SSYNC deploy (db/p11-materials.sql), so on
     // SOUS SOUS and Renggli there is nothing to offer and no query to run.
     // Soft-deleted rows are fetched too — a round made in a since-retired
     // fabric should still be able to name it — and flagged so the chip can say
     // so rather than silently presenting it as current stock.
-    if (APP.id === "fred") {
+    if (APP.productExtras) {
       const brand = await activeBrand();
       const { data: mats } = await supabase
         .from("materials")
@@ -464,15 +464,15 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
   }
 
   // The materials linked to the style itself (not to a round). The column is
-  // FRED-only and jsonb; normalize tolerates the old rows that predate it.
+  // extras-only and jsonb; normalize tolerates the old rows that predate it.
   const styleMaterialIds = normalizeMaterialIds(
     (st as { material_ids?: unknown }).material_ids,
   );
 
-  // FRED styles drop Season, Blank style and WIP from the profile, and read the
+  // With the extras on, styles drop Season, Blank style and WIP from the profile, and read the
   // weight row as fabric GSM instead of a shipping weight (Tess, 2026-08-20).
   // SOUS SOUS and Renggli are untouched.
-  const isFred = APP.id === "fred";
+  const extras = APP.productExtras;
 
   // What the full-screen image viewer shows as context (Tess, 2026-08-24: "Add
   // more details to full screen view — show title, style number, factory fit date
@@ -833,8 +833,8 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 Category and Season beside Factory, and the two halves of every
                 question landed in different rows. */}
             <div className="kv"><span className="k">Style no.</span><span>{st.style_no || "—"}</span></div>
-            {/* Season is dropped on FRED (Tess, 2026-08-20). */}
-            {!isFred && <div className="kv"><span className="k">Season</span><span>{st.season || "—"}</span></div>}
+            {/* Season is dropped with the extras on (Tess, 2026-08-20). */}
+            {!extras && <div className="kv"><span className="k">Season</span><span>{st.season || "—"}</span></div>}
             <div className="kv"><span className="k">Category</span><span>{st.category || "—"}</span></div>
             <div className="kv"><span className="k">Garment</span><span>{st.garment || "—"}</span></div>
             {/* Fabric sits with the garment, not with the factory: the two of
@@ -881,17 +881,17 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 questioned before a shipment is costed. */}
             <div className="kv"><span className="k">HS code</span><span>{st.hs_code || "—"}</span></div>
             <div className="kv"><span className="k">Country of origin</span><span>{st.country_of_origin || "—"}</span></div>
-            {/* On FRED this row is the fabric's GSM, not a shipping weight, so it
+            {/* With the extras on this row is the fabric's GSM, not a shipping weight, so it
                 is labelled Fabric GSM and shown as a plain number rather than the
                 three-decimal lbs figure (Tess, 2026-08-20: "edit weight to be
                 fabric gsm"). Same weight_lbs column behind both — a label/format
                 change, no migration. */}
             <div className="kv">
-              <span className="k">{isFred ? "Fabric GSM" : "Weight (lbs)"}</span>
+              <span className="k">{extras ? "Fabric GSM" : "Weight (lbs)"}</span>
               <span>
                 {st.weight_lbs === null || st.weight_lbs === undefined
                   ? "—"
-                  : isFred
+                  : extras
                     ? String(Number(st.weight_lbs))
                     : Number(st.weight_lbs).toFixed(3)}
               </span>
@@ -930,9 +930,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 style whose WIP folder you have not scrolled to. Pairing them
                 also puts the last row of the grid back to two cells, which is
                 what Tech pack was spanning the full width to avoid. */}
-            {/* WIP is dropped on FRED (Tess, 2026-08-20). Off FRED, Tech pack and
+            {/* WIP is dropped with the extras on (Tess, 2026-08-20). Otherwise, Tech pack and
                 WIP still pair up as before. */}
-            {!isFred && (
+            {!extras && (
               <div className="kv">
                 <span className="k">WIP</span>
                 {st.wip_url ? (
@@ -988,8 +988,8 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 bottom of the page (Tess, 2026-08-20: "can that be moved into the
                 details of the profile? ... it shouldnt be at the bottom"). It is
                 a fact about the style — what it is made in — so it belongs with
-                the fabric and the factory. FRED-only, like the library. */}
-            {APP.id === "fred" && (
+                the fabric and the factory. Extras-only, like the library. */}
+            {APP.productExtras && (
               <div className="profile-details-mats">
                 <div className="stmat-subhead">
                   Materials &amp; trims
@@ -1049,13 +1049,13 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   you came to change. */}
               <div className="row3">
                 <div className="field"><label>Style no.</label><input className="input" name="style_no" defaultValue={st.style_no ?? ""} /></div>
-                {/* On FRED, Category + Type are the taxonomy pair (Type refines the
+                {/* With the extras on, Category + Type are the taxonomy pair (Type refines the
                     style number's code) and Season is not used; elsewhere Season
                     then the free Category picklist. A stored value that predates a
                     list still shows on the control, so nothing is silently dropped
                     (Tess, 2026-08-09 / 2026-08-20). */}
-                {isFred ? (
-                  <FredCategoryType category={st.category ?? ""} type={st.garment ?? ""} />
+                {extras ? (
+                  <CategoryTypeFields category={st.category ?? ""} type={st.garment ?? ""} />
                 ) : (
                   <>
                     <div className="field"><label>Season</label><input className="input" name="season" defaultValue={st.season ?? ""} /></div>
@@ -1076,9 +1076,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   are one question asked twice — jersey, in 100% cotton — and a
                   row apart they read as two unrelated facts. */}
               <div className="row3">
-                {/* Garment is the free picklist off FRED; on FRED the Type field
-                    up top (in FredCategoryType) is the equivalent. */}
-                {!isFred && (
+                {/* Garment is the free picklist without the extras; with them the Type field
+                    up top (in CategoryTypeFields) is the equivalent. */}
+                {!extras && (
                   <div className="field"><label>Garment</label>
                     <GarmentField defaultValue={st.garment ?? ""} />
                   </div>
@@ -1092,17 +1092,17 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                     "remove blank style from style profile"). updateStyle only
                     writes blank_style when the form carries it, so a value an
                     existing style holds is left exactly as it was. */}
-                {/* On FRED the fabric's GSM stays on the main form — it is a fabric
-                    spec, not a shipping fact (Tess, 2026-08-24). Off FRED the weight
+                {/* With the extras on the fabric's GSM stays on the main form — it is a fabric
+                    spec, not a shipping fact (Tess, 2026-08-24). Otherwise the weight
                     is a customs figure and moves into the Customs section below. */}
-                {isFred && (
+                {extras && (
                   <div className="field">
                     <label>Fabric GSM</label>
                     <input className="input" name="weight_lbs" type="number" step="1" min="0" defaultValue={st.weight_lbs ?? ""} placeholder="e.g. 220" />
                   </div>
                 )}
               </div>
-              {/* Customs — HS code, country of origin and (off FRED) the shipping
+              {/* Customs — HS code, country of origin and (without the extras) the shipping
                   weight. In a Customs section because they travel with a shipment
                   (Tess, 2026-08-24 field audit: "tuck HS code / Country / Weight
                   into a Customs sub-section"), but OPEN by default now — collapsed,
@@ -1115,7 +1115,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                 <div className="row3">
                   <div className="field"><label>HS code</label><input className="input" name="hs_code" defaultValue={st.hs_code ?? ""} /></div>
                   <div className="field"><label>Country of origin</label><input className="input" name="country_of_origin" defaultValue={st.country_of_origin ?? ""} /></div>
-                  {!isFred && (
+                  {!extras && (
                     <div className="field">
                       <label>Weight (lbs)</label>
                       <input className="input" name="weight_lbs" type="number" step="0.001" min="0" defaultValue={st.weight_lbs ?? ""} placeholder="0.000" />
@@ -1142,9 +1142,9 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
                   saving this one leaves it exactly as it was. */}
               <div className="row">
                 <div className="field"><label>Tech pack link</label><input className="input" name="tech_pack_url" defaultValue={st.tech_pack_url ?? ""} /></div>
-                {/* WIP is not edited on FRED — input omitted, column left alone on
+                {/* WIP is not edited with the extras on — input omitted, column left alone on
                     save (Tess, 2026-08-20). */}
-                {!isFred && (
+                {!extras && (
                   <div className="field"><label>WIP link</label><input className="input" name="wip_url" defaultValue={st.wip_url ?? ""} placeholder="https://… the live working folder" /></div>
                 )}
               </div>
@@ -1284,7 +1284,7 @@ export default async function StyleProfile({ params }: { params: Promise<{ id: s
 
           {/* Materials — the fabrics / trims / packaging this style is made in,
               linked from the library (Tess, 2026-08-19: "add fabric and trims
-              from library to a style in development or production"). FRED-only,
+              from library to a style in development or production"). Extras-only,
               because the materials library is; collapsed like Reference(s), with
               the count on the summary. This is the style-level list — a sample
               round keeps its own, for what that specific sample was sewn in. */}

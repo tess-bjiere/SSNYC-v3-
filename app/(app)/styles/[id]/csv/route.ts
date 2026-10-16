@@ -43,9 +43,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!data) return new NextResponse("Not found", { status: 404 });
 
   const style = data as CsvStyleLike;
-  // FRED's CSV drops the Blank Style column (Tess, 2026-08-20: "remove those from
+  // With the extras on the CSV drops the Blank Style column (Tess, 2026-08-20: "remove those from
   // style form and csv"); SOUS SOUS / Renggli keep the full ten.
-  return new NextResponse(styleCsv([style], { includeBlankStyle: APP.id !== "fred" }), {
+  return new NextResponse(styleCsv([style], { includeBlankStyle: !APP.productExtras }), {
     headers: {
       // text/csv rather than application/octet-stream so a person who opens it
       // in a browser tab sees text instead of being asked what to do with it.

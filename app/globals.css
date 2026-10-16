@@ -820,7 +820,7 @@ body.notes-open .wrap{padding-right:378px}
 /* Print-only elements are hidden on screen; @media print reveals the PO. */
 .print-only{display:none}
 
-/* Tier filter chips — All / FRED at home / Campaign. */
+/* Tier filter chips — All / At home / Campaign. */
 .pg-filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
 /* The kind/filter chips take the compact toolbar height (28 desktop, 30 mobile)
    so they line up with the sort control beside them (Tess, 2026-08-27). */
@@ -5212,8 +5212,8 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .mo-doc-meta-v{font-size:12.5px;color:#111;line-height:1.5;white-space:pre-wrap}
 }
 
-/* --- Colour standards (Tess, 2026-08-23: "can you create a color standard
-   that lives in the tool for fred?"). The `cs-` prefix is this feature's own,
+/* --- Colour standards (Tess, 2026-08-23: asked for a colour standard
+   "that lives in the tool"). The `cs-` prefix is this feature's own,
    parallel to `mat-` for materials and `mo-` for orders. Reuses .mat-form /
    .mat-field / .mat-label / .pg-filters / .modal-* / .mo-pick* wholesale — only
    the swatch chip, the index card and the approvals table are new shapes. --- */

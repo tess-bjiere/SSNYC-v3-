@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Select from "@/app/components/Select";
-import { suggestFredNumber, fredCodeFor, fredTypesFor, FRED_CATEGORIES } from "@/lib/fredStyleNumber";
+import { suggestStyleNumber, codeFor, typesFor, PRODUCT_CATEGORIES } from "@/lib/styleNumber";
 
-// FRED's category → type → style number, coordinated (Tess, 2026-08-20: auto-
+// The house category → type → style number, coordinated (Tess, 2026-08-20: auto-
 // generate the number, "garment level refinement", and a Type field that isn't
 // called "garment" because Home and Body have none; then "i want it to auto
 // populate the style number once the category and type are filled out").
@@ -15,10 +15,10 @@ import { suggestFredNumber, fredCodeFor, fredTypesFor, FRED_CATEGORIES } from "@
 // posts as `category`, Type as `garment` (the column keeps its name). A category
 // with no code leaves the field for you to fill. If the field is somehow left
 // blank, createStyle still assigns the next number at save.
-export default function FredStyleNumberFields({
+export default function StyleNumberFields({
   existing,
 }: {
-  /** Every FRED style number already in use, so the fill reads the next one. */
+  /** Every house style number already in use, so the fill reads the next one. */
   existing: string[];
 }) {
   const [category, setCategory] = useState("");
@@ -26,13 +26,13 @@ export default function FredStyleNumberFields({
   const [styleNo, setStyleNo] = useState("");
   const [edited, setEdited] = useState(false);
 
-  const types = fredTypesFor(category);
+  const types = typesFor(category);
 
   // Refill the number from the current category + type, unless the user has taken
   // the field over by typing.
   function refill(cat: string, t: string) {
     if (edited) return;
-    setStyleNo(suggestFredNumber(existing, cat, t) ?? "");
+    setStyleNo(suggestStyleNumber(existing, cat, t) ?? "");
   }
   function onCategory(v: string) {
     setCategory(v);
@@ -50,7 +50,7 @@ export default function FredStyleNumberFields({
     setEdited(v.trim() !== "");
   }
 
-  const code = fredCodeFor(category, type);
+  const code = codeFor(category, type);
   const hint = !category
     ? "Pick a category and type — the number fills in automatically."
     : !code
@@ -67,7 +67,7 @@ export default function FredStyleNumberFields({
           className="input"
           name="style_no"
           value={styleNo}
-          placeholder="FR-…"
+          placeholder="ST-…"
           onChange={onStyleNo}
         />
         <div className="field-hint">{hint}</div>
@@ -80,7 +80,7 @@ export default function FredStyleNumberFields({
           aria-label="Category"
           value={category}
           onChange={onCategory}
-          options={[{ value: "", label: "—" }, ...FRED_CATEGORIES.map((c) => ({ value: c, label: c }))]}
+          options={[{ value: "", label: "—" }, ...PRODUCT_CATEGORIES.map((c) => ({ value: c, label: c }))]}
         />
       </div>
       <div className="field">

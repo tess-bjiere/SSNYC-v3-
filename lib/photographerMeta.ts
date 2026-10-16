@@ -1,6 +1,6 @@
 /**
  * The bits of a photographer that are NOT on their images — set by the team, not
- * derived (Tess, 2026-08-17: "if they are a 'Fred at home' photographer or more
+ * derived (Tess, 2026-08-17: "if they are a[n] 'at home' photographer or more
  * campaign level. Also include if they direct / do video work" + a brief client
  * list).
  *
@@ -15,11 +15,11 @@
 /** The settings row this all lives under. */
 export const PHOTOGRAPHER_META_KEY = "photographers";
 
-/** A photographer's tier at FRED. */
+/** A photographer's tier. */
 export type PhotographerTier = "home" | "campaign";
 
 export type PhotographerMeta = {
-  /** "home" = a FRED-at-home photographer; "campaign" = campaign-level. */
+  /** "home" = an at-home photographer; "campaign" = campaign-level. */
   tier: PhotographerTier | null;
   /** Medium — shoots stills, and/or moving image. */
   photo: boolean;
@@ -132,7 +132,7 @@ export function withPhotographerMeta(
 
 /** What the card's tier reads as. */
 export function tierLabel(tier: PhotographerTier | null): string {
-  if (tier === "home") return "FRED at home";
+  if (tier === "home") return "At home";
   if (tier === "campaign") return "Campaign";
   return "";
 }

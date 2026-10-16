@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireFredTeam } from "@/lib/access";
+import { requireExtrasTeam } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
@@ -17,7 +17,7 @@ import {
 // by the photographer's normalised name, read-modify-write so one edit never
 // disturbs another person's card. No table, no migration.
 export async function setPhotographerMeta(nameKey: string, patch: Partial<PhotographerMeta>) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const key = (nameKey ?? "").trim();
   if (!key) return;
 
@@ -40,7 +40,7 @@ export async function setPhotographerMeta(nameKey: string, patch: Partial<Photog
 // out image easily"). Soft delete, so it goes to Trash and can be restored — the
 // same recoverable path as everywhere else, not a hard delete.
 export async function removePhotographerImage(id: string) {
-  await requireFredTeam();
+  await requireExtrasTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
@@ -63,7 +63,7 @@ export async function removePhotographerImage(id: string) {
 // image, and the profile de-dupes by image so it still shows once. Idempotent:
 // an image already in Campaign is skipped, so saving twice can't pile up copies.
 export async function saveImagesToCampaign(ids: string[]): Promise<{ saved: number }> {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const clean = Array.from(new Set(ids.filter(Boolean)));
   if (clean.length === 0) return { saved: 0 };
   const supabase = await createClient();
@@ -124,10 +124,10 @@ function extFor(type: string): string {
 }
 
 // Attach a photographer's own work to their profile (Tess, 2026-08-17: "upload
-// 3-5 images per photographer ... work that look most similar to FRED at home").
+// 3-5 images per photographer ... work that look most similar to" the at-home look).
 // I can't source those images from here — Instagram blocks fetching and I have no
-// write access to FRED's storage bucket — so this is the durable in-app path
-// instead: the team uploads the shots that actually feel FRED-at-home and this
+// write access to the storage bucket — so this is the durable in-app path
+// instead: the team uploads the shots that actually feel at-home and this
 // stores them properly.
 //
 // Each image becomes its own `references` row, typed 'roster' (not 'editorial',
@@ -141,7 +141,7 @@ export async function addPhotographerImages(
   location: string,
   formData: FormData
 ): Promise<{ ok: boolean; added: number; errors: string[] }> {
-  await requireFredTeam();
+  await requireExtrasTeam();
   const name = (photographer ?? "").trim();
   const files = formData
     .getAll("files")

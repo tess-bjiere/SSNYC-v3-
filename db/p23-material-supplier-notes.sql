@@ -19,7 +19,7 @@
 -- carries no free text until the supplier-facing content is entered — which is
 -- the safe direction to fail.
 --
--- APPLY: FRED (vjiwcreytvmxvxasyvoo) via the Supabase MCP. Nothing to run on the
+-- APPLY: the other deployment via the Supabase MCP. Nothing to run on the
 -- Loyalist DB, which has no `materials` table yet — fold this column into
 -- db/p18-materials-loyalist.sql if that is ever run.
 

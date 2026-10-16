@@ -61,7 +61,7 @@ export type MaterialLike = {
   // 2026-08-19: "check 'current production' fabric ... should appear on
   // thumbnail").
   current_production?: boolean | null;
-  // The products (garments) this material is used for — FRED's website products,
+  // The products (garments) this material is used for — the website's products,
   // which are the brand's styles (Tess, 2026-08-19: "add a dropdown for garments
   // the fabric is being used for … it would be the products listed on the
   // website … used for multiple"). A jsonb array of product names; one material

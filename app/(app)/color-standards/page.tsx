@@ -8,14 +8,14 @@ import StandardsClient, { type StandardMaterial } from "./StandardsClient";
 
 export const dynamic = "force-dynamic";
 
-// The colour standards index (Tess, 2026-08-23: "can you create a color
-// standard that lives in the tool for fred?"). FRED-only, like the material
+// The colour standards index (Tess, 2026-08-23: asked for a colour
+// standard "that lives in the tool"). Extras-only, like the material
 // orders drawn from the same library — a standard is the studio's own approved
 // physical reference, not something a factory hands over. Mirrors
 // app/(app)/material-orders/page.tsx exactly: gate, scope to the brand, hand
 // the whole list to the client.
 export default async function ColorStandardsPage() {
-  if (APP.id !== "fred") notFound();
+  if (!APP.productExtras) notFound();
   await requireTeam();
   const brand = await activeBrand();
   const supabase = await createClient();

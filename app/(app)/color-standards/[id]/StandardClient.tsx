@@ -64,8 +64,8 @@ function toDraft(s: ColorStandard): Draft {
 }
 
 // One colour standard — the master on top, the approvals table below (Tess,
-// 2026-08-23: "can you create a color standard that lives in the tool for
-// fred?"). Mirrors material-orders' OrderClient: a page-level draft saved on a
+// 2026-08-23: asked for a colour standard "that lives in the tool").
+// Mirrors material-orders' OrderClient: a page-level draft saved on a
 // button, a table of lines each editable on its own, an add picker, a two-click
 // remove.
 export default function StandardClient({

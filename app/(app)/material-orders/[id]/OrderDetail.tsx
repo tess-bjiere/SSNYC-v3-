@@ -43,7 +43,7 @@ export default async function OrderDetail({ id }: { id: string }) {
 
   const supabase = await createClient();
   const brand = await activeBrand();
-  // On for FRED and for SOUS SOUS / Renggli (Tess, 2026-08-24); off elsewhere.
+  // On with the product extras and for SOUS SOUS / Renggli (Tess, 2026-08-24); off elsewhere.
   if (!ordersEnabled(brand)) notFound();
   const { data } = await supabase.from("material_orders").select("*").eq("id", id).maybeSingle();
   const row = (data as Row) ?? null;
@@ -62,7 +62,7 @@ export default async function OrderDetail({ id }: { id: string }) {
   const byId = new Map(materials.map((m) => [m.id, m]));
 
   // The colour standards these materials are matched to (Tess, 2026-08-23: "make
-  // PO print linked colour standard"). This page is FRED-only, so the table is
+  // PO print linked colour standard"). This page is extras-only, so the table is
   // always present here; normalizeStandards still degrades a null to [] on its own.
   const { data: stdRows } = await supabase
     .from("color_standards")

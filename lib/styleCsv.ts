@@ -72,7 +72,7 @@ export function csvCell(v: string): string {
   return /[",\n\r]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
 }
 
-// Options for the export. FRED does not use Blank Style, so its CSV drops that
+// Options for the export. The extras variant does not use Blank Style, so its CSV drops that
 // column — header and value together (Tess, 2026-08-20: "remove those from style
 // form and csv"). The default (SOUS SOUS / Renggli) is unchanged: all ten columns,
 // byte-for-byte as before.
@@ -80,14 +80,14 @@ export type CsvOptions = { includeBlankStyle?: boolean };
 
 // The columns as (header, value) pairs, in the receiving form's order. Keeping the
 // header beside its value is what lets a column be dropped without the two arrays
-// drifting out of step. `fredDrop` marks a column FRED leaves out.
-type CsvColumn = { header: string; value: (s: CsvStyleLike) => string; fredDrop?: boolean };
+// drifting out of step. The drop flag marks a column the extras variant leaves out.
+type CsvColumn = { header: string; value: (s: CsvStyleLike) => string; extrasDrop?: boolean };
 const COLUMNS: CsvColumn[] = [
   { header: "Product Name", value: (s) => text(s.name) },
   { header: "Product type", value: (s) => text(s.garment) },
   { header: "Style Number", value: (s) => text(s.style_no) },
   { header: "Product Color", value: (s) => text(s.colors) },
-  { header: "Blank Style", value: (s) => text(s.blank_style), fredDrop: true },
+  { header: "Blank Style", value: (s) => text(s.blank_style), extrasDrop: true },
   // Fabric type is styles.fabric — one field, two names (Tess, 2026-08-07:
   // "fabric is a duplicate of fabric type -- keep fabric type").
   { header: "Fabric type", value: (s) => text(s.fabric) },
@@ -101,11 +101,11 @@ const COLUMNS: CsvColumn[] = [
 
 function columnsFor(opts?: CsvOptions): CsvColumn[] {
   // includeBlankStyle defaults true, so no-argument callers are unchanged.
-  return opts?.includeBlankStyle === false ? COLUMNS.filter((c) => !c.fredDrop) : COLUMNS;
+  return opts?.includeBlankStyle === false ? COLUMNS.filter((c) => !c.extrasDrop) : COLUMNS;
 }
 
 /** The header, exactly as the receiving form names its fields. The full ten; the
- *  FRED export drops Blank Style via the option on styleCsv/styleCsvValues. */
+ *  extras export drops Blank Style via the option on styleCsv/styleCsvValues. */
 export const CSV_COLUMNS = COLUMNS.map((c) => c.header);
 
 /** One style, in column order, unescaped. */

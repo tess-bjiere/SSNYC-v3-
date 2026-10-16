@@ -9,7 +9,7 @@
 -- app, from each material's own supplier — the order itself can span suppliers.
 -- Soft-delete like everything else.
 --
--- Already applied to the FRED database (project vjiwcreytvmxvxasyvoo), where the
+-- Already applied to the other deployment's database, where the
 -- materials library lives. Run this by hand in the Supabase SQL editor of the
 -- Loyalist project (axwavdjhzvtluvsixfjq) if/when material orders are switched on
 -- there too — until then the /material-orders page renders its empty state (the

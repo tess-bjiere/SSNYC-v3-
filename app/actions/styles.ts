@@ -7,7 +7,7 @@ import { activeBrand } from "@/lib/activeBrand";
 import { requireTeam } from "@/lib/access";
 import { APP } from "@/lib/appConfig";
 import { readMaterialIds, normalizeMaterialIds } from "@/lib/sampleMaterials";
-import { suggestFredNumber } from "@/lib/fredStyleNumber";
+import { suggestStyleNumber } from "@/lib/styleNumber";
 import {
   canDeleteComment,
   canEditComment,
@@ -76,24 +76,24 @@ function n(form: FormData, key: string): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
-// The next FRED style number for a given category/type, read from the brand's
-// live numbers — retired styles included, since FRED numbers are never reused.
-// Null off FRED (nothing to number) or when the category has no code. Shared by
+// The next house style number for a given category/type, read from the brand's
+// live numbers — retired styles included, since house numbers are never reused.
+// Null without the extras (nothing to number) or when the category has no code. Shared by
 // create, repurpose and duplicate so all three number by the same rule.
-async function nextFredNumber(
+async function nextStyleNumber(
   supabase: Awaited<ReturnType<typeof createClient>>,
   brand: string,
   category: string | null,
   type: string | null
 ): Promise<string | null> {
-  if (APP.id !== "fred") return null;
+  if (!APP.productExtras) return null;
   const { data: nums } = await supabase
     .from("styles")
     .select("style_no")
     .eq("brand", brand)
     .not("style_no", "is", null);
   const existing = (nums ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
-  return suggestFredNumber(existing, category, type);
+  return suggestStyleNumber(existing, category, type);
 }
 
 export async function createStyle(form: FormData) {
@@ -114,16 +114,16 @@ export async function createStyle(form: FormData) {
   // into the brand you are looking at (multi-brand phase 1). See lib/brands.ts.
   const brand = await activeBrand();
 
-  // FRED auto-numbers a new style from its category when the number is left blank
-  // (Tess, 2026-08-20: "i want fred to auto generate style numbers based on our
+  // The extras auto-number a new style from its category when the number is left blank
+  // (Tess, 2026-08-20: wanted it "to auto generate style numbers based on our
   // rules, the user would have the ability to edit if needed"). The form shows the
   // suggestion live; a blank submission means "use the rule", so it is recomputed
   // HERE from the brand's live numbers — the true next in the code even if the form
   // sat open a while. A number the user typed is honoured untouched. Retired styles
-  // are included in the scan: FRED numbers are never reused, so a killed style's
+  // are included in the scan: house numbers are never reused, so a killed style's
   // number must not be handed out again.
   let styleNo = s(form, "style_no");
-  if (!styleNo && APP.id === "fred") {
+  if (!styleNo && APP.productExtras) {
     const { data: nums } = await supabase
       .from("styles")
       .select("style_no")
@@ -132,7 +132,7 @@ export async function createStyle(form: FormData) {
     const existing = (nums ?? []).map((r) => (r as { style_no: string | null }).style_no ?? "");
     // The Type (stored in the `garment` column) refines the code within the family
     // — Tops + Shirting → 21, not the anchor 20.
-    styleNo = suggestFredNumber(existing, s(form, "category"), s(form, "garment"));
+    styleNo = suggestStyleNumber(existing, s(form, "category"), s(form, "garment"));
   }
 
   const { data, error } = await supabase
@@ -226,8 +226,8 @@ export async function updateStyle(id: string, form: FormData) {
   // safely for this column.
   if (form.has("cover_image")) patch.cover_image = s(form, "cover_image");
 
-  // Season, Blank style and WIP are hidden on the FRED style form (Tess,
-  // 2026-08-20: "FRED style profiles should remove: blank style / WIP / season …
+  // Season, Blank style and WIP are hidden on the extras style form (Tess,
+  // 2026-08-20: the style profiles "should remove: blank style / WIP / season …
   // Dont edit these on SOUS SOUS or Renggli"). Same guard as cover_image: an
   // absent field means "leave it alone", never "clear it", so hiding a field on
   // one brand can't blank a value another brand still edits.
@@ -329,13 +329,13 @@ export async function setInLibrary(id: string, on: boolean) {
 
 // The materials a style is made in — fabrics / trims / packaging linked from the
 // library (Tess, 2026-08-19: "add fabric and trims from library to a style in
-// development or production"). FRED-only, since the materials library is; on
+// development or production"). Extras-only, since the materials library is; on
 // SSYNC this is a no-op. The client sends the whole id set after each add or
 // remove, so this just normalises and writes it — the style_samples.material_ids
 // column takes the same shape for a single round.
 export async function setStyleMaterials(styleId: string, ids: string[]) {
   await requireTeam();
-  if (APP.id !== "fred" || !styleId) return;
+  if (!APP.productExtras || !styleId) return;
   const supabase = await createClient();
   await supabase
     .from("styles")
@@ -348,12 +348,12 @@ export async function setStyleMaterials(styleId: string, ids: string[]) {
 // The materials one sample round was sewn in (style_samples.material_ids), set on
 // its own so a sample card can sub in an alternate fabric without re-opening the
 // whole round form (Tess, 2026-08-20: "have the ability to sub in an alternate
-// fabric on one of the samples"). Same shape and FRED gate as setStyleMaterials;
+// fabric on one of the samples"). Same shape and extras gate as setStyleMaterials;
 // the caller sends the full desired id set (kept trims/packaging plus the new
 // fabric), so this only normalises and writes it.
 export async function setSampleMaterials(styleId: string, sampleId: string, ids: string[]) {
   await requireTeam();
-  if (APP.id !== "fred" || !sampleId) return;
+  if (!APP.productExtras || !sampleId) return;
   const supabase = await createClient();
   await supabase
     .from("style_samples")
@@ -465,15 +465,15 @@ export async function repurposeStyle(styleId: string, form: FormData) {
   if (!src) return;
 
   const season = s(form, "season");
-  // A repurposed style is a new product (new season, usually new fabric), so on
-  // FRED it takes a fresh number from its category/type when the field is left
+  // A repurposed style is a new product (new season, usually new fabric), so with
+  // the extras on it takes a fresh number from its category/type when the field is left
   // blank — you can still type one to override (Tess, 2026-08-20: "duplicate /
-  // repurposed should create a new style number"). Off FRED, blank stays blank as
+  // repurposed should create a new style number"). Without the extras, blank stays blank as
   // before.
   const srcMeta = src as { brand?: string | null; category?: string | null; garment?: string | null };
   let styleNo = s(form, "style_no");
   if (!styleNo) {
-    styleNo = await nextFredNumber(
+    styleNo = await nextStyleNumber(
       supabase,
       srcMeta.brand ?? (await activeBrand()),
       srcMeta.category ?? null,
@@ -565,16 +565,16 @@ export async function duplicateStyle(styleId: string, form: FormData) {
 
   const sketch = pickPhotoSlots((src as { photos?: unknown }).photos, DESIGN_SLOTS.map((sl) => sl.id));
 
-  // On FRED a duplicate takes its OWN new number by default (Tess, 2026-08-20:
+  // With the extras on a duplicate takes its OWN new number by default (Tess, 2026-08-20:
   // "duplicate / repurposed should create a new style number"). This differs from
   // the SSYNC model, where a duplicate keeps the number so the two profiles read
   // as siblings of one style — so the modal's number field still lets you type the
-  // original number back to keep them linked. Off FRED, blank keeps the source
+  // original number back to keep them linked. Without the extras, blank keeps the source
   // number exactly as before (duplicateDraft falls back to src.style_no).
   const srcMeta = src as { brand?: string | null; category?: string | null; garment?: string | null };
   let styleNo = s(form, "style_no");
   if (!styleNo) {
-    styleNo = await nextFredNumber(
+    styleNo = await nextStyleNumber(
       supabase,
       srcMeta.brand ?? (await activeBrand()),
       srcMeta.category ?? null,
@@ -938,14 +938,14 @@ function sampleFields(form: FormData) {
     // than instead of them — a round is often made in something nobody has
     // entered into the library yet.
     //
-    // FRED only, and spread so the key is ABSENT rather than null elsewhere:
+    // Extras only, and spread so the key is ABSENT rather than null elsewhere:
     // the materials table has never been applied to the Loyalist project
     // (db/p11-materials.sql) and the library is hidden on the SSYNC deploy, so
     // there is nothing there to link to and a write would only find a column
     // that does not exist. Same reasoning as the four material_*_date columns
     // above — a save from a form that does not offer the field must not be
     // able to blank it.
-    ...(APP.id === "fred" ? { material_ids: readMaterialIds(form.getAll("material_ids")) } : {}),
+    ...(APP.productExtras ? { material_ids: readMaterialIds(form.getAll("material_ids")) } : {}),
   };
 }
 
@@ -959,7 +959,7 @@ export async function addSample(styleId: string, form: FormData): Promise<{ id?:
   if (!round) return {};
 
   // Surface a rejected write instead of swallowing it. This one bit hard (Tess,
-  // 2026-08-20: "when i add a sample round its not saving"): style_samples on FRED
+  // 2026-08-20: "when i add a sample round its not saving"): style_samples on the other deployment
   // was missing the material_ids column sampleFields writes, so PostgREST refused
   // every insert and the round vanished with no sign. A save that fails must say
   // so, not look like it worked.
@@ -1409,7 +1409,7 @@ export async function cropStyleImage(
 }
 
 // Resize the style image onto a white 3:4 background (the sketch → cover case).
-// FRED and SOUS SOUS alike — this is a product-side tool, not brand-specific.
+// Every brand alike — this is a product-side tool, not brand-specific.
 export async function fitStyleImageOnWhite(
   styleId: string,
   target: PhotoTarget

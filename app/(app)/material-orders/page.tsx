@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 // for materials from the material library"). Grouped by status — Draft, Sent,
 // Received — with a one-line create form; the fuller way in is the library's
 // select mode, which creates an order already seeded with the chosen materials.
-// Team only, like the rest of the product side, and FRED-only like the materials
+// Team only, like the rest of the product side, and extras-only like the materials
 // library it draws from.
 //
 // The select("*") tolerates the material_orders table not existing yet (before
@@ -38,7 +38,7 @@ type Row = {
 export default async function MaterialOrdersPage() {
   await requireTeam();
   const brand = await activeBrand();
-  // On for FRED, and for the SOUS SOUS / Renggli brands (Tess, 2026-08-24). A
+  // On with the product extras, and for the SOUS SOUS / Renggli brands (Tess, 2026-08-24). A
   // brand without ordering 404s here exactly as before.
   if (!ordersEnabled(brand)) notFound();
 

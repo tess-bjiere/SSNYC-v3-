@@ -1,6 +1,6 @@
 // A colour standard — the approved physical reference a material's colour is
-// matched to (Tess, 2026-08-23: "can you create a color standard that lives in
-// the tool for fred?"; FRED-only, like the material orders drawn from the same
+// matched to (Tess, 2026-08-23: asked for a colour standard "that lives in
+// the tool"; extras-only, like the material orders drawn from the same
 // library).
 //
 // The standard is a physical object: a signed, dated swatch held in the studio.

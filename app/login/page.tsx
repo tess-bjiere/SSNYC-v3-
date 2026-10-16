@@ -29,8 +29,7 @@ export default function LoginPage() {
     <div className="login-wrap">
       <div className="login-brand">
         {/* Logo and copy follow the deployment's identity — SSYNC shows the SSYNC
-            mark and the Loyalist line; FRED shows the FRED mark and FRED's line
-            (Tess, 2026-08-17). See lib/appConfig.ts. */}
+            mark and the Loyalist line (Tess, 2026-08-17). See lib/appConfig.ts. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="login-logo" src={APP.logo} alt={APP.name} />
       </div>

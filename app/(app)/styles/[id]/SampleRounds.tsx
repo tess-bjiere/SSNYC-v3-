@@ -506,8 +506,8 @@ function ContactFields({ s }: { s?: Pick<StyleSample, "contact_name"> }) {
 // the ability to sub in an alternate fabric on one of the samples"). A quick
 // inline picker over the library's fabrics that writes just this round's
 // material_ids — the round's trims and packaging are carried through untouched,
-// only the fabric is swapped. FRED-only, like the rest of the materials library;
-// off FRED there is no library and this renders nothing.
+// only the fabric is swapped. Extras-only, like the rest of the materials library;
+// without the extras there is no library and this renders nothing.
 const isFabricKind = (m: LinkedMaterial) => m.kind !== "trim" && m.kind !== "packaging";
 
 function SampleFabricSwap({
@@ -681,7 +681,7 @@ function RoundFacts({
           )}
           {mat.state !== "none" && <div className={"sr-material " + mat.state}>{mat.label}</div>}
           {/* Sub in an alternate fabric on just this sample, without opening the
-              whole round form (Tess, 2026-08-20). FRED-only — renders nothing when
+              whole round form (Tess, 2026-08-20). Extras-only — renders nothing when
               there is no library. Trims/packaging on the round are left alone. */}
           <SampleFabricSwap
             styleId={styleId}

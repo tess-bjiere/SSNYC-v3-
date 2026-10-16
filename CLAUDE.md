@@ -177,6 +177,14 @@ back.
 
 ## Where things stand
 
+**One deployment, one identity (2026-10-16).** This code used to carry a second
+deployment's preset; that deployment has its own repository now, and every
+mention of it was taken out of this one at Tess's request. The features that
+only ran there — the photographer directory, colour standards, prefixed style
+numbers, materials linked to styles and rounds — are still here, behind
+`APP.productExtras` in `lib/appConfig.ts`, which is off. Do not add another
+company's name, domain or data back into this repo.
+
 Built and shipped: the reference library, moodboards, editorial, the style
 profile, sample rounds with photography and image annotation, comments, the
 by-factory view, the style library, trash and restore, exports, the CSV export,
