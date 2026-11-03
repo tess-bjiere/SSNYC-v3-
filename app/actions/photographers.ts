@@ -166,71 +166,48 @@ export async function removePhotographerImage(id: string, kind: PeopleKind = "ph
   revalidatePath("/trash");
 }
 
-// Save selected photographer images into the Campaign library (Tess, 2026-08-19:
+// Put a photographer's pictures on Campaign, or take them off (Tess, 2026-08-19:
 // "from the photographer profile, you can specifically select images you want
 // saved into the campaign library").
 //
-// It makes a COPY, not a move: each chosen roster row is duplicated as an
-// 'editorial' row pointing at the same image, crediting the same photographer.
-// A copy rather than a flip so the two are decoupled (Tess, 2026-08-19: "is
-// there a way it doesn't have to show twice ... add whatever guardrails") —
-// deleting the campaign copy later never touches the photographer's roster
-// image, and the profile de-dupes by image so it still shows once. Idempotent:
-// an image already in Campaign is skipped, so saving twice can't pile up copies.
-export async function saveImagesToCampaign(ids: string[]): Promise<{ saved: number }> {
+// People phase 2 (2026-11-02): this MOVES the picture instead of copying it.
+// Since phase 1 a profile shows every picture tagged to the person whatever
+// page it hangs on, so the photographer's own row can simply hang on Campaign
+// ('roster' → 'editorial') and still be on their profile — one picture, one row,
+// one set of notes, never a copy to drift or be deleted separately. Taking it off
+// moves it back. Until phase 2 it inserted an 'editorial' duplicate of each row
+// and the profile hid the duplicate by image; restoring that is the insert block
+// in git history before this commit.
+//
+// A picture put on Campaign with no reference type is marked Editorial, the tab
+// Campaign opens on — otherwise it would only show under All. A type already set
+// is kept, and survives a trip off and back on.
+export async function setImagesOnCampaign(ids: string[], on: boolean): Promise<{ moved: number }> {
   await requireTeam();
   const clean = Array.from(new Set(ids.filter(Boolean)));
-  if (clean.length === 0) return { saved: 0 };
+  if (clean.length === 0) return { moved: 0 };
   const supabase = await createClient();
   const brand = await activeBrand();
-
-  const [{ data: rows }, { data: existing }] = await Promise.all([
-    supabase.from("references").select("*").eq("brand", brand).eq("type", "roster").in("id", clean),
-    supabase
-      .from("references")
-      .select("image_url")
-      .eq("brand", brand)
-      .eq("type", "editorial")
-      .is("deleted_at", null),
-  ]);
-  const have = new Set((existing ?? []).map((e) => (e as { image_url: string | null }).image_url).filter(Boolean));
-
-  // Copy only the image + credit fields; never id / created_at / deleted_at, and
-  // never a row whose image is already in Campaign.
-  const copies = (rows ?? [])
-    .filter((r) => {
-      const u = (r as { image_url: string | null }).image_url;
-      return u && !have.has(u);
-    })
-    .map((r) => {
-      const s = r as Record<string, unknown>;
-      return {
-        brand,
-        type: "editorial",
-        designer: s.designer ?? "",
-        photographer: s.photographer ?? null,
-        photographer_ig: s.photographer_ig ?? null,
-        location: s.location ?? null,
-        link: s.link ?? null,
-        year: s.year ?? null,
-        season: s.season ?? null,
-        model: s.model ?? null,
-        image: s.image ?? null,
-        thumb: s.thumb ?? null,
-        image_url: s.image_url ?? null,
-        thumb_url: s.thumb_url ?? null,
-        extra_images: s.extra_images ?? null,
-        notes: s.notes ?? null,
-      };
-    });
-  if (copies.length === 0) return { saved: 0 };
-  const { data: made } = await supabase.from("references").insert(copies).select("id");
-  // The copy carries the same credit, so it is tagged to the same person and the
-  // profile shows its "In campaign" badge.
-  await syncPeopleLinks(supabase, brand, ((made ?? []) as { id: string }[]).map((r) => r.id));
+  const from = on ? "roster" : "editorial";
+  const to = on ? "editorial" : "roster";
+  const { data } = await supabase
+    .from("references")
+    .update({ type: to })
+    .eq("brand", brand)
+    .eq("type", from)
+    .is("deleted_at", null)
+    .in("id", clean)
+    .select("id");
+  const moved = ((data ?? []) as { id: string }[]).map((r) => r.id);
+  if (on && moved.length) {
+    await supabase.from("references").update({ ref_kind: "Editorial" }).in("id", moved).is("ref_kind", null);
+  }
+  // The page a row hangs on decides whether a credit there may MAKE a person
+  // (lib/peopleRecords) — re-run the rule so the tags stay right.
+  await syncPeopleLinks(supabase, brand, moved);
   revalidatePath("/photographers");
   revalidatePath("/editorial");
-  return { saved: copies.length };
+  return { moved: moved.length };
 }
 
 function extFor(type: string): string {

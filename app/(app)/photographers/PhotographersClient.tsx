@@ -26,7 +26,7 @@ import {
   updatePerson,
   addPhotographerImages,
   removePhotographerImage,
-  saveImagesToCampaign,
+  setImagesOnCampaign,
   addPerson,
   removePerson,
 } from "@/app/actions/photographers";
@@ -88,7 +88,10 @@ export default function PhotographersClient({
   links,
   canEdit = false,
   kind = "photographer",
+  openId = null,
 }: {
+  /** A person to open straight away — `?person=<id>`, where a tag links. */
+  openId?: string | null;
   refs: Reference[];
   people: PersonRecord[];
   links: { reference_id: string; person_id: string }[];
@@ -117,8 +120,15 @@ export default function PhotographersClient({
   const [continentF, setContinentF] = useState<string[]>([]);
   const [countryF, setCountryF] = useState<string[]>([]);
   const [cityF, setCityF] = useState<string[]>([]);
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(openId);
   const [detail, setDetail] = useState<Reference | null>(null);
+  // A tag clicked on a picture opened from a profile changes only the query on
+  // this same page: open that person, and close the picture.
+  useEffect(() => {
+    if (!openId) return;
+    setOpenKey(openId);
+    setDetail(null);
+  }, [openId]);
   const [toast, setToast] = useState<string | null>(null);
   const [meta, setMeta] = useState<Record<string, PhotographerMeta>>(() => cardsOf(records));
   // Take the server's cards again after a refresh — an add or a remove changes
@@ -745,29 +755,33 @@ function ProfileModal({
   }
 
   const ig = igUrl(profile.ig);
-  // The image a row points at, used to tell a roster image from its Campaign copy
-  // (they share it) and to de-dupe the two into one tile.
+  // The image a row points at — one picture can still reach a person through two
+  // rows (Chris Colls's FRAME picture before phase 2 folded Alexandra Agoston's
+  // copy of it), so the grid shows each picture once.
   const imgKey = (r: Reference) =>
     (r.image_url as string | null) ||
     (r.image as string | null) ||
     refThumb(r) ||
     r.id;
+  // Whether a picture is this person's own — what their profile may move or
+  // remove. A photographer's own pictures hang on their profile ('roster') or on
+  // Campaign ('editorial'); a model's are her 'model' rows. Anything else tagged
+  // to them (an Archival image they shot, a model's casting picture they took)
+  // belongs to another page and is only shown here (people phase 2, 2026-11-02).
+  const isTheirs = (r: Reference) => (isModel ? r.type === "model" : r.type === "roster" || r.type === "editorial");
   // Only the refs that actually carry an image are "work"; a roster entry has
-  // none. Then de-dupe (Tess, 2026-08-19: "is there a way it doesn't have to show
-  // twice ... if we add to campaign"): saving an image to Campaign makes an
-  // 'editorial' copy pointing at the same picture, so the profile drops that copy
-  // in favour of the roster original — the tile shows once, and the copy is what
-  // lives in /editorial.
+  // none. Then one tile per picture, the person's own row first (Tess,
+  // 2026-08-19: "is there a way it doesn't have to show twice").
   const workRefsRaw = useMemo(() => {
     const all = profile.ids
       .map((id) => byId.get(id))
       .filter((r): r is Reference => !!r && !!refThumb(r));
-    const rosterKeys = new Set(all.filter((r) => r.type === "roster").map(imgKey));
+    const ownKeys = new Set(all.filter(isTheirs).map(imgKey));
     const seen = new Set<string>();
     const out: Reference[] = [];
     for (const r of all) {
       const k = imgKey(r);
-      if (r.type !== "roster" && rosterKeys.has(k)) continue; // the campaign copy of a roster image
+      if (!isTheirs(r) && ownKeys.has(k)) continue;
       if (seen.has(k)) continue;
       seen.add(k);
       out.push(r);
@@ -775,16 +789,24 @@ function ProfileModal({
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.ids, byId]);
-  // Which displayed images are already in the Campaign library — for the badge.
-  const campaignKeys = useMemo(() => {
-    const s = new Set<string>();
-    for (const id of profile.ids) {
+  // On Campaign or not — the row's own page since phase 2, with the team's
+  // switch applied at once while the move saves.
+  const [campaignNow, setCampaignNow] = useState<Record<string, boolean>>({});
+  const onCampaign = (r: Reference) => campaignNow[r.id] ?? r.type === "editorial";
+  const canSwitch = (r: Reference) => canEdit && !isModel && isTheirs(r);
+  function switchCampaign(ids: string[], on: boolean) {
+    const todo = ids.filter((id) => {
       const r = byId.get(id);
-      if (r && r.type === "editorial") s.add(imgKey(r));
-    }
-    return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.ids, byId]);
+      return r && canSwitch(r) && onCampaign(r) !== on;
+    });
+    if (!todo.length) return;
+    setCampaignNow((m) => ({ ...m, ...Object.fromEntries(todo.map((id) => [id, on])) }));
+    onToast(on ? `Put ${todo.length} on Campaign` : `Took ${todo.length} off Campaign`);
+    start(async () => {
+      await setImagesOnCampaign(todo, on);
+      router.refresh();
+    });
+  }
   // Apply the team's hand-set order; anything not in the list keeps its default
   // place at the end, so a fresh upload shows up without disturbing the order.
   const workRefs = useMemo(() => {
@@ -832,8 +854,12 @@ function ProfileModal({
   }
   // Remove one image from the profile — optimistic, then a soft delete (it goes
   // to Trash, recoverable). Tess, 2026-08-17: "allow to x out image easily".
+  // Only the person's own pictures offer it; one that is also on Campaign asks
+  // first, because since phase 2 it is the same picture there, not a copy.
+  const [xArm, setXArm] = useState<string | null>(null);
   function removeImg(id: string) {
     if (!canEdit) return;
+    setXArm(null);
     setItems((cur) => {
       const next = cur.filter((x) => x.id !== id);
       itemsRef.current = next;
@@ -866,11 +892,7 @@ function ProfileModal({
     const ids = Array.from(picked);
     if (ids.length === 0) return;
     leavePick();
-    onToast(`Saved ${ids.length} to Campaign`);
-    start(async () => {
-      await saveImagesToCampaign(ids);
-      router.refresh();
-    });
+    switchCampaign(ids, true);
   }
 
   // Upload the shots the team picks. Each becomes a roster row under this
@@ -1214,12 +1236,12 @@ function ProfileModal({
                   className={"btn ghost sm" + (picking ? " on" : "")}
                   onClick={() => (picking ? leavePick() : setPicking(true))}
                 >
-                  {picking ? "Cancel" : "Save to Campaign"}
+                  {picking ? "Cancel" : "Put on Campaign"}
                 </button>
               )}
               <span className="pg-imgbar-hint">
                 {picking
-                  ? "Tap the images to save into the Campaign library"
+                  ? "Tap the pictures to put on Campaign — the same picture, not a copy"
                   : workRefs.length > 1
                     ? "Drag to reorder — the first image is the thumbnail"
                     : workRefs.length === 0
@@ -1256,20 +1278,46 @@ function ProfileModal({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={src ?? ""} alt={r.designer || ""} loading="lazy" draggable={false} />
                       {picking && <span className="mat-check">{isPicked ? "✓" : ""}</span>}
-                      {!picking && campaignKeys.has(imgKey(r)) && (
-                        <span className="pg-incampaign" title="Saved to the Campaign library">
-                          In campaign
-                        </span>
-                      )}
-                      {canEdit && !picking && (
+                      {/* The Campaign switch (people phase 2): the same picture
+                          hangs on Campaign or not. Read-only as a badge for a
+                          talent, and for a picture that is not this person's. */}
+                      {!picking && canSwitch(r) ? (
                         <button
                           type="button"
-                          className="pg-img-x"
-                          title="Remove image"
-                          aria-label="Remove image"
-                          onClick={(e) => { e.stopPropagation(); removeImg(r.id); }}
+                          className={"pg-incampaign pg-campswitch" + (onCampaign(r) ? " on" : "")}
+                          aria-pressed={onCampaign(r)}
+                          title={onCampaign(r) ? "On Campaign — click to take it off" : "Put this picture on Campaign"}
+                          onClick={(e) => { e.stopPropagation(); switchCampaign([r.id], !onCampaign(r)); }}
                         >
-                          ×
+                          {onCampaign(r) ? "In campaign" : "+ Campaign"}
+                        </button>
+                      ) : (
+                        !picking && onCampaign(r) && (
+                          <span className="pg-incampaign" title="On the Campaign page">
+                            In campaign
+                          </span>
+                        )
+                      )}
+                      {canEdit && !picking && isTheirs(r) && (
+                        <button
+                          type="button"
+                          className={"pg-img-x" + (xArm === r.id ? " arm" : "")}
+                          title={
+                            xArm === r.id
+                              ? "Click again — it leaves Campaign too"
+                              : onCampaign(r)
+                                ? "Remove image (it is also on Campaign)"
+                                : "Remove image"
+                          }
+                          aria-label="Remove image"
+                          onMouseLeave={() => setXArm((a) => (a === r.id ? null : a))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onCampaign(r) && xArm !== r.id) setXArm(r.id);
+                            else removeImg(r.id);
+                          }}
+                        >
+                          {xArm === r.id ? "Remove?" : "×"}
                         </button>
                       )}
                     </div>
@@ -1301,7 +1349,7 @@ function ProfileModal({
               <span className="mo-pickbar-n">{picked.size} selected</span>
               <div className="spacer" />
               <button type="button" className="btn" onClick={saveToCampaign}>
-                Save to Campaign
+                Put on Campaign
               </button>
             </div>
           )}

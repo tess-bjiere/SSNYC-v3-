@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 // photographer directory's page over rows of type 'model': by city, a card per
 // person with their pictures, age, agency and work, starred, grouped (Shortlist,
 // Casting reference), and "+ Add" for the next one. See lib/people.ts.
-export default async function ModelsPage() {
-  const dir = await loadDirectory("model");
-  return <PhotographersClient kind="model" {...dir} />;
+// `?person=<id>` opens that person's profile — where a tag on a picture links
+// (people phase 3, 2026-11-02).
+export default async function ModelsPage({ searchParams }: { searchParams: Promise<{ person?: string }> }) {
+  const [dir, sp] = await Promise.all([loadDirectory("model"), searchParams]);
+  return <PhotographersClient kind="model" {...dir} openId={sp.person ?? null} />;
 }

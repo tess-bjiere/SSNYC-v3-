@@ -94,3 +94,13 @@ test("borrow: by id, by credited name, Trash included, never from the person's o
   assert.equal(plan[0].image_url, "/b.jpg");
   assert.equal(plan[0].credit, "Aaron Crossman");
 });
+
+// People phase 2: a picture already credited to the person is on their profile
+// through its tag, so borrowing it would only make the copy phase 2 removed.
+test("borrow: a live picture already credited to the person is not copied", () => {
+  const rows = [
+    row({ id: "x", type: "roster", image_url: "/a.jpg", model: "Alexandra Agoston", photographer: "Chris Colls" }),
+  ];
+  const plan = planPeople("model", "model", ["model"], [{ name: "Alexandra Agoston", location: "New York", images: [], borrow: { id: "x" } }], rows);
+  assert.equal(plan.some((p) => p.image_url === "/a.jpg"), false);
+});

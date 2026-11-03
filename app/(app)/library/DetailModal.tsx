@@ -41,6 +41,8 @@ import {
   type LinkedStyle,
 } from "@/app/actions/styleRefs";
 import Combo from "./Combo";
+import PeopleCredit from "./PeopleCredit";
+import { getImagePeople, type ImagePeople } from "@/app/actions/people";
 
 // Editable fields for the in-place Edit form. `suggest` fields offer the curated
 // dropdown (when options are passed in), the same lists the Add form uses so a
@@ -126,6 +128,23 @@ export default function DetailModal({
   const router = useRouter();
   const [cur, setCur] = useState<Reference>(r);
   const [editing, setEditing] = useState(false);
+  // Who is tagged on this picture (people phase 3, 2026-11-02). Fetched when the
+  // card opens and again whenever its credits change — an Edit-form save moves
+  // the tags too — so the chips always match the text beside them.
+  const [ppl, setPpl] = useState<ImagePeople | null>(null);
+  useEffect(() => {
+    let live = true;
+    getImagePeople(cur.id)
+      .then((d) => { if (live) setPpl(d); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [cur.id, cur.photographer, cur.model]);
+  function onPeople(p: ImagePeople) {
+    // An empty answer (nothing found) never wipes the card's own credits.
+    if (!p.people.length && !p.tags.length) return;
+    setPpl(p);
+    setCur((c) => ({ ...c, photographer: p.photographer, model: p.model }));
+  }
   const [confirmDel, setConfirmDel] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [pending, start] = useTransition();
@@ -380,6 +399,10 @@ export default function DetailModal({
   // minus the campaign-only reference type.
   const isArch = actions === "archival";
   const isEd = actions === "editorial" || isArch;
+  // Where an uncredited picture still offers "+ Tag": the people pages —
+  // Campaign, Archival and a profile. A product reference shows its people only
+  // when it already credits someone, so the Library card stays a garment card.
+  const tagHere = isEd;
   const rows: [string, React.ReactNode][] = [
     // On a campaign card the brand no longer heads the card — the photographer /
     // DP does — so it reads as a row here, and the garment-library fields
@@ -410,9 +433,16 @@ export default function DetailModal({
           ["Price point", cur.price],
         ] as [string, React.ReactNode][])
       : []),
-    ["Photographer", (cur.photographer || cur.photographer_ig) ? (
+    ["Photographer", (cur.photographer || cur.photographer_ig || (tagHere && ppl?.canEdit)) ? (
       <span>
-        {cur.photographer}
+        <PeopleCredit
+          refId={cur.id}
+          kind="photographer"
+          credit={cur.photographer}
+          people={ppl}
+          onPeople={onPeople}
+          allowAdd={tagHere}
+        />
         {cur.photographer_ig && (
           <>
             {cur.photographer ? " · " : ""}
@@ -423,7 +453,9 @@ export default function DetailModal({
         )}
       </span>
     ) : null],
-    [isArch ? "Pictured" : "Model", cur.model],
+    [isArch ? "Pictured" : "Model", (cur.model || (tagHere && ppl?.canEdit)) ? (
+      <PeopleCredit refId={cur.id} kind="model" credit={cur.model} people={ppl} onPeople={onPeople} allowAdd={tagHere} />
+    ) : null],
     ["Location", cur.location],
     // The source / product link, live (Tess, 2026-09-15). Opens in a new tab.
     ["Link", cur.link ? (

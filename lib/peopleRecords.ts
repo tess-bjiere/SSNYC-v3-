@@ -291,3 +291,59 @@ export function planIsEmpty(p: SyncPlan): boolean {
 export function planSize(p: SyncPlan): number {
   return p.create.length + p.revive.length + p.add.length + p.drop.length;
 }
+
+// ---------------------------------------------------------------------------
+// Tagging from a picture (people phase 3, 2026-11-02: "and phase 3"). A tag is
+// added or taken off from the picture's own detail view, and the credit text is
+// rewritten to match — so the typed credit and the tags never disagree, in
+// either direction. The credit stays typeable because Archival is full of
+// photographers who will never have a record ("Louis Faurer"), and a credit is
+// how they are kept.
+// ---------------------------------------------------------------------------
+
+/** A credit with `name` added, unless it already names them. */
+export function addToCredit(credit: string | null | undefined, name: string): string {
+  const n = name.trim();
+  const c = (credit ?? "").trim();
+  if (!c) return n;
+  if (creditNames(c, false).some((x) => nameKey(x) === nameKey(n))) return c;
+  return `${c}, ${n}`;
+}
+
+/**
+ * A credit with `name` taken out — the whole credit, or one part of a listed
+ * one. Null when nothing is left. Never touches a longer name ("Ana" stays out
+ * of "Anastasia").
+ */
+export function removeFromCredit(credit: string | null | undefined, name: string): string | null {
+  const c = (credit ?? "").trim();
+  const k = nameKey(name);
+  if (!c || !k) return c || null;
+  if (nameKey(c) === k) return null;
+  const parts = c.split(SEP).map((p) => p.trim()).filter(Boolean);
+  const left = parts.filter((p) => nameKey(p) !== k);
+  if (left.length === parts.length) return c;
+  return left.length ? left.join(", ") : null;
+}
+
+/**
+ * Names a credit gives that nobody has a record for — offered on the picture as
+ * "add to Photographers / Models", so a credited name becomes a person by one
+ * deliberate click, never automatically.
+ */
+export function unrecordedNames(
+  credit: string | null | undefined,
+  ownRow: boolean,
+  recorded: ReadonlySet<string>
+): string[] {
+  const names = creditNames(credit, ownRow);
+  // A listed credit offers its parts, not the whole "Ana, Bea" string.
+  const offer = names.length > 1 ? names.slice(1) : names;
+  const seen = new Set<string>();
+  return offer.filter((n) => {
+    const k = nameKey(n);
+    if (recorded.has(k) || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}

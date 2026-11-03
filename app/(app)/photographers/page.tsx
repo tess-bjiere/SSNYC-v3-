@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
 // sous sous / renggli versions") until 2026-11-02, when she asked for the deck's
 // photographers in SSYNC — so it is on for this deploy again, every brand, with
 // the at-home tier still behind APP.productExtras.
-export default async function PhotographersPage() {
-  const dir = await loadDirectory("photographer");
-  return <PhotographersClient kind="photographer" {...dir} />;
+// `?person=<id>` opens that person's profile — where a tag on a picture links
+// (people phase 3, 2026-11-02).
+export default async function PhotographersPage({ searchParams }: { searchParams: Promise<{ person?: string }> }) {
+  const [dir, sp] = await Promise.all([loadDirectory("photographer"), searchParams]);
+  return <PhotographersClient kind="photographer" {...dir} openId={sp.person ?? null} />;
 }

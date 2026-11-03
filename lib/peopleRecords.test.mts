@@ -232,3 +232,37 @@ test("a person's card merges and fills blanks as the settings map did", () => {
   assert.equal(readCard(kept).group, "Movement");
   assert.equal(readCard(kept).role, "Photographer");
 });
+
+// Phase 3: tagging from a picture rewrites its credit, so the planner (which
+// reads the credit) agrees with what was tagged — the two can never drift.
+test("tagging adds to a credit once, and untagging takes out only that name", async () => {
+  const { addToCredit, removeFromCredit } = await import("./peopleRecords.ts");
+  assert.equal(addToCredit(null, "Chris Colls"), "Chris Colls");
+  assert.equal(addToCredit("Irina Shayk", "Alexandra Agoston"), "Irina Shayk, Alexandra Agoston");
+  assert.equal(addToCredit("Irina Shayk, alexandra agoston", "Alexandra Agoston"), "Irina Shayk, alexandra agoston");
+  assert.equal(removeFromCredit("Irina Shayk, Alexandra Agoston", "alexandra agoston"), "Irina Shayk");
+  assert.equal(removeFromCredit("Ana", "Ana"), null);
+  assert.equal(removeFromCredit("Anastasia", "Ana"), "Anastasia");
+  // A duo stays whole: "&" is not a separator.
+  assert.equal(removeFromCredit("Louise & Maria Thornfeldt", "Louise"), "Louise & Maria Thornfeldt");
+});
+
+test("a tag added through the credit is what the planner then sees", () => {
+  const rows = [row({ id: "a1", type: "archival", photographer: "Louis Faurer, Mac Scott" })];
+  const plan = planPeopleSync({
+    rows,
+    people: [person({ id: "ms", name: "Mac Scott" })],
+    links: [],
+    ownTypes: OWN,
+    newId: ids(),
+  });
+  assert.deepEqual(plan.add, [{ reference_id: "a1", person_id: "ms", role: "photographer" }]);
+  assert.equal(plan.create.length, 0); // Louis Faurer is offered, never made
+});
+
+test("names without a record are offered one by one, never the listed whole", async () => {
+  const { unrecordedNames } = await import("./peopleRecords.ts");
+  assert.deepEqual(unrecordedNames("Louis Faurer, Mac Scott", false, new Set(["mac scott"])), ["Louis Faurer"]);
+  assert.deepEqual(unrecordedNames("Louis Faurer", false, new Set()), ["Louis Faurer"]);
+  assert.deepEqual(unrecordedNames("Unknown", false, new Set()), []);
+});

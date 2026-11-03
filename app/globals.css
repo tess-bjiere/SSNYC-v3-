@@ -923,6 +923,18 @@ span.pg-star{cursor:default;background:rgba(12,12,12,.5)}
 .pg-incampaign{position:absolute;top:6px;left:6px;z-index:3;font-size:var(--t-micro);
   letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;line-height:1;
   background:var(--accent);color:var(--btnfg);border:1px solid var(--accent)}
+/* The same marker as a switch for the team (people phase 2, 2026-11-02): on,
+   it reads exactly as before; off, a quiet "+ Campaign" that shows on hover like
+   the ×, so a grid of pictures not on Campaign stays clean. */
+.pg-campswitch{font-family:inherit;cursor:pointer}
+.pg-campswitch:not(.on){background:rgba(12,12,12,.72);color:var(--ink);border-color:var(--line);
+  opacity:0;transition:opacity .12s}
+.pg-profile-grid .card:hover .pg-campswitch{opacity:1}
+@media (hover:none){.pg-campswitch:not(.on){opacity:.85}}
+/* The × armed: a picture that is also on Campaign asks once more, because since
+   phase 2 removing it takes it off Campaign as well (two-click arm, no confirm()). */
+.pg-img-x.arm{width:auto;padding:0 8px;border-radius:11px;opacity:1;font-size:var(--t-micro);
+  letter-spacing:.06em;text-transform:uppercase;background:#c0392b;color:#fff;border-color:#c0392b}
 .pg-profile-cities{display:flex;gap:6px;flex-wrap:wrap}
 .pg-chip{font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
   border:1px solid var(--line);padding:3px 8px}
@@ -5299,3 +5311,19 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
   .pg-page .page-title{order:0;flex:1 1 100%}
   .pg-page .lib-bar{display:block;margin:12px 0 0}
 }
+
+/* People on a picture — people phase 3 (Tess, 2026-11-02: "and phase 3"). The
+   credit line reads as it always did; a name that is someone in Photographers or
+   Models is a link, and the team's controls are quiet outlined marks in the
+   micro size so the card still reads as a credit, not a form. */
+.ppl-name + .ppl-name::before{content:", "}
+.ppl-x{background:none;border:none;padding:0 2px;margin-left:2px;font:inherit;line-height:1;
+  color:var(--faint);cursor:pointer}
+.ppl-x:hover{color:#c0392b}
+.ppl-sugg,.ppl-add{background:none;border:1px solid var(--line);color:var(--muted);font-family:inherit;
+  font-size:var(--t-micro);letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;margin-left:8px;
+  cursor:pointer;vertical-align:1px}
+.ppl-sugg:hover,.ppl-add:hover{color:var(--ink);border-color:var(--muted)}
+.ppl-adding{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:8px;vertical-align:middle}
+.ppl-input{width:200px;max-width:100%}
+.ppl-err{display:block;color:#c0392b;font-size:var(--t-meta);margin-top:4px}

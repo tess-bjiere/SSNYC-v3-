@@ -123,7 +123,12 @@ export function planPeople(
       });
     }
     const b = findBorrow(s.borrow, existing, ownType);
-    if (b?.image_url && !ownImages.has(b.image_url)) {
+    // A live borrowed picture whose credit already names this person is on
+    // their profile through its tag (people phase 2, 2026-11-02: one picture, no
+    // copies) — so no second row is written for it. One in Trash is not on any
+    // profile, so it is still borrowed.
+    const alreadyTagged = !!b && !b.deleted_at && key(nameOf(b)) === k;
+    if (b?.image_url && !ownImages.has(b.image_url) && !alreadyTagged) {
       ownImages.add(b.image_url);
       planned.push({
         name: s.name,
