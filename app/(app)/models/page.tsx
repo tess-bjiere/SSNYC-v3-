@@ -9,6 +9,6 @@ export const dynamic = "force-dynamic";
 // person with their pictures, age, agency and work, starred, grouped (Shortlist,
 // Casting reference), and "+ Add" for the next one. See lib/people.ts.
 export default async function ModelsPage() {
-  const { refs, metaValue, canEdit } = await loadDirectory("model");
-  return <PhotographersClient kind="model" refs={refs} metaValue={metaValue} canEdit={canEdit} />;
+  const dir = await loadDirectory("model");
+  return <PhotographersClient kind="model" {...dir} />;
 }

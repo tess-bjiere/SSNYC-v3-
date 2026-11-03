@@ -11,7 +11,7 @@
 // import that can be pressed again safely is easier to trust than a script run
 // once by hand. What gets added is decided by lib/seedPlan.ts, which looks at
 // Trash too, so a second press never doubles a row or brings back something the
-// team deleted. Card fields are only filled where blank (withPhotographerMetaDefaults).
+// team deleted. Card fields are only filled where blank (cardWithDefaults).
 //
 // Everything goes into SOUS SOUS — the deck and the image library are its — even
 // if the person pressing is looking at another brand.
@@ -19,13 +19,18 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireTeam } from "@/lib/access";
-import { PEOPLE, type PeopleKind } from "@/lib/people";
-import { withPhotographerMetaDefaults } from "@/lib/photographerMeta";
+import { PEOPLE, instagramUrl, type PeopleKind } from "@/lib/people";
+import { cardWithDefaults } from "@/lib/photographerMeta";
+import { nameKey, planSize, type PersonRecord } from "@/lib/peopleRecords";
+import { previewPeopleSync, readPeople, syncPeopleLinks } from "@/lib/peopleDb";
 import { planArchival, planPeople, type ExistingRow } from "@/lib/seedPlan";
 import { ARCHIVAL_SEED } from "@/lib/seeds/archival";
 import { PHOTOGRAPHER_SEED, MODEL_SEED, type PersonSeed } from "@/lib/seeds/creatives";
 
-export type SeedId = "archival" | "photographers" | "models";
+// "people" is not an import of new material: it runs the people-records sync
+// (lib/peopleDb.ts) over every row, which tags whatever a write missed — the
+// catch-up after the people phase-1 deploy (2026-11-02), and safe at any time.
+export type SeedId = "archival" | "photographers" | "models" | "people";
 const SEED_BRAND = "sous-sous";
 const IMPORTS_KEY = "imports";
 const COLS = "id,type,image_url,thumb_url,photographer,model,deleted_at";
@@ -66,11 +71,14 @@ export type SeedStatus = { id: SeedId; total: number; missing: number; lastRun: 
 export async function seedStatuses(): Promise<SeedStatus[]> {
   await requireTeam();
   const supabase = await createClient();
-  const [archRows, photoRows, modelRows, { data: imp }] = await Promise.all([
+  const [archRows, photoRows, modelRows, { data: imp }, peoplePlan] = await Promise.all([
     readRows(supabase, ["archival"]),
     readRows(supabase, peopleTypes("photographer")),
     readRows(supabase, peopleTypes("model")),
     supabase.from("settings").select("value").eq("key", IMPORTS_KEY).maybeSingle(),
+    // Before db/p30 is applied the tables are not there; report nothing to do
+    // rather than failing the whole Setup panel.
+    previewPeopleSync(supabase, SEED_BRAND).catch(() => null),
   ]);
   const runs = (imp?.value ?? {}) as Record<string, SeedStatus["lastRun"]>;
   const p = PEOPLE.photographer;
@@ -89,18 +97,19 @@ export async function seedStatuses(): Promise<SeedStatus[]> {
       missing: planPeople("model", m.ownType, m.rowTypes, MODEL_SEED, modelRows).length,
       lastRun: runs.models ?? null,
     },
+    { id: "people", total: 0, missing: peoplePlan ? planSize(peoplePlan) : 0, lastRun: runs.people ?? null },
   ];
 }
 
-async function insertChunks(supabase: Supa, rows: Record<string, unknown>[]): Promise<number> {
-  let n = 0;
+async function insertChunks(supabase: Supa, rows: Record<string, unknown>[]): Promise<string[]> {
+  const ids: string[] = [];
   for (let i = 0; i < rows.length; i += 200) {
     const chunk = rows.slice(i, i + 200);
-    const { error } = await supabase.from("references").insert(chunk);
+    const { data, error } = await supabase.from("references").insert(chunk).select("id");
     if (error) throw new Error(error.message);
-    n += chunk.length;
+    ids.push(...((data ?? []) as { id: string }[]).map((r) => r.id));
   }
-  return n;
+  return ids;
 }
 
 export async function runSeed(id: SeedId): Promise<{ ok: boolean; added: number; cards: number; error?: string }> {
@@ -110,13 +119,18 @@ export async function runSeed(id: SeedId): Promise<{ ok: boolean; added: number;
   let added = 0;
   let cards = 0;
   try {
-    if (id === "archival") {
+    if (id === "people") {
+      const plan = await syncPeopleLinks(supabase, SEED_BRAND, "all", { by, quiet: false });
+      added = plan ? planSize(plan) : 0;
+      revalidatePath("/photographers");
+      revalidatePath("/models");
+    } else if (id === "archival") {
       const todo = planArchival(ARCHIVAL_SEED, await readRows(supabase, ["archival"]));
       // Newest-first is how Archival sorts, so each row is stamped a second
       // apart in seed order: the wall opens on the Mood images, then the library
       // grouped by name, rather than in whatever order one insert lands.
       const base = Date.now();
-      added = await insertChunks(
+      added = (await insertChunks(
         supabase,
         todo.map((r, i) => ({
           brand: SEED_BRAND,
@@ -132,7 +146,7 @@ export async function runSeed(id: SeedId): Promise<{ ok: boolean; added: number;
           created_by: by,
           created_at: new Date(base - (ARCHIVAL_SEED.indexOf(r) * 1000)).toISOString(),
         }))
-      );
+      )).length;
       revalidatePath("/archival");
     } else {
       const kind: PeopleKind = id === "models" ? "model" : "photographer";
@@ -140,7 +154,7 @@ export async function runSeed(id: SeedId): Promise<{ ok: boolean; added: number;
       const seeds = peopleSeed(kind);
       const bySeed = new Map(seeds.map((s) => [s.name.trim().toLowerCase(), s]));
       const plan = planPeople(kind, c.ownType, c.rowTypes, seeds, await readRows(supabase, peopleTypes(kind)));
-      added = await insertChunks(
+      const made = await insertChunks(
         supabase,
         plan.map((p) => {
           const s = bySeed.get(p.name.trim().toLowerCase());
@@ -162,11 +176,18 @@ export async function runSeed(id: SeedId): Promise<{ ok: boolean; added: number;
         })
       );
 
-      // The cards: fill blanks only, so nothing the team has typed is undone.
-      const { data } = await supabase.from("settings").select("value").eq("key", c.metaKey).maybeSingle();
-      let value: unknown = data?.value ?? {};
+      added = made.length;
+      // Tag the new rows (creating anyone new), then fill each person's record
+      // from the deck — blanks only, so nothing the team has typed is undone.
+      // Since people phase 1 (2026-11-02) the card lives on the person, not in
+      // the name-keyed settings map.
+      await syncPeopleLinks(supabase, SEED_BRAND, made, { by, quiet: false });
+      const people = (await readPeople(supabase, SEED_BRAND)).filter((p) => p.kind === kind && !p.deleted_at);
+      const byName = new Map<string, PersonRecord>(people.map((p) => [nameKey(p.name), p]));
       for (const s of seeds) {
-        value = withPhotographerMetaDefaults(value, s.name, {
+        const p = byName.get(nameKey(s.name));
+        if (!p) continue;
+        const card = cardWithDefaults(p.card, {
           group: s.group,
           role: s.role ?? (kind === "model" ? "" : "Photographer"),
           age: s.age ?? "",
@@ -176,12 +197,19 @@ export async function runSeed(id: SeedId): Promise<{ ok: boolean; added: number;
           ...(s.photo != null ? { photo: s.photo } : {}),
           ...(s.video != null ? { video: s.video } : {}),
         });
+        const { error } = await supabase
+          .from("people")
+          .update({
+            card,
+            city: p.city || s.location || null,
+            ig: p.ig || instagramUrl(s.ig) || null,
+            link: p.link || s.link || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", p.id);
+        if (error) throw new Error(error.message);
         cards += 1;
       }
-      const { error: metaErr } = await supabase
-        .from("settings")
-        .upsert({ key: c.metaKey, value, updated_at: new Date().toISOString() });
-      if (metaErr) throw new Error(metaErr.message);
       revalidatePath(c.href);
     }
 

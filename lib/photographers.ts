@@ -228,3 +228,110 @@ export function groupByGeo(
       return b.count - a.count || a.continent.localeCompare(b.continent);
     });
 }
+
+// ---------------------------------------------------------------------------
+// The directory from people records (2026-11-02, people phase 1 — see
+// lib/peopleRecords.ts). Same shapes as buildPhotographerDirectory, so the page
+// draws it unchanged, with two differences that are the point of the records:
+//
+//   - a person is filed ONCE, under the city they are based in. Before, a card
+//     appeared in every city an image of theirs carried, so a photographer with a
+//     deck city and an uncity'd Campaign picture showed twice (six did).
+//   - the key is the person's id, so a rename never orphans their card.
+//
+// The cities their pictures were shot in are still there, on the profile, as
+// `shotIn`. Someone with no live image left on the board (every row in Trash,
+// or their only credit retyped to another name) is not listed — the record and
+// card wait, and come back with the first image tagged to them.
+// ---------------------------------------------------------------------------
+
+export type DirectoryPerson = {
+  id: string;
+  name: string;
+  city: string | null;
+  ig: string | null;
+};
+
+export type PeopleProfile = PhotographerProfile & {
+  /** Where they are based, "" when unknown. */
+  based: string;
+  /** Other cities their pictures carry, alphabetical. */
+  shotIn: string[];
+};
+
+export function buildDirectoryFromPeople(
+  people: readonly DirectoryPerson[],
+  links: readonly { reference_id: string; person_id: string }[],
+  /** The tagged rows, newest first — the order a profile shows. */
+  credits: readonly PhotoCredit[]
+): { cities: CityGroup[]; photographers: PeopleProfile[] } {
+  const byRef = new Map<string, string[]>();
+  for (const l of links) {
+    const list = byRef.get(l.reference_id) ?? [];
+    if (!list.includes(l.person_id)) list.push(l.person_id);
+    byRef.set(l.reference_id, list);
+  }
+  const acc = new Map<string, { ids: string[]; shot: Set<string>; designers: Set<string>; ig: string | null }>();
+  for (const c of credits ?? []) {
+    const id = clean(c.id);
+    if (!id) continue;
+    for (const pid of byRef.get(id) ?? []) {
+      let a = acc.get(pid);
+      if (!a) {
+        a = { ids: [], shot: new Set(), designers: new Set(), ig: null };
+        acc.set(pid, a);
+      }
+      if (a.ids.includes(id)) continue;
+      a.ids.push(id);
+      const loc = clean(c.location);
+      if (loc) a.shot.add(loc);
+      const d = clean(c.designer);
+      if (d) a.designers.add(d);
+      if (!a.ig) a.ig = clean(c.photographer_ig) || null;
+    }
+  }
+
+  const profiles: PeopleProfile[] = [];
+  const cities = new Map<string, { located: boolean; people: PhotographerInCity[] }>();
+  for (const p of people ?? []) {
+    const a = acc.get(p.id);
+    if (!a || a.ids.length === 0 || !isRealName(clean(p.name))) continue;
+    const based = clean(p.city);
+    const cityDisplay = based || NO_CITY;
+    const ig = clean(p.ig) || a.ig;
+    const shotIn = Array.from(a.shot)
+      .filter((c) => c.toLowerCase() !== based.toLowerCase())
+      .sort((x, y) => x.localeCompare(y));
+    profiles.push({
+      key: p.id,
+      name: clean(p.name),
+      ig,
+      cities: [cityDisplay],
+      shotFor: Array.from(a.designers).sort((x, y) => x.localeCompare(y)),
+      ids: a.ids,
+      based,
+      shotIn,
+    });
+    let c = cities.get(cityDisplay);
+    if (!c) {
+      c = { located: !!based, people: [] };
+      cities.set(cityDisplay, c);
+    }
+    c.people.push({ key: p.id, name: clean(p.name), ig, ids: a.ids });
+  }
+  profiles.sort((a, b) => a.name.localeCompare(b.name));
+
+  const cityGroups: CityGroup[] = Array.from(cities.entries())
+    .map(([city, c]) => {
+      const photographers = c.people.sort((a, b) => b.ids.length - a.ids.length || a.name.localeCompare(b.name));
+      const count = photographers.reduce((n, ph) => n + ph.ids.length, 0);
+      return { city, located: c.located, photographers, count };
+    })
+    .sort((a, b) => {
+      if (!a.located && b.located) return 1;
+      if (a.located && !b.located) return -1;
+      return b.count - a.count || a.city.localeCompare(b.city);
+    });
+
+  return { cities: cityGroups, photographers: profiles };
+}

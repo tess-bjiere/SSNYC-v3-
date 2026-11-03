@@ -188,3 +188,30 @@ export function tierLabel(tier: PhotographerTier | null): string {
   if (tier === "campaign") return "Campaign";
   return "";
 }
+
+// ---------------------------------------------------------------------------
+// The card as a person record holds it (2026-11-02, people phase 1). Since the
+// `people` table (db/p30) a card is no longer one entry in a name-keyed settings
+// map but the `card` jsonb on that person's own row — so there is no map to
+// carry other people through, and the key is the person's id, not their name.
+// Same fields, same defensive read, same "an all-empty card stores nothing".
+// ---------------------------------------------------------------------------
+
+/** A person's card, read defensively from their `card` column. */
+export function readCard(raw: unknown): PhotographerMeta {
+  return readOne(raw);
+}
+
+/** A card with `patch` applied, in the stored shape ({} when it says nothing). */
+export function mergeCard(raw: unknown, patch: Partial<PhotographerMeta>): Record<string, unknown> {
+  return (withPhotographerMeta({ k: raw }, "k", patch).k ?? {}) as Record<string, unknown>;
+}
+
+/**
+ * A card with `defaults` written only where it is blank — the import rule
+ * (withPhotographerMetaDefaults) for a single card. Also how two people are
+ * merged: the person kept wins every field they have filled in.
+ */
+export function cardWithDefaults(raw: unknown, defaults: Partial<PhotographerMeta>): Record<string, unknown> {
+  return (withPhotographerMetaDefaults({ k: raw }, "k", defaults).k ?? {}) as Record<string, unknown>;
+}

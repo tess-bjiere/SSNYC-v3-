@@ -8,6 +8,7 @@ import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { cropBuffer, parseCrop, heicToJpeg, thumbFrom, type CropRect } from "./imageOps";
 import { isHeicUpload, isAcceptableImage } from "@/lib/imageUpload";
 import { mergedExtraImages } from "@/lib/referenceMerge";
+import { syncPeopleLinks } from "@/lib/peopleDb";
 import type { ExtraImage } from "@/lib/types";
 import {
   REFERENCES_BUCKET,
@@ -53,10 +54,26 @@ export async function updateReference(id: string, patch: Record<string, string |
 
   const supabase = await createClient();
   await supabase.from("references").update(clean).eq("id", id);
+  // A credit edit moves the image's people tags with it (people phase 1,
+  // 2026-11-02 — see lib/peopleRecords.ts).
+  if (touchesCredit(clean)) {
+    await syncPeopleLinks(supabase, await activeBrand(), [id]);
+    revalidatePeople();
+  }
   // A row can be on either grid and the edit form is shared, so both are
   // refreshed rather than guessing which page the edit came from.
   revalidatePath("/library");
   revalidatePath("/editorial");
+}
+
+// Whether a patch changes who is on an image.
+function touchesCredit(patch: Record<string, unknown>): boolean {
+  return "photographer" in patch || "model" in patch;
+}
+
+function revalidatePeople() {
+  revalidatePath("/photographers");
+  revalidatePath("/models");
 }
 
 // Star / un-star a reference (Tess, 2026-09-09: "add functionality for arielle to
@@ -99,6 +116,10 @@ export async function bulkUpdateReferences(ids: string[], patch: Record<string, 
   if (Object.keys(clean).length === 0) return;
   const supabase = await createClient();
   await supabase.from("references").update(clean).in("id", cleanIds);
+  if (touchesCredit(clean)) {
+    await syncPeopleLinks(supabase, await activeBrand(), cleanIds);
+    revalidatePeople();
+  }
   revalidatePath("/library");
   revalidatePath("/editorial");
 }
@@ -373,10 +394,14 @@ export async function restoreReference(id: string) {
   if (!id) return;
   const supabase = await createClient();
   await supabase.from("references").update({ deleted_at: null }).eq("id", id);
+  // A directory picture coming back brings its person back too, card and all,
+  // if they had been removed (people phase 1 — lib/peopleRecords revive).
+  await syncPeopleLinks(supabase, await activeBrand(), [id]);
   revalidatePath("/library");
   revalidatePath("/editorial");
   revalidatePath("/trash");
   revalidatePath("/moodboard");
+  revalidatePeople();
 }
 
 export type PurgeResult = { ok: boolean; error?: string; filesRemoved: number };

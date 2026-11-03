@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { runSeed, type SeedId, type SeedStatus } from "@/app/actions/seeds";
 
-// The three imports from 2 November 2026 (see app/actions/seeds.ts). Each row
+// The imports from 2 November 2026 (see app/actions/seeds.ts). Each row
 // says what it brings in, how much of it is still missing, and adds just that.
 // Safe to press again: nothing already there — or deleted since — is re-added.
-const ABOUT: Record<SeedId, { title: string; detail: string; href: string; unit: string }> = {
+const ABOUT: Record<SeedId, { title: string; detail: string; href: string; unit: string; verb?: string }> = {
   archival: {
     title: "Archival images",
     detail:
@@ -22,6 +22,14 @@ const ABOUT: Record<SeedId, { title: string; detail: string; href: string; unit:
       "The 39 creatives on the deck's roster, filed under its five sections, with each slide's look, selected work and research notes, and the deck's pictures. Those whose pictures are already on Campaign keep using them.",
     href: "/photographers",
     unit: "row",
+  },
+  people: {
+    title: "People records",
+    detail:
+      "Makes sure every photographer and model has a record and is tagged on each picture that credits them. Run once after the people update goes live, and any time a card looks out of date — it only fixes what is out of step.",
+    href: "/photographers",
+    unit: "change",
+    verb: "Make",
   },
   models: {
     title: "Models from the creative collaborators deck",
@@ -53,7 +61,7 @@ function SeedRow({ status }: { status: SeedStatus }) {
     setMsg(null);
     start(async () => {
       const res = await runSeed(status.id);
-      setMsg(res.ok ? `Added ${plural(res.added)}.` : `Stopped: ${res.error}. Pressing again picks up where it left off.`);
+      setMsg(res.ok ? `${about.verb === "Make" ? "Made" : "Added"} ${plural(res.added)}.` : `Stopped: ${res.error}. Pressing again picks up where it left off.`);
       router.refresh();
     });
   }
@@ -67,7 +75,7 @@ function SeedRow({ status }: { status: SeedStatus }) {
         <div className="seed-detail">{about.detail}</div>
         <div className="seed-state">
           {status.missing > 0
-            ? `${plural(status.missing)} to add`
+            ? `${plural(status.missing)} to ${(about.verb ?? "Add").toLowerCase()}`
             : "Everything is in"}
           {status.lastRun && (
             <> · last run {new Date(status.lastRun.at).toLocaleDateString()} by {status.lastRun.by}</>
@@ -81,7 +89,7 @@ function SeedRow({ status }: { status: SeedStatus }) {
         disabled={pending || status.missing === 0}
         onClick={run}
       >
-        {pending ? "Adding…" : status.missing > 0 ? `Add ${status.missing}` : "Up to date"}
+        {pending ? "Working…" : status.missing > 0 ? `${about.verb ?? "Add"} ${status.missing}` : "Up to date"}
       </button>
     </div>
   );

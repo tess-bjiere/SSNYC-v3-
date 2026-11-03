@@ -24,9 +24,12 @@ export type PeopleKind = "photographer" | "model";
 
 export type PeopleConfig = {
   kind: PeopleKind;
-  /** The settings row the cards live under. "photographers" is the original key. */
+  /** The settings row the cards lived under until people phase 1 (2026-11-02).
+   *  Now only read to start a new person's record from the card already typed
+   *  under their name (lib/peopleDb.ts); the card lives on the record. */
   metaKey: string;
-  /** Row types that build the directory. */
+  /** Row types that built the directory before people records — still what the
+   *  deck import checks a name against (lib/seedPlan.ts). */
   rowTypes: readonly string[];
   /** The type a row is written with when the directory itself adds one. */
   ownType: string;

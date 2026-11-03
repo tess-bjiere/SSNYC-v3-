@@ -7,11 +7,14 @@ import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import {
-  photographerKey,
-  withPhotographerMeta,
+  cardWithDefaults,
+  mergeCard,
+  readCard,
   type PhotographerMeta,
 } from "@/lib/photographerMeta";
 import { PEOPLE, isPeopleKind, instagramUrl, type PeopleKind } from "@/lib/people";
+import { nameKey, renameInCredit, type PersonRecord } from "@/lib/peopleRecords";
+import { syncPeopleLinks } from "@/lib/peopleDb";
 
 // 2026-11-02: the directory is no longer extras-only. Tess asked for the deck's
 // photographers in SSYNC and for "a space for potential models", so these writes
@@ -21,33 +24,131 @@ function cfg(kind: unknown) {
   return PEOPLE[isPeopleKind(kind) ? kind : "photographer"];
 }
 
-// Set the team-entered side of a photographer — tier, video/directs, clients
-// (Tess, 2026-08-17). Stored in the shared `settings` jsonb under one key, keyed
-// by the photographer's normalised name, read-modify-write so one edit never
-// disturbs another person's card. No table, no migration.
+// Set the team-entered side of a person — group, role, notes, star, image order
+// (Tess, 2026-08-17; the card moved onto the person's own record 2026-11-02,
+// people phase 1). Read-modify-write of that one record's `card`, so an edit
+// carries every field it did not come for. `personId` is what the directory now
+// keys a person by; before phase 1 it was their lower-cased name.
 export async function setPhotographerMeta(
-  nameKey: string,
+  personId: string,
   patch: Partial<PhotographerMeta>,
   kind: PeopleKind = "photographer"
 ) {
   await requireTeam();
-  const key = (nameKey ?? "").trim();
-  if (!key) return;
-  const c = cfg(kind);
-
+  const id = (personId ?? "").trim();
+  if (!id) return;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", c.metaKey)
-    .maybeSingle();
-
-  const next = withPhotographerMeta(data?.value ?? {}, key, patch);
+  const { data } = await supabase.from("people").select("card").eq("id", id).maybeSingle();
+  if (!data) return;
   await supabase
-    .from("settings")
-    .upsert({ key: c.metaKey, value: next, updated_at: new Date().toISOString() });
+    .from("people")
+    .update({ card: mergeCard((data as { card: unknown }).card, patch), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  revalidatePath(cfg(kind).href);
+}
+
+export type PersonFields = { name?: string; city?: string; ig?: string; link?: string };
+
+// Rename someone, or set where they are based and their links (people phase 1,
+// 2026-11-02: "you rename or merge them once"). A rename also rewrites the credit
+// on every image tagged to them, so the text the team edits keeps agreeing with
+// the record. Renaming to someone who already exists MERGES the two: the tags
+// move to the person kept, their card fills in only what the kept card leaves
+// blank, and the other record is removed (soft — it can be put back by hand).
+// Ryan Marie Helfant's "(DP)" card is the case this was for.
+export async function updatePerson(
+  personId: string,
+  fields: PersonFields,
+  kind: PeopleKind = "photographer"
+): Promise<{ ok: boolean; mergedInto?: string; error?: string }> {
+  await requireTeam();
+  const c = cfg(kind);
+  const supabase = await createClient();
+  const { data: me } = await supabase.from("people").select("*").eq("id", personId).maybeSingle();
+  const person = me as (PersonRecord & { brand: string }) | null;
+  if (!person) return { ok: false, error: "Not found." };
+  const now = new Date().toISOString();
+
+  const patch: Record<string, unknown> = {};
+  if (fields.city !== undefined) patch.city = fields.city.trim() || null;
+  if (fields.ig !== undefined) patch.ig = instagramUrl(fields.ig) || null;
+  if (fields.link !== undefined) patch.link = fields.link.trim() || null;
+
+  const newName = (fields.name ?? person.name).trim();
+  if (!newName) return { ok: false, error: "A name can't be blank." };
+  const renamed = newName !== person.name;
+
+  // Someone else already has this name: merge into them.
+  let target = person;
+  if (renamed && nameKey(newName) !== nameKey(person.name)) {
+    const { data: same } = await supabase
+      .from("people")
+      .select("*")
+      .eq("brand", person.brand)
+      .eq("kind", person.kind)
+      .is("deleted_at", null)
+      .neq("id", person.id);
+    const other = ((same ?? []) as (PersonRecord & { brand: string })[]).find((p) => nameKey(p.name) === nameKey(newName));
+    if (other) target = other;
+  }
+
+  // The images tagged to this person, for the credit rewrite.
+  const { data: tagRows } = await supabase
+    .from("reference_people")
+    .select("id,reference_id")
+    .eq("person_id", person.id)
+    .is("deleted_at", null);
+  const tags = (tagRows ?? []) as { id: string; reference_id: string }[];
+
+  if (target.id !== person.id) {
+    // Move the tags, fill the kept card's blanks, retire this record.
+    const { data: theirs } = await supabase
+      .from("reference_people")
+      .select("reference_id")
+      .eq("person_id", target.id)
+      .is("deleted_at", null);
+    const have = new Set(((theirs ?? []) as { reference_id: string }[]).map((t) => t.reference_id));
+    const moving = tags.filter((t) => !have.has(t.reference_id));
+    if (moving.length) {
+      await supabase
+        .from("reference_people")
+        .insert(moving.map((t) => ({ brand: person.brand, reference_id: t.reference_id, person_id: target.id, role: kind })));
+    }
+    if (tags.length) await supabase.from("reference_people").update({ deleted_at: now }).in("id", tags.map((t) => t.id));
+    const mine = readCard(person.card);
+    const merged = cardWithDefaults(target.card, { ...mine, imageOrder: [...readCard(target.card).imageOrder, ...mine.imageOrder] });
+    await supabase
+      .from("people")
+      .update({
+        card: merged,
+        city: target.city || (patch.city as string | null) || person.city,
+        ig: target.ig || (patch.ig as string | null) || person.ig,
+        link: target.link || (patch.link as string | null) || person.link,
+        updated_at: now,
+      })
+      .eq("id", target.id);
+    await supabase.from("people").update({ deleted_at: now, updated_at: now }).eq("id", person.id);
+  } else {
+    if (renamed) patch.name = newName;
+    if (Object.keys(patch).length) {
+      const { error } = await supabase.from("people").update({ ...patch, updated_at: now }).eq("id", person.id);
+      if (error) return { ok: false, error: error.message };
+    }
+  }
+
+  if (renamed && tags.length) {
+    const col = kind === "model" ? "model" : "photographer";
+    const { data: rows } = await supabase.from("references").select(`id,${col}`).in("id", tags.map((t) => t.reference_id));
+    for (const r of (rows ?? []) as Record<string, string | null>[]) {
+      const next = renameInCredit(r[col], person.name, target.id === person.id ? newName : target.name);
+      if (next !== r[col]) await supabase.from("references").update({ [col]: next }).eq("id", r.id as string);
+    }
+  }
 
   revalidatePath(c.href);
+  revalidatePath("/editorial");
+  revalidatePath("/archival");
+  return target.id === person.id ? { ok: true } : { ok: true, mergedInto: target.id };
 }
 
 // Remove one image off a photographer's profile (Tess, 2026-08-17: "allow to x
@@ -123,7 +224,10 @@ export async function saveImagesToCampaign(ids: string[]): Promise<{ saved: numb
       };
     });
   if (copies.length === 0) return { saved: 0 };
-  await supabase.from("references").insert(copies);
+  const { data: made } = await supabase.from("references").insert(copies).select("id");
+  // The copy carries the same credit, so it is tagged to the same person and the
+  // profile shows its "In campaign" badge.
+  await syncPeopleLinks(supabase, brand, ((made ?? []) as { id: string }[]).map((r) => r.id));
   revalidatePath("/photographers");
   revalidatePath("/editorial");
   return { saved: copies.length };
@@ -148,22 +252,30 @@ function extFor(type: string): string {
 // so it never leaks onto the Campaign grid) and carrying the photographer's name
 // + city. That is exactly what the directory groups on, so the images gather
 // under the right person, place their card in the right city, and give an
-// otherwise-blank roster card a real cover — no photographer table, same shape as
-// the 185 roster rows already there.
+// otherwise-blank roster card a real cover — same shape as the roster rows
+// already there.
+//
+// Since people phase 1 (2026-11-02) the profile says WHO by the person's id, and
+// the rows take that person's current name and base city, then are tagged to
+// them straight away.
 export async function addPhotographerImages(
-  photographer: string,
-  location: string,
+  personId: string,
   formData: FormData,
   kind: PeopleKind = "photographer"
 ): Promise<{ ok: boolean; added: number; errors: string[] }> {
   await requireTeam();
-  const name = (photographer ?? "").trim();
   const c = cfg(kind);
-  if (!name) return { ok: false, added: 0, errors: [`No ${c.noun}.`] };
-  const { rows, errors } = await uploadPersonImages(c.kind, name, (location ?? "").trim(), formData, {});
-  if (rows === 0 && errors.length === 0) return { ok: false, added: 0, errors: ["No image files provided."] };
-  if (rows > 0) revalidatePath(c.href);
-  return { ok: rows > 0, added: rows, errors };
+  const supabase = await createClient();
+  const { data } = await supabase.from("people").select("name,city").eq("id", personId).maybeSingle();
+  const p = data as { name: string; city: string | null } | null;
+  if (!p?.name) return { ok: false, added: 0, errors: [`No ${c.noun}.`] };
+  const { ids, errors } = await uploadPersonImages(c.kind, p.name, p.city ?? "", formData, {});
+  if (ids.length === 0 && errors.length === 0) return { ok: false, added: 0, errors: ["No image files provided."] };
+  if (ids.length > 0) {
+    await syncPeopleLinks(supabase, await activeBrand(), ids);
+    revalidatePath(c.href);
+  }
+  return { ok: ids.length > 0, added: ids.length, errors };
 }
 
 // The row a directory writes for one of its own people. A photographer's row is
@@ -184,11 +296,11 @@ async function uploadPersonImages(
   location: string,
   formData: FormData,
   extra: Record<string, unknown>
-): Promise<{ rows: number; errors: string[] }> {
+): Promise<{ ids: string[]; errors: string[] }> {
   const files = formData
     .getAll("files")
     .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
-  if (files.length === 0) return { rows: 0, errors: [] };
+  if (files.length === 0) return { ids: [], errors: [] };
 
   const supabase = await createClient();
   const brand = await activeBrand();
@@ -231,10 +343,11 @@ async function uploadPersonImages(
   }
 
   if (rows.length > 0) {
-    const { error } = await supabase.from("references").insert(rows);
-    if (error) return { rows: 0, errors: [...errors, error.message] };
+    const { data, error } = await supabase.from("references").insert(rows).select("id");
+    if (error) return { ids: [], errors: [...errors, error.message] };
+    return { ids: ((data ?? []) as { id: string }[]).map((r) => r.id), errors };
   }
-  return { rows: rows.length, errors };
+  return { ids: [], errors };
 }
 
 export type NewPerson = {
@@ -266,7 +379,8 @@ export async function addPerson(
 
   // Where the links go: a photographer's Instagram has its own column; a model
   // row's photographer_ig would mean the photo credit's, so a model's Instagram
-  // rides in link (see lib/people.ts creditFor) and a site goes into notes.
+  // rides in link (see lib/people.ts creditFor). Both also go on the person's
+  // record, which is where the directory reads them first.
   const ig = instagramUrl(person.ig);
   const site = (person.link ?? "").trim();
   const extra: Record<string, unknown> =
@@ -275,67 +389,111 @@ export async function addPerson(
       : { photographer_ig: ig || null, link: site || null };
 
   const supabase = await createClient();
-  let added = 0;
-  const errors: string[] = [];
-  const up = await uploadPersonImages(c.kind, name, location, formData, extra);
-  added += up.rows;
-  errors.push(...up.errors);
-  if (added === 0) {
-    const brand = await activeBrand();
-    const user = await requireUser();
-    const { error } = await supabase.from("references").insert({
-      ...personRow(c.kind, name, location, extra),
-      brand,
-      created_by: user?.name || user?.email || null,
-    });
-    if (error) return { ok: false, added: 0, errors: [...errors, error.message] };
-    added = 1;
-  }
+  const brand = await activeBrand();
+  const user = await requireUser();
+  const by = user?.name || user?.email || null;
+  const now = new Date().toISOString();
 
-  const notes = [person.notes?.trim(), kind === "model" && ig && site ? site : ""].filter(Boolean).join("\n\n");
-  const patch: Partial<PhotographerMeta> = {
+  // The card from the form. Since people phase 1 the person is a record of their
+  // own: found by name (case aside) if they are already there — then the form only
+  // fills what is blank, so adding pictures for someone never wipes their notes —
+  // or brought back if they were removed, or created.
+  const card: Partial<PhotographerMeta> = {
     group: person.group?.trim() ?? "",
     role: person.role?.trim() ?? "",
     age: person.age?.trim() ?? "",
     agency: person.agency?.trim() ?? "",
     pastWork: person.pastWork?.trim() ?? "",
-    notes,
+    notes: person.notes?.trim() ?? "",
     ...(person.photo != null ? { photo: !!person.photo } : {}),
     ...(person.video != null ? { video: !!person.video } : {}),
   };
-  const { data } = await supabase.from("settings").select("value").eq("key", c.metaKey).maybeSingle();
-  const next = withPhotographerMeta(data?.value ?? {}, name, patch);
-  await supabase.from("settings").upsert({ key: c.metaKey, value: next, updated_at: new Date().toISOString() });
+  const { data: named } = await supabase
+    .from("people")
+    .select("*")
+    .eq("brand", brand)
+    .eq("kind", c.kind)
+    .order("updated_at", { ascending: false, nullsFirst: false });
+  const same = ((named ?? []) as PersonRecord[]).filter((p) => nameKey(p.name) === nameKey(name));
+  const found = same.find((p) => !p.deleted_at) ?? same[0] ?? null;
+  if (found) {
+    const { error } = await supabase
+      .from("people")
+      .update({
+        deleted_at: null,
+        city: found.city || location || null,
+        ig: found.ig || ig || null,
+        link: found.link || site || null,
+        card: cardWithDefaults(found.card, card),
+        updated_at: now,
+      })
+      .eq("id", found.id);
+    if (error) return { ok: false, added: 0, errors: [error.message] };
+  } else {
+    const { error } = await supabase.from("people").insert({
+      brand,
+      kind: c.kind,
+      name,
+      city: location || null,
+      ig: ig || null,
+      link: site || null,
+      card: mergeCard({}, card),
+      created_by: by,
+    });
+    if (error) return { ok: false, added: 0, errors: [error.message] };
+  }
+
+  const errors: string[] = [];
+  const up = await uploadPersonImages(c.kind, name, location, formData, extra);
+  const ids = [...up.ids];
+  errors.push(...up.errors);
+  if (ids.length === 0) {
+    // No pictures: one image-less row still carries them, so the two-click
+    // Remove has something to send to Trash and Restore something to bring back.
+    const { data, error } = await supabase
+      .from("references")
+      .insert({ ...personRow(c.kind, name, location, extra), brand, created_by: by })
+      .select("id");
+    if (error) return { ok: false, added: 0, errors: [...errors, error.message] };
+    ids.push(...((data ?? []) as { id: string }[]).map((r) => r.id));
+  }
+  await syncPeopleLinks(supabase, brand, ids, { by });
 
   revalidatePath(c.href);
-  return { ok: true, added, errors };
+  return { ok: true, added: ids.length, errors };
 }
 
 // Take someone out of a directory (the two-click Remove on their profile). Soft
-// delete only — every row goes to Trash and can be restored — and only the
-// directory's OWN rows: a photographer's campaign images stay on Campaign, so a
-// photographer credited there keeps a card built from those. Their card (notes,
-// group…) is left in settings, so restoring the rows brings everything back.
-export async function removePerson(kind: PeopleKind, name: string): Promise<{ removed: number }> {
+// delete only: their record is marked removed and the directory's OWN rows tagged
+// to them go to Trash — a photographer's Campaign pictures stay on Campaign. The
+// card stays on the record, and restoring any of those rows from Trash brings
+// the person back with it (lib/peopleRecords: a removed person is revived, not
+// re-made). People phase 1, 2026-11-02 — before, this matched rows by name.
+export async function removePerson(kind: PeopleKind, personId: string): Promise<{ removed: number }> {
   await requireTeam();
   const c = cfg(kind);
-  const key = photographerKey(name);
-  if (!key) return { removed: 0 };
+  if (!personId) return { removed: 0 };
   const supabase = await createClient();
-  const brand = await activeBrand();
-  const nameCol = c.kind === "model" ? "model" : "photographer";
-  const { data } = await supabase
-    .from("references")
-    .select(`id,${nameCol}`)
-    .eq("brand", brand)
-    .eq("type", c.ownType)
+  const now = new Date().toISOString();
+  const { data: tags } = await supabase
+    .from("reference_people")
+    .select("reference_id")
+    .eq("person_id", personId)
     .is("deleted_at", null);
-  const ids = ((data ?? []) as Record<string, string | null>[])
-    .filter((r) => photographerKey(r[nameCol]) === key)
-    .map((r) => r.id as string);
-  if (ids.length === 0) return { removed: 0 };
-  await supabase.from("references").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+  const refIds = ((tags ?? []) as { reference_id: string }[]).map((t) => t.reference_id);
+  let removed = 0;
+  if (refIds.length) {
+    const { data } = await supabase
+      .from("references")
+      .update({ deleted_at: now })
+      .in("id", refIds)
+      .eq("type", c.ownType)
+      .is("deleted_at", null)
+      .select("id");
+    removed = (data ?? []).length;
+  }
+  await supabase.from("people").update({ deleted_at: now, updated_at: now }).eq("id", personId);
   revalidatePath(c.href);
   revalidatePath("/trash");
-  return { removed: ids.length };
+  return { removed };
 }

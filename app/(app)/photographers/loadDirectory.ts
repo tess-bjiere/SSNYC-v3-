@@ -5,45 +5,36 @@ import { type Reference } from "@/lib/types";
 import { MOCK } from "@/lib/mock";
 import { PEOPLE, type PeopleKind } from "@/lib/people";
 import { withPhotographerMetaDefaults } from "@/lib/photographerMeta";
+import { planPeopleSync, type PersonRecord } from "@/lib/peopleRecords";
+import { loadPeopleDirectory, OWN_TYPES } from "@/lib/peopleDb";
 import { PHOTOGRAPHER_SEED, MODEL_SEED } from "@/lib/seeds/creatives";
 
-// What a people directory page needs: its rows, the team-entered cards, and
-// whether this viewer may edit. Shared by /photographers and /models (2026-11-02);
-// lib/people.ts says which rows and which settings key belong to which.
-export async function loadDirectory(kind: PeopleKind): Promise<{
+export type DirectoryData = {
+  /** The pictures tagged to this directory's people, newest first. */
   refs: Reference[];
-  metaValue: unknown;
+  /** The people — one record each, card included (db/p30). */
+  people: PersonRecord[];
+  /** Which picture is tagged to whom. */
+  links: { reference_id: string; person_id: string }[];
   canEdit: boolean;
-}> {
-  const c = PEOPLE[kind];
+};
+
+// What a people directory page needs. Shared by /photographers and /models
+// (2026-11-02). Since people phase 1 the directory is the `people` records of
+// that kind and the pictures tagged to them in `reference_people` — from any
+// wall, Campaign and Archival included — rather than rows grouped by name.
+export async function loadDirectory(kind: PeopleKind): Promise<DirectoryData> {
   if (MOCK) return mockDirectory(kind);
 
   const supabase = await createClient();
   const brand = await activeBrand();
-  const [{ data }, { data: metaRow }, user] = await Promise.all([
-    supabase
-      .from("references")
-      .select("*")
-      .eq("brand", brand)
-      .is("deleted_at", null)
-      // Photographers: the campaign images (type 'editorial') and the prospect
-      // roster (type 'roster') build the directory; Campaign shows only
-      // 'editorial', so the roster stays out of it. Models: their own 'model'
-      // rows, which no other page reads.
-      .in("type", c.rowTypes as string[])
-      .order("created_at", { ascending: false }),
-    supabase.from("settings").select("value").eq("key", c.metaKey).maybeSingle(),
-    getSessionUser(),
-  ]);
-  return {
-    refs: (data ?? []) as Reference[],
-    metaValue: metaRow?.value ?? {},
-    canEdit: user?.role === "team",
-  };
+  const [dir, user] = await Promise.all([loadPeopleDirectory<Reference>(supabase, brand, kind), getSessionUser()]);
+  return { ...dir, canEdit: user?.role === "team" };
 }
 
-// The demo preview has no database: show what the deck import would bring in.
-function mockDirectory(kind: PeopleKind) {
+// The demo preview has no database: show what the deck import would bring in,
+// with its people made by the same planner the live sync runs.
+function mockDirectory(kind: PeopleKind): DirectoryData {
   const c = PEOPLE[kind];
   const seeds = kind === "model" ? MODEL_SEED : PHOTOGRAPHER_SEED;
   const refs: Reference[] = [];
@@ -90,5 +81,16 @@ function mockDirectory(kind: PeopleKind) {
       video: s.video ?? false,
     });
   });
-  return { refs, metaValue, canEdit: true };
+  let n = 0;
+  const plan = planPeopleSync({
+    rows: refs,
+    people: [],
+    links: [],
+    ownTypes: OWN_TYPES,
+    newId: () => `${kind}-person-${++n}`,
+    legacyCards: { [kind]: metaValue as Record<string, unknown> },
+  });
+  const people = plan.create.filter((p) => p.kind === kind) as PersonRecord[];
+  const links = plan.add.filter((l) => l.role === kind).map(({ reference_id, person_id }) => ({ reference_id, person_id }));
+  return { refs, people, links, canEdit: true };
 }

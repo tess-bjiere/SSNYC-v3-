@@ -8,13 +8,14 @@ import { PEOPLE, creditFor, isInstagram, type PeopleKind } from "@/lib/people";
 import { downscaleImage } from "@/app/components/downscaleImage";
 import SizeToggle from "@/app/components/SizeToggle";
 import {
-  buildPhotographerDirectory,
+  buildDirectoryFromPeople,
   groupByGeo,
-  type PhotographerProfile,
+  type PeopleProfile,
 } from "@/lib/photographers";
+import { type PersonRecord } from "@/lib/peopleRecords";
 import { cityGeo } from "@/lib/geo";
 import {
-  readAllPhotographerMeta,
+  readCard,
   tierLabel,
   EMPTY_META,
   type PhotographerMeta,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/photographerMeta";
 import {
   setPhotographerMeta,
+  updatePerson,
   addPhotographerImages,
   removePhotographerImage,
   saveImagesToCampaign,
@@ -71,19 +73,25 @@ function sortGroups(gs: string[]): string[] {
 }
 
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
-// people / profiles in different cities ... look at their work"). Built from the
-// campaign credits; a profile also shows the team-entered side — tier (at
-// home vs campaign), whether they shoot video / direct, and a brief client list.
-// The images are still edited from Campaign; only the person's card is edited
-// here, and only by the team.
+// people / profiles in different cities ... look at their work"). A profile also
+// shows the team-entered side — group, role, medium, past work, notes.
+//
+// Since people phase 1 (2026-11-02) each person is a record (db/p30): filed once,
+// in the city they are based in, keyed by id, with their pictures being every
+// image tagged to them. Only the team edits.
+const cardsOf = (people: PersonRecord[]) =>
+  Object.fromEntries(people.map((p) => [p.id, readCard(p.card)])) as Record<string, PhotographerMeta>;
+
 export default function PhotographersClient({
   refs,
-  metaValue,
+  people: records,
+  links,
   canEdit = false,
   kind = "photographer",
 }: {
   refs: Reference[];
-  metaValue: unknown;
+  people: PersonRecord[];
+  links: { reference_id: string; person_id: string }[];
   canEdit?: boolean;
   /** Which directory this is — the same page serves Photographers and Models
    *  (Tess, 2026-11-02). See lib/people.ts. */
@@ -112,12 +120,11 @@ export default function PhotographersClient({
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [detail, setDetail] = useState<Reference | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [meta, setMeta] = useState<Record<string, PhotographerMeta>>(() =>
-    readAllPhotographerMeta(metaValue)
-  );
+  const [meta, setMeta] = useState<Record<string, PhotographerMeta>>(() => cardsOf(records));
   // Take the server's cards again after a refresh — an add or a remove changes
   // them, and the optimistic star has already been saved by then.
-  useEffect(() => setMeta(readAllPhotographerMeta(metaValue)), [metaValue]);
+  useEffect(() => setMeta(cardsOf(records)), [records]);
+  const personById = useMemo(() => new Map(records.map((p) => [p.id, p])), [records]);
 
   function flashToast(m: string) {
     setToast(m);
@@ -130,15 +137,21 @@ export default function PhotographersClient({
     return m;
   }, [refs]);
 
-  // A model is filed under `model`, a photographer under `photographer` — the
-  // builder only ever sees the person's name in one place (lib/people creditFor).
+  // creditFor reads a row as this directory sees it — on a model's row the
+  // Instagram is the model's, not the photo credit's — for the fallbacks
+  // (handle, cities shot in, brands) a record does not carry itself.
   const { cities, photographers } = useMemo(
-    () => buildPhotographerDirectory(refs.map((r) => creditFor(kind, r))),
-    [refs, kind]
+    () =>
+      buildDirectoryFromPeople(
+        records.map((p) => ({ id: p.id, name: p.name, city: p.city, ig: p.ig })),
+        links,
+        refs.map((r) => creditFor(kind, r))
+      ),
+    [records, links, refs, kind]
   );
 
   const profileByKey = useMemo(() => {
-    const m = new Map<string, PhotographerProfile>();
+    const m = new Map<string, PeopleProfile>();
     for (const p of photographers) m.set(p.key, p);
     return m;
   }, [photographers]);
@@ -285,11 +298,17 @@ export default function PhotographersClient({
   // thumbnail (Tess, 2026-08-17: "whatever the first image is in the order of
   // profile should be the thumbnail"). Unordered ones keep their default place.
   const workSrcs = (key: string, ids: string[]) => {
+    // One picture can reach a person through two rows (Chris Colls's FRAME image
+    // is his own row and the photo credit on Alexandra Agoston's), so the count
+    // and cover go by picture, as the profile grid does.
+    const seen = new Set<string>();
     const withImg = ids
       .map((id) => {
         const r = byId.get(id);
         const src = r ? refThumb(r) : "";
-        return src ? { id, src } : null;
+        if (!src || seen.has(src)) return null;
+        seen.add(src);
+        return { id, src };
       })
       .filter(Boolean) as { id: string; src: string }[];
     const order = meta[key]?.imageOrder ?? [];
@@ -301,6 +320,14 @@ export default function PhotographersClient({
     }
     return withImg.map((x) => x.src);
   };
+
+  // Their website or agency page: the record's, else the first a picture of
+  // theirs carries. A model's Instagram also rides in a row's link, and is
+  // already their handle, so it is not offered again as a site.
+  const siteOf = (key: string, ids: string[]) =>
+    personById.get(key)?.link ||
+    ids.map((id) => byId.get(id)?.link).find((l) => !!l && !(isModel && isInstagram(l))) ||
+    null;
 
   // One photographer card, reused across every city grid.
   function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
@@ -314,7 +341,7 @@ export default function PhotographersClient({
     // The handle line: the IG handle, or — for a site-only photographer — the
     // bare domain of their website. A model card reads age · agency instead,
     // which is what casting is looked at for.
-    const site = p.ids.map((id) => byId.get(id)?.link).find(Boolean) || null;
+    const site = siteOf(p.key, p.ids);
     const m = meta[p.key];
     const handle = isModel
       ? [m?.age, m?.agency].filter(Boolean).join(" · ") || (p.ig ? igLabel(p.ig) : null)
@@ -364,7 +391,7 @@ export default function PhotographersClient({
   // way as the grid view").
   function listRow(p: { key: string; name: string; ig: string | null; ids: string[] }) {
     const tier = meta[p.key]?.tier ?? null;
-    const site = p.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
+    const site = siteOf(p.key, p.ids);
     const linkUrl = igUrl(p.ig) || site;
     const linkLabel = p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
     const starred = !!meta[p.key]?.starred;
@@ -540,10 +567,10 @@ export default function PhotographersClient({
 
       {shownCities.length === 0 ? (
         <div className="empty">
-          {refs.length === 0
+          {records.length === 0
             ? isModel
               ? "No models yet. Use “+ Add” to start the casting list."
-              : "No photographers yet — they gather here from the credits on your Campaign images, or use “+ Add”."
+              : "No photographers yet — use “+ Add”."
             : `No ${people.nouns} match those filters.`}
         </div>
       ) : (
@@ -581,6 +608,8 @@ export default function PhotographersClient({
         <ProfileModal
           kind={kind}
           profile={openProfile}
+          person={personById.get(openProfile.key) ?? null}
+          site={siteOf(openProfile.key, openProfile.ids)}
           meta={metaFor(openProfile.key)}
           groups={groups}
           canEdit={canEdit}
@@ -589,6 +618,7 @@ export default function PhotographersClient({
           onClose={() => setOpenKey(null)}
           onSaved={(m) => { setMeta((prev) => ({ ...prev, [openProfile.key]: m })); flashToast("Saved"); }}
           onRemoved={() => { setOpenKey(null); flashToast("Moved to Trash"); }}
+          onMerged={(into) => { setOpenKey(into); flashToast("Merged"); }}
           onToast={flashToast}
           igUrl={igUrl}
           igLabel={igLabel}
@@ -625,6 +655,8 @@ export default function PhotographersClient({
 function ProfileModal({
   kind,
   profile,
+  person,
+  site,
   meta,
   groups,
   canEdit,
@@ -633,12 +665,15 @@ function ProfileModal({
   onClose,
   onSaved,
   onRemoved,
+  onMerged,
   onToast,
   igUrl,
   igLabel,
 }: {
   kind: PeopleKind;
-  profile: PhotographerProfile;
+  profile: PeopleProfile;
+  person: PersonRecord | null;
+  site: string | null;
   meta: PhotographerMeta;
   groups: string[];
   canEdit: boolean;
@@ -647,6 +682,7 @@ function ProfileModal({
   onClose: () => void;
   onSaved: (m: PhotographerMeta) => void;
   onRemoved: () => void;
+  onMerged: (intoId: string) => void;
   onToast: (m: string) => void;
   igUrl: (ig: string | null) => string | null;
   igLabel: (ig: string) => string;
@@ -657,14 +693,43 @@ function ProfileModal({
   // Two-click Remove (the project's arm pattern — never a confirm()).
   const [removeArm, setRemoveArm] = useState(false);
   const [draft, setDraft] = useState<PhotographerMeta>(meta);
+  // Who they are — on the record itself, not the card (people phase 1). A name
+  // that matches someone else's merges the two on save.
+  const whoOf = () => ({
+    name: person?.name ?? profile.name,
+    city: person?.city ?? "",
+    ig: person?.ig ?? profile.ig ?? "",
+    link: person?.link ?? site ?? "",
+  });
+  const [who, setWho] = useState(whoOf);
+  const [err, setErr] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const imgInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   function save() {
+    setErr(null);
     start(async () => {
+      const before = whoOf();
+      const changed =
+        who.name.trim() !== before.name ||
+        who.city.trim() !== before.city ||
+        who.ig.trim() !== before.ig ||
+        who.link.trim() !== before.link;
       await setPhotographerMeta(profile.key, draft, kind);
-      setEditing(false);
+      if (changed) {
+        const res = await updatePerson(profile.key, who, kind);
+        if (!res.ok) {
+          setErr(res.error ?? "Couldn't save.");
+          return;
+        }
+        setEditing(false);
+        router.refresh();
+        if (res.mergedInto) {
+          onMerged(res.mergedInto);
+          return;
+        }
+      } else setEditing(false);
       onSaved(draft);
     });
   }
@@ -673,7 +738,7 @@ function ProfileModal({
   // photographer's Campaign images stay where they are). See removePerson.
   function remove() {
     start(async () => {
-      await removePerson(kind, profile.name);
+      await removePerson(kind, profile.key);
       router.refresh();
       onRemoved();
     });
@@ -730,12 +795,6 @@ function ProfileModal({
         (pos.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (pos.get(b.id) ?? Number.MAX_SAFE_INTEGER)
     );
   }, [workRefsRaw, meta.imageOrder]);
-  // A model's Instagram rides in `link` (lib/people.ts), and is already the `ig`
-  // link in the header — so it is not shown a second time as their "site".
-  const site =
-    profile.ids
-      .map((id) => byId.get(id)?.link)
-      .find((l) => !!l && !(isModel && isInstagram(l))) || null;
 
   // Drag-to-reorder the grid (Tess, 2026-08-17: "easy reorder of images ... by
   // dragging"). Local order for a smooth drag; the id list is saved on drop and
@@ -814,10 +873,6 @@ function ProfileModal({
     });
   }
 
-  // Where this photographer sits — carried onto the images so they land in the
-  // same city they do.
-  const location = profile.ids.map((id) => byId.get(id)?.location).find((l) => !!l) || "";
-
   // Upload the shots the team picks. Each becomes a roster row under this
   // photographer's name; a refresh pulls them straight back into the grid.
   async function addImages(list: FileList | null) {
@@ -830,7 +885,7 @@ function ProfileModal({
     // ~4.5 MB on Vercel and a phone photo is often bigger.
     for (const f of files) fd.append("files", await downscaleImage(f));
     try {
-      const res = await addPhotographerImages(profile.name, location, fd, kind);
+      const res = await addPhotographerImages(profile.key, fd, kind);
       if (res.ok) {
         router.refresh();
         onToast(res.added === 1 ? "Added 1 image" : `Added ${res.added} images`);
@@ -884,7 +939,7 @@ function ProfileModal({
               <button
                 type="button"
                 className="btn ghost sm"
-                onClick={() => { setDraft(meta); setEditing(true); }}
+                onClick={() => { setDraft(meta); setWho(whoOf()); setErr(null); setEditing(true); }}
               >
                 Edit profile
               </button>
@@ -935,10 +990,18 @@ function ProfileModal({
               </div>
             </div>
           )}
-          {profile.cities.length > 0 && (
+          {profile.based && !editing && (
             <div className="pg-facts">
-              <span className="k">{isModel ? "Based" : "Cities"}</span>
-              <div className="pg-fact-val">{profile.cities.join(", ")}</div>
+              <span className="k">Based</span>
+              <div className="pg-fact-val">{profile.based}</div>
+            </div>
+          )}
+          {/* The cities on their pictures, apart from where they live — kept
+              from when a photographer was listed in every one (people phase 1). */}
+          {profile.shotIn.length > 0 && !editing && (
+            <div className="pg-facts">
+              <span className="k">Shot in</span>
+              <div className="pg-fact-val">{profile.shotIn.join(", ")}</div>
             </div>
           )}
           {meta.pastWork.trim() && !editing && (
@@ -958,6 +1021,40 @@ function ProfileModal({
               the header; a talent never sees it. */}
           {canEdit && editing && (
             <div className="pg-editor">
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Name</label>
+                <input
+                  className="input"
+                  value={who.name}
+                  onChange={(e) => setWho((w) => ({ ...w, name: e.target.value }))}
+                />
+              </div>
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Based in</label>
+                <input
+                  className="input"
+                  placeholder="New York"
+                  value={who.city}
+                  onChange={(e) => setWho((w) => ({ ...w, city: e.target.value }))}
+                />
+              </div>
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Instagram</label>
+                <input
+                  className="input"
+                  placeholder="@handle"
+                  value={who.ig}
+                  onChange={(e) => setWho((w) => ({ ...w, ig: e.target.value }))}
+                />
+              </div>
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">{isModel ? "Agency page" : "Website"}</label>
+                <input
+                  className="input"
+                  value={who.link}
+                  onChange={(e) => setWho((w) => ({ ...w, link: e.target.value }))}
+                />
+              </div>
               <div className="pg-editor-row">
                 <label className="pg-editor-label">Group</label>
                 <input
@@ -1061,6 +1158,7 @@ function ProfileModal({
                   onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
                 />
               </div>
+              {err && <div className="up-err">{err}</div>}
               <div className="pg-editor-tools">
                 <button type="button" className="btn sm" disabled={pending} onClick={save}>
                   {pending ? "Saving…" : "Save"}

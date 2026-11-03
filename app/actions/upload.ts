@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { syncPeopleLinks } from "@/lib/peopleDb";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
@@ -179,13 +180,21 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
           },
         ]
       : uploaded.map((u) => ({ image_url: u.url, thumb_url: u.thumbUrl }));
+  const made: string[] = [];
   for (const row of rows) {
-    const { error: insErr } = await supabase
+    const { data: ins, error: insErr } = await supabase
       .from("references")
-      .insert({ ...meta, ...row, type: kind, brand, created_by: createdBy });
+      .insert({ ...meta, ...row, type: kind, brand, created_by: createdBy })
+      .select("id");
     if (insErr) errors.push(insErr.message);
-    else count += 1;
+    else {
+      count += 1;
+      made.push(...((ins ?? []) as { id: string }[]).map((r) => r.id));
+    }
   }
+  // A credit on a new picture tags someone who is already in Photographers or
+  // Models; it never adds a card (people phase 1 — lib/peopleRecords.ts).
+  await syncPeopleLinks(supabase, brand, made, { by: createdBy });
 
   if (count > 0) revalidatePath(PAGE_OF[kind]);
   return { ok: count > 0, count, errors };
