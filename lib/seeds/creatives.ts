@@ -36,10 +36,8 @@ export type PersonSeed = {
   images: SeedImage[];
   /**
    * Borrow the picture already saved on another SSYNC row, matched by id or by
-   * the name credited on it — Alexandra Agoston's FRAME image on Campaign,
-   * Lucinda Levant's portrait by Aaron Crossman. The row is shared by URL, not
-   * copied, and the import looks in Trash too (Aaron Crossman's reference was
-   * removed from Campaign on 15 September).
+   * the name credited on it — Alexandra Agoston's FRAME image on Campaign. The
+   * row is shared by URL, not copied, and the import looks in Trash too.
    */
   borrow?: { id?: string; photographer?: string; model?: string };
   group: string;
@@ -55,6 +53,17 @@ export type PersonSeed = {
 const ig = (h: string) => `https://www.instagram.com/${h}/`;
 const roster = (slug: string, files: string[]): SeedImage[] =>
   files.map((f) => ({ src: `/roster/${slug}/${f}`, note: "From the photographer library" }));
+// The deck's own pictures for people the photographer library has none of,
+// copied out of the Google Slides file on 2 November 2026 (Tess: "Yes, download
+// it") into public/roster/<slug>/d*.jpg and public/models/<slug>/d1.jpg. The note
+// is the deck's own source line for the picture.
+const deck = (slug: string, count: number, note: string): SeedImage[] =>
+  Array.from({ length: count }, (_, i) => ({ src: `/roster/${slug}/d${i + 1}.jpg`, note }));
+const modelPhoto = (slug: string, note: string, credit?: string): SeedImage[] => [
+  { src: `/models/${slug}/d1.jpg`, note, ...(credit ? { credit } : {}) },
+];
+// Aaron Crossman's portrait of Lucinda Levant: on his card and on hers.
+const CROSSMAN_LUCINDA = "/models/lucinda-levant/d1.jpg";
 const h4 = ["h1.jpg", "h2.jpg", "h3.jpg", "h4.jpg"];
 const g4 = ["g1.jpg", "g2.jpg", "g3.jpg", "g4.jpg"];
 
@@ -170,7 +179,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "Amsterdam",
     ig: ig("paulbellaart"),
-    images: [],
+    images: deck("paul-bellaart", 2, "A Vogue Netherlands story (via Fashionfav) and a portfolio image, internal use only"),
     photo: true,
     pastWork: "Vogue Netherlands covers · Duncan Laurence, “Arcade” video · book Last Year’s Nest (2020)",
     notes:
@@ -182,7 +191,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer duo, sisters",
     location: "Copenhagen",
     link: "https://lundlund.com",
-    images: [],
+    images: deck("louise-maria-thornfeldt", 1, "From the LUNDLUND portfolio, internal use only"),
     photo: true,
     pastWork: "WSJ Magazine (Sept 2023) · represented by LUNDLUND [clients to confirm]",
     notes:
@@ -257,7 +266,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "New York",
     ig: ig("jodyrogac"),
-    images: [],
+    images: deck("jody-rogac", 2, "From The Agents Club, internal use only"),
     photo: true,
     pastWork: "The Row · Celine · Chloé · Chanel · Tiffany & Co. · The Gentlewoman · T Magazine",
     notes:
@@ -269,7 +278,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer and artist",
     location: "New York",
     ig: ig("taliachetrit"),
-    images: [],
+    images: deck("talia-chetrit", 2, "From The Agents Club, internal use only"),
     photo: true,
     pastWork: "Helmut Lang FW24, with Irina Shayk · Helmut Lang Resort 2018 · Céline · Duran Lantink",
     notes:
@@ -305,8 +314,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "London",
     link: "https://aaron-william-crossman.format.com",
-    images: [],
-    borrow: { photographer: "Aaron Crossman" },
+    images: [{ src: CROSSMAN_LUCINDA, note: "Lucinda Levant, from the SSYNC reference removed from Campaign on 15 September 2026" }],
     photo: true,
     pastWork: "Vogue Arabia · Vogue Philippines · Self Service · ODDA (Dior special) · Twin · Clinique",
     notes:
@@ -353,7 +361,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     group: PORTRAIT,
     role: "Photographer",
     location: "Paris",
-    images: [],
+    images: deck("senta-simond", 1, "From Webber, internal use only"),
     photo: true,
     pastWork: "Bottega Veneta · Chanel · Hermès · Jil Sander · Miu Miu · Proenza Schouler 2026 · M Le Monde",
     notes:
@@ -365,7 +373,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "Berlin",
     ig: ig("jana_gerberding"),
-    images: [],
+    images: deck("jana-gerberding", 2, "From Bird Production and models.com, internal use only"),
     photo: true,
     pastWork: "Mytheresa · L’Officiel Italia · 10 Magazine · Scandinavian Man · Görtz",
     notes:
@@ -377,7 +385,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "Stockholm",
     link: "https://lundlund.com",
-    images: [],
+    images: deck("johan-sandberg", 2, "From LUNDLUND, internal use only"),
     photo: true,
     pastWork: "Armani · Calvin Klein · Dior · Gucci · Vogue Germany · Interview · V Magazine",
     notes:
@@ -389,7 +397,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "Berlin",
     ig: ig("matthiasleidinger"),
-    images: [],
+    images: deck("matthias-leidinger", 2, "From FIGURES and models.com, internal use only"),
     photo: true,
     pastWork: "Carhartt 2026 · ICON Magazin · Petrichor for FIGURES · WHITELIES",
     notes:
@@ -467,7 +475,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer",
     location: "New York",
     ig: ig("dariocastillostudio"),
-    images: [],
+    images: deck("dario-castillo", 2, "Purple Magazine backstage stories via models.com, internal use only"),
     photo: true,
     pastWork: "Purple backstage: Eckhaus Latta FW24 · AREA SS24 · Stella McCartney 2026 · Nylon 2026",
     notes:
@@ -479,7 +487,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Photographer and videographer",
     location: "New York",
     ig: ig("xxpaigepowell"),
-    images: [],
+    images: deck("paige-powell", 2, "Wonderland NYFW SS24 story, internal use only"),
     photo: true,
     video: true,
     pastWork: "Wonderland NYFW SS24 · Highsnobiety NYFW 2023 · Dauphinette AW24 · Polaroids Book 01",
@@ -516,7 +524,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     group: BTS,
     role: "Instagram",
     location: "",
-    images: [],
+    images: deck("documented-by-tess", 1, "From the deck"),
     photo: true,
     pastWork: "",
     notes:
@@ -542,7 +550,7 @@ export const PHOTOGRAPHER_SEED: PersonSeed[] = [
     role: "Director",
     location: "",
     link: "https://parkpictures.com",
-    images: [],
+    images: deck("savanah-leaf", 2, "adidas and Earth Mama stills, from the Park Pictures director page, internal use only"),
     photo: false,
     video: true,
     pastWork: "Earth Mama (A24, Sundance 2023) · adidas and NFL Super Bowl spots · Gary Clark Jr., “This Land” (Grammy-nominated)",
@@ -566,7 +574,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "37",
     location: "New York",
     agency: "Elite Model Management",
-    images: [],
+    images: modelPhoto("fei-fei-sun", "DVF SS14, via Wikimedia Commons, CC BY 2.0, cropped", "Christopher Macsurak"),
     pastWork: "Estée Lauder global face · Valentino · Max Mara · David Yurman",
     notes: `Born 20 Mar 1989; Estée Lauder global spokesmodel since 2017, David Yurman ambassador 2024. ${AGES}`,
   },
@@ -576,7 +584,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "34",
     location: "New York",
     agency: "New York Model Management",
-    images: [],
+    images: modelPhoto("chiharu-okunugi", "Supplied by Tess, photographer not credited"),
     pastWork: "Thom Browne shows · Tommy Hilfiger 2026 · Kith · Vogue Japan",
     notes: `Japanese, from Tokyo, born 22 May 1992 (IMDb); New York Model Management in 2014–2016 sources; models.com lists Kith (Aug 2025), Tuckernuck (2024), Thom Browne shows and a Tommy Hilfiger campaign (2026). Tess liked her look as a direction for further casting. ${AGES}`,
   },
@@ -586,7 +594,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "30",
     location: "New York",
     agency: "DNA Model Management",
-    images: [],
+    images: modelPhoto("imaan-hammam", "Carolina Herrera FW15, via Wikimedia Commons, CC BY 2.0, cropped", "Christopher Macsurak"),
     pastWork: "Tiffany & Co. · Estée Lauder · Donna Karan · Chanel · Celine",
     notes: `Born 5 Oct 1996; lives in Brooklyn. Estée Lauder global ambassador from 2023. ${AGES}`,
   },
@@ -596,7 +604,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "34",
     location: "New York",
     agency: "DNA Model Management",
-    images: [],
+    images: modelPhoto("julia-nobis", "Michael Kors SS14, via Wikimedia Commons, CC BY 2.0, cropped", "Christopher Macsurak"),
     pastWork: "Prada · Céline · Calvin Klein · Dior · Alaïa",
     notes: `New York and Sydney. Born 27 Jun 1992 (Vogue Australia gives 1993); began as a Calvin Klein exclusive in New York; Prada, Céline, Dior, Alaïa Fall 2023; current New York base to confirm. ${AGES}`,
   },
@@ -606,7 +614,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "36",
     location: "New York",
     agency: "IMG Models",
-    images: [],
+    images: modelPhoto("ali-michael", "2019 agency polaroid, via HawtCelebs, internal use only, photographer uncredited"),
     pastWork: "Collina Strada show, Sept 2026 · Bal Harbour cover · Harper’s Bazaar UK",
     notes: `American, born 15 May 1990; models.com says New York-based, another profile says Los Angeles; IMG; Bal Harbour cover (Sept 2024), Harper’s Bazaar UK (June 2024), Collina Strada show (Sept 2026). ${AGES}`,
   },
@@ -616,7 +624,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "34",
     location: "New York",
     agency: "The Kinship (co-founder)",
-    images: [],
+    images: modelPhoto("ronja-furrer", "Model Management Hamburg, a German magazine suit story, internal use only, photographer uncredited"),
     pastWork: "L’Officiel Suisse · Numéro Switzerland · Russh · Ocean Drive",
     notes: `Swiss, born 18 Jan 1992; models.com lists a New York base, and she splits time between New York and Switzerland; co-founded the Swiss agency The Kinship (2020 or 2021). ${AGES}`,
   },
@@ -626,7 +634,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "38",
     location: "New York",
     agency: "Elite New York (2012)",
-    images: [],
+    images: modelPhoto("ji-hye-park", "Uno Models, Elle Korea, internal use only, photographer uncredited"),
     pastWork: "COS show 2026 · Max Mara · Narciso Rodriguez · Ralph Lauren",
     notes: `Korean, born 6 Feb 1988 in Seoul; with Elite New York in 2012; models.com lists COS (Mar 2026) and MARKGONG (Mar 2025) shows; earlier runway for Max Mara, Narciso Rodriguez, Ralph Lauren, Alexander Wang, Anna Sui; current agency and base not confirmed. ${AGES}`,
   },
@@ -635,7 +643,7 @@ export const MODEL_SEED: PersonSeed[] = [
     group: SHORTLIST,
     age: "~32",
     location: "New York",
-    images: [],
+    images: modelPhoto("tian-yi", "Fashion Model Directory, internal use only, photographer uncredited"),
     pastWork: "Marc Jacobs show · Harper’s Bazaar China · Tatler Hong Kong",
     notes: `Chinese, from Hubei; famous at 16 after the New Silk Road contest; scouted by Fusion in New York and moved there in 2013 (Tatler); walked Marc Jacobs in 2011; age worked out from that coverage. ${AGES}`,
   },
@@ -645,7 +653,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "39",
     location: "",
     agency: "IMG Models",
-    images: [],
+    images: modelPhoto("amanda-murphy", "Michael Kors SS14, via Wikimedia Commons, CC BY 2.0, cropped", "Christopher Macsurak"),
     pastWork: "Prada muse for a decade · Prada FW26 show · four Vogue Italia covers",
     notes: `American, born 16 Nov 1986, so she turns 40 in November 2026; a Prada muse for over a decade, walked Prada FW26, four Vogue Italia covers; IMG in older listings; base not confirmed. ${AGES}`,
   },
@@ -655,7 +663,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "33",
     location: "",
     agency: "Women Management",
-    images: [],
+    images: modelPhoto("jing-wen", "Paco Rabanne FW19-20, via Wikimedia Commons, CC BY 3.0, cropped", "Paco Rabanne"),
     pastWork: "Vogue China covers · T Magazine cover · Vogue Italia cover",
     notes: `Chinese, from Guangzhou, born 15 Oct 1993 (unverified); Women Management (New York, Paris, Milan); American Vogue, T Magazine cover, two Vogue China covers, a Vogue Italia cover; base not confirmed. ${AGES}`,
   },
@@ -664,7 +672,7 @@ export const MODEL_SEED: PersonSeed[] = [
     group: SHORTLIST,
     age: "~36",
     location: "",
-    images: [],
+    images: modelPhoto("maggie-maurer", "Fashion Model Directory, internal use only, photographer uncredited"),
     pastWork: "Vogue Portugal cover story · Dazed · Altered States",
     notes: `American, from Potsdam, New York; born around 1990 per two profiles; older listings name Elmer Olsen and IMG; Vogue Portugal mother-issue interview, Dazed, Altered States, Union; base not confirmed. ${AGES}`,
   },
@@ -674,8 +682,7 @@ export const MODEL_SEED: PersonSeed[] = [
     location: "Sydney",
     agency: "Priscillas · Elite New York",
     ig: ig("lucindalevant"),
-    images: [],
-    borrow: { model: "Lucinda Levant" },
+    images: [{ src: CROSSMAN_LUCINDA, credit: "Aaron Crossman", note: "From the SSYNC reference, cropped; someone else’s photo, so check usage before sharing outside the team" }],
     pastWork: "Michael Lo Sordo show 2025 · Aaron Crossman portraits",
     notes:
       "Also listed as Lucinda Levant-Feldman; mother agency Priscillas in Sydney, with Elite New York, Select London and Fabbrica Milan; about 178 cm; walked Michael Lo Sordo in 2025; editorial “The Sunbather” by Amy Hibbard for 5:11 Magazine. Elite New York lists her on its development board, which usually means a newer, younger model, so she may be under 30; her age isn’t public. Photo by Aaron Crossman, from the SSYNC reference; check usage before sharing outside the team.",
@@ -686,7 +693,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "34",
     location: "Tokyo",
     agency: "The Society Management",
-    images: [],
+    images: modelPhoto("hikari-mori", "Fashion Model Directory, a Japanese magazine page, cropped, internal use only, photographer uncredited"),
     pastWork: "Met Gala 2018 and 2019 · granddaughter of Hanae Mori · TV host in Japan",
     notes: `Born 22 Apr 1992 in Tokyo to an American mother and Japanese father; granddaughter of the designer Hanae Mori; model, actress and TV host in Japan; The Society Management in New York; Met Gala 2018 and 2019. ${AGES}`,
   },
@@ -696,7 +703,7 @@ export const MODEL_SEED: PersonSeed[] = [
     age: "40",
     location: "Seoul",
     agency: "ESteem",
-    images: [],
+    images: modelPhoto("sunghee-kim", "Women Management Paris, internal use only, photographer uncredited"),
     pastWork: "First Asian face of Miu Miu · Prada · Vogue Korea",
     notes: `Korean, born 20 Aug 1986, so 40, just past the brief’s age range; ESteem in Seoul; New York Magazine rookie to watch, fall 2013; shot for Miu Miu by Steven Meisel and described as the first Asian face of Miu Miu and Prada. ${AGES}`,
   },
@@ -714,7 +721,7 @@ export const MODEL_SEED: PersonSeed[] = [
     name: "Yilan Hua",
     group: REFERENCE,
     location: "",
-    images: [],
+    images: modelPhoto("yilan-hua", "Shared by Tess, photographer not credited"),
     pastWork: "",
     notes: `Casting reference, from an image Tess shared (photographer not credited yet).\n\n${BRIEF}`,
   },

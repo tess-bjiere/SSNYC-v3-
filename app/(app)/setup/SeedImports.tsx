@@ -19,14 +19,14 @@ const ABOUT: Record<SeedId, { title: string; detail: string; href: string; unit:
   photographers: {
     title: "Photographers from the creative collaborators deck",
     detail:
-      "The 39 creatives on the deck's roster, filed under its five sections, with each slide's look, selected work and research notes. Pictures from the photographer library where it has them.",
+      "The 39 creatives on the deck's roster, filed under its five sections, with each slide's look, selected work and research notes, and the deck's pictures. Those whose pictures are already on Campaign keep using them.",
     href: "/photographers",
     unit: "row",
   },
   models: {
     title: "Models from the creative collaborators deck",
     detail:
-      "The 14 on the deck's model shortlist, plus its two casting references, with age, base, agency and work.",
+      "The 14 on the deck's model shortlist, plus its two casting references, with age, base, agency, work and the deck's picture of each.",
     href: "/models",
     unit: "row",
   },
