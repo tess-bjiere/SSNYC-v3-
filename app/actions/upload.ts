@@ -35,11 +35,14 @@ const META_KEYS = [
   "ref_kind",
 ] as const;
 
-// `references.type` tells the Library grid and the Editorial grid apart. Only
-// these two values are accepted; anything else falls back to a library
-// reference, so a malformed request can never invent a third kind of row.
-const KINDS = ["reference", "editorial"] as const;
+// `references.type` tells the Library grid, the Editorial grid and the Archival
+// grid apart. Only these values are accepted; anything else falls back to a
+// library reference, so a malformed request can never invent a new kind of row.
+// "archival" joined on 2026-11-02 (Tess: "a section for vintage reference images
+// … call it 'archival'").
+const KINDS = ["reference", "editorial", "archival"] as const;
 type Kind = (typeof KINDS)[number];
+const PAGE_OF: Record<Kind, string> = { reference: "/library", editorial: "/editorial", archival: "/archival" };
 
 function extFor(type: string): string {
   if (type === "image/png") return "png";
@@ -184,6 +187,6 @@ export async function uploadReferences(formData: FormData): Promise<UploadResult
     else count += 1;
   }
 
-  if (count > 0) revalidatePath(kind === "editorial" ? "/editorial" : "/library");
+  if (count > 0) revalidatePath(PAGE_OF[kind]);
   return { ok: count > 0, count, errors };
 }

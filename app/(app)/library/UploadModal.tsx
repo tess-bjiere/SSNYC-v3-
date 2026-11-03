@@ -79,6 +79,20 @@ const EDITORIAL_FIELDS: Field[] = [
   { key: "notes", label: "Notes", type: "textarea" },
 ];
 
+// An archival image is credited like a campaign one, but the person in it is as
+// likely a dancer as a model — so the `model` column reads "Pictured" here — and
+// there is no season or reference type (Tess, 2026-11-02: "a section for vintage
+// reference images … call it 'archival'").
+const ARCHIVAL_FIELDS: Field[] = [
+  { key: "photographer", label: "Photographer", suggest: true },
+  { key: "designer", label: "Designer", suggest: true },
+  { key: "model", label: "Pictured", suggest: true },
+  { key: "year", label: "Year", suggest: true },
+  { key: "location", label: "Location", suggest: true },
+  { key: "link", label: "Link" },
+  { key: "notes", label: "Notes", type: "textarea" },
+];
+
 export default function UploadModal({
   options,
   kind = "reference",
@@ -86,14 +100,15 @@ export default function UploadModal({
   onToast,
 }: {
   options: Record<string, string[]>;
-  kind?: "reference" | "editorial";
+  kind?: "reference" | "editorial" | "archival";
   onClose: () => void;
   onToast: (m: string) => void;
 }) {
-  const FIELDS = kind === "editorial" ? EDITORIAL_FIELDS : REFERENCE_FIELDS;
+  const FIELDS =
+    kind === "editorial" ? EDITORIAL_FIELDS : kind === "archival" ? ARCHIVAL_FIELDS : REFERENCE_FIELDS;
   // The `kind` value is the stored `references.type` and does NOT change with
   // the rename — only the word a person reads does.
-  const noun = kind === "editorial" ? "campaign image" : "reference";
+  const noun = kind === "editorial" ? "campaign image" : kind === "archival" ? "archival image" : "reference";
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<Picked[]>([]);

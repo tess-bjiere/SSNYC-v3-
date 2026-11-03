@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { refThumb, type Reference } from "@/lib/types";
+import { APP } from "@/lib/appConfig";
+import { PEOPLE, creditFor, isInstagram, type PeopleKind } from "@/lib/people";
+import { downscaleImage } from "@/app/components/downscaleImage";
 import SizeToggle from "@/app/components/SizeToggle";
 import {
   buildPhotographerDirectory,
@@ -22,6 +25,8 @@ import {
   addPhotographerImages,
   removePhotographerImage,
   saveImagesToCampaign,
+  addPerson,
+  removePerson,
 } from "@/app/actions/photographers";
 import MultiSelect from "@/app/components/MultiSelect";
 import DetailModal from "../library/DetailModal";
@@ -45,6 +50,26 @@ function igHandle(ig: string): string {
   return (m ? m[1] : ig).replace(/^@/, "").replace(/\/+$/, "").trim();
 }
 
+// The deck's sections, then the models' two groups, in the order they read in the
+// deck (Tess, 2026-11-02). A group nobody has typed before sorts after these,
+// alphabetically, so a new one is never lost — it just has no fixed place yet.
+const GROUP_ORDER = [
+  "Movement",
+  "Portrait & studio",
+  "Documentary & atmosphere",
+  "Behind the scenes",
+  "Directors",
+  "Shortlist",
+  "Casting reference",
+];
+function sortGroups(gs: string[]): string[] {
+  const pos = (g: string) => {
+    const i = GROUP_ORDER.indexOf(g);
+    return i < 0 ? GROUP_ORDER.length : i;
+  };
+  return [...gs].sort((a, b) => pos(a) - pos(b) || a.localeCompare(b));
+}
+
 // Photographers, browsed by city (Tess, 2026-08-17: "easy to get to a list of
 // people / profiles in different cities ... look at their work"). Built from the
 // campaign credits; a profile also shows the team-entered side — tier (at
@@ -55,11 +80,17 @@ export default function PhotographersClient({
   refs,
   metaValue,
   canEdit = false,
+  kind = "photographer",
 }: {
   refs: Reference[];
   metaValue: unknown;
   canEdit?: boolean;
+  /** Which directory this is — the same page serves Photographers and Models
+   *  (Tess, 2026-11-02). See lib/people.ts. */
+  kind?: PeopleKind;
 }) {
+  const people = PEOPLE[kind];
+  const isModel = kind === "model";
   const [q, setQ] = useState("");
   // Grid (image cards by place) vs List (a flat, dense name list) — Tess,
   // 2026-08-18: "offer a list view for photographers as well".
@@ -67,6 +98,9 @@ export default function PhotographersClient({
   // Grid density — the S/M/L control every grid now carries (design pass 2026-09-15).
   const [size, setSize] = useState("md");
   const [tierFilter, setTierFilter] = useState<"" | PhotographerTier>("");
+  // The deck's sections as a filter (Tess, 2026-11-02). "" is all.
+  const [groupFilter, setGroupFilter] = useState("");
+  const [adding, setAdding] = useState(false);
   const [starredOnly, setStarredOnly] = useState(false);
   const [, startStar] = useTransition();
   // Geographic filters — multi-select (Tess, 2026-08-17: "select multiple cities,
@@ -81,6 +115,9 @@ export default function PhotographersClient({
   const [meta, setMeta] = useState<Record<string, PhotographerMeta>>(() =>
     readAllPhotographerMeta(metaValue)
   );
+  // Take the server's cards again after a refresh — an add or a remove changes
+  // them, and the optimistic star has already been saved by then.
+  useEffect(() => setMeta(readAllPhotographerMeta(metaValue)), [metaValue]);
 
   function flashToast(m: string) {
     setToast(m);
@@ -93,7 +130,12 @@ export default function PhotographersClient({
     return m;
   }, [refs]);
 
-  const { cities, photographers } = useMemo(() => buildPhotographerDirectory(refs), [refs]);
+  // A model is filed under `model`, a photographer under `photographer` — the
+  // builder only ever sees the person's name in one place (lib/people creditFor).
+  const { cities, photographers } = useMemo(
+    () => buildPhotographerDirectory(refs.map((r) => creditFor(kind, r))),
+    [refs, kind]
+  );
 
   const profileByKey = useMemo(() => {
     const m = new Map<string, PhotographerProfile>();
@@ -158,12 +200,20 @@ export default function PhotographersClient({
         const { country } = cityPlace(c.city, c.located);
         const people = c.photographers.filter((p) => {
           if (tierFilter && (meta[p.key]?.tier ?? null) !== tierFilter) return false;
+          if (groupFilter && (meta[p.key]?.group ?? "") !== groupFilter) return false;
           if (starredOnly && !meta[p.key]?.starred) return false;
           if (!term) return true;
           if (c.city.toLowerCase().includes(term)) return true;
           if (country.toLowerCase().includes(term)) return true;
           if (p.name.toLowerCase().includes(term)) return true;
-          const brands = [...(profileByKey.get(p.key)?.shotFor ?? []), meta[p.key]?.pastWork ?? ""]
+          const m = meta[p.key];
+          const brands = [
+            ...(profileByKey.get(p.key)?.shotFor ?? []),
+            m?.pastWork ?? "",
+            m?.agency ?? "",
+            m?.group ?? "",
+            m?.role ?? "",
+          ]
             .join(" ")
             .toLowerCase();
           return brands.includes(term);
@@ -173,7 +223,7 @@ export default function PhotographersClient({
         return { ...c, photographers: people, count };
       })
       .filter(Boolean) as typeof cities;
-  }, [cities, term, tierFilter, starredOnly, continentF, countryF, cityF, meta, profileByKey]);
+  }, [cities, term, tierFilter, groupFilter, starredOnly, continentF, countryF, cityF, meta, profileByKey]);
 
   // Nest the filtered cities into continent -> country -> city.
   const continents = useMemo(() => groupByGeo(shownCities, cityGeo), [shownCities]);
@@ -186,9 +236,18 @@ export default function PhotographersClient({
     return s.size;
   }, [shownCities]);
   const locatedCities = shownCities.filter((c) => c.located).length;
-  // Only offer the tier filter once someone actually has a tier set.
+  // Only offer the tier filter once someone actually has a tier set — and only
+  // where the at-home / campaign tiers mean something (the product extras).
   const hasTiers = useMemo(
-    () => photographers.some((p) => meta[p.key]?.tier),
+    () => APP.productExtras && photographers.some((p) => meta[p.key]?.tier),
+    [photographers, meta]
+  );
+  // The groups actually in use, in the deck's order.
+  const groups = useMemo(
+    () =>
+      sortGroups(
+        Array.from(new Set(photographers.map((p) => meta[p.key]?.group ?? "").filter(Boolean)))
+      ),
     [photographers, meta]
   );
   const hasStarred = useMemo(
@@ -202,7 +261,7 @@ export default function PhotographersClient({
     const next = { ...(meta[key] ?? EMPTY_META), starred: !meta[key]?.starred };
     setMeta((m) => ({ ...m, [key]: next }));
     startStar(async () => {
-      await setPhotographerMeta(key, { starred: next.starred });
+      await setPhotographerMeta(key, { starred: next.starred }, kind);
     });
   }
   const openProfile = openKey ? profileByKey.get(openKey) ?? null : null;
@@ -246,11 +305,20 @@ export default function PhotographersClient({
   // One photographer card, reused across every city grid.
   function card(p: { key: string; name: string; ig: string | null; ids: string[] }) {
     const srcs = workSrcs(p.key, p.ids);
-    const src = srcs[0] ?? null;
+    // A card in a city where this person has no picture of their own — a deck
+    // photographer filed at their base, whose work in SSYNC was shot elsewhere —
+    // borrows the cover from the rest of their work rather than showing initials
+    // (2026-11-02). The count still reflects what is in this city.
+    const allIds = profileByKey.get(p.key)?.ids ?? p.ids;
+    const src = srcs[0] ?? workSrcs(p.key, allIds)[0] ?? null;
     // The handle line: the IG handle, or — for a site-only photographer — the
-    // bare domain of their website.
+    // bare domain of their website. A model card reads age · agency instead,
+    // which is what casting is looked at for.
     const site = p.ids.map((id) => byId.get(id)?.link).find(Boolean) || null;
-    const handle = p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
+    const m = meta[p.key];
+    const handle = isModel
+      ? [m?.age, m?.agency].filter(Boolean).join(" · ") || (p.ig ? igLabel(p.ig) : null)
+      : p.ig ? igLabel(p.ig) : site ? prettyHost(site) : null;
     const starred = !!meta[p.key]?.starred;
     return (
       <div className="pg-card" key={p.key}>
@@ -318,7 +386,8 @@ export default function PhotographersClient({
         <button type="button" className="pg-lname" onClick={() => setOpenKey(p.key)}>
           {p.name}
         </button>
-        {tier && <span className={"pg-tier pg-tier-" + tier}>{tierLabel(tier)}</span>}
+        {APP.productExtras && tier && <span className={"pg-tier pg-tier-" + tier}>{tierLabel(tier)}</span>}
+        {meta[p.key]?.group && <span className="pg-cap">{meta[p.key]?.group}</span>}
         <span className="pg-lspace" />
         {n > 0 && <span className="pg-lcount">{n} {n === 1 ? "image" : "images"}</span>}
         {linkUrl && linkLabel && (
@@ -329,15 +398,22 @@ export default function PhotographersClient({
   }
 
   return (
-    <div className="page lib-page">
+    <div className="page lib-page pg-page">
       <div className="page-head">
-        <h1 className="page-title display">Photographers</h1>
+        <h1 className="page-title display">{people.title}</h1>
         <div className="spacer" />
         {shownPeople > 0 && (
           <span className="pg-count">
-            {shownPeople} {shownPeople === 1 ? "photographer" : "photographers"} · {locatedCities}{" "}
+            {shownPeople} {shownPeople === 1 ? people.noun : people.nouns} · {locatedCities}{" "}
             {locatedCities === 1 ? "city" : "cities"}
           </span>
+        )}
+        {/* Add someone by hand (Tess, 2026-11-02: "a space for potential models
+            to be added"). Team only, like every other edit here. */}
+        {canEdit && (
+          <button type="button" className="btn" onClick={() => setAdding(true)}>
+            + Add
+          </button>
         )}
         {/* The shared grid/list view toggle (design pass 2026-09-15: one such
             control, not a per-page duplicate — was its own pg-vt classes). */}
@@ -369,14 +445,30 @@ export default function PhotographersClient({
       <div className="lib-bar">
         <input
           className="input lib-search"
-          placeholder="Search a photographer, city, country, or a brand they've worked with…"
+          placeholder={
+            isModel
+              ? "Search a model, city, agency, or a brand they've worked with…"
+              : "Search a photographer, city, country, or a brand they've worked with…"
+          }
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
       </div>
 
-      {(hasTiers || hasStarred) && (
+      {(hasTiers || hasStarred || groups.length > 0) && (
         <div className="pg-filters">
+          {groups.length > 0 &&
+            ["", ...groups].map((g) => (
+              <button
+                key={g || "all-groups"}
+                type="button"
+                className={"pg-filter" + (groupFilter === g ? " on" : "")}
+                aria-pressed={groupFilter === g}
+                onClick={() => setGroupFilter(g)}
+              >
+                {g || "All"}
+              </button>
+            ))}
           {hasTiers &&
             ([["", "All"], ["home", "At home"], ["campaign", "Campaign"]] as [
               "" | PhotographerTier,
@@ -449,8 +541,10 @@ export default function PhotographersClient({
       {shownCities.length === 0 ? (
         <div className="empty">
           {refs.length === 0
-            ? "No photographers yet — they gather here from the credits on your Campaign images."
-            : "No photographers match those filters."}
+            ? isModel
+              ? "No models yet. Use “+ Add” to start the casting list."
+              : "No photographers yet — they gather here from the credits on your Campaign images, or use “+ Add”."
+            : `No ${people.nouns} match those filters.`}
         </div>
       ) : (
         continents.map((cont) => (
@@ -467,7 +561,7 @@ export default function PhotographersClient({
                       <h4 className={"pg-city-name" + (c.located ? "" : " muted")}>{c.city}</h4>
                       <span className="pg-city-meta">
                         {c.photographers.length}{" "}
-                        {c.photographers.length === 1 ? "photographer" : "photographers"}
+                        {c.photographers.length === 1 ? people.noun : people.nouns}
                       </span>
                     </div>
                     {view === "list" ? (
@@ -485,13 +579,16 @@ export default function PhotographersClient({
 
       {openProfile && (
         <ProfileModal
+          kind={kind}
           profile={openProfile}
           meta={metaFor(openProfile.key)}
+          groups={groups}
           canEdit={canEdit}
           byId={byId}
           onImage={(r) => setDetail(r)}
           onClose={() => setOpenKey(null)}
           onSaved={(m) => { setMeta((prev) => ({ ...prev, [openProfile.key]: m })); flashToast("Saved"); }}
+          onRemoved={() => { setOpenKey(null); flashToast("Moved to Trash"); }}
           onToast={flashToast}
           igUrl={igUrl}
           igLabel={igLabel}
@@ -508,6 +605,15 @@ export default function PhotographersClient({
         />
       )}
 
+      {adding && (
+        <AddPersonModal
+          kind={kind}
+          groups={groups}
+          onClose={() => setAdding(false)}
+          onAdded={(name) => { setAdding(false); flashToast(`Added ${name}`); }}
+        />
+      )}
+
       {toast && <div className="toast">{toast}</div>}
     </div>
   );
@@ -517,30 +623,39 @@ export default function PhotographersClient({
 // image, the derived "shot for" list, and the team-entered card (tier, video,
 // directs, clients) with an inline editor for the team.
 function ProfileModal({
+  kind,
   profile,
   meta,
+  groups,
   canEdit,
   byId,
   onImage,
   onClose,
   onSaved,
+  onRemoved,
   onToast,
   igUrl,
   igLabel,
 }: {
+  kind: PeopleKind;
   profile: PhotographerProfile;
   meta: PhotographerMeta;
+  groups: string[];
   canEdit: boolean;
   byId: Map<string, Reference>;
   onImage: (r: Reference) => void;
   onClose: () => void;
   onSaved: (m: PhotographerMeta) => void;
+  onRemoved: () => void;
   onToast: (m: string) => void;
   igUrl: (ig: string | null) => string | null;
   igLabel: (ig: string) => string;
 }) {
+  const isModel = kind === "model";
   const router = useRouter();
   const [editing, setEditing] = useState(false);
+  // Two-click Remove (the project's arm pattern — never a confirm()).
+  const [removeArm, setRemoveArm] = useState(false);
   const [draft, setDraft] = useState<PhotographerMeta>(meta);
   const [pending, start] = useTransition();
   const imgInput = useRef<HTMLInputElement>(null);
@@ -548,9 +663,19 @@ function ProfileModal({
 
   function save() {
     start(async () => {
-      await setPhotographerMeta(profile.key, draft);
+      await setPhotographerMeta(profile.key, draft, kind);
       setEditing(false);
       onSaved(draft);
+    });
+  }
+
+  // Take this person out of the directory: their own rows go to Trash (a
+  // photographer's Campaign images stay where they are). See removePerson.
+  function remove() {
+    start(async () => {
+      await removePerson(kind, profile.name);
+      router.refresh();
+      onRemoved();
     });
   }
 
@@ -605,7 +730,12 @@ function ProfileModal({
         (pos.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (pos.get(b.id) ?? Number.MAX_SAFE_INTEGER)
     );
   }, [workRefsRaw, meta.imageOrder]);
-  const site = profile.ids.map((id) => byId.get(id)?.link).find((l) => !!l) || null;
+  // A model's Instagram rides in `link` (lib/people.ts), and is already the `ig`
+  // link in the header — so it is not shown a second time as their "site".
+  const site =
+    profile.ids
+      .map((id) => byId.get(id)?.link)
+      .find((l) => !!l && !(isModel && isInstagram(l))) || null;
 
   // Drag-to-reorder the grid (Tess, 2026-08-17: "easy reorder of images ... by
   // dragging"). Local order for a smooth drag; the id list is saved on drop and
@@ -637,7 +767,7 @@ function ProfileModal({
     if (!canEdit) return;
     const ids = itemsRef.current.map((x) => x.id);
     start(async () => {
-      await setPhotographerMeta(profile.key, { imageOrder: ids });
+      await setPhotographerMeta(profile.key, { imageOrder: ids }, kind);
       onSaved({ ...meta, imageOrder: ids });
     });
   }
@@ -652,7 +782,7 @@ function ProfileModal({
     });
     onToast("Image removed");
     start(async () => {
-      await removePhotographerImage(id);
+      await removePhotographerImage(id, kind);
       router.refresh();
     });
   }
@@ -696,9 +826,11 @@ function ProfileModal({
     if (files.length === 0) return;
     setUploading(true);
     const fd = new FormData();
-    for (const f of files) fd.append("files", f);
+    // Shrink first, as the Add form does — the upload action's body is capped at
+    // ~4.5 MB on Vercel and a phone photo is often bigger.
+    for (const f of files) fd.append("files", await downscaleImage(f));
     try {
-      const res = await addPhotographerImages(profile.name, location, fd);
+      const res = await addPhotographerImages(profile.name, location, fd, kind);
       if (res.ok) {
         router.refresh();
         onToast(res.added === 1 ? "Added 1 image" : `Added ${res.added} images`);
@@ -765,13 +897,37 @@ function ProfileModal({
           {/* One consistent labelled column for every fact — tier, medium, cities,
               past work, notes — instead of the old row of filled/outline tag boxes
               that read as toggle states (Tess, 2026-08-17). Image count dropped. */}
-          {meta.tier && !editing && (
+          {APP.productExtras && meta.tier && !editing && (
             <div className="pg-facts">
               <span className="k">Tier</span>
               <div className="pg-fact-val">{tierLabel(meta.tier)}</div>
             </div>
           )}
-          {(meta.photo || meta.video) && !editing && (
+          {meta.group && !editing && (
+            <div className="pg-facts">
+              <span className="k">Group</span>
+              <div className="pg-fact-val">{meta.group}</div>
+            </div>
+          )}
+          {meta.role && !editing && (
+            <div className="pg-facts">
+              <span className="k">Role</span>
+              <div className="pg-fact-val">{meta.role}</div>
+            </div>
+          )}
+          {meta.age && !editing && (
+            <div className="pg-facts">
+              <span className="k">Age</span>
+              <div className="pg-fact-val">{meta.age}</div>
+            </div>
+          )}
+          {meta.agency && !editing && (
+            <div className="pg-facts">
+              <span className="k">Agency</span>
+              <div className="pg-fact-val">{meta.agency}</div>
+            </div>
+          )}
+          {!isModel && (meta.photo || meta.video) && !editing && (
             <div className="pg-facts">
               <span className="k">Medium</span>
               <div className="pg-fact-val">
@@ -781,20 +937,20 @@ function ProfileModal({
           )}
           {profile.cities.length > 0 && (
             <div className="pg-facts">
-              <span className="k">Cities</span>
+              <span className="k">{isModel ? "Based" : "Cities"}</span>
               <div className="pg-fact-val">{profile.cities.join(", ")}</div>
             </div>
           )}
           {meta.pastWork.trim() && !editing && (
             <div className="pg-facts">
-              <span className="k">Past work</span>
+              <span className="k">{isModel ? "Work" : "Past work"}</span>
               <div className="pg-fact-val">{meta.pastWork}</div>
             </div>
           )}
           {meta.notes.trim() && !editing && (
             <div className="pg-facts">
               <span className="k">Notes</span>
-              <div className="pg-fact-val">{meta.notes}</div>
+              <div className="pg-fact-val pg-fact-notes">{meta.notes}</div>
             </div>
           )}
 
@@ -802,6 +958,50 @@ function ProfileModal({
               the header; a talent never sees it. */}
           {canEdit && editing && (
             <div className="pg-editor">
+              <div className="pg-editor-row">
+                <label className="pg-editor-label">Group</label>
+                <input
+                  className="input"
+                  list="pg-groups"
+                  placeholder={isModel ? "Shortlist, Casting reference…" : "Movement, Portrait & studio…"}
+                  value={draft.group}
+                  onChange={(e) => setDraft((d) => ({ ...d, group: e.target.value }))}
+                />
+                <datalist id="pg-groups">
+                  {groups.map((g) => <option key={g} value={g} />)}
+                </datalist>
+              </div>
+              {isModel ? (
+                <>
+                  <div className="pg-editor-row">
+                    <label className="pg-editor-label">Age</label>
+                    <input
+                      className="input"
+                      value={draft.age}
+                      onChange={(e) => setDraft((d) => ({ ...d, age: e.target.value }))}
+                    />
+                  </div>
+                  <div className="pg-editor-row">
+                    <label className="pg-editor-label">Agency</label>
+                    <input
+                      className="input"
+                      value={draft.agency}
+                      onChange={(e) => setDraft((d) => ({ ...d, agency: e.target.value }))}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="pg-editor-row">
+                  <label className="pg-editor-label">Role</label>
+                  <input
+                    className="input"
+                    placeholder="Photographer, Director of photography…"
+                    value={draft.role}
+                    onChange={(e) => setDraft((d) => ({ ...d, role: e.target.value }))}
+                  />
+                </div>
+              )}
+              {APP.productExtras && (
               <div className="pg-editor-row">
                 <label className="pg-editor-label">Tier</label>
                 <div className="pg-seg">
@@ -819,6 +1019,8 @@ function ProfileModal({
                   )}
                 </div>
               </div>
+              )}
+              {!isModel && (
               <div className="pg-editor-row">
                 <label className="pg-editor-label">Medium</label>
                 <div className="pg-seg">
@@ -838,8 +1040,9 @@ function ProfileModal({
                   </button>
                 </div>
               </div>
+              )}
               <div className="pg-editor-row">
-                <label className="pg-editor-label">Past work</label>
+                <label className="pg-editor-label">{isModel ? "Work" : "Past work"}</label>
                 <textarea
                   className="textarea"
                   rows={2}
@@ -865,6 +1068,18 @@ function ProfileModal({
                 <button type="button" className="ph-link" disabled={pending} onClick={() => setEditing(false)}>
                   Cancel
                 </button>
+                <span className="spacer" />
+                {/* Remove from the directory — two clicks, disarms when the
+                    pointer leaves. Rows go to Trash, recoverable. */}
+                <button
+                  type="button"
+                  className={"btn link danger" + (removeArm ? " arm" : "")}
+                  disabled={pending}
+                  onMouseLeave={() => setRemoveArm(false)}
+                  onClick={() => (removeArm ? remove() : setRemoveArm(true))}
+                >
+                  {removeArm ? `Remove ${profile.name}?` : "Remove"}
+                </button>
               </div>
             </div>
           )}
@@ -887,11 +1102,15 @@ function ProfileModal({
                 disabled={uploading}
                 onClick={() => imgInput.current?.click()}
               >
-                {uploading ? "Uploading…" : workRefs.length ? "+ Add images" : "+ Add at-home images"}
+                {uploading
+                  ? "Uploading…"
+                  : workRefs.length || !APP.productExtras
+                    ? "+ Add images"
+                    : "+ Add at-home images"}
               </button>
               {/* Save selected images into the Campaign library (Tess,
                   2026-08-19). Only meaningful once there are images. */}
-              {workRefs.length > 0 && (
+              {!isModel && workRefs.length > 0 && (
                 <button
                   type="button"
                   className={"btn ghost sm" + (picking ? " on" : "")}
@@ -906,7 +1125,9 @@ function ProfileModal({
                   : workRefs.length > 1
                     ? "Drag to reorder — the first image is the thumbnail"
                     : workRefs.length === 0
-                      ? "Add the 3–5 shots that feel most at home — or drag them in"
+                      ? APP.productExtras
+                        ? "Add the 3–5 shots that feel most at home — or drag them in"
+                        : "Add a few pictures — or drag them in"
                       : ""}
               </span>
             </div>
@@ -971,7 +1192,9 @@ function ProfileModal({
               No images saved yet. See their work
               {ig && <> on <a href={ig} target="_blank" rel="noreferrer">Instagram</a></>}
               {site && <> · <a href={site} target="_blank" rel="noreferrer">their site</a></>}
-              {canEdit && <>, then add the at-home ones with the button above.</>}
+              {canEdit && (APP.productExtras
+                ? <>, then add the at-home ones with the button above.</>
+                : <>, then add a few with the button above.</>)}
             </div>
           )}
 
@@ -984,6 +1207,188 @@ function ProfileModal({
               </button>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Add someone by hand (Tess, 2026-11-02: "create a space for potential models to
+// be added as well"). Name is the only thing required; everything else can be
+// filled in later from their profile. Photos are optional — without one the card
+// shows initials until a picture is added.
+function AddPersonModal({
+  kind,
+  groups,
+  onClose,
+  onAdded,
+}: {
+  kind: PeopleKind;
+  groups: string[];
+  onClose: () => void;
+  onAdded: (name: string) => void;
+}) {
+  const isModel = kind === "model";
+  const people = PEOPLE[kind];
+  const router = useRouter();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [f, setF] = useState({
+    name: "",
+    location: "",
+    ig: "",
+    link: "",
+    group: "",
+    role: "",
+    age: "",
+    agency: "",
+    pastWork: "",
+    notes: "",
+  });
+  const [files, setFiles] = useState<{ file: File; url: string }[]>([]);
+  const [drag, setDrag] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
+    setF((cur) => ({ ...cur, [k]: e.target.value }));
+
+  function addFiles(list: FileList | null) {
+    const imgs = Array.from(list ?? []).filter((x) => x.type.startsWith("image/"));
+    setFiles((cur) => [...cur, ...imgs.map((file) => ({ file, url: URL.createObjectURL(file) }))]);
+  }
+  useEffect(() => () => files.forEach((x) => URL.revokeObjectURL(x.url)), [files]);
+
+  function submit() {
+    if (!f.name.trim()) {
+      setErr("Add a name first.");
+      return;
+    }
+    setErr(null);
+    start(async () => {
+      const fd = new FormData();
+      for (const x of files) fd.append("files", await downscaleImage(x.file));
+      const res = await addPerson(kind, { ...f, photo: !isModel ? true : undefined }, fd);
+      if (!res.ok) {
+        setErr(res.errors[0] || "Couldn't add.");
+        return;
+      }
+      router.refresh();
+      onAdded(f.name.trim());
+    });
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal modal-up">
+        <div className="modal-head">
+          <span>Add {people.noun}</span>
+          <button className="notes-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body up-body">
+          <div
+            className={"up-drop" + (drag ? " over" : "")}
+            onClick={() => fileInput.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
+          >
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ""; }}
+            />
+            {files.length === 0 ? (
+              <span>Drop photos here, or click to choose. Optional.</span>
+            ) : (
+              <div className="up-thumbs">
+                {files.map((x, i) => (
+                  <div className="up-thumb" key={x.url}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={x.url} alt="" />
+                    <button
+                      className="up-x"
+                      title="Remove"
+                      onClick={(e) => { e.stopPropagation(); setFiles((cur) => cur.filter((_, j) => j !== i)); }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="up-fields">
+            <div className="field up-full">
+              <label>Name</label>
+              <input className="input" value={f.name} onChange={set("name")} autoFocus />
+            </div>
+            <div className="field">
+              <label>{isModel ? "Based in" : "City"}</label>
+              <input className="input" placeholder="New York" value={f.location} onChange={set("location")} />
+            </div>
+            <div className="field">
+              <label>Group</label>
+              <input
+                className="input"
+                list="pg-add-groups"
+                placeholder={isModel ? "Shortlist" : "Movement"}
+                value={f.group}
+                onChange={set("group")}
+              />
+              <datalist id="pg-add-groups">
+                {groups.map((g) => <option key={g} value={g} />)}
+              </datalist>
+            </div>
+            <div className="field">
+              <label>Instagram</label>
+              <input className="input" placeholder="@handle" value={f.ig} onChange={set("ig")} />
+            </div>
+            <div className="field">
+              <label>{isModel ? "Agency page" : "Website"}</label>
+              <input className="input" value={f.link} onChange={set("link")} />
+            </div>
+            {isModel ? (
+              <>
+                <div className="field">
+                  <label>Age</label>
+                  <input className="input" value={f.age} onChange={set("age")} />
+                </div>
+                <div className="field">
+                  <label>Agency</label>
+                  <input className="input" value={f.agency} onChange={set("agency")} />
+                </div>
+              </>
+            ) : (
+              <div className="field up-full">
+                <label>Role</label>
+                <input
+                  className="input"
+                  placeholder="Photographer, Director of photography…"
+                  value={f.role}
+                  onChange={set("role")}
+                />
+              </div>
+            )}
+            <div className="field up-full">
+              <label>{isModel ? "Work" : "Past work"}</label>
+              <textarea className="textarea" rows={2} value={f.pastWork} onChange={set("pastWork")} />
+            </div>
+            <div className="field up-full">
+              <label>Notes</label>
+              <textarea className="textarea" rows={3} value={f.notes} onChange={set("notes")} />
+            </div>
+          </div>
+
+          {err && <div className="up-err">{err}</div>}
+        </div>
+        <div className="up-foot">
+          <button className="btn link" disabled={pending} onClick={onClose}>Cancel</button>
+          <button className="btn sm" disabled={pending} onClick={submit}>
+            {pending ? "Adding…" : `Add ${people.noun}`}
+          </button>
         </div>
       </div>
     </div>

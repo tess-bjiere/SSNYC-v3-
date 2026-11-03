@@ -7,6 +7,8 @@ import { readiness, type Check } from "@/lib/readiness";
 import { loadBrands, checkSuperAdmin } from "@/lib/brandsServer";
 import TalentsAdmin, { type Member } from "./TalentsAdmin";
 import BrandsAdmin from "./BrandsAdmin";
+import SeedImports from "./SeedImports";
+import { seedStatuses } from "@/app/actions/seeds";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +70,10 @@ export default async function SetupPage() {
   // Loaded for everyone — the talents admin needs it to pin a talent to a brand;
   // only the Brands admin below is super-admin-gated.
   const brands = await loadBrands();
+  // What the 2 November imports would still add (Archival, deck photographers and
+  // models). A read failure shows the section as unavailable rather than taking
+  // the whole Setup page down with it.
+  const imports = await seedStatuses().catch(() => null);
 
   return (
     <div style={{ paddingTop: 24, paddingBottom: 80 }}>
@@ -108,10 +114,20 @@ export default async function SetupPage() {
         <h3>Team &amp; talents</h3>
         <p className="muted-line" style={{ marginBottom: 14 }}>
           Anyone at <strong>@theloyalist.com</strong> is team and sees every brand. Add a brand&rsquo;s
-          talent here to give them the ideation side of their one brand — References, Moodboard and
-          Campaign — and nothing else. They sign in with the same Google login.
+          talent here to give them the ideation side of their one brand — References, Moodboard,
+          Campaign, Archival, Photographers and Models — and nothing else. They sign in with the same Google login.
         </p>
         <TalentsAdmin members={members} brands={brands} />
+      </div>
+
+      <div className="section">
+        <h3>Imports</h3>
+        <p className="muted-line" style={{ marginBottom: 14 }}>
+          Images and people brought into <strong>SOUS SOUS</strong> in one go. The images ship with the
+          app; pressing Add writes the rows. Safe to press again — anything already there, or deleted
+          since, is left alone, and nothing typed on a card is overwritten.
+        </p>
+        {imports ? <SeedImports statuses={imports} /> : <p className="muted-line">Couldn&rsquo;t read the imports just now.</p>}
       </div>
 
       {superAdmin && (

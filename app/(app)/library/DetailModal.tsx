@@ -8,6 +8,8 @@
 //   "editorial" — Edit / Share / Delete. Same as the library minus the moodboard
 //                 and develop buttons: editorial images are credits, not the
 //                 product references a style gets made from.
+//   "archival"  — as "editorial", without the campaign reference type, and the
+//                 person in the picture reads "Pictured" (2026-11-02).
 //   "board"     — Edit / Share / Develop this. No Delete from a moodboard:
 //                 deleting there would remove the reference from the whole
 //                 library, which is not what clicking an image on a board
@@ -68,7 +70,7 @@ const EDIT_FIELDS: {
   { key: "notes", label: "Notes", type: "textarea" },
 ];
 
-export type DetailActions = "library" | "editorial" | "board" | "read-only";
+export type DetailActions = "library" | "editorial" | "archival" | "board" | "read-only";
 
 // Turn a typed value into a live href (Tess, 2026-09-15: "make links in campaign
 // profiles live"). A bare "brand.com" gets https://; an already-qualified URL is
@@ -374,7 +376,10 @@ export default function DetailModal({
     });
   }
 
-  const isEd = actions === "editorial";
+  // Archival is credited like Campaign — the same rows, the same trimmed form —
+  // minus the campaign-only reference type.
+  const isArch = actions === "archival";
+  const isEd = actions === "editorial" || isArch;
   const rows: [string, React.ReactNode][] = [
     // On a campaign card the brand no longer heads the card — the photographer /
     // DP does — so it reads as a row here, and the garment-library fields
@@ -383,8 +388,8 @@ export default function DetailModal({
     // be designer or brand").
     ...(isEd
       ? ([
-          ["Reference type", normalizeCampaignKind(cur.ref_kind) || null],
-          ["Brand", cur.designer],
+          ...(isArch ? [] : ([["Reference type", normalizeCampaignKind(cur.ref_kind) || null]] as [string, React.ReactNode][])),
+          [isArch ? "Designer" : "Brand", cur.designer],
         ] as [string, React.ReactNode][])
       : []),
     ["Year", cur.year],
@@ -418,7 +423,7 @@ export default function DetailModal({
         )}
       </span>
     ) : null],
-    ["Model", cur.model],
+    [isArch ? "Pictured" : "Model", cur.model],
     ["Location", cur.location],
     // The source / product link, live (Tess, 2026-09-15). Opens in a new tab.
     ["Link", cur.link ? (
@@ -436,7 +441,13 @@ export default function DetailModal({
   const LIB_ONLY = ["category", "garment", "fabric", "color", "color_hex", "price"];
   const editFields = isEd
     ? EDIT_FIELDS.filter((f) => !LIB_ONLY.includes(f.key as string)).map((f) =>
-        f.key === "designer" ? { ...f, label: "Brand" } : f
+        f.key === "designer"
+          ? { ...f, label: isArch ? "Designer" : "Brand" }
+          : f.key === "model" && isArch
+            ? { ...f, label: "Pictured" }
+            : f.key === "link" && isArch
+              ? { ...f, label: "Link" }
+              : f
       )
     : EDIT_FIELDS;
 
@@ -680,7 +691,11 @@ export default function DetailModal({
                   {/* On a campaign card the photographer / DP leads (Tess,
                       2026-09-15); the library keeps leading with the brand. */}
                   <h2 className="display">
-                    {(actions === "editorial" ? cur.photographer || cur.designer : cur.designer) || "Reference"}
+                    {(actions === "editorial"
+                      ? cur.photographer || cur.designer
+                      : isArch
+                        ? cur.photographer || cur.model || cur.designer
+                        : cur.designer) || (isArch ? "Archival image" : "Reference")}
                   </h2>
                   {cur.year && <div className="yr">{cur.year}</div>}
                 </div>
@@ -830,7 +845,7 @@ export default function DetailModal({
                     {actions !== "read-only" && (
                       <button className="btn link" onClick={share}>Share</button>
                     )}
-                    {(actions === "library" || actions === "editorial") && (
+                    {(actions === "library" || actions === "editorial" || isArch) && (
                       <button
                         className="btn link danger detail-del"
                         onClick={() => { setConfirmDel(true); setDevOpen(false); }}

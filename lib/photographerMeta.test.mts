@@ -5,6 +5,7 @@ import {
   withPhotographerMeta,
   readAllPhotographerMeta,
   photographerKey,
+  withPhotographerMetaDefaults,
   EMPTY_META,
 } from "./photographerMeta.ts";
 
@@ -67,4 +68,41 @@ test("an image order alone is worth storing — not treated as an empty card", (
   // A photographer can have a custom order with no tier/notes; it must survive.
   const v = withPhotographerMeta({}, "Ada", { imageOrder: ["x", "y"] });
   assert.deepEqual(readAllPhotographerMeta(v).ada.imageOrder, ["x", "y"]);
+});
+
+// The group / role / age / agency fields arrived with the deck import (2026-11-02).
+// A writer that rebuilds the stored card field by field would silently drop any
+// field it doesn't list — so this pins that a star toggle keeps them.
+test("group, role, age and agency survive an unrelated write", () => {
+  let v: unknown = withPhotographerMeta({}, "Fei Fei Sun", {
+    group: "Shortlist",
+    role: "Model",
+    age: "37",
+    agency: "Elite Model Management",
+  });
+  v = withPhotographerMeta(v, "Fei Fei Sun", { starred: true });
+  const m = readPhotographerMeta(v, "fei fei sun");
+  assert.equal(m.group, "Shortlist");
+  assert.equal(m.role, "Model");
+  assert.equal(m.age, "37");
+  assert.equal(m.agency, "Elite Model Management");
+  assert.equal(m.starred, true);
+});
+
+// An import fills blanks only. If the team has already edited a card, running
+// the import again (or for the first time after the edit) must not undo it.
+test("an import fills blank fields and never overwrites a team edit", () => {
+  let v: unknown = withPhotographerMeta({}, "Ada", { pastWork: "Edited by the team" });
+  v = withPhotographerMetaDefaults(v, "Ada", {
+    pastWork: "From the deck",
+    group: "Movement",
+    video: true,
+  });
+  const m = readPhotographerMeta(v, "Ada");
+  assert.equal(m.pastWork, "Edited by the team");
+  assert.equal(m.group, "Movement");
+  assert.equal(m.video, true);
+  // Running it twice changes nothing.
+  const again = withPhotographerMetaDefaults(v, "Ada", { group: "Portrait", pastWork: "x" });
+  assert.deepEqual(readPhotographerMeta(again, "Ada"), m);
 });

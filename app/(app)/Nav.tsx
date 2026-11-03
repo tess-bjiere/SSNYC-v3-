@@ -69,9 +69,16 @@ const GROUPS: { label: string; links: { href: string; label: string }[] }[] = [
       { href: "/library", label: "References" },
       { href: "/moodboard", label: "Moodboard" },
       { href: "/editorial", label: "Campaign" },
+      // Vintage reference images, beside Campaign (Tess, 2026-11-02: "a section
+      // for vintage reference images. They could live in a section like campaign
+      // but call it 'archival'").
+      { href: "/archival", label: "Archival" },
       // The campaign credits, turned into a directory of photographers by city
       // (Tess, 2026-08-17) — a front door to "who has shot in this city".
       { href: "/photographers", label: "Photographers" },
+      // The casting list, built the same way (Tess, 2026-11-02: "create a space
+      // for potential models to be added").
+      { href: "/models", label: "Models" },
     ],
   },
   // Tess, 2026-08-06: "ideation should come before product." Ideation leads now
@@ -161,7 +168,9 @@ export default function Nav({
   // gated by brand (ordersEnabled) so SOUS SOUS and Renggli get it too (Tess,
   // 2026-08-24: "add the orders tab to sourcing on the sous sous and renggli
   // versions").
-  const EXTRAS_ONLY = new Set(["/photographers", "/color-standards"]);
+  // The photographer directory left this set on 2026-11-02 (Tess asked for the
+  // deck's photographers in SSYNC); only its at-home tier is still extras-only.
+  const EXTRAS_ONLY = new Set(["/color-standards"]);
   // Ideation-only deploy (the Loyalist's SOUS SOUS / Renggli accounts) sees just
   // Ideation — References, Moodboard, Campaign — no Product, no Sourcing (Tess,
   // 2026-10-01: "hide product and sourcing functionality"). A talent is already

@@ -35,6 +35,21 @@ export type PhotographerMeta = {
    *  2026-08-17: "easy reorder of images ... by dragging"). Ids missing from the
    *  list fall to the end in their default order, so it survives new uploads. */
   imageOrder: string[];
+  /**
+   * The section a person is filed under — for a photographer the deck's own
+   * grouping (Movement, Portrait & studio, Documentary & atmosphere, Behind the
+   * scenes, Directors), for a model "Shortlist" or "Casting reference" (Tess,
+   * 2026-11-02: "add photographers to ssync from deck" + "create a space for
+   * potential models"). Free text, so a new group is just typed.
+   */
+  group: string;
+  /** What they do, in a word or two — "Director of photography", "Photographer
+   *  and director". Free text. */
+  role: string;
+  /** Models only, in practice: the age as last checked, and the agency. Free
+   *  text because the sources give "~32" and "34" alike. */
+  age: string;
+  agency: string;
 };
 
 export const EMPTY_META: PhotographerMeta = {
@@ -45,6 +60,10 @@ export const EMPTY_META: PhotographerMeta = {
   pastWork: "",
   notes: "",
   imageOrder: [],
+  group: "",
+  role: "",
+  age: "",
+  agency: "",
 };
 
 /** How a name becomes a key — the same lower-cased trim the directory uses, so
@@ -77,6 +96,10 @@ function readOne(raw: unknown): PhotographerMeta {
     imageOrder: Array.isArray(o.imageOrder)
       ? o.imageOrder.filter((x): x is string => typeof x === "string")
       : [],
+    group: str(o.group),
+    role: str(o.role),
+    age: str(o.age),
+    agency: str(o.agency),
   };
 }
 
@@ -99,7 +122,8 @@ export function readAllPhotographerMeta(settingsValue: unknown): Record<string, 
 export function isEmptyMeta(m: PhotographerMeta): boolean {
   return (
     !m.tier && !m.photo && !m.video && !m.starred &&
-    !m.pastWork.trim() && !m.notes.trim() && m.imageOrder.length === 0
+    !m.pastWork.trim() && !m.notes.trim() && m.imageOrder.length === 0 &&
+    !m.group.trim() && !m.role.trim() && !m.age.trim() && !m.agency.trim()
   );
 }
 
@@ -126,8 +150,36 @@ export function withPhotographerMeta(
       pastWork: merged.pastWork,
       notes: merged.notes,
       imageOrder: merged.imageOrder,
+      group: merged.group,
+      role: merged.role,
+      age: merged.age,
+      agency: merged.agency,
     };
   return next;
+}
+
+/**
+ * Fill in a card from an import without overwriting anything the team has
+ * already set (Tess, 2026-11-02: the deck's photographers and models brought into
+ * SSYNC). A field is only written when the card's own value is blank — an empty
+ * string, false, null or an empty order — so running an import twice, or after
+ * someone has edited a card, never undoes their edit.
+ */
+export function withPhotographerMetaDefaults(
+  settingsValue: unknown,
+  key: string,
+  defaults: Partial<PhotographerMeta>
+): Record<string, unknown> {
+  const current = readPhotographerMeta(settingsValue, key);
+  const patch: Partial<PhotographerMeta> = {};
+  for (const k of Object.keys(defaults) as (keyof PhotographerMeta)[]) {
+    const have = current[k];
+    const blank =
+      have === null || have === false || have === "" ||
+      (Array.isArray(have) && have.length === 0);
+    if (blank) (patch as Record<string, unknown>)[k] = defaults[k];
+  }
+  return withPhotographerMeta(settingsValue, key, patch);
 }
 
 /** What the card's tier reads as. */

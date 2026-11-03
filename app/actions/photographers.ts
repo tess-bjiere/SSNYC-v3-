@@ -2,52 +2,66 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireExtrasTeam } from "@/lib/access";
+import { requireTeam, requireUser } from "@/lib/access";
 import { activeBrand } from "@/lib/activeBrand";
 import { isOversize, oversizeError } from "@/lib/uploadLimits";
 import { REFERENCES_BUCKET } from "@/lib/storage";
 import {
-  PHOTOGRAPHER_META_KEY,
+  photographerKey,
   withPhotographerMeta,
   type PhotographerMeta,
 } from "@/lib/photographerMeta";
+import { PEOPLE, isPeopleKind, instagramUrl, type PeopleKind } from "@/lib/people";
+
+// 2026-11-02: the directory is no longer extras-only. Tess asked for the deck's
+// photographers in SSYNC and for "a space for potential models", so these writes
+// now take a `kind` (photographer, the default, or model — see lib/people.ts) and
+// are open to the team on this deploy. A talent still cannot write: requireTeam.
+function cfg(kind: unknown) {
+  return PEOPLE[isPeopleKind(kind) ? kind : "photographer"];
+}
 
 // Set the team-entered side of a photographer — tier, video/directs, clients
 // (Tess, 2026-08-17). Stored in the shared `settings` jsonb under one key, keyed
 // by the photographer's normalised name, read-modify-write so one edit never
 // disturbs another person's card. No table, no migration.
-export async function setPhotographerMeta(nameKey: string, patch: Partial<PhotographerMeta>) {
-  await requireExtrasTeam();
+export async function setPhotographerMeta(
+  nameKey: string,
+  patch: Partial<PhotographerMeta>,
+  kind: PeopleKind = "photographer"
+) {
+  await requireTeam();
   const key = (nameKey ?? "").trim();
   if (!key) return;
+  const c = cfg(kind);
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("settings")
     .select("value")
-    .eq("key", PHOTOGRAPHER_META_KEY)
+    .eq("key", c.metaKey)
     .maybeSingle();
 
   const next = withPhotographerMeta(data?.value ?? {}, key, patch);
   await supabase
     .from("settings")
-    .upsert({ key: PHOTOGRAPHER_META_KEY, value: next, updated_at: new Date().toISOString() });
+    .upsert({ key: c.metaKey, value: next, updated_at: new Date().toISOString() });
 
-  revalidatePath("/photographers");
+  revalidatePath(c.href);
 }
 
 // Remove one image off a photographer's profile (Tess, 2026-08-17: "allow to x
 // out image easily"). Soft delete, so it goes to Trash and can be restored — the
 // same recoverable path as everywhere else, not a hard delete.
-export async function removePhotographerImage(id: string) {
-  await requireExtrasTeam();
+export async function removePhotographerImage(id: string, kind: PeopleKind = "photographer") {
+  await requireTeam();
   if (!id) return;
   const supabase = await createClient();
   await supabase
     .from("references")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
-  revalidatePath("/photographers");
+  revalidatePath(cfg(kind).href);
   revalidatePath("/trash");
 }
 
@@ -63,7 +77,7 @@ export async function removePhotographerImage(id: string) {
 // image, and the profile de-dupes by image so it still shows once. Idempotent:
 // an image already in Campaign is skipped, so saving twice can't pile up copies.
 export async function saveImagesToCampaign(ids: string[]): Promise<{ saved: number }> {
-  await requireExtrasTeam();
+  await requireTeam();
   const clean = Array.from(new Set(ids.filter(Boolean)));
   if (clean.length === 0) return { saved: 0 };
   const supabase = await createClient();
@@ -139,19 +153,47 @@ function extFor(type: string): string {
 export async function addPhotographerImages(
   photographer: string,
   location: string,
-  formData: FormData
+  formData: FormData,
+  kind: PeopleKind = "photographer"
 ): Promise<{ ok: boolean; added: number; errors: string[] }> {
-  await requireExtrasTeam();
+  await requireTeam();
   const name = (photographer ?? "").trim();
+  const c = cfg(kind);
+  if (!name) return { ok: false, added: 0, errors: [`No ${c.noun}.`] };
+  const { rows, errors } = await uploadPersonImages(c.kind, name, (location ?? "").trim(), formData, {});
+  if (rows === 0 && errors.length === 0) return { ok: false, added: 0, errors: ["No image files provided."] };
+  if (rows > 0) revalidatePath(c.href);
+  return { ok: rows > 0, added: rows, errors };
+}
+
+// The row a directory writes for one of its own people. A photographer's row is
+// a 'roster' row credited in `photographer`; a model's is a 'model' row named in
+// `model`, with `photographer` left for whoever took the picture. `designer` is
+// NOT NULL and means the label of a shoot, which neither has — so it is empty,
+// same as the roster rows have always been.
+function personRow(kind: PeopleKind, name: string, location: string, extra: Record<string, unknown>) {
+  const base = { type: PEOPLE[kind].ownType, designer: "", location: location || null, ...extra };
+  return kind === "model" ? { ...base, model: name } : { ...base, photographer: name };
+}
+
+// Upload each image to storage and insert one row per image for this person.
+// Shared by "+ Add images" on a profile and by "+ Add" for a new person.
+async function uploadPersonImages(
+  kind: PeopleKind,
+  name: string,
+  location: string,
+  formData: FormData,
+  extra: Record<string, unknown>
+): Promise<{ rows: number; errors: string[] }> {
   const files = formData
     .getAll("files")
     .filter((f): f is File => f instanceof File && f.size > 0 && f.type.startsWith("image/"));
-  if (!name) return { ok: false, added: 0, errors: ["No photographer."] };
-  if (files.length === 0) return { ok: false, added: 0, errors: ["No image files provided."] };
+  if (files.length === 0) return { rows: 0, errors: [] };
 
   const supabase = await createClient();
   const brand = await activeBrand();
-  const loc = (location ?? "").trim();
+  const user = await requireUser();
+  const createdBy = user?.name || user?.email || null;
 
   const rows: Record<string, unknown>[] = [];
   const errors: string[] = [];
@@ -167,6 +209,7 @@ export async function addPhotographerImages(
         .upload(path, Buffer.from(await file.arrayBuffer()), {
           contentType: file.type || "image/jpeg",
           upsert: false,
+          cacheControl: "31536000",
         });
       if (upErr) {
         errors.push(`${file.name}: ${upErr.message}`);
@@ -175,13 +218,9 @@ export async function addPhotographerImages(
       const { data: pub } = supabase.storage.from(REFERENCES_BUCKET).getPublicUrl(path);
       if (pub?.publicUrl) {
         rows.push({
+          ...personRow(kind, name, location, extra),
           brand,
-          type: "roster",
-          // designer is NOT NULL and means the label/brand of the shoot, which a
-          // portfolio sample doesn't have — empty, same as the roster rows.
-          designer: "",
-          photographer: name,
-          location: loc || null,
+          created_by: createdBy,
           image_url: pub.publicUrl,
           thumb_url: pub.publicUrl,
         });
@@ -193,8 +232,110 @@ export async function addPhotographerImages(
 
   if (rows.length > 0) {
     const { error } = await supabase.from("references").insert(rows);
-    if (error) return { ok: false, added: 0, errors: [...errors, error.message] };
-    revalidatePath("/photographers");
+    if (error) return { rows: 0, errors: [...errors, error.message] };
   }
-  return { ok: rows.length > 0, added: rows.length, errors };
+  return { rows: rows.length, errors };
+}
+
+export type NewPerson = {
+  name: string;
+  location?: string;
+  /** Instagram handle or URL. */
+  ig?: string;
+  /** Website or agency page. */
+  link?: string;
+} & Partial<Pick<PhotographerMeta, "group" | "role" | "age" | "agency" | "pastWork" | "notes" | "photo" | "video">>;
+
+// Add someone to a directory by hand (Tess, 2026-11-02: "create a space for
+// potential models to be added"). Until now a person could only appear by being
+// credited on a campaign image or by a roster row written from outside the app.
+//
+// With photos, each becomes a row under their name; without, one image-less row
+// holds the name, city and links, which is all a card needs — it shows initials
+// until a picture is added. The typed facts go onto their card.
+export async function addPerson(
+  kind: PeopleKind,
+  person: NewPerson,
+  formData: FormData
+): Promise<{ ok: boolean; added: number; errors: string[] }> {
+  await requireTeam();
+  const c = cfg(kind);
+  const name = (person?.name ?? "").trim();
+  if (!name) return { ok: false, added: 0, errors: ["Add a name first."] };
+  const location = (person.location ?? "").trim();
+
+  // Where the links go: a photographer's Instagram has its own column; a model
+  // row's photographer_ig would mean the photo credit's, so a model's Instagram
+  // rides in link (see lib/people.ts creditFor) and a site goes into notes.
+  const ig = instagramUrl(person.ig);
+  const site = (person.link ?? "").trim();
+  const extra: Record<string, unknown> =
+    kind === "model"
+      ? { link: ig || site || null }
+      : { photographer_ig: ig || null, link: site || null };
+
+  const supabase = await createClient();
+  let added = 0;
+  const errors: string[] = [];
+  const up = await uploadPersonImages(c.kind, name, location, formData, extra);
+  added += up.rows;
+  errors.push(...up.errors);
+  if (added === 0) {
+    const brand = await activeBrand();
+    const user = await requireUser();
+    const { error } = await supabase.from("references").insert({
+      ...personRow(c.kind, name, location, extra),
+      brand,
+      created_by: user?.name || user?.email || null,
+    });
+    if (error) return { ok: false, added: 0, errors: [...errors, error.message] };
+    added = 1;
+  }
+
+  const notes = [person.notes?.trim(), kind === "model" && ig && site ? site : ""].filter(Boolean).join("\n\n");
+  const patch: Partial<PhotographerMeta> = {
+    group: person.group?.trim() ?? "",
+    role: person.role?.trim() ?? "",
+    age: person.age?.trim() ?? "",
+    agency: person.agency?.trim() ?? "",
+    pastWork: person.pastWork?.trim() ?? "",
+    notes,
+    ...(person.photo != null ? { photo: !!person.photo } : {}),
+    ...(person.video != null ? { video: !!person.video } : {}),
+  };
+  const { data } = await supabase.from("settings").select("value").eq("key", c.metaKey).maybeSingle();
+  const next = withPhotographerMeta(data?.value ?? {}, name, patch);
+  await supabase.from("settings").upsert({ key: c.metaKey, value: next, updated_at: new Date().toISOString() });
+
+  revalidatePath(c.href);
+  return { ok: true, added, errors };
+}
+
+// Take someone out of a directory (the two-click Remove on their profile). Soft
+// delete only — every row goes to Trash and can be restored — and only the
+// directory's OWN rows: a photographer's campaign images stay on Campaign, so a
+// photographer credited there keeps a card built from those. Their card (notes,
+// group…) is left in settings, so restoring the rows brings everything back.
+export async function removePerson(kind: PeopleKind, name: string): Promise<{ removed: number }> {
+  await requireTeam();
+  const c = cfg(kind);
+  const key = photographerKey(name);
+  if (!key) return { removed: 0 };
+  const supabase = await createClient();
+  const brand = await activeBrand();
+  const nameCol = c.kind === "model" ? "model" : "photographer";
+  const { data } = await supabase
+    .from("references")
+    .select(`id,${nameCol}`)
+    .eq("brand", brand)
+    .eq("type", c.ownType)
+    .is("deleted_at", null);
+  const ids = ((data ?? []) as Record<string, string | null>[])
+    .filter((r) => photographerKey(r[nameCol]) === key)
+    .map((r) => r.id as string);
+  if (ids.length === 0) return { removed: 0 };
+  await supabase.from("references").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+  revalidatePath(c.href);
+  revalidatePath("/trash");
+  return { removed: ids.length };
 }

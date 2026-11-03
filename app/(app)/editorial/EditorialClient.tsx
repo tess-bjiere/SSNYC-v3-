@@ -25,7 +25,7 @@ import { useImageExport } from "@/app/components/useImageExport";
 // Editorial images are credited, not specced: who shot it, who is in it, where.
 // The filters follow the original tool — designer, year, model — and the search
 // box reaches the credit fields the dropdowns don't cover.
-const FACETS: { key: keyof Reference; label: string }[] = [
+const CAMPAIGN_FACETS: { key: keyof Reference; label: string }[] = [
   { key: "designer", label: "Designer" },
   // Photographer and Location lead the credit filters — finding a photographer,
   // and seeing who has shot in a city, is most of how Campaign gets used for
@@ -36,24 +36,41 @@ const FACETS: { key: keyof Reference; label: string }[] = [
   { key: "year", label: "Year" },
 ];
 
+// Archival (Tess, 2026-11-02: "a section for vintage reference images. They could
+// live in a section like campaign but call it 'archival'"). The same grid as
+// Campaign, over rows of type 'archival'. Who took it leads, then who is in it —
+// a dancer as often as a model, so `model` reads "Pictured" — then the designer.
+const ARCHIVAL_FACETS: { key: keyof Reference; label: string }[] = [
+  { key: "photographer", label: "Photographer" },
+  { key: "model", label: "Pictured" },
+  { key: "designer", label: "Designer" },
+  { key: "year", label: "Year" },
+  { key: "location", label: "Location" },
+];
+
 export default function EditorialClient({
   refs,
   boards,
   lists,
   designers,
+  variant = "campaign",
 }: {
   refs: Reference[];
   boards: { id: string; name: string; sections: { tid: string; label: string }[] }[];
   lists: ListsSetting;
   designers: string[];
+  /** Campaign (type 'editorial') or Archival (type 'archival'). */
+  variant?: "campaign" | "archival";
 }) {
+  const isArch = variant === "archival";
+  const FACETS = isArch ? ARCHIVAL_FACETS : CAMPAIGN_FACETS;
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Record<string, string>>({});
   // Editorial vs Styling reference tabs (Tess, 2026-09-14: "option to sort by
   // editorial / image references or styling references"). "all" shows everything,
   // including images not yet tagged; the others filter to that kind. Campaign
   // opens on Editorial (Tess, 2026-09-15: "the default view should be editorial").
-  const [tab, setTab] = useState<"all" | CampaignKind>("Editorial");
+  const [tab, setTab] = useState<"all" | CampaignKind>(isArch ? "all" : "Editorial");
   const [sort, setSort] = useState("newest");
   const [size, setSize] = useState("md");
   // Campaign view options (Tess, 2026-08-17): show the grid as bare images with
@@ -128,7 +145,7 @@ export default function EditorialClient({
   }
 
   // Download campaign images as a zip (Tess, 2026-09-28). Same as References.
-  const { exporting, exportImages } = useImageExport(flashToast, "SSYNC-campaign");
+  const { exporting, exportImages } = useImageExport(flashToast, isArch ? "SSYNC-archival" : "SSYNC-campaign");
 
   function addToBoard(boardId: string, label: string, ref: Reference, sectionTid?: string | null) {
     start(() => addRefsToBoard(boardId, [ref.id], sectionTid ?? null));
@@ -164,26 +181,28 @@ export default function EditorialClient({
 
   const options = useMemo(() => {
     return {
-      designer: resolveDesigners(designers, inUse.designer),
+      // Archival designers are the ones on its own pictures — the curated list is
+      // the studio's present-day brands.
+      designer: isArch ? inUse.designer : resolveDesigners(designers, inUse.designer),
       photographer: inUse.photographer,
       location: inUse.location,
       model: inUse.model,
       year: inUse.year,
     } as Record<string, string[]>;
-  }, [designers, inUse]);
+  }, [designers, inUse, isArch]);
 
   // Suggestions for the add form: the curated designer and season lists, plus
   // whatever the existing credits already use.
   const formOptions = useMemo(() => {
     return {
-      designer: resolveDesigners(designers, inUse.designer),
+      designer: isArch ? inUse.designer : resolveDesigners(designers, inUse.designer),
       year: inUse.year,
       season: resolveList("season", lists),
       photographer: inUse.photographer,
       model: inUse.model,
       location: inUse.location,
     } as Record<string, string[]>;
-  }, [designers, lists, inUse]);
+  }, [designers, lists, inUse, isArch]);
 
   const list = useMemo(() => {
     let out = refs.filter((r) => {
@@ -208,10 +227,11 @@ export default function EditorialClient({
       if (sort === "photographer") return (a.photographer || "").localeCompare(b.photographer || "");
       if (sort === "location") return (a.location || "").localeCompare(b.location || "");
       if (sort === "model") return (a.model || "").localeCompare(b.model || "");
+      if (sort === "year") return (a.year || "~").localeCompare(b.year || "~");
       return (b.created_at || "").localeCompare(a.created_at || "");
     });
     return out;
-  }, [refs, q, sel, sort, hidden, tab, favOnly, favs]);
+  }, [refs, q, sel, sort, hidden, tab, favOnly, favs, FACETS]);
 
   const activeFilters = Object.values(sel).filter(Boolean).length + (q.trim() ? 1 : 0);
 
@@ -247,20 +267,28 @@ export default function EditorialClient({
   }
   // The credit fields, with the same option lists the add form offers.
   const bulkFields: BulkField[] = (
-    [
-      { key: "designer", label: "Designer" },
-      { key: "photographer", label: "Photographer" },
-      { key: "model", label: "Model" },
-      { key: "location", label: "Location" },
-      { key: "year", label: "Year" },
-      { key: "season", label: "Season" },
-    ] as const
+    isArch
+      ? ([
+          { key: "photographer", label: "Photographer" },
+          { key: "model", label: "Pictured" },
+          { key: "designer", label: "Designer" },
+          { key: "year", label: "Year" },
+          { key: "location", label: "Location" },
+        ] as const)
+      : ([
+          { key: "designer", label: "Designer" },
+          { key: "photographer", label: "Photographer" },
+          { key: "model", label: "Model" },
+          { key: "location", label: "Location" },
+          { key: "year", label: "Year" },
+          { key: "season", label: "Season" },
+        ] as const)
   ).map((f) => ({ key: f.key, label: f.label, options: formOptions[f.key] ?? [] }));
   // Reference type has a fixed two-value vocabulary, so it carries its own options
   // rather than drawing from the curated lists (Tess, 2026-09-14). This is the
   // quickest way to tag the campaign images already on the wall — select a batch,
   // set Editorial or Styling.
-  bulkFields.push({ key: "ref_kind", label: "Reference type", options: [...CAMPAIGN_KINDS] });
+  if (!isArch) bulkFields.push({ key: "ref_kind", label: "Reference type", options: [...CAMPAIGN_KINDS] });
   async function applyBulkEdit(patch: Record<string, string>) {
     const ids = Array.from(selected);
     setBulkEditing(false);
@@ -289,7 +317,7 @@ export default function EditorialClient({
     .map((r) => ({
       id: r.id,
       thumb: refThumb(r),
-      label: [r.photographer, r.designer, r.model].filter(Boolean).join(" · "),
+      label: [r.photographer, r.designer, r.model].filter(Boolean).join(" · ") || (r.notes ?? ""),
     }));
   async function applyMerge(keeperId: string) {
     const others = Array.from(selected).filter((id) => id !== keeperId);
@@ -311,7 +339,7 @@ export default function EditorialClient({
   return (
     <div className="page lib-page">
       <div className="page-head">
-        <h1 className="page-title display">Campaign</h1>
+        <h1 className="page-title display">{isArch ? "Archival" : "Campaign"}</h1>
         <div className="spacer" />
         {/* Design pass 2026-09-15: title bar = page name + the one primary action.
             Sort, size, View and Select moved into the control bar below. */}
@@ -320,14 +348,15 @@ export default function EditorialClient({
 
       {/* Prominent, full-width upload — phone/tablet only, like the library. */}
       <button className="btn lib-add-mobile" onClick={() => setUploading(true)}>
-        + Add campaign image
+        {isArch ? "+ Add archival image" : "+ Add campaign image"}
       </button>
 
       <div className="lib-bar">
         {/* Editorial / Styling reference tabs (Tess, 2026-09-14). All includes
             images not yet tagged; the others filter to that kind. */}
         <div className="lib-tabs">
-          {([...CAMPAIGN_KINDS, "all" as const] as ("all" | CampaignKind)[]).map((k) => (
+          {/* Archival has no reference kinds — just the Favorites toggle. */}
+          {(isArch ? [] : ([...CAMPAIGN_KINDS, "all" as const] as ("all" | CampaignKind)[])).map((k) => (
             <button
               key={k}
               className={"lib-tab" + (tab === k ? " active" : "")}
@@ -341,14 +370,18 @@ export default function EditorialClient({
             className={"lib-tab lib-fav-tab" + (favOnly ? " active" : "")}
             onClick={() => setFavOnly((v) => !v)}
             aria-pressed={favOnly}
-            title="Show only starred campaign images"
+            title={isArch ? "Show only starred archival images" : "Show only starred campaign images"}
           >
             {favOnly ? "★" : "☆"} Favorites{favs.size ? ` (${favs.size})` : ""}
           </button>
         </div>
         <input
           className="input lib-search"
-          placeholder="Search campaign by designer, photographer, model, location, year…"
+          placeholder={
+            isArch
+              ? "Search archival by photographer, who's pictured, designer, year, place…"
+              : "Search campaign by designer, photographer, model, location, year…"
+          }
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -413,12 +446,22 @@ export default function EditorialClient({
             aria-label="Sort"
             value={sort}
             onChange={setSort}
-            options={[
-              { value: "newest", label: "Newest" },
-              { value: "photographer", label: "Photographer" },
-              { value: "location", label: "Location" },
-              { value: "model", label: "Model" },
-            ]}
+            options={
+              isArch
+                ? [
+                    { value: "newest", label: "Newest" },
+                    { value: "photographer", label: "Photographer" },
+                    { value: "model", label: "Pictured" },
+                    { value: "designer", label: "Designer" },
+                    { value: "year", label: "Year" },
+                  ]
+                : [
+                    { value: "newest", label: "Newest" },
+                    { value: "photographer", label: "Photographer" },
+                    { value: "location", label: "Location" },
+                    { value: "model", label: "Model" },
+                  ]
+            }
           />
         </div>
       </div>
@@ -455,8 +498,8 @@ export default function EditorialClient({
       {list.length === 0 ? (
         <div className="empty">
           {refs.length === 0
-            ? "No campaign images yet. Use “+ Add” to add the first."
-            : "No campaign images match those filters."}
+            ? `No ${isArch ? "archival" : "campaign"} images yet. Use “+ Add” to add the first.`
+            : `No ${isArch ? "archival" : "campaign"} images match those filters.`}
         </div>
       ) : (
         <>
@@ -467,12 +510,25 @@ export default function EditorialClient({
             // 2026-09-15: "the photographer / DP name would be more important than
             // the brand"). Fall back to the brand, then "Untitled". The brand drops
             // to the sub-line (skipped there when it is already the lead).
-            const lead = r.photographer || r.designer || "Untitled";
-            const sub = [
-              r.designer && r.designer !== lead ? r.designer : null,
-              r.year && r.year !== "Unknown" ? r.year : null,
-              r.model,
-            ]
+            // On Archival the photographer leads too, then who is pictured, then
+            // the designer; an uncredited picture shows no caption rather than
+            // "Untitled" across a whole wall of them.
+            const lead = isArch
+              ? r.photographer || r.model || r.designer || ""
+              : r.photographer || r.designer || "Untitled";
+            const sub = (
+              isArch
+                ? [
+                    r.model && r.model !== lead ? r.model : null,
+                    r.designer && r.designer !== lead ? r.designer : null,
+                    r.year,
+                  ]
+                : [
+                    r.designer && r.designer !== lead ? r.designer : null,
+                    r.year && r.year !== "Unknown" ? r.year : null,
+                    r.model,
+                  ]
+            )
               .filter(Boolean)
               .join(" · ");
             const extra = extraImageUrls(r).length;
@@ -527,9 +583,9 @@ export default function EditorialClient({
                   )}
                 </div>
                 {/* The credits, unless "Images only" is on. */}
-                {!imagesOnly && (
+                {!imagesOnly && (lead || sub) && (
                   <div className="meta">
-                    <div className="d">{lead}</div>
+                    {lead && <div className="d">{lead}</div>}
                     {sub && <div className="s">{sub}</div>}
                   </div>
                 )}
@@ -609,7 +665,7 @@ export default function EditorialClient({
       {detail && (
         <DetailModal
           r={detail}
-          actions="editorial"
+          actions={isArch ? "archival" : "editorial"}
           onClose={() => setDetail(null)}
           onToast={flashToast}
           onDeleted={() => { setDetail(null); flashToast("Moved to Trash"); }}
@@ -620,7 +676,7 @@ export default function EditorialClient({
 
       {uploading && (
         <UploadModal
-          kind="editorial"
+          kind={isArch ? "archival" : "editorial"}
           options={formOptions}
           onClose={() => setUploading(false)}
           onToast={flashToast}

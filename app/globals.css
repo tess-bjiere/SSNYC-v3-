@@ -5273,3 +5273,29 @@ button.ls-card-style,button.ls-entry-name{border:none;padding:0}
 .cs-mat-name{font-size:var(--t-sm);color:var(--ink)}
 .cs-mat-spec{font-size:var(--t-micro);color:var(--faint);white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
+
+/* Directory notes keep their paragraph breaks — the deck import writes the one-
+   line look, then the research notes, as separate paragraphs (2026-11-02). */
+.pg-fact-notes{white-space:pre-line}
+.pg-editor-tools .spacer{flex:1}
+
+/* Setup → Imports (2026-11-02): one row per import, the action on the right. */
+.seed-row{display:flex;align-items:flex-start;gap:var(--sp-ctl);padding:14px 0;border-bottom:1px solid var(--hair)}
+.seed-main{flex:1;min-width:0}
+.seed-title{font-size:var(--t-body);font-weight:var(--w-title)}
+.seed-title a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.seed-detail{font-size:var(--t-sm);color:var(--muted);line-height:1.6;margin-top:5px;max-width:720px}
+.seed-state{font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin-top:7px}
+.seed-msg{font-size:var(--t-sm);color:var(--ink);margin-top:6px}
+
+/* The directories (Photographers, Models) borrow .lib-page for its spacing, but
+   not its phone resequencing: that flattens the head and orders the References
+   controls, which left these pages' title and search below every city. On a
+   phone they keep a plain stacked head instead (2026-11-02). */
+@media(max-width:900px){
+  .pg-page.lib-page{display:block}
+  .pg-page .page-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-chip)}
+  .pg-page .page-head .spacer{display:block;flex:1}
+  .pg-page .page-title{order:0;flex:1 1 100%}
+  .pg-page .lib-bar{display:block;margin:12px 0 0}
+}
